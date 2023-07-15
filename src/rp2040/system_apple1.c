@@ -242,6 +242,7 @@ static inline void handle_pia()
          }
          break;
       default:
+         break;
    }
 }
 
