@@ -1,0 +1,32 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check out code'
+        uses: actions/checkout@v3
+
+      - name: 'Install dependencies'
+        run: |
+          sudo make setup-apt
+
+      - name: 'Build'
+        run: |
+          make
+
+      - name: 'Upload MCP'
+        uses: actions/upload-artifact@v3
+        with:
+          name: sorbus-computer-mcp.uf2
+          path: build/rp2040/mcp.uf2
+          retention-days: 5
+
+      - name: 'Upload Apple 1'
+        uses: actions/upload-artifact@v3
+        with:
+          name: sorbus-computer-apple1.uf2
+          path: build/rp2040/apple1.uf2
+          retention-days: 5

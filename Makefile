@@ -21,7 +21,4 @@ $(PICO_SDK_PATH)/README.md:
 	git clone --recurse-submodules $(PICO_SDK_URL) $(PICO_SDK_PATH)
 
 setup-apt:
-	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
-
-setup-udev:
-	echo -e '#Picoprobe\nSUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", MODE="0666"' | sudo dd of=/etc/udev/rules.d/99-pico.rule
+	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom

@@ -20,3 +20,5 @@ The project is fully open source:
       Raspberry Pi Foundation, which will be downloaded if not previously
       configured
 
+[An addtional page](https://xayax.net/sorbus/) has been setup to explain more
+about the ideas of the system, as well as some usecases.
