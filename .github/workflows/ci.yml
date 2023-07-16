@@ -15,7 +15,7 @@ jobs:
 
       - name: 'Build'
         run: |
-          make
+          PICO_SDK_FETCH_FROM_GIT=https://github.com/raspberrypi/pico-sdk.git make
 
       - name: 'Upload MCP'
         uses: actions/upload-artifact@v3
