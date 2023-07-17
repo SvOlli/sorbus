@@ -30,7 +30,7 @@ here are a few hints how to use WozMon:
 - you can dump the contents of memory just by entering the hex number
   of that address: FF00
 - you can dump ranges of memory by using the dot (".") FF00.FFFF
-- you can jump to an address by suffing the number withan "R": FF00R
+- you can jump to an address by suffing the number with an "R": FF00R
 - since BASIC is preloaded with Krusader, you can run it using
   - E000R (cold start)
   - E2B3R (warm start without clearing the program)
@@ -38,7 +38,7 @@ here are a few hints how to use WozMon:
 Caveats
 -------
 The system operates at a higher clockspeed as the original Apple 1:
-~1.25MHz (Sorbus) vs ~0.950MHz (original).
+~1.25MHz (Sorbus) vs ~0.95MHz (original).
 
 Once the input buffer is filled up, the meta keys will not be evaluated
 anymore. A power cycle is then required to reset the machine, if the

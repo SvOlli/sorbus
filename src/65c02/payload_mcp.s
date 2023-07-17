@@ -29,14 +29,12 @@ example1:
 
 example2:
    jsr   jsrtest
-   bra   *
-   brk
+   jmp   *
 
 example3:
    pha
    pla
-   bra   *
-   brk
+   jmp   *
 
 example4:
    lda   #<irqtest
@@ -47,8 +45,7 @@ example4:
    nop
    nop
    cli
-   bra   *
-   brk
+   jmp   *
 
 example5:
    lda   #<irqtest
@@ -59,8 +56,7 @@ example5:
    nop
    nop
    nop
-   bra   *
-   brk
+   jmp   *
 
 jsrtest:
    nop

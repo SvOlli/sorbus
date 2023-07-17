@@ -22,7 +22,7 @@ The project is fully open source, licensend under GPL v3:
     - compiling requires the
       [Pico-SDK](https://github.com/raspberrypi/pico-sdk) from the
       Raspberry Pi Foundation, which will be downloaded if not previously
-      configured
+      configured. However it's dependencies must also be preinstalled.
 
 [An addtional page](https://xayax.net/sorbus/) has been setup to explain more
 about the ideas of the system, as well as some usecases.
