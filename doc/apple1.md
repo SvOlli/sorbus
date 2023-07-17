@@ -1,7 +1,8 @@
 Apple Computer 1 Emulation Core
 ===============================
 
-This is a replica of the [Apple Computer 1](https://en.wikipedia.org/wiki/Apple_I)
+This is a replica of the
+[Apple Computer 1](https://en.wikipedia.org/wiki/Apple_I)
 with enhanced features:
 - 64k of memory
 - preloaded with [Krusader](https://github.com/st3fan/krusader)
@@ -14,10 +15,10 @@ Meta-Keys
 A few keys are utilized for meta proposes, since they were not available
 on an original Apple Computer 1:
 - "`": reset
+- "~": clear screen
 - "{": disable original terminal output delay
 - "}": enable original terminal output delay
 - "|": (future expansion)
-- "~": (future expansion)
 
 Using an Apple Computer 1
 -------------------------
