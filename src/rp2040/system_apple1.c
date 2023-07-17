@@ -21,9 +21,14 @@
 #include "cpudetect_apple1.h"
 #include "krusader.h"
 
-// set this to 1 to run for 2 million cycles while keeping time
+// set this to 1 to run for 5 million cycles while keeping time
 #define SPEED_TEST 0
+// the delay between characters printed, the Apple 1 can only add
+// a single characters per frame displayed at 60Hz
 #define WRITE_DELAY_US 16666
+// this is where the write protected area starts
+// for Krusader you can change this to 0xE000
+#define ROM_START (0xFF00)
 
 uint32_t write_delay_us = WRITE_DELAY_US;
 
@@ -42,6 +47,7 @@ volatile uint32_t cycles_left_irq   = 0;
 
 
 // small relocateable 6502 routine to print all characters to display
+// assembled by hand
 const uint8_t printloop[] =
 {
    0xa2,0x00,0x8a,0x20,0xef,0xff,0xe8,0x18,
@@ -58,8 +64,9 @@ int apple2output( int c )
    }
    else if( c <= 0x1f )
    {
-      // bytes below space need to be adjusted
-      c = 0;
+      // bytes below space are not printed
+      // (except for return), but still cause a delay
+      c = 1;
    }
    else if( c >= 0x60 )
    {
@@ -72,14 +79,21 @@ int apple2output( int c )
 
 int input2apple( int c )
 {
+   // handle special cases
+   if( (c == 0x08) || (c == 0x7f) )
+   {
+      // backspace
+      return 0xdf;
+   }
+   else if( (c == 0x60) || (c >= 0x7b) )
+   {
+      // "`{|}~" are meta keys
+      return c;
+   }
    // Apple 1 only has upper charset
    if( (c >= 'a') && (c <= 'z') )
    {
       c &= 0xdf;
-   }
-   else if( (c == 0x08) || (c == 0x7f) )
-   {
-      return 0xdf;
    }
    return c | 0x80;
 }
@@ -99,27 +113,42 @@ void run_console()
       }
       if( in != PICO_ERROR_TIMEOUT )
       {
-         switch( in )
+         in = input2apple( in );
+         if( in >= 0x80 )
          {
-            case '`':
-               cycles_left_reset = 8;
-               enable_print = false;
+            // standard key, hand over to Apple 1
+            if( queue_try_add( &keyboard_queue, &in ) )
+            {
+               // only get next key once this is processed
                in = PICO_ERROR_TIMEOUT;
-               break;
-            case '{':
-               write_delay_us = 0;
-               in = PICO_ERROR_TIMEOUT;
-               break;
-            case '}':
-               write_delay_us = WRITE_DELAY_US;
-               in = PICO_ERROR_TIMEOUT;
-               break;
-            default:
-               if( queue_try_add( &keyboard_queue, &in ) )
-               {
-                  in = PICO_ERROR_TIMEOUT;
-               }
-               break;
+
+               // problem: a never processed key can prevent from
+               // handling the reset key. this can be only delayed
+               // by expanding the input queue
+            }
+         }
+         else
+         {
+            // meta key: print an move cursor over
+            // -> output visible, but does not interfere
+            putchar( in );
+            putchar( '\b' );
+            switch( in )
+            {
+               case '`':
+                  cycles_left_reset = 8;
+                  enable_print = false;
+                  break;
+               case '{':
+                  write_delay_us = 0;
+                  break;
+               case '}':
+                  write_delay_us = WRITE_DELAY_US;
+                  break;
+               default:
+                  break;
+            }
+            in = PICO_ERROR_TIMEOUT;
          }
       }
 
@@ -147,7 +176,11 @@ void run_console()
             {
                tight_loop_contents();
             }
-            putchar( out );
+            if( out > 1 )
+            {
+               // 1 is an indicator of delay, but not print
+               putchar( out );
+            }
             next_write = time_us_64() + write_delay_us;
          }
       }
@@ -168,7 +201,11 @@ static inline void handle_ram()
    else
    {
       // read from bus and write to memory write
-      memory[address] = (gpio_get_all() >> bus_config.shift_data); // truncate is intended
+      // WozMon (and Krusader) is in ROM, so only accept writes below romstart
+      if( address < ROM_START )
+      {
+         memory[address] = (gpio_get_all() >> bus_config.shift_data); // truncate is intended
+      }
    }
 }
 
@@ -256,15 +293,21 @@ void run_bus()
    uint32_t cyc;
 
    time_start = time_us_64();
-   for(cyc = 0; cyc < 2000000; ++cyc)
+   for(cyc = 0; cyc < 5000000; ++cyc)
 #else
+   // when not running as speed test run main loop forever
    for(;;)
 #endif
    {
       if( cycles_left_reset )
       {
+         int dummy;
          --cycles_left_reset;
          gpio_clr_mask( bus_config.mask_reset );
+         while( queue_try_remove( &keyboard_queue, &dummy ) )
+         {
+            // just loop until queue is empty
+         }
       }
       else
       {
@@ -330,28 +373,44 @@ void run_bus()
    time_end = time_us_64();
    time_exec = (double)(time_end - time_start) / CLOCKS_PER_SEC / 10000;
    time_mhz = (double)cyc / time_exec;
-   printf( "%.08f sec: %.0fHz\n", time_exec, time_mhz );
-   printf( "bus has terminated\n" );
+   for(;;)
+   {
+      printf( "\rbus has terminated after %d cycles in %.06f seconds: %.0fHz ", cyc, time_exec, time_mhz );
+      sleep_ms(2000);
+   }
 #endif
 }
 
 
 int main()
 {
+   // setup UART
    stdio_init_all();
    uart_set_translate_crlf( uart0, true );
 
+   // setup between UART core and bus core
    queue_init( &keyboard_queue, sizeof(int), 256 );
    queue_init( &display_queue, sizeof(int), 1 );
 
+   // clean out memory
+   // yes, this is not original, but more userfriendly and also easier
+   // to implement a real DRAM initstate profile
+   // also we've got 64k addressable, which is not original as well
    memset( &memory[0x0000], 0x00, sizeof(memory) );
+
+   // let's preload some code
    memcpy( &memory[0x02F0], &printloop[0], sizeof(printloop) );
    memcpy( &memory[0x0280], &cpudetect_0280[0], sizeof(cpudetect_0280) );
+
+   // and we need also setup the ROM
+   // it's implemented as part of RAM with write disabled
    memcpy( &memory[0xE000], &krusader_e000[0], sizeof(krusader_e000) );
 
+   // setup the bus and run the bus core
    bus_init();
-
    multicore_launch_core1( run_bus );
+
+   // run interactive console -> should never return
    run_console();
 
    return 0;
