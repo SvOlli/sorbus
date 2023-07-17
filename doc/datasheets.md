@@ -9,7 +9,10 @@ these documents.
 --------------------------------
 * (WDC W65C02S)[https://www.westerndesigncenter.com/wdc/documentation/w65c02s.pdf]
 * (WDC W65C816S)[https://www.westerndesigncenter.com/wdc/documentation/w65c816s.pdf]
-* (MOS 6530)[www.6502.org/documents/datasheets/mos/mos_6530_rriot_preliminary_aug_1975.pdf]
+* (MOS 6530 preliminary)[https://www.6502.org/documents/datasheets/mos/mos_6530_rriot_preliminary_aug_1975.pdf]
+* (MOS 6530)[http://www.6502.org/documents/datasheets/mos/mos_6530_rriot.pdf]
+* (MOS 6532 preliminary)[http://www.6502.org/documents/datasheets/mos/mos_6532_riot_preliminary_feb_1977.pdf]
+* (MOS 6532)[http://www.6502.org/documents/datasheets/mos/mos_6532_riot.pdf]
 
 Host Based Hardware
 -------------------
