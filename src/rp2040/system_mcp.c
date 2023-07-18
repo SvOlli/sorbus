@@ -30,10 +30,6 @@
 
 #define STEP_DELAY 1
 
-#define ADDR_ERROR (0xFFFFFFFF)
-#define ADDR_EMPTY (0xFFFFFFFE)
-#define ADDR_MAX   (0x00FFFFFF)
-
 uint8_t memory[0x10000]; // 64k of RAM/ROM
 
 uint32_t cycles_left_reset = 6;

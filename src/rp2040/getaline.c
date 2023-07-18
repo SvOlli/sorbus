@@ -12,8 +12,10 @@
 #include <pico/multicore.h>
 #include <pico/platform.h>
 
-#include <string.h>
+#include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "getaline.h"
 
@@ -216,4 +218,22 @@ char *getaline()
 void getaline_prompt( const char *prompt )
 {
    queue_try_add( &prompt_queue, &prompt[0] );
+}
+
+
+void getaline_fatal( const char *fmt, ... )
+{
+   char buffer[256] = { 0 };
+   va_list ap;
+
+   va_start( ap, fmt );
+   vsnprintf( &buffer[0], sizeof(buffer)-1, fmt, ap );
+   va_end( ap );
+
+   printf( "\n" );
+   for(;;)
+   {
+      printf( "\r%s \b", buffer );
+      sleep_ms( 1000 );
+   }
 }

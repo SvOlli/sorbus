@@ -10,6 +10,9 @@ with enhanced features:
   - 2F0: print all characters
   - 280: detect CPU type (6502, 65C02 and 65816)
 
+Furthermore, it uses a terminal instead of Woz's video circuitry. So no
+blinking "@" as a cursor.
+
 Meta-Keys
 ---------
 A few keys are utilized for meta proposes, since they were not available

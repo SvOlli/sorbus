@@ -17,6 +17,13 @@ jobs:
         run: |
           PICO_SDK_FETCH_FROM_GIT=https://github.com/raspberrypi/pico-sdk.git make
 
+      - name: 'README'
+        uses: actions/upload-artifact@v3
+        with:
+          name: README.TXT
+          path: doc/README_release.txt
+          retention-days: 5
+
       - name: 'Upload MCP'
         uses: actions/upload-artifact@v3
         with:

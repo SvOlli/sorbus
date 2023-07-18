@@ -9,6 +9,7 @@
 
 void getaline_init();
 void getaline_prompt( const char *prompt );
+void getaline_fatal( const char *fmt, ... );
 char *getaline();
 
 #endif
