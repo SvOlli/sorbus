@@ -30,7 +30,10 @@
 
 #define STEP_DELAY 1
 
-uint8_t memory[0x10000]; // 64k of RAM/ROM
+uint8_t  memory[0x20000]; // 128k of RAM/ROM
+#define  ADDR_DIGITS (4)
+uint32_t bank_selected;
+bool     bank_enabled;
 
 uint32_t cycles_left_reset = 6;
 uint32_t cycles_left_nmi   = 0;
@@ -71,6 +74,15 @@ uint8_t memcheck[] = {
    0xD0, 0xED,
    0xF0, 0xFE
 };
+
+
+void bank_adjust( uint32_t bank, uint32_t *addr )
+{
+   if( bank_enabled && bank )
+   {
+      *addr |= 0x10000;
+   }
+}
 
 
 void set_freq( uint32_t freq )
@@ -146,7 +158,7 @@ void cmd_mem( const char *input )
 
    if( *input )
    {
-      input = get_hex( input, &mem_start, 4 );
+      input = get_hex( input, &mem_start, ADDR_DIGITS );
    }
    else
    {
@@ -155,7 +167,7 @@ void cmd_mem( const char *input )
    input = skip_space( input );
    if( *input )
    {
-      get_hex( input, &mem_end, 4 );
+      get_hex( input, &mem_end, ADDR_DIGITS );
       ++mem_end;
    }
    else
@@ -165,8 +177,11 @@ void cmd_mem( const char *input )
    mem_end &= 0xffff;
 
    col = 0;
-   for( mem_addr = mem_start; mem_addr != mem_end; mem_addr = ((mem_addr + 1) & 0xffff) )
+   mem_addr = mem_start;
+   do
+   //for( mem_addr = mem_start; mem_addr != mem_end; mem_addr = ((mem_addr + 1) & 0xffff) )
    {
+      bank_adjust( bank_selected, &mem_addr );
       if( !col )
       {
          printf( ": %04x ", mem_addr );
@@ -185,7 +200,9 @@ void cmd_mem( const char *input )
       {
          ++col;
       }
+      mem_addr = ((mem_addr + 1) & 0xffff);
    }
+   while(mem_addr != mem_end);
    if( col )
    {
       printf( "\n" );
@@ -263,7 +280,7 @@ void cmd_colon( const char *input )
    if( strchr( input, ':' ) )
    {
       // format: addr: values
-      input = get_hex( input, &mem_addr, 4 );
+      input = get_hex( input, &mem_addr, ADDR_DIGITS );
       input = skip_space( input );
       if( *input == ':' )
       {
@@ -279,7 +296,7 @@ void cmd_colon( const char *input )
    else
    {
       // format: :addr values
-      input = get_hex( input, &mem_addr, 4 );
+      input = get_hex( input, &mem_addr, ADDR_DIGITS );
    }
 
    for( ; *input; input = next )
@@ -308,7 +325,7 @@ void cmd_fill( const char *input )
 
    if( *input )
    {
-      input = get_hex( input, &mem_start, 4 );
+      input = get_hex( input, &mem_start, ADDR_DIGITS );
    }
    else
    {
@@ -317,7 +334,7 @@ void cmd_fill( const char *input )
    input = skip_space( input );
    if( *input )
    {
-      input = get_hex( input, &mem_end, 4 );
+      input = get_hex( input, &mem_end, ADDR_DIGITS );
    }
    else
    {
@@ -335,8 +352,10 @@ void cmd_fill( const char *input )
 
    for( mem_addr = mem_start; mem_addr != mem_end; mem_addr = ((mem_addr + 1) & 0xffff) )
    {
+      bank_adjust( bank_selected, &mem_addr );
       memory[mem_addr] = value;
    }
+   bank_adjust( bank_selected, &mem_addr );
    memory[mem_addr] = value;
 }
 
@@ -351,21 +370,56 @@ void cmd_steps( const char *input )
 }
 
 
+void cmd_reboot( const char *input )
+{
+   if( strlen( input ) )
+   {
+      return;
+   }
+
+   cputype = cpu_detect();
+   cycles_left_reset = 5;
+}
+
+
+void cmd_bank( const char *input )
+{
+   if( cputype != CPU_65816 )
+   {
+      printf( "warning: bank is only for %s cpu\n", cputype_name( CPU_65816 ) );
+   }
+   if( !strcasecmp( input, "on" ) )
+   {
+      bank_enabled = true;
+   }
+   else if( !strcasecmp( input, "off" ) )
+   {
+      bank_enabled = false;
+   }
+   else
+   {
+      get_hex( input, &bank_selected, 2 );
+   }
+}
+
+
 // forward declaration for array
 void cmd_help( const char *input );
 
 
 cmd_t cmds[] = {
-   { cmd_help,  4, "help",  "display help" },
-   { cmd_clock, 4, "freq",  "set frequency (dec)" },
-   { cmd_cpu,   3, "cpu",   "show cpu type" },
-   { cmd_reset, 5, "reset", "trigger reset (dec)" },
-   { cmd_irq,   3, "irq",   "trigger maskable interrupt (dec)" },
-   { cmd_nmi,   3, "nmi",   "trigger non maskable interrupt (dec)" },
-   { cmd_colon, 1, ":",     "write to memory <address> <value> .. (hex)" },
-   { cmd_fill,  1, "f",     "fill memory <from> <to> <value> (hex)" },
-   { cmd_mem,   1, "m",     "dump memory (<from> (<to>))" },
-   { cmd_steps, 1, "s",     "run number of steps (dec)" },
+   { cmd_help,   4, "help",   "display help" },
+   { cmd_clock,  4, "freq",   "set frequency (dec)" },
+   { cmd_bank,   4, "bank",   "enable (on)/disable (off) 65816 banks, select bank(dec)" },
+   { cmd_cpu,    3, "cpu",    "show cpu type" },
+   { cmd_reset,  5, "reset",  "trigger reset (dec)" },
+   { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
+   { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
+   { cmd_colon,  1, ":",      "write to memory <address> <value> .. (hex)" },
+   { cmd_fill,   1, "f",      "fill memory <from> <to> <value> (hex)" },
+   { cmd_mem,    1, "m",      "dump memory (<from> (<to>))" },
+   { cmd_steps,  1, "s",      "run number of steps (dec)" },
+   { cmd_reboot, 1, "reboot", "fully reinitialize system" },
    { 0, 0, 0, 0 }
 };
 
@@ -386,11 +440,13 @@ void cmd_help( const char *input )
 
 void run_bus()
 {
+   uint8_t bank;
    for(;;)
    {
       if( cycles_left_run > 0 )
       {
          gpio_set_mask( bus_config.mask_rdy );
+
          if( cycles_left_reset )
          {
             --cycles_left_reset;
@@ -420,6 +476,7 @@ void run_bus()
          {
             gpio_set_mask( bus_config.mask_irq );
          }
+
          --cycles_left_run;
       }
       else
@@ -429,6 +486,11 @@ void run_bus()
 
       // done: wait for the right time to set clock to high
       bus_delay();
+      gpio_set_dir_in_masked( bus_config.mask_data );
+      // wait for the RP2040 to adjust
+      sleep_us(1);
+	  // for 65816 only: read bank address
+      bank = (gpio_get_all() >> bus_config.shift_data); // truncate is intended;
       gpio_set_mask( bus_config.mask_clock );
 
       // bus should be still valid from clock low
@@ -440,6 +502,7 @@ void run_bus()
       {
          // read from memory and write to bus
          gpio_set_dir_out_masked( bus_config.mask_data );
+         bank_adjust( bank, &address );
          gpio_put_masked( bus_config.mask_data, ((uint32_t)memory[address]) << bus_config.shift_data );
 #if MEM_ACCESS
          printf( "mem r %04x->%02x\r", address, memory[address] );
@@ -451,6 +514,7 @@ void run_bus()
          gpio_set_dir_in_masked( bus_config.mask_data );
          // wait for the RP2040 to adjust
          sleep_us(1);
+         bank_adjust( bank, &address );
          memory[address] = (gpio_get_all() >> bus_config.shift_data); // truncate is intended;
 #if MEM_ACCESS
          printf( "mem w %04x<-%02x\r", address, memory[address] );
@@ -464,14 +528,22 @@ void run_bus()
       if( state & bus_config.mask_rdy )
       {
          char buffer[32];
-         snprintf( &buffer[0], sizeof(buffer), "%3d:%04x %c %02x %c%c%c>",
+         char bankhex[3] = { 0 };
+         if( bank_enabled )
+         {
+            snprintf( &bankhex[0], sizeof(bankhex), "%02x", bank & 0xFF, 3 );
+            bankhex[sizeof(bankhex)-1] = '\0';
+         }
+         snprintf( &buffer[0], sizeof(buffer), "%3d:%s%04x %c %02x %c%c%c>",
             cycles_left_run > 999 ? 999 : cycles_left_run,
+            bankhex,
             (state & bus_config.mask_address) >> (bus_config.shift_address),
             (state & bus_config.mask_rw) ? 'r' : 'w',
             (state & bus_config.mask_data) >> (bus_config.shift_data),
             (state & bus_config.mask_reset) ? ' ' : 'R',
             (state & bus_config.mask_nmi) ? ' ' : 'N',
             (state & bus_config.mask_irq) ? ' ' : 'I' );
+         buffer[sizeof(buffer)-1] = '\0';
          getaline_prompt( buffer );
       }
       gpio_clr_mask( bus_config.mask_clock );

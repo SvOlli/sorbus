@@ -32,6 +32,7 @@ example2:
    jmp   *
 
 example3:
+   lda   #$42
    pha
    pla
    jmp   *

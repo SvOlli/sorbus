@@ -18,8 +18,10 @@ directory that can be used to download these documents.
 * [MOS 6530 RRIOT](http://www.6502.org/documents/datasheets/mos/mos_6530_rriot.pdf)
 * [MOS 6532 RIOT preliminary](http://www.6502.org/documents/datasheets/mos/mos_6532_riot_preliminary_feb_1977.pdf)
 * [MOS 6532 RIOT](http://www.6502.org/documents/datasheets/mos/mos_6532_riot.pdf)
-* [Rockwell R6532 RIOT](https://pdf.datasheetcatalog.com/datasheets/480/501467_DS.pdf)
+* [Rockwell R6532 RIOT](https://z3d9b7u8.stackpathcdn.com/pdf-down/R/6/5/R6532_Rockwell.pdf)
 * [MOS 6530-004 RRIOT TIM](http://retro.hansotten.nl/uploads/6502files/mostim1976.pdf)
+* [Rockwell R6551 ACIA](https://z3d9b7u8.stackpathcdn.com/pdf-down/R/6/5/R6551_Rockwell.pdf)
+* [Rockwell R65C51 ACIA](https://z3d9b7u8.stackpathcdn.com/pdf-down/R/6/5/R65C51_ETC.pdf)
 * [TIM MOS folder](http://retro.hansotten.nl/uploads/6502files/tim%20mos%20folder.pdf)
 
 6502 Based SBCs
