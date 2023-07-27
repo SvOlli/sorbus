@@ -30,11 +30,14 @@ directory that can be used to download these documents.
 * [WDC W65C134SBX](http://www.westerndesigncenter.com/wdc/documentation/W65C134SXB.pdf)
 * [WDC W65C265SBX](http://www.westerndesigncenter.com/wdc/documentation/W65C265SXB.pdf)
 
+Glue Logic
+----------
+* [Atmel ATF22V10](http://www.atmel.com/Images/doc0735.pdf)
+
 Firmware
 --------
 * [W652C265S Monitor ROM](https://www.westerndesigncenter.com/wdc/documentation/265monrom.pdf)
 * [W652C134S Monitor ROM](https://www.westerndesigncenter.com/wdc/documentation/134monrom.pdf)
-
 
 Host Based Hardware
 -------------------

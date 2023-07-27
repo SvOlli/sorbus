@@ -15,25 +15,11 @@ jobs:
 
       - name: 'Build'
         run: |
-          PICO_SDK_FETCH_FROM_GIT=https://github.com/raspberrypi/pico-sdk.git make
+          PICO_SDK_FETCH_FROM_GIT=https://github.com/raspberrypi/pico-sdk.git make SorbusComputerCores.zip
 
-      - name: 'README'
-        uses: actions/upload-artifact@v3
+      - name: 'Release SorbusComputerCores.zip'
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: README.TXT
-          path: doc/README_release.txt
-          retention-days: 5
+          files: SorbusComputerCores.zip
 
-      - name: 'Upload MCP'
-        uses: actions/upload-artifact@v3
-        with:
-          name: sorbus-computer-mcp.uf2
-          path: build/rp2040/mcp.uf2
-          retention-days: 5
-
-      - name: 'Upload Apple 1'
-        uses: actions/upload-artifact@v3
-        with:
-          name: sorbus-computer-apple1.uf2
-          path: build/rp2040/apple1.uf2
-          retention-days: 5
