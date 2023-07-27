@@ -32,14 +32,16 @@ src2h(cpudetect_apple1.h cpudetect_apple1 cpudetect_0280)
 src2h(cpudetect_mcp.h cpudetect_mcp cpudetect_mcp)
 src2h(cpustate.h cpustate cpustate)
 src2h(payload_mcp.h payload_mcp payload_mcp)
+src2h(a1hello.h a1hello a1hello_0800)
+src2h(cpudetect_65.h cpudetect_65 cpudetect_code)
 
-add_executable(blink
-   blink.c
+add_executable(blink_test
+   blink_test.c
    )
-target_link_libraries(blink
+target_link_libraries(blink_test
    pico_stdlib
    )
-setup_target(blink)
+setup_target(blink_test)
 
 add_executable(getaline_test
    getaline_test.c
@@ -69,6 +71,7 @@ setup_target(mcp)
 add_executable(apple1
    krusader.h
    cpudetect_apple1.h
+   a1hello.h
    bus_rp2040_purple.c
    system_apple1.c
    )

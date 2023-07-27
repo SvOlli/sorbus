@@ -19,6 +19,7 @@
 
 #include "bus.h"
 #include "cpudetect_apple1.h"
+#include "a1hello.h"
 #include "krusader.h"
 
 // set this to 1 to run for 5 million cycles while keeping time
@@ -411,6 +412,7 @@ int main()
    // let's preload some code
    memcpy( &memory[0x02F0], &printloop[0], sizeof(printloop) );
    memcpy( &memory[0x0280], &cpudetect_0280[0], sizeof(cpudetect_0280) );
+   memcpy( &memory[0x0800], &a1hello_0800[0], sizeof(a1hello_0800) );
 
    // and we need also setup the ROM
    // it's implemented as part of RAM with write disabled

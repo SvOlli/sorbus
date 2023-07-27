@@ -42,3 +42,14 @@ add_executable(payload_mcp
    )
 src2hex(payload_mcp.hex payload_mcp 0x400)
 
+add_executable(a1hello
+   a1hello.s
+   )
+target_compile_options(a1hello
+   PUBLIC -t none --cpu 65c02
+   )
+target_link_options(a1hello
+   PUBLIC --start-addr 0x800
+   )
+src2hex(a1hello.hex a1hello 0x800)
+
