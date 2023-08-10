@@ -5,6 +5,7 @@
  */
 
 #include "bus.h"
+#include "pico/binary_info.h"
 
 const bus_config_t bus_config = {
    .mask_address  = 0x0000FFFF,  // input:  16 contiguous bits
@@ -20,6 +21,15 @@ const bus_config_t bus_config = {
    .shift_data    = 16,
    .shift_address = 0
 };
+
+bi_decl(bi_pin_mask_with_name(bus_config.mask_address, "A0-A15"));
+bi_decl(bi_pin_mask_with_name(bus_config.mask_data,    "D0-D7"));
+bi_decl(bi_pin_mask_with_name(bus_config.mask_rw,      "R/!W"));
+bi_decl(bi_pin_mask_with_name(bus_config.mask_clock,   "CLK"));
+bi_decl(bi_pin_mask_with_name(bus_config.mask_rdy,     "RDY"));
+bi_decl(bi_pin_mask_with_name(bus_config.mask_irq,     "!IRQ"));
+bi_decl(bi_pin_mask_with_name(bus_config.mask_nmi,     "!NMI"));
+bi_decl(bi_pin_mask_with_name(bus_config.mask_reset,   "!RESET"));
 
 
 void bus_init()

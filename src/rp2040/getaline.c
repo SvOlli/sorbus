@@ -6,7 +6,6 @@
  * vt100 code take from https://github.com/ariadnavigo/sline
  */
 
-#include <pico.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
 #include <pico/multicore.h>

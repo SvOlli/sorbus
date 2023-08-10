@@ -11,6 +11,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "rp2040_purple.h"
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
 #include <pico/multicore.h>
