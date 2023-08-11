@@ -1,4 +1,10 @@
-/*
+/**
+ * Copyright (c) 2023 SvOlli
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * roughly based upon pico.h:
+ *
  * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -12,7 +18,7 @@
 #ifndef _BOARDS_RP2040_PURPLE_H
 #define _BOARDS_RP2040_PURPLE_H
 
-// For board detection
+// For board detection, sadly no closer match
 #define RASPBERRYPI_PICO
 
 // --- UART ---
@@ -30,7 +36,6 @@
 #ifndef PICO_DEFAULT_LED_PIN
 #define PICO_DEFAULT_LED_PIN 25
 #endif
-// no PICO_DEFAULT_WS2812_PIN
 
 // --- I2C ---
 #ifndef PICO_DEFAULT_I2C
@@ -68,10 +73,12 @@
 #define PICO_FLASH_SPI_CLKDIV 2
 #endif
 
+// also verified by scanning through flash area
 #ifndef PICO_FLASH_SIZE_BYTES
 #define PICO_FLASH_SIZE_BYTES (16 * 1024 * 1024)
 #endif
 
+// boards seen so far use B2, so ruling tou B0 should be safe
 #ifndef PICO_RP2040_B0_SUPPORTED
 #define PICO_RP2040_B0_SUPPORTED 0
 #endif

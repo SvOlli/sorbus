@@ -1,3 +1,12 @@
+/**
+ * Copyright (c) 2023 SvOlli
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/*
+ * unfinished so far, idea how to dump CPU internal state
+ */
 
 #include "reg_dump.h"
 #include "bus.h"

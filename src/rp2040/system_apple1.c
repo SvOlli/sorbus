@@ -17,6 +17,11 @@
 #include <pico/util/queue.h>
 #include <pico/multicore.h>
 #include <pico/platform.h>
+#include <pico/binary_info.h>
+
+bi_decl(bi_program_name("Sorbus Computer Apple 1 Core"))
+bi_decl(bi_program_description("make the Sorbus Computer an Apple 1 clone"))
+bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
 #include "bus.h"
 #include "cpudetect_apple1.h"

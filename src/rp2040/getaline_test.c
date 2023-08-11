@@ -30,7 +30,7 @@ void run_backend()
 
 void run_console()
 {
-   char *bla;
+   const char *bla;
    for(;;)
    {
       bla = getaline();
@@ -41,8 +41,6 @@ void run_console()
 
 int main()
 {
-   int c;
-
    stdio_init_all();
    uart_set_translate_crlf(uart0, true);
 

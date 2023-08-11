@@ -61,6 +61,7 @@ add_executable(mcp
    payload_mcp.h
    system_mcp.c
    getaline.c
+   fake_eeprom.c
    )
 target_link_libraries(mcp
    pico_stdlib

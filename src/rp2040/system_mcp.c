@@ -16,11 +16,17 @@
 #include <pico/util/queue.h>
 #include <pico/multicore.h>
 #include <pico/platform.h>
+#include <pico/binary_info.h>
+
+bi_decl(bi_program_name("Sorbus Computer Monitor Command Prompt"))
+bi_decl(bi_program_description("make the Sorbus Computer a tool for learning about the 65C02/65816/6502 CPU"))
+bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
 #include "bus.h"
 #include "cpu_detect.h"
 #include "payload_mcp.h"
 #include "getaline.h"
+#include "fake_eeprom.h"
 
 #define MEM_ACCESS 0
 #define SHOW_CLOCK 0
@@ -31,7 +37,9 @@
 
 #define STEP_DELAY 1
 
-uint8_t  memory[0x20000]; // 128k of RAM/ROM
+/* 128k of memory for 65816: 64k bank 0 + 64k for bank > 1, mirrored */
+/* 65(C)02 does not have bank address, can only access bank 0 */
+uint8_t  memory[0x20000];
 #define  ADDR_DIGITS (4)
 uint32_t bank_selected;
 bool     bank_enabled;
@@ -40,7 +48,6 @@ uint32_t cycles_left_reset = 6;
 uint32_t cycles_left_nmi   = 0;
 uint32_t cycles_left_irq   = 0;
 uint32_t cycles_left_run   = 1;
-bool                 stop  = true;
 uint32_t add_us            = 100000;
 
 uint32_t state;
@@ -250,9 +257,19 @@ void cmd_irq( const char *input )
 }
 
 
-void cmd_cpu( const char *input )
+void cmd_sys( const char *input )
 {
-   printf("CPU: %s\n", cputype_name(cputype) );
+   char cputype_text[16] = { 0 };
+   if( cputype == CPU_UNDEF )
+   {
+      snprintf( cputype_text, sizeof(cputype_text)-1, "unknown (%02x)", cpu_detect_raw() );
+   }
+   else
+   {
+      strncpy( &cputype_text[0], cputype_name(cputype), sizeof(cputype_text)-1 );
+   }
+   printf("CPU instruction set: %s\n", &cputype_text[0] );
+   printf("RP2040 flash size:   %dMB\n", flash_size_detect() / (1 << 20) );
 }
 
 
@@ -366,12 +383,12 @@ void cmd_steps( const char *input )
    get_dec( input, &cycles_left_run );
    if( (cycles_left_run < 1) || (cycles_left_run > 100000) )
    {
-      cycles_left_run = 1;
+      cycles_left_run = 0;
    }
 }
 
 
-void cmd_reboot( const char *input )
+void cmd_cold( const char *input )
 {
    if( strlen( input ) )
    {
@@ -410,9 +427,10 @@ void cmd_help( const char *input );
 
 cmd_t cmds[] = {
    { cmd_help,   4, "help",   "display help" },
+   { cmd_cold,   4, "cold",   "fully reinitialize system" },
+   { cmd_sys,    3, "sys",    "show system information (CPU, flash)" },
    { cmd_clock,  4, "freq",   "set frequency (dec)" },
    { cmd_bank,   4, "bank",   "enable (on)/disable (off) 65816 banks, select bank(dec)" },
-   { cmd_cpu,    3, "cpu",    "show cpu type" },
    { cmd_reset,  5, "reset",  "trigger reset (dec)" },
    { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
    { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
@@ -420,7 +438,6 @@ cmd_t cmds[] = {
    { cmd_fill,   1, "f",      "fill memory <from> <to> <value> (hex)" },
    { cmd_mem,    1, "m",      "dump memory (<from> (<to>))" },
    { cmd_steps,  1, "s",      "run number of steps (dec)" },
-   { cmd_reboot, 1, "reboot", "fully reinitialize system" },
    { 0, 0, 0, 0 }
 };
 
@@ -431,7 +448,7 @@ void cmd_help( const char *input )
    char *indent = "      ";
    for( i = 0; cmds[i].handler; ++i )
    {
-      printf( "%s: %s%s\n",
+      printf( "%s:%s%s\n",
               cmds[i].text,
               indent+cmds[i].textlen - 1,
               cmds[i].help );

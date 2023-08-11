@@ -5,7 +5,7 @@
  */
 
 #include "bus.h"
-#include "pico/binary_info.h"
+#include <pico/binary_info.h>
 
 const bus_config_t bus_config = {
    .mask_address  = 0x0000FFFF,  // input:  16 contiguous bits
