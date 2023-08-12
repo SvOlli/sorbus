@@ -17,8 +17,8 @@ static const uint8_t *flash_target_base = (const uint8_t *)XIP_BASE;
 uint32_t flash_size_detect()
 {
    uint32_t size;
-   /* sizes:    1MB               64MB */
-   for( size = (1 << 20); size < (1 << 27); size <<= 1 )
+   /* sizes:    1MB               16MB */
+   for( size = (1 << 20); size < (1 << 25); size <<= 1 )
    {
       if( !memcmp( flash_target_base, flash_target_base + size, FLASH_PAGE_SIZE ) )
       {

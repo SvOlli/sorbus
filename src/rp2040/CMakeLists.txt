@@ -37,6 +37,7 @@ src2h(cpudetect_65.h cpudetect_65 cpudetect_code)
 
 add_executable(blink_test
    blink_test.c
+   fake_eeprom.c
    )
 target_link_libraries(blink_test
    pico_stdlib
