@@ -44,6 +44,7 @@ Firmware
 Host Based Hardware
 -------------------
 * [Raspberry Pi RP2040 MCU](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)
+* [Hardware design with RP2040](https://datasheets.raspberrypi.com/rp2040/hardware-design-with-rp2040.pdf)
 
 Documentation Of Old Hardware
 -----------------------------

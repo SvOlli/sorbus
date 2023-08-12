@@ -380,10 +380,13 @@ void cmd_fill( const char *input )
 
 void cmd_steps( const char *input )
 {
+   uint32_t c = cycles_left_run;
    get_dec( input, &cycles_left_run );
    if( (cycles_left_run < 1) || (cycles_left_run > 100000) )
    {
-      cycles_left_run = 0;
+      // if there were any steps left, stop by setting to 0,
+      // else go a single step
+      cycles_left_run = c ? 0 : 1;
    }
 }
 
