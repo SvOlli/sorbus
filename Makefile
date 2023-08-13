@@ -17,7 +17,7 @@ PICO_SDK_URL ?= https://github.com/raspberrypi/pico-sdk.git
 .PHONY: all clean distclean release setup-apt
 
 all: $(PICO_SDK_PATH)/README.md
-	cmake -S $(CURDIR)/src -B $(CURDIR)/build
+	cmake -S $(CURDIR)/src -B $(CURDIR)/build $(PICO_SDK_PATH_CMAKE)
 	make -C $(CURDIR)/build
 
 clean:

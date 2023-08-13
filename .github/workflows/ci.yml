@@ -18,7 +18,7 @@ jobs:
 
       - name: 'Build'
         run: |
-          PICO_SDK_FETCH_FROM_GIT=https://github.com/raspberrypi/pico-sdk.git make SorbusComputerCores.zip
+          make release
 
       - name: 'Release SorbusComputerCores.zip'
         uses: softprops/action-gh-release@v1

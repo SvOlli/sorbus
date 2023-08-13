@@ -1,12 +1,12 @@
 %TF.GenerationSoftware,KiCad,Pcbnew,7.0.5*%
-%TF.CreationDate,2023-06-09T17:19:17+02:00*%
+%TF.CreationDate,2023-08-13T15:57:13+02:00*%
 %TF.ProjectId,Sorbus-65C02,536f7262-7573-42d3-9635-4330322e6b69,rev?*%
 %TF.SameCoordinates,Original*%
 %TF.FileFunction,Soldermask,Top*%
 %TF.FilePolarity,Negative*%
 %FSLAX46Y46*%
 G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
-G04 Created by KiCad (PCBNEW 7.0.5) date 2023-06-09 17:19:17*
+G04 Created by KiCad (PCBNEW 7.0.5) date 2023-08-13 15:57:13*
 %MOMM*%
 %LPD*%
 G01*
@@ -98,6 +98,10 @@ D11*
 X106680000Y-46990000D03*
 %TD*%
 D10*
+%TO.C,C1*%
+X33060000Y-73660000D03*
+X38060000Y-73660000D03*
+%TD*%
 %TO.C,R3*%
 X27940000Y-69850000D03*
 D11*
