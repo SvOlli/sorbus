@@ -35,15 +35,6 @@ src2h(payload_mcp.h payload_mcp payload_mcp)
 src2h(a1hello.h a1hello a1hello_0800)
 src2h(cpudetect_65.h cpudetect_65 cpudetect_code)
 
-add_executable(blink_test
-   blink_test.c
-   fake_eeprom.c
-   )
-target_link_libraries(blink_test
-   pico_stdlib
-   )
-setup_target(blink_test)
-
 add_executable(getaline_test
    getaline_test.c
    getaline.c

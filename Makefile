@@ -1,14 +1,12 @@
 
-# TODO: only clone Pico SDK when not set globally
-
 $(info This Makefile is not required and for convenience only)
 ifeq ($(PICO_SDK_PATH),)
 PICO_SDK_PATH=$(shell readlink -f ../pico-sdk)
-PICO_SDK_PATH_CMAKE ?= -DPICO_SDK_PATH=$(PICO_SDK_PATH)
 $(info Using local pico sdk at: $(PICO_SDK_PATH))
 else
 $(info Using global pico sdk at: $(PICO_SDK_PATH))
 endif
+PICO_SDK_PATH_CMAKE ?= -DPICO_SDK_PATH=$(PICO_SDK_PATH)
 
 RELEASE_ARCHIVE := SorbusComputerCores.zip
 

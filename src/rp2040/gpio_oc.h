@@ -25,7 +25,7 @@ void gpio_oc_init_by_mask( uint32_t mask );
 
 static inline void gpio_oc_set( uint pin, bool value )
 {
-   uint32_t mask = 1ul << gpio;
+   uint32_t mask = 1ul << pin;
    if( value )
    {
       /* set high by setting to input */ 
