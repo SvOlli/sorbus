@@ -58,6 +58,7 @@ add_executable(mcp
 target_link_libraries(mcp
    pico_stdlib
    pico_multicore
+   littlefs-lib
    )
 setup_target(mcp)
 

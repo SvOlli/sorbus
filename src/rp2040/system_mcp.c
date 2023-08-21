@@ -27,6 +27,7 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 #include "payload_mcp.h"
 #include "getaline.h"
 #include "fake_eeprom.h"
+#include "../littlefs-lib/pico_hal.h"
 
 #define MEM_ACCESS 0
 #define SHOW_CLOCK 0
@@ -424,17 +425,62 @@ void cmd_bank( const char *input )
 }
 
 
+void cmd_format( const char *input )
+{
+
+   printf ("\n If you dont have %d bytes flashsize, please stop now !\n",PICO_FLASH_SIZE_BYTES);
+   printf (" Else call it with 'format yes' \n");
+   if (strncmp (input,"yes",3)){
+     return;
+   }
+   int err=pico_mount(true);
+   if (err != LFS_ERR_OK) {
+        printf("Error formating FS : %s\n",pico_errmsg(err));
+        return;
+   }
+   // Show file system sizes
+   struct pico_fsstat_t stat;
+   pico_fsstat(&stat);
+   printf("FS: blocks %d, block size %d, used %d\n", (int)stat.block_count, (int)stat.block_size,
+           (int)stat.blocks_used);
+
+}
+
+void dump_dir(void) {
+#if 1   
+	// display each directory entry name
+	printf("File list\n");
+    int dir = pico_dir_open("/");
+    if (dir < 0)
+        return;
+    struct lfs_info info;
+    while (pico_dir_read(dir, &info) > 0)
+        printf("%s\n", info.name);
+    pico_dir_close(dir);
+	printf("End of list\n");
+#endif   
+}
+
+void cmd_dir( const char *input )
+{
+
+  dump_dir();
+
+}
+
 // forward declaration for array
 void cmd_help( const char *input );
 
 
 cmd_t cmds[] = {
-   { cmd_help,   4, "help",   "display help" },
+   { cmd_help,   4, "help",   "display this help" },
    { cmd_cold,   4, "cold",   "fully reinitialize system" },
    { cmd_sys,    3, "sys",    "show system information (CPU, flash)" },
    { cmd_clock,  4, "freq",   "set frequency (dec)" },
    { cmd_bank,   4, "bank",   "enable (on)/disable (off) 65816 banks, select bank(dec)" },
    { cmd_reset,  5, "reset",  "trigger reset (dec)" },
+   { cmd_format, 6, "format", "format filesystem" },   // This have to be above the "fill" command
+   { cmd_dir,    3, "dir",    "show current directory of filesystem" },
    { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
    { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
    { cmd_colon,  1, ":",      "write to memory <address> <value> .. (hex)" },
@@ -448,7 +494,7 @@ cmd_t cmds[] = {
 void cmd_help( const char *input )
 {
    int i;
-   char *indent = "      ";
+   char *indent = "       ";
    for( i = 0; cmds[i].handler; ++i )
    {
       printf( "%s:%s%s\n",
@@ -612,6 +658,10 @@ int main()
 {
    stdio_init_all();
    uart_set_translate_crlf(uart0, true);
+
+   if (pico_mount(false) != LFS_ERR_OK) {
+        printf("Error mounting FS\n");
+   }
 
    memset( &memory[0], 0xEA, 0x10000 );
    memcpy( &memory[0x300], &memcheck[0], sizeof(memcheck) );
