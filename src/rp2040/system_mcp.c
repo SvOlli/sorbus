@@ -428,10 +428,10 @@ void cmd_bank( const char *input )
 void cmd_format( const char *input )
 {
 
-   printf ("\n If you dont have %d bytes flashsize, please stop now !\n",PICO_FLASH_SIZE_BYTES);
-   printf (" Else call it with 'format yes' \n");
    if (strncmp (input,"yes",3)){
-     return;
+      printf ("\n If you dont have %d bytes flashsize, please stop now !\n",PICO_FLASH_SIZE_BYTES);
+      printf (" Else call it with 'format yes' \n");   
+      return;
    }
    int err=pico_mount(true);
    if (err != LFS_ERR_OK) {
