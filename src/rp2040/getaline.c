@@ -197,7 +197,7 @@ const char *getaline()
    /* only move history when required */
    if( input[0][0] && strncmp( &input[0][0], &input[1][0], INPUT_SIZE ) )
    {
-      for( int i = HISTORY_SIZE; i > 0; --i )
+      for( int i = HISTORY_SIZE-1; i > 0; --i )
       {
          memcpy( &input[i][0], &input[i-1][0], INPUT_SIZE );
       }
