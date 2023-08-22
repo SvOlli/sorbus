@@ -59,6 +59,7 @@ target_link_libraries(mcp
    pico_stdlib
    pico_multicore
    littlefs-lib
+   xmodem-lib
    )
 setup_target(mcp)
 

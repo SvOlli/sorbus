@@ -21,6 +21,8 @@ add_subdirectory(65c02)
 # the rp2040 code for the chipsets
 add_subdirectory(rp2040)
 
-# the rp2040 code for the chipsets
+# add library for FlashFileSystem
 add_subdirectory(littlefs-lib)
 
+# add library for xmodem protocol
+add_subdirectory(xmodem)

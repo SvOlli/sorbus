@@ -28,6 +28,8 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 #include "getaline.h"
 #include "fake_eeprom.h"
 #include "../littlefs-lib/pico_hal.h"
+#include "../xmodem/xmodem.h"
+
 
 #define MEM_ACCESS 0
 #define SHOW_CLOCK 0
@@ -424,6 +426,14 @@ void cmd_bank( const char *input )
    }
 }
 
+bool check_filename_argument(const char * input){
+
+   if (!*input){
+       printf (" Please give filename as argument \n");   
+       return false;
+   }
+   return true;
+}
 
 void cmd_format( const char *input )
 {
@@ -433,7 +443,10 @@ void cmd_format( const char *input )
       printf (" Else call it with 'format yes' \n");   
       return;
    }
+   multicore_lockout_start_blocking() ; // Stop second core 
    int err=pico_mount(true);
+   multicore_lockout_end_blocking();  // revive second core
+
    if (err != LFS_ERR_OK) {
         printf("Error formating FS : %s\n",pico_errmsg(err));
         return;
@@ -446,8 +459,76 @@ void cmd_format( const char *input )
 
 }
 
+void cmd_receive ( const char *input ) {
+
+ unsigned char file_buffer[0x10000];
+
+   if (!check_filename_argument(input)){
+       return;
+   }
+
+   printf (" Start X-Modem transfer of your file now. \n");    
+   printf (" I'm waitng for 5 seconds\n");   
+   
+   int rec_len = xmodemReceive(file_buffer,sizeof(file_buffer));
+   printf ("\n File received with %d bytes\n",rec_len);   
+   printf (" Writing File %s\n",input);   
+
+   multicore_lockout_start_blocking() ; // Stop second core 
+   int file = pico_open(input, LFS_O_WRONLY | LFS_O_CREAT);
+   if (file < 0) {
+      printf("Error writing file : %s\n",pico_errmsg(file));
+      goto end;
+   }
+   lfs_size_t len = pico_write(file, file_buffer, rec_len );
+   if (rec_len != (int)len) {
+      printf("write fails returned %d\n",  (int)len);
+      goto end;
+   }   
+   printf ("\n File written with %d bytes\n",(int) len);   
+   pico_close(file);
+
+end:   
+   multicore_lockout_end_blocking();  // revive second core
+
+   return;
+}
+
+void cmd_load( const char *input )
+{
+   unsigned char load_adress[2];
+
+   if (!check_filename_argument(input)){
+       return;
+   }
+
+
+   int file = pico_open(input, LFS_O_RDONLY );
+   if (file < 0) {
+      printf("Error opening file : %s\n",pico_errmsg(file));
+      return;
+   }
+   pico_read(file, &load_adress, sizeof(load_adress));
+   unsigned int l_addr=load_adress[0]+0x100*load_adress[1];
+   lfs_soff_t l_size;
+   l_size= pico_size(file) -2;
+   if (l_addr + (int)l_size >0x10000){
+      printf("file will go beyond end of memory  : from  %04X to %04X \n",l_addr, l_addr + (int)l_size);
+      return ; // or better simply truncate here ?
+   } 
+   lfs_soff_t n_bytes = pico_read (file,&memory[l_addr],l_size);
+   pico_close (file);
+   if (n_bytes != l_size){
+      printf("Error reading file : %s\n",pico_errmsg(file));
+      return;
+   }
+   printf ("Load file %s from %04X to %04X\n",input,l_addr,l_addr+n_bytes);
+
+}
+
+
 void dump_dir(void) {
-#if 1   
+
 	// display each directory entry name
 	printf("File list\n");
     int dir = pico_dir_open("/");
@@ -455,19 +536,39 @@ void dump_dir(void) {
         return;
     struct lfs_info info;
     while (pico_dir_read(dir, &info) > 0)
-        printf("%s\n", info.name);
+        printf("%s  \t\t%d \t%s\n", info.name, info.size,(info.type==LFS_TYPE_DIR?"D":" "));
     pico_dir_close(dir);
 	printf("End of list\n");
-#endif   
+
 }
 
 void cmd_dir( const char *input )
 {
-
+  
   dump_dir();
 
 }
 
+
+
+void cmd_mkdir( const char *input )
+{
+
+   if (!check_filename_argument(input)){
+       return;
+   }
+
+   multicore_lockout_start_blocking() ; // Stop second core 
+   int dir = pico_mkdir(input);
+   multicore_lockout_end_blocking();  // revive second core
+
+   if (dir < 0) {
+      printf("Error creating directory : %s\n",pico_errmsg(dir));
+   }else{
+      printf("created directory : %s\n",input);
+   }
+
+}
 // forward declaration for array
 void cmd_help( const char *input );
 
@@ -480,16 +581,29 @@ cmd_t cmds[] = {
    { cmd_bank,   4, "bank",   "enable (on)/disable (off) 65816 banks, select bank(dec)" },
    { cmd_reset,  5, "reset",  "trigger reset (dec)" },
    { cmd_format, 6, "format", "format filesystem" },   // This have to be above the "fill" command
+   { cmd_receive, 6, "upload", "upload <FILE> to filesystem" },  
+   { cmd_load,   4, "load",    "load <FILE> from filesystem to memory" },  
    { cmd_dir,    3, "dir",    "show current directory of filesystem" },
+   { cmd_mkdir,  5, "mkdir",  "creates directory in filesystem" },
    { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
    { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
    { cmd_colon,  1, ":",      "write to memory <address> <value> .. (hex)" },
    { cmd_fill,   1, "f",      "fill memory <from> <to> <value> (hex)" },
    { cmd_mem,    1, "m",      "dump memory (<from> (<to>))" },
-   { cmd_steps,  1, "s",      "run number of steps (dec)" },
+   { cmd_steps,  4, "step",   "(or 's') run number of steps (dec)" },          // I always want to type in "step" as a word, not just "s"
+   { cmd_steps,  1, "s",      NULL },
    { 0, 0, 0, 0 }
 };
 
+void print_welcome(void){
+  
+  printf("\n\n\n");
+  printf("Welcome to Sorbus MCP System\n");
+  printf("----------------------------\n\n");
+  printf("Compiled on %s %s\n",__DATE__,__TIME__);
+  printf("in doubt type 'help' \n");
+
+}
 
 void cmd_help( const char *input )
 {
@@ -497,16 +611,22 @@ void cmd_help( const char *input )
    char *indent = "       ";
    for( i = 0; cmds[i].handler; ++i )
    {
-      printf( "%s:%s%s\n",
-              cmds[i].text,
-              indent+cmds[i].textlen - 1,
-              cmds[i].help );
+      if (cmds[i].help){  
+         printf( "%s:%s%s\n",
+                 cmds[i].text,
+                 indent+cmds[i].textlen - 1,
+                 cmds[i].help );
+      }
    }
 }
 
 
 void run_bus()
 {
+
+   /* When writing the flash, we have to stop the second core. Otherwise Timer-IRQ will kill us */
+   multicore_lockout_victim_init();
+
    uint8_t bank;
    for(;;)
    {
@@ -635,20 +755,12 @@ void run_console()
             break;
          }
       }
-      if( !strncmp( input, "step", 4 ) )
+      // also allow for Apple-like memory input
+      // "1234: 56" instead of ":1234 56"
+      char *token = strchr( input, ':' );
+      if( token )
       {
-         // I always want to type in "step" as a word, not just "s"
-         cmd_steps( skip_space( input+4 ) );
-      }
-      else
-      {
-         // also allow for Apple-like memory input
-         // "1234: 56" instead of ":1234 56"
-         char *token = strchr( input, ':' );
-         if( token )
-         {
-            cmd_colon( skip_space( input ) );
-         }
+         cmd_colon( skip_space( input ) );
       }
    }
 }
@@ -669,8 +781,11 @@ int main()
 
    bus_init();
    getaline_init();
+   
    cputype = cpu_detect();
 
+   sleep_ms (5000);   // settle terminal
+   print_welcome();
    multicore_launch_core1( run_bus );
    run_console();
 

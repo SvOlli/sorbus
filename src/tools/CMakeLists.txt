@@ -3,6 +3,7 @@ project(sorbus_tools)
 
 include(host-toolchain.cmake)
 
+
 add_executable(bin2h
    bin2h.c
    )
