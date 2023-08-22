@@ -55,8 +55,6 @@ volatile uint32_t cycles_left_irq   = 0;
 void run_console()
 {
    int in = PICO_ERROR_TIMEOUT, out;
-   int col = 0;
-   uint64_t next_write = time_us_64();
 
    for(;;)
    {
@@ -124,7 +122,8 @@ static inline void handle_io()
          write_data_bus( queue_get_level( &queue_uart_read )  );
          break;
       case 0x02: /* console UART write */
-         queue_try_add( &queue_uart_write, state >> bus_config.shift_data );
+         data = state >> bus_config.shift_data;
+         queue_try_add( &queue_uart_write, &data );
          break;
       case 0x03: /* console UART write queue */
          write_data_bus( queue_get_level( &queue_uart_write )  );
