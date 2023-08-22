@@ -18,6 +18,8 @@
 #include <pico/platform.h>
 #include <pico/binary_info.h>
 
+#include <hardware/clocks.h>
+
 bi_decl(bi_program_name("Sorbus Computer Monitor Command Prompt"))
 bi_decl(bi_program_description("make the Sorbus Computer a tool for learning about the 65C02/65816/6502 CPU"))
 bi_decl(bi_program_url("https://xayax.net/sorbus/"))
@@ -260,6 +262,15 @@ void cmd_irq( const char *input )
 void cmd_sys( const char *input )
 {
    char cputype_text[16] = { 0 };
+   uint f_pll_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_SYS_CLKSRC_PRIMARY);
+   uint f_pll_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_USB_CLKSRC_PRIMARY);
+   uint f_rosc     = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_ROSC_CLKSRC);
+   uint f_clk_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_SYS);
+   uint f_clk_peri = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_PERI);
+   uint f_clk_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_USB);
+   uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
+   uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
+
    if( cputype == CPU_UNDEF )
    {
       snprintf( cputype_text, sizeof(cputype_text)-1, "unknown (%02x)", cpu_detect_raw() );
@@ -270,6 +281,15 @@ void cmd_sys( const char *input )
    }
    printf("CPU instruction set: %s\n", &cputype_text[0] );
    printf("RP2040 flash size:   %dMB\n", flash_size_detect() / (1 << 20) );
+
+   printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
+   printf("PLL_USB:             %3d.%03dMhz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
+   printf("ROSC:                %3d.%03dMhz\n", f_rosc    / 1000, f_rosc % 1000 );
+   printf("CLK_SYS:             %3d.%03dMhz\n", f_clk_sys / 1000, f_clk_sys % 1000 );
+   printf("CLK_PERI:            %3d.%03dMhz\n", f_clk_peri / 1000, f_clk_peri % 1000 );
+   printf("CLK_USB:             %3d.%03dMhz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
+   printf("CLK_ADC:             %3d.%03dMhz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
+   printf("CLK_RTC:             %3d.%03dMhz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
 }
 
 

@@ -34,6 +34,7 @@ src2h(cpustate.h cpustate cpustate)
 src2h(payload_mcp.h payload_mcp payload_mcp)
 src2h(a1hello.h a1hello a1hello_0800)
 src2h(cpudetect_65.h cpudetect_65 cpudetect_code)
+src2h(native_rom.h native_rom native_rom)
 
 add_executable(getaline_test
    getaline_test.c
@@ -73,3 +74,15 @@ target_link_libraries(apple1
    pico_multicore
    )
 setup_target(apple1)
+
+add_executable(native_test
+   native_rom.h
+   bus_rp2040_purple.c
+   system_native.c
+   gpio_oc.c
+   )
+target_link_libraries(native_test
+   pico_stdlib
+   pico_multicore
+   )
+setup_target(native_test)
