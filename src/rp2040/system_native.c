@@ -30,13 +30,8 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
 // set this to 1 to run for 5 million cycles while keeping time
 #define SPEED_TEST 0
-// the delay between characters printed, the Apple 1 can only add
-// a single characters per frame displayed at 60Hz
-#define WRITE_DELAY_US 16666
 // this is where the write protected area starts
 #define ROM_START (0xE000)
-
-uint32_t write_delay_us = WRITE_DELAY_US;
 
 queue_t queue_uart_read;
 queue_t queue_uart_write;
@@ -47,9 +42,44 @@ uint32_t address;
 
 volatile bool enable_print = false;
 
-volatile uint32_t cycles_left_reset = 5;
-volatile uint32_t cycles_left_nmi   = 0;
-volatile uint32_t cycles_left_irq   = 0;
+volatile uint32_t cycles_left_reset       = 8;
+volatile uint32_t nmi_timer_cycles_left   = 0;
+volatile uint32_t irq_timer_cycles_left   = 0;
+
+// no need to volatile these, as they are only used within run_bus loop
+uint32_t nmi_timer_restart_value = 0;
+uint32_t irq_timer_restart_value = 0;
+
+
+void set_bank( uint8_t bank )
+{
+   // as of now only one bank exists
+   memcpy( &memory[ROM_START], &native_rom[0], sizeof(native_rom) );
+}
+
+
+void system_reboot()
+{
+   cycles_left_reset       = 8;
+}
+
+void system_reset()
+{
+   int dummy;
+   nmi_timer_cycles_left   = 0;
+   nmi_timer_restart_value = 0;
+   irq_timer_cycles_left   = 0;
+   irq_timer_restart_value = 0;
+   set_bank( 0 );
+   while( queue_try_remove( &queue_uart_read, &dummy ) )
+   {
+      // just loop until queue is empty
+   }
+   while( queue_try_remove( &queue_uart_write, &dummy ) )
+   {
+      // just loop until queue is empty
+   }
+}
 
 
 void run_console()
@@ -64,6 +94,10 @@ void run_console()
       }
       if( in != PICO_ERROR_TIMEOUT )
       {
+         if( queue_try_add( &queue_uart_read, &in ) )
+         {
+            // need to handle overflow?
+         }
       }
 
       if( queue_try_remove( &queue_uart_write, &out ) )
@@ -108,36 +142,97 @@ static inline void handle_ram()
 }
 
 
+static inline void setup_timer( uint8_t value, uint8_t config )
+{
+   // config bits (decoded from address)
+   //           0        1
+   // bit 0: lowbyte  highbyte
+   // bit 1: repeat   oneshot
+   // bit 2: irq      nmi
+
+   // check timer to use
+   if( config & (1<<2) )
+   {
+      // nmi
+      if( config & (1<<0) )
+      {
+         // highbyte: stop timer and store
+         nmi_timer_cycles_left   = 0;
+         nmi_timer_restart_value = value << 8;
+      }
+      else
+      {
+         // lowbyte
+         nmi_timer_restart_value |= value;
+         nmi_timer_cycles_left   = nmi_timer_restart_value + 8; // duration of interrupt signal
+         if( config & (1<<1) )
+         {
+            // oneshot
+            nmi_timer_restart_value = 0;
+         }
+      }
+   }
+   else
+   {
+      // irq
+      if( config & (1<<0) )
+      {
+         // highbyte: stop timer and store
+         irq_timer_cycles_left   = 0;
+         irq_timer_restart_value = value << 8;
+      }
+      else
+      {
+         // lowbyte
+         irq_timer_restart_value |= value;
+         irq_timer_cycles_left   = irq_timer_restart_value + 8; // duration of interrupt signal
+         if( config & (1<<1) )
+         {
+            // oneshot
+            irq_timer_restart_value = 0;
+         }
+      }
+   }
+}
+
+
 static inline void handle_io()
 {
-   uint8_t data;
+   // TODO: split this up in reads and writes
+   uint8_t data = state >> bus_config.shift_data;
    bool success;
    switch( address & 0xFF )
    {
-      case 0x00: /* console UART read */
+      case 0x00:
+      case 0x01:
+      case 0x02:
+      case 0x03:
+      case 0x04:
+      case 0x05:
+      case 0x06:
+      case 0x07:
+         setup_timer( data, address & 0x07 );
+      case 0xFA: /* console UART read */
          success = queue_try_remove( &queue_uart_read, &data );
          write_data_bus( success ? data : 0x00 );
          break;
-      case 0x01: /* console UART read queue */
+      case 0xFB: /* console UART read queue */
          write_data_bus( queue_get_level( &queue_uart_read )  );
          break;
-      case 0x02: /* console UART write */
-         data = state >> bus_config.shift_data;
+      case 0xFC: /* console UART write */
          queue_try_add( &queue_uart_write, &data );
          break;
-      case 0x03: /* console UART write queue */
+      case 0xFD: /* console UART write queue */
          write_data_bus( queue_get_level( &queue_uart_write )  );
          break;
 #if 0
-      /* maybe use $80-$F9 as mirror from ROM for bankswitching routines? */
-      case 0xFE: /* set bankswitch register for $E000-$EFFF */
-         rom_bank_e = read_data_bus();
-         break;
       case 0xFF: /* set bankswitch register for $F000-$FFFF */
          rom_bank_f = read_data_bus();
          break;
 #endif
       default:
+         /* everything else is handled like RAM by design */
+         handle_ram();
          break;
    }
 }
@@ -158,39 +253,47 @@ void run_bus()
    for(;;)
 #endif
    {
+      if( gpio_get_all() & bus_config.mask_reset )
+      {
+         system_reset();
+      }
+
       if( cycles_left_reset )
       {
-         int dummy;
          --cycles_left_reset;
          gpio_clr_mask( bus_config.mask_reset );
-         while( queue_try_remove( &queue_uart_read, &dummy ) )
-         {
-            // just loop until queue is empty
-         }
-         while( queue_try_remove( &queue_uart_write, &dummy ) )
-         {
-            // just loop until queue is empty
-         }
       }
       else
       {
          gpio_set_mask( bus_config.mask_reset );
       }
 
-      if( cycles_left_nmi )
+      if( nmi_timer_cycles_left )
       {
-         --cycles_left_nmi;
-         gpio_clr_mask( bus_config.mask_nmi );
+         if( --nmi_timer_cycles_left < 8 )
+         {
+            gpio_clr_mask( bus_config.mask_nmi );
+         }
+         if( !nmi_timer_cycles_left )
+         {
+            nmi_timer_cycles_left = nmi_timer_restart_value;
+         }
       }
       else
       {
          gpio_set_mask( bus_config.mask_nmi );
       }
 
-      if( cycles_left_irq )
+      if( irq_timer_cycles_left )
       {
-         --cycles_left_irq;
-         gpio_clr_mask( bus_config.mask_irq );
+         if( --irq_timer_cycles_left < 8 )
+         {
+            gpio_clr_mask( bus_config.mask_irq );
+         }
+         if( !irq_timer_cycles_left )
+         {
+            irq_timer_cycles_left = irq_timer_restart_value;
+         }
       }
       else
       {
@@ -208,6 +311,8 @@ void run_bus()
       {
          // read from memory and write to bus
          gpio_set_dir_out_masked( bus_config.mask_data );
+         // note to future self: check if there's a better way for
+         // external i/o then to set the GPIOs to write for a brief time
       }
       else
       {
@@ -223,9 +328,10 @@ void run_bus()
          /* internal i/o */
          handle_io();
       }
-      if( (address == 0x0000) || ((address & 0xF000) == 0xD000) )
+      if( (address <= 0x0003) || ((address & 0xF000) == 0xD000) )
       {
-         /* external i/o: do nothing */
+         /* external i/o: keep hands off the bus */
+         gpio_set_dir_in_masked( bus_config.mask_data );
       }
       else
       {
@@ -260,14 +366,10 @@ int main()
    queue_init( &queue_uart_write, sizeof(int), 128 );
 
    // clean out memory
-   // yes, this is not original, but more userfriendly and also easier
-   // to implement a real DRAM initstate profile
-   // also we've got 64k addressable, which is not original as well
    memset( &memory[0x0000], 0x00, sizeof(memory) );
 
-   // and we need also setup the ROM
-   // it's implemented as part of RAM with write disabled
-   memcpy( &memory[ROM_START], &native_rom[0], sizeof(native_rom) );
+   // and we need also setup the system
+   system_reboot();
 
    // setup the bus and run the bus core
    bus_init();

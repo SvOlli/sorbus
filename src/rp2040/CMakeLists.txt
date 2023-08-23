@@ -8,6 +8,8 @@ pico_sdk_init()
 #string(REPLACE "-O3" "-O6" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 #string(REPLACE "-O3" "-O6" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wunused-variable")
+
 function(bin2h h_file bin_file label)
    add_custom_command(OUTPUT ${h_file}
       COMMAND $<TARGET_FILE:bin2h> "${bin_file}" "${h_file}" "${label}"
