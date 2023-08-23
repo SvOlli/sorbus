@@ -50,6 +50,9 @@ volatile uint32_t irq_timer_cycles_left   = 0;
 uint32_t nmi_timer_restart_value = 0;
 uint32_t irq_timer_restart_value = 0;
 
+bool nmi_timer_triggered = false;
+bool irq_timer_triggered = false;
+
 
 void set_bank( uint8_t bank )
 {
@@ -158,6 +161,7 @@ static inline void setup_timer( uint8_t value, uint8_t config )
       {
          // highbyte: stop timer and store
          nmi_timer_cycles_left   = 0;
+         nmi_timer_triggered     = false;
          nmi_timer_restart_value = value << 8;
       }
       else
@@ -179,6 +183,7 @@ static inline void setup_timer( uint8_t value, uint8_t config )
       {
          // highbyte: stop timer and store
          irq_timer_cycles_left   = 0;
+         irq_timer_triggered     = false;
          irq_timer_restart_value = value << 8;
       }
       else
@@ -201,39 +206,70 @@ static inline void handle_io()
    // TODO: split this up in reads and writes
    uint8_t data = state >> bus_config.shift_data;
    bool success;
-   switch( address & 0xFF )
+
+   if( state & bus_config.mask_rw )
    {
-      case 0x00:
-      case 0x01:
-      case 0x02:
-      case 0x03:
-      case 0x04:
-      case 0x05:
-      case 0x06:
-      case 0x07:
-         setup_timer( data, address & 0x07 );
-      case 0xFA: /* console UART read */
-         success = queue_try_remove( &queue_uart_read, &data );
-         write_data_bus( success ? data : 0x00 );
-         break;
-      case 0xFB: /* console UART read queue */
-         write_data_bus( queue_get_level( &queue_uart_read )  );
-         break;
-      case 0xFC: /* console UART write */
-         queue_try_add( &queue_uart_write, &data );
-         break;
-      case 0xFD: /* console UART write queue */
-         write_data_bus( queue_get_level( &queue_uart_write )  );
-         break;
+      /* I/O read */
+      switch( address & 0xFF )
+      {
+         case 0x00:
+         case 0x01:
+         case 0x02:
+         case 0x03:
+            write_data_bus( irq_timer_triggered ? 0x80 : 0x00 );
+            irq_timer_triggered = false;
+            break;
+         case 0x04:
+         case 0x05:
+         case 0x06:
+         case 0x07:
+            write_data_bus( nmi_timer_triggered ? 0x80 : 0x00 );
+            nmi_timer_triggered = false;
+            break;
+         case 0xFA: /* console UART read */
+            success = queue_try_remove( &queue_uart_read, &data );
+            write_data_bus( success ? data : 0x00 );
+            break;
+         case 0xFB: /* console UART read queue */
+            write_data_bus( queue_get_level( &queue_uart_read )  );
+            break;
+         case 0xFD: /* console UART write queue */
+            write_data_bus( queue_get_level( &queue_uart_write )  );
+            break;
+         default:
+            /* everything else is handled like RAM by design */
+            handle_ram();
+            break;
+      }
+   }
+   else
+   {
+      /* I/O write */
+      switch( address & 0xFF )
+      {
+         case 0x00:
+         case 0x01:
+         case 0x02:
+         case 0x03:
+         case 0x04:
+         case 0x05:
+         case 0x06:
+         case 0x07:
+            setup_timer( data, address & 0x07 );
+            break;
+         case 0xFC: /* console UART write */
+            queue_try_add( &queue_uart_write, &data );
+            break;
 #if 0
-      case 0xFF: /* set bankswitch register for $F000-$FFFF */
-         rom_bank_f = read_data_bus();
-         break;
+         case 0xFF: /* set bankswitch register for $F000-$FFFF */
+            rom_bank_f = read_data_bus();
+            break;
 #endif
-      default:
-         /* everything else is handled like RAM by design */
-         handle_ram();
-         break;
+         default:
+            /* everything else is handled like RAM by design */
+            handle_ram();
+            break;
+      }
    }
 }
 
@@ -277,6 +313,7 @@ void run_bus()
          if( !nmi_timer_cycles_left )
          {
             nmi_timer_cycles_left = nmi_timer_restart_value;
+            nmi_timer_triggered = true;
          }
       }
       else
@@ -293,6 +330,7 @@ void run_bus()
          if( !irq_timer_cycles_left )
          {
             irq_timer_cycles_left = irq_timer_restart_value;
+            irq_timer_triggered = true;
          }
       }
       else

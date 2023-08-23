@@ -26,6 +26,17 @@ Internal I/O
 - $DFFE: unused
 - $DFFF: (proposed) bank select register for $E000-$FFFF, allowing 2MB of ROM
 
+Watchdog
+--------
+- can be enabled and disabled
+- can be triggered by timer (clockcycle count)
+- can be triggered by number of nmis or irqs
+- renew is strobe
+- triggered watchdog dumps as much as useful
+  - current bus state
+  - RAM contents
+  - configuration of internals like timer, etc.
+
 Suggested I/O
 -------------
 - $D400: SID(s): 5-bit register select -> 8 SIDs max
