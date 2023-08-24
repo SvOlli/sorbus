@@ -86,5 +86,6 @@ add_executable(native_test
 target_link_libraries(native_test
    pico_stdlib
    pico_multicore
+   pico_rand
    )
 setup_target(native_test)

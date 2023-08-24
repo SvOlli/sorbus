@@ -26,12 +26,29 @@ Internal I/O
 - $DFFE: unused
 - $DFFF: (proposed) bank select register for $E000-$FFFF, allowing 2MB of ROM
 
+Timer
+-----
+- two timmers triggering IRQ and NMI
+- base address IRQ timer: $DF00
+- base address NMI timer: $DF04
+- base + 0 = set low counter for repeating timer, stops timer
+- base + 1 = set high counter for repeating timer, starts timer
+- base + 2 = set low counter for single shot timer, stops timer
+- base + 3 = set high counter for single shot timer, starts timer
+- reading any register return $80 if timer was triggered, $00 otherwise
+  reading clears flag; todo(?): $40 indicates timer is running
+
 Watchdog
 --------
-- can be enabled and disabled
-- can be triggered by timer (clockcycle count)
-- can be triggered by number of nmis or irqs
-- renew is strobe
+- counter is 24 bit
+- base address: $DF08
+- base address + 0: turn off
+- base address + 1: set low counter, write resets watchdog when running
+- base address + 2: set mid counter, write resets watchdog when running
+- base address + 3: set high counter, stars watchdog, reset when running...
+- read on any address shows watchdog active
+
+- todo(?): can be triggered by number of nmis or irqs
 - triggered watchdog dumps as much as useful
   - current bus state
   - RAM contents

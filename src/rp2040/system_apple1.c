@@ -306,7 +306,7 @@ void run_bus()
 #if SPEED_TEST
    uint64_t time_start, time_end;
    double time_exec;
-   double time_mhz;
+   double time_hz;
    uint32_t cyc;
 
    time_start = time_us_64();
@@ -389,10 +389,10 @@ void run_bus()
 #if SPEED_TEST
    time_end = time_us_64();
    time_exec = (double)(time_end - time_start) / CLOCKS_PER_SEC / 10000;
-   time_mhz = (double)cyc / time_exec;
+   time_hz = (double)cyc / time_exec;
    for(;;)
    {
-      printf( "\rbus has terminated after %d cycles in %.06f seconds: %.0fHz ", cyc, time_exec, time_mhz );
+      printf( "\rbus has terminated after %d cycles in %.06f seconds: %.0fHz ", cyc, time_exec, time_hz );
       sleep_ms(2000);
    }
 #endif
