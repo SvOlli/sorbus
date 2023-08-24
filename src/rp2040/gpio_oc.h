@@ -44,19 +44,21 @@ static inline void gpio_oc_set( uint pin, bool value )
 static inline void gpio_oc_set_by_mask( uint32_t mask, uint32_t value )
 {
    /* bits to be set? */
-   if( value & mask )
+   uint32_t ones  = value & mask;
+   uint32_t zeros = ~value & mask;
+   if( ones )
    {
       /* set high by setting to input */ 
-      gpio_set_dir_in_masked( value & mask );
-      gpio_set_mask( value & mask );
+      gpio_set_dir_in_masked( ones );
+      gpio_set_mask( ones );
    }
    
    /* bits to be cleared? */
-   if( ~value & mask )
+   if( zeros )
    {
       /* set low by writing 0 */
-      gpio_clr_mask( ~value & mask );
-      gpio_set_dir_out_masked( ~value & mask );
+      gpio_clr_mask( zeros );
+      gpio_set_dir_out_masked( zeros );
    }
 }
 

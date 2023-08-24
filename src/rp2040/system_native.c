@@ -33,7 +33,7 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 #include "native_rom.h"
 
 // set this to 5000000 to run for 5 million cycles while keeping time
-#define SPEED_TEST 1000000
+#define SPEED_TEST 127
 // this is where the write protected area starts
 #define ROM_START (0xE000)
 // the number of clock cycles a timer interrupt is triggered
@@ -48,7 +48,7 @@ uint32_t address;
 
 volatile bool enable_print = false;
 
-volatile uint32_t clock_counter = 0;
+volatile uint64_t clock_counter = 0;
 
 volatile uint32_t cycles_left_reset     = 0;
 volatile uint32_t nmi_timer_cycles_left = 0;
@@ -151,7 +151,11 @@ void run_console()
 
 static inline void write_data_bus( uint8_t data )
 {
+#if 0
    gpio_oc_set_by_mask( bus_config.mask_data, ((uint32_t)data) << bus_config.shift_data );
+#else
+   gpio_put_masked( bus_config.mask_data, ((uint32_t)data) << bus_config.shift_data );
+#endif
 }
 
 
@@ -167,6 +171,7 @@ static inline void handle_ram()
    if( state & bus_config.mask_rw )
    {
       // read from memory and write to bus
+printf( "%04x:%02x\n",address, memory[address] );
       write_data_bus( memory[address] );
    }
    else
@@ -394,6 +399,17 @@ void run_bus()
          system_reset();
       }
 
+      if( cycles_left_reset )
+      {
+         --cycles_left_reset;
+         gpio_clr_mask( bus_config.mask_reset );
+      }
+      else
+      {
+         gpio_set_mask( bus_config.mask_reset );
+      }
+
+#if 0
       if( watchdog_cycles_left )
       {
          if( --watchdog_cycles_left < count_of(watchdog_states) )
@@ -404,16 +420,6 @@ void run_bus()
          {
             trigger_watchdog();
          }
-      }
-
-      if( cycles_left_reset )
-      {
-         --cycles_left_reset;
-         gpio_clr_mask( bus_config.mask_reset );
-      }
-      else
-      {
-         gpio_set_mask( bus_config.mask_reset );
       }
 
       if( nmi_timer_cycles_left )
@@ -449,6 +455,7 @@ void run_bus()
       {
          gpio_set_mask( bus_config.mask_irq );
       }
+#endif
 
       // done: set clock to high
       gpio_set_mask( bus_config.mask_clock );
@@ -478,10 +485,11 @@ void run_bus()
          /* internal i/o */
          handle_io();
       }
-      if( (address <= 0x0003) || ((address & 0xF000) == 0xD000) )
+      else if( (address <= 0x0003) || ((address & 0xF000) == 0xD000) )
       {
          /* external i/o: keep hands off the bus */
          gpio_set_dir_in_masked( bus_config.mask_data );
+printf( "%04x:hands off\n", address );
       }
       else
       {
@@ -489,6 +497,7 @@ void run_bus()
       }
 
       // done: set clock to low
+      watchdog_states[(++clock_counter) & 0x7f] = gpio_get_all();
       gpio_clr_mask( bus_config.mask_clock );
    }
 
@@ -497,6 +506,23 @@ void run_bus()
    time_exec = (double)(time_end - time_start) / CLOCKS_PER_SEC / 10000;
    time_hz = (double)cyc / time_exec;
 
+   for( int i = 0; i < 0x80; ++i )
+   {
+      uint32_t _state = watchdog_states[i];
+      printf( "%3d:%04x %c %02x %c%c%c\n",
+         i,
+         (_state & bus_config.mask_address) >> (bus_config.shift_address),
+         (_state & bus_config.mask_rw) ? 'r' : 'w',
+         (_state & bus_config.mask_data) >> (bus_config.shift_data),
+         (_state & bus_config.mask_reset) ? ' ' : 'R',
+         (_state & bus_config.mask_nmi) ? ' ' : 'N',
+         (_state & bus_config.mask_irq) ? ' ' : 'I' );
+   }
+   for( int i = 0xFFF0; i < 0x10000; ++i )
+   {
+      printf( "%02x ", memory[i] );
+   }
+   printf("\n");
    printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
    printf("PLL_USB:             %3d.%03dMhz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
    printf("ROSC:                %3d.%03dMhz\n", f_rosc    / 1000, f_rosc % 1000 );
@@ -531,7 +557,7 @@ int main()
    queue_init( &queue_uart_write, sizeof(int), 128 );
 
    // clean out memory
-   memset( &memory[0x0000], 0x00, sizeof(memory) );
+   memset( &memory[0x0000], 0xea, sizeof(memory) );
 
    // setup the bus and run the bus core
    bus_init();
