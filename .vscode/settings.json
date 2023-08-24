@@ -1,0 +1,6 @@
+{
+    "cmake.sourceDirectory": "/home/oliver/Coding/c64/sorbus/sorbus/src",
+    "cmake.configureEnvironment":"PICO_SDK_PATH=/home/oliver/Coding/c64/sorbus/pic-sdk",
+    "cmake.buildEnvironment":"PICO_SDK_PATH=/home/oliver/Coding/c64/sorbus/pic-sdk"
+}
+}

@@ -67,6 +67,7 @@ typedef struct {
    const char    *help;
 } cmd_t;
 
+unsigned char current_dir [LFS_NAME_MAX]="/";
 
 uint8_t memcheck[] = {
    0xD8,
@@ -160,7 +161,16 @@ const char *get_hex( const char *input, uint32_t *value, uint32_t digits )
    return input + (retval-&buffer[0]);
 }
 
+char * indent (int indent_len){
 
+   static unsigned char indent_str[]="                   ";
+   if (indent_len>=sizeof(indent_str)){
+      return "";
+   }
+   return (&indent_str[indent_len]);
+
+
+}
 void cmd_mem( const char *input )
 {
    static uint32_t mem_addr;
@@ -531,14 +541,16 @@ void dump_dir(void) {
 
 	// display each directory entry name
 	printf("File list\n");
-    int dir = pico_dir_open("/");
-    if (dir < 0)
-        return;
-    struct lfs_info info;
-    while (pico_dir_read(dir, &info) > 0)
-        printf("%s  \t\t%d \t%s\n", info.name, info.size,(info.type==LFS_TYPE_DIR?"D":" "));
-    pico_dir_close(dir);
-	printf("End of list\n");
+   int dir = pico_dir_open(current_dir);
+   if (dir < 0){
+      printf("Error reading directory: %s\n",pico_errmsg(dir));
+      return;
+   }
+   struct lfs_info info;
+   while (pico_dir_read(dir, &info) > 0){
+        printf("%s%s%s\t%d\n", info.name,indent(strlen(info.name)),(info.type==LFS_TYPE_DIR?"D":" "), info.size);
+   }
+   pico_dir_close(dir);
 
 }
 
@@ -549,6 +561,22 @@ void cmd_dir( const char *input )
 
 }
 
+void cmd_chdir( const char *input )
+{
+
+  if (!check_filename_argument(input)){
+       return;
+  }
+  int dir = pico_dir_open(input);
+  if (dir < 0){
+      printf("Error reading directory: %s\n",pico_errmsg(dir));
+      return;
+  }
+  pico_dir_close(dir);
+  strncpy(current_dir,input,LFS_NAME_MAX);
+  printf("Current dir is: %s\n",current_dir);
+  dump_dir();
+}
 
 
 void cmd_mkdir( const char *input )
@@ -585,6 +613,8 @@ cmd_t cmds[] = {
    { cmd_load,   4, "load",    "load <FILE> from filesystem to memory" },  
    { cmd_dir,    3, "dir",    "show current directory of filesystem" },
    { cmd_mkdir,  5, "mkdir",  "creates directory in filesystem" },
+   { cmd_chdir,  5, "chdir",  "(or 'cd') changes directory in filesystem" },
+   { cmd_chdir,  2, "cd",      NULL },
    { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
    { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
    { cmd_colon,  1, ":",      "write to memory <address> <value> .. (hex)" },
@@ -605,16 +635,18 @@ void print_welcome(void){
 
 }
 
+
+
 void cmd_help( const char *input )
 {
    int i;
-   char *indent = "       ";
+
    for( i = 0; cmds[i].handler; ++i )
    {
       if (cmds[i].help){  
          printf( "%s:%s%s\n",
                  cmds[i].text,
-                 indent+cmds[i].textlen - 1,
+                 indent(cmds[i].textlen - 1),
                  cmds[i].help );
       }
    }
@@ -784,7 +816,7 @@ int main()
    
    cputype = cpu_detect();
 
-   sleep_ms (5000);   // settle terminal
+   sleep_ms (3000);   // settle terminal
    print_welcome();
    multicore_launch_core1( run_bus );
    run_console();
