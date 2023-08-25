@@ -82,6 +82,9 @@ add_executable(native_test
    bus_rp2040_purple.c
    system_native.c
    gpio_oc.c
+   native/core0.c
+   native/core1.c
+   native/event_queue.c
    )
 target_link_libraries(native_test
    pico_stdlib
