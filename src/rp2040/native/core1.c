@@ -50,7 +50,7 @@ uint32_t timer_nmi_total       = 0;
 bool nmi_timer_triggered       = false;
 bool irq_timer_triggered       = false;
 
-uint32_t watchdog_states[128]  = { 0 };
+uint32_t watchdog_states[256]  = { 0 };
 uint32_t watchdog_cycles_total = 0;
 
 
@@ -272,6 +272,7 @@ static inline void system_reset()
    int dummy;
    static int cycles_since_start = 0;
    
+   // if we're the one causing the reset, make sure it's not for ever
    if( ++cycles_since_start > 8 )
    {
       gpio_set_mask( bus_config.mask_reset );
@@ -285,7 +286,8 @@ static inline void system_reset()
    watchdog_cycles_total = 0;
    set_bank( 0 );
    queue_event_init();
-   queue_event_add( 16, timer_nmi_triggered, 0 );
+   // just a test, remove
+   //queue_event_add( 16, timer_nmi_triggered, 0 );
    while( queue_try_remove( &queue_uart_read, &dummy ) )
    {
       // just loop until queue is empty
@@ -339,7 +341,7 @@ static inline void handle_io()
             bus_data_write( queue_get_level( &queue_uart_write )  );
             break;
          case 0xFE: /* random */
-            bus_data_write( get_rand_32() & 0xFF );
+            bus_data_write( rand() & 0xFF );
             break;
          case 0xFF: /* read bank number */
             bus_data_write( 0 ); // no bank switching implemented, yet
@@ -353,6 +355,7 @@ static inline void handle_io()
    else
    {
       /* I/O write */
+      data = bus_data_read();
       switch( address & 0xFF )
       {
          case 0x00:
@@ -412,28 +415,14 @@ void bus_run()
    for(;;)
 #endif
    {
+      // check if internal events need processing
+      queue_event_process();
+
       // LOW ACTIVE
       if( !(state & bus_config.mask_reset) )
       {
          system_reset();
       }
-
-      // check if internal events need processing
-#if 1
-      queue_event_process();
-#else
-   ++_queue_cycle_counter;
-   // while instead of if, because more than one entry may have same timestamp
-   while( _queue_cycle_counter == _queue_next_timestamp )
-   {
-      queue_event_t *current = _queue_next_event;
-      _queue_next_event      = _queue_next_event->next;
-      _queue_next_timestamp  = _queue_next_event ? _queue_next_event->timestamp : 0;
-
-      current->handler( current->data );
-      queue_event_drop( current );
-   }
-#endif
 
       // done: set clock to high
       gpio_set_mask( bus_config.mask_clock );
@@ -477,7 +466,7 @@ void bus_run()
       gpio_clr_mask( bus_config.mask_clock );
 
       // log last states
-      watchdog_states[(_queue_cycle_counter) & 0x7f] = gpio_get_all();
+      watchdog_states[(_queue_cycle_counter) & 0xff] = gpio_get_all();
    }
 
 #if SPEED_TEST
@@ -485,7 +474,7 @@ void bus_run()
    time_exec = (double)(time_end - time_start) / CLOCKS_PER_SEC / 10000;
    time_hz = (double)cyc / time_exec;
 
-   for( int i = 0; i < 0x80; ++i )
+   for( int i = 0; i < count_of(watchdog_states); ++i )
    {
       uint32_t _state = watchdog_states[i];
       printf( "%3d:%04x %c %02x %c%c%c%c\n",
@@ -498,13 +487,18 @@ void bus_run()
          (_state & bus_config.mask_irq) ? ' ' : 'I',
          (_state & bus_config.mask_rdy) ? ' ' : 'S' );
    }
-   printf( "E000:" );
+   printf( "\nE000:" );
    for( int i = 0xE000; i < 0xE010; ++i )
    {
       printf( " %02x", memory[i] );
    }
    printf("\n[...]\nFFF0:");
    for( int i = 0xFFF0; i < 0x10000; ++i )
+   {
+      printf( " %02x", memory[i] );
+   }
+   printf("\n[...]\n0200:");
+   for( int i = 0x0200; i < 0x0210; ++i )
    {
       printf( " %02x", memory[i] );
    }
@@ -559,6 +553,7 @@ bool system_memory_load( uint16_t address, uint16_t size, uint8_t *data )
 void system_init()
 {
    memset( &memory[0x0000], 0x00, sizeof(memory) );
+   srand( get_rand_32() );
 }
 
 void system_reboot()

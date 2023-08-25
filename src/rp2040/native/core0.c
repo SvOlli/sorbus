@@ -38,7 +38,7 @@ void console_65c02()
 
    if( in == PICO_ERROR_TIMEOUT )
    {
-      in = getchar_timeout_us(1000);
+      in = getchar_timeout_us(10);
    }
    if( in != PICO_ERROR_TIMEOUT )
    {
@@ -50,6 +50,7 @@ void console_65c02()
 
    if( queue_try_remove( &queue_uart_write, &out ) )
    {
+      //printf("%02x ",out );
       putchar( out );
    }
 }

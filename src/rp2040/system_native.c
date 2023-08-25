@@ -40,6 +40,9 @@ int main()
    // give some time to connect to console
    sleep_ms(2000);
 
+   // for toying with overclocking
+   set_sys_clock_khz ( 133000, false );
+
    // setup between UART core and bus core
    queue_init( &queue_uart_read,  sizeof(int), 128 );
    queue_init( &queue_uart_write, sizeof(int), 128 );
