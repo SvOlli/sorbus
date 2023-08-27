@@ -12,6 +12,7 @@
 #include <pico/util/queue.h>
 
 #include "common.h"
+#include "menu.h"
 
 
 static console_type_t console_type;
@@ -25,10 +26,12 @@ void console_type_set( console_type_t type )
 
 void console_rp2040()
 {
-   printf( "watchdog triggered! CPU stopped using RDY\n" );
+   printf( "\nwatchdog triggered! CPU stopped using RDY\n" );
 
    printf( "\nrebooting system!\n" );
+   menu_run();
    system_reboot();
+   console_type = CONSOLE_TYPE_65C02;
 }
 
 
@@ -39,6 +42,11 @@ void console_65c02()
    if( in == PICO_ERROR_TIMEOUT )
    {
       in = getchar_timeout_us(10);
+      if( in == '~' )
+      {
+         console_type = CONSOLE_TYPE_RP2040;
+         in = PICO_ERROR_TIMEOUT;
+      }
    }
    if( in != PICO_ERROR_TIMEOUT )
    {

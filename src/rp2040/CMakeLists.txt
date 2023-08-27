@@ -85,6 +85,7 @@ add_executable(native_test
    native/core0.c
    native/core1.c
    native/event_queue.c
+   native/menu.c
    )
 target_link_libraries(native_test
    pico_stdlib

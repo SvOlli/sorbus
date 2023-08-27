@@ -97,6 +97,8 @@ getline:
    ldy   #$01     ; start a new input, 1 compensates next line
 
 backspace:
+   lda   #$08
+   jsr   echo
    dey
    bmi   getline  ; buffer underflow -> restart
 
@@ -113,8 +115,8 @@ nextchar:
 
 ; Line received, now let's parse it
 
-   ldy   #$ff     ; reset input index
    lda   #$00     ; default mode is XAM
+   ldy   #$ff     ; reset input index
    tax
 
 setstore:

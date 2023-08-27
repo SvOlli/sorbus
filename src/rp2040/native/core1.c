@@ -7,9 +7,10 @@
  * for the Sorbus Computer
  */
 
+#include <ctype.h>
 #include <time.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../rp2040_purple.h"
@@ -57,22 +58,6 @@ uint32_t watchdog_cycles_total = 0;
 /******************************************************************************
  * internal functions
  ******************************************************************************/
-static void handle_rdy( void *data )
-{
-   bool stop = (bool)data;
-
-   if( stop )
-   {
-      gpio_clr_mask( bus_config.mask_rdy );
-   }
-   else
-   {
-      gpio_set_mask( bus_config.mask_rdy );
-   }
-}
-
-
-
 
 static inline void bus_data_write( uint8_t data )
 {
@@ -523,9 +508,6 @@ void bus_run()
 
 void cpu_halt( bool stop )
 {
-#if 0
-   queue_event_add( 1, handle_rdy, (void*)stop );
-#else
    if( stop )
    {
       gpio_clr_mask( bus_config.mask_rdy );
@@ -534,7 +516,6 @@ void cpu_halt( bool stop )
    {
       gpio_set_mask( bus_config.mask_rdy );
    }
-#endif
 }
 
 
