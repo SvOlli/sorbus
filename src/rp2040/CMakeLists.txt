@@ -98,10 +98,7 @@ target_link_libraries(getaline_test
    )
 setup_target(getaline_test)
 
-<<<<<<< HEAD
 # Monitor Command Prompt: core for watching the 65C02 work
-=======
->>>>>>> d856bb0... Speed imporvement and memory_barrier
 add_executable(mcp
    bus_rp2040_purple.c
    cpudetect_mcp.h
@@ -110,21 +107,12 @@ add_executable(mcp
    payload_mcp.h
    system_mcp.c
    getaline.c
-<<<<<<< HEAD
-=======
-   fake_eeprom.c
->>>>>>> d856bb0... Speed imporvement and memory_barrier
    )
 target_link_libraries(mcp
    pico_stdlib
    pico_multicore
    )
 setup_target(mcp)
-<<<<<<< HEAD
-=======
-
-
->>>>>>> d856bb0... Speed imporvement and memory_barrier
 
 # Apple 1: core for mimicking the Apple 1 Computer
 add_executable(apple1
@@ -171,6 +159,7 @@ target_link_libraries(native_alpha
    pico_stdlib
    pico_multicore
    pico_rand
+   mcurses
    )
 setup_target(native_alpha)
 # firmware for Native core

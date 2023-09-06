@@ -7,6 +7,7 @@
 #include "mem_cmds.h"
 #include "menu.h"
 #include "cpu_detect.h"
+#include "hexedit.h"
 #include <pico/sync.h>
 
 
@@ -24,11 +25,31 @@ void bank_adjust( uint32_t bank, uint32_t *addr )
    }
 }
 
+extern critical_section_t memory_blocking;
+
+static inline void put_mem(uint32_t mem_addr ,uint8_t value){
+
+
+      critical_section_enter_blocking(&memory_blocking);
+      memory[mem_addr] = value;
+      critical_section_exit(&memory_blocking); 
+}      
+
+static inline uint8_t get_mem(uint32_t mem_addr ){
+
+    uint8_t value;
+    
+    //critical_section_enter_blocking(&memory_blocking);
+    value=memory[mem_addr];
+    //critical_section_exit(&memory_blocking); 
+
+    return value;
+}      
 
 /**************************************************************
    Comands for accessing and modifiying native memory
 ***************************************************************/
-extern critical_section_t memory_blocking;
+
 
 void cmd_mem( const char *input )
 {
@@ -134,10 +155,7 @@ void cmd_colon( const char *input )
          printf( "?: %s\n", input );
          return;
       }
-      critical_section_enter_blocking(&memory_blocking);
-      ram[mem_addr++] = value;
-      critical_section_exit(&memory_blocking); 
-      
+      put_mem(mem_addr++,value);      
       mem_addr &= 0xFFFF;
    }
 
@@ -180,14 +198,11 @@ void cmd_fill( const char *input )
    for( mem_addr = mem_start; mem_addr != mem_end; mem_addr = ((mem_addr + 1) & 0xffff) )
    {
       bank_adjust( bank_selected, &mem_addr );
-      critical_section_enter_blocking(&memory_blocking);
-      ram[mem_addr] = value;
-      critical_section_exit(&memory_blocking); 
+      put_mem(mem_addr,value);      
    }
    bank_adjust( bank_selected, &mem_addr );
-   critical_section_enter_blocking(&memory_blocking);
-   ram[mem_addr] = value;
-   critical_section_exit(&memory_blocking); 
+   put_mem(mem_addr,value);      
+
 }
 
 void cmd_bank( const char *input )
@@ -211,3 +226,28 @@ void cmd_bank( const char *input )
       get_hex( input, &bank_selected, 2 );
    }
 }
+
+// Make a wrapper, because there is no functionpointer on inline functions
+static void put_mem_wrap(uint16_t mem_addr ,uint8_t value){
+    put_mem(mem_addr,value);
+}
+
+static uint8_t get_mem_wrap(uint16_t mem_addr){
+    return get_mem(mem_addr);
+}
+
+void cmd_hexedit( const char * input){
+
+   uint32_t mem_start =0;
+
+   setFunction_readMemory(get_mem_wrap);
+   setFunction_writeMemory(put_mem_wrap);
+
+   if( *input )
+   {
+      input = get_hex( input, &mem_start, ADDR_DIGITS );
+   }
+
+   hexedit ((uint16_t)mem_start) ;
+   clear(); 
+ }

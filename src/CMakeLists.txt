@@ -20,3 +20,16 @@ add_subdirectory(65c02)
 # the rp2040 code for the chipsets
 add_subdirectory(rp2040)
 
+
+add_library(mcurses 
+            mcurses/src/editor.c  
+            mcurses/src/editor.h  
+            mcurses/src/hexedit.c  
+            mcurses/src/hexedit.h  
+            mcurses/src/mcurses.c  
+            mcurses/src/mcurses-config.h  
+            mcurses/src/mcurses.h
+)
+target_include_directories(mcurses
+   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/mcurses/src
+)

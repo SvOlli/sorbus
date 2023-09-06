@@ -28,6 +28,7 @@ bi_decl(bi_program_description("implement an own home computer flavor"))
 bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
 #include "bus.h"
+#include "mcurses.h"
 
 queue_t queue_uart_read;
 queue_t queue_uart_write;
@@ -52,6 +53,10 @@ int main()
 
    // setup mutex for event queue
    queue_event_init();
+   // init mcurses
+   setFunction_putchar(putchar); //putchar_raw
+   setFunction_getchar(getchar); //putchar_raw
+   initscr();          
 
    // setup the bus and run the bus core
    bus_init();

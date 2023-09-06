@@ -18,6 +18,7 @@
 #include "system_cmds.h"
 #include "getaline.h"
 #include "cpu_detect.h"
+#include "mcurses.h"
 
 extern void debug_internal_drive() ;
 extern void debug_internal_read_sector(uint16_t dhara_sector);
@@ -79,6 +80,7 @@ typedef struct {
     { cmd_dh_read, 5, "dh_rd",    "reads and prints sector from dhara filesystem '(dec)" },
     { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
     { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
+    { cmd_hexedit,    3, "hex",    "open memory window for hexediting" },
 
     { cmd_colon,  1, ":",      "write to memory <address> <value> .. (hex)" },
     { cmd_fill,   1, "f",      "fill memory <from> <to> <value> (hex)" },
@@ -151,7 +153,6 @@ const char *get_hex( const char *input, uint32_t *value, uint32_t digits )
 }
 
  
-
  
 void print_welcome(void){
   
@@ -221,6 +222,35 @@ void cmd_sys( const char *input )
     }
  }
 
+void drawbox (uint8_t y, uint8_t x, uint8_t h, uint8_t w)
+{
+  uint8_t line;
+  uint8_t col;
+
+  move (y, x);
+  addch (ACS_ULCORNER);
+  for (col = 0; col < w - 2; col++)
+  {
+    addch (ACS_HLINE);
+  }
+  addch (ACS_URCORNER);
+
+  for (line = 0; line < h - 2; line++)
+  {
+    move (line + y + 1, x);
+    addch (ACS_VLINE);
+    move (line + y + 1, x + w - 1);
+    addch (ACS_VLINE);
+  }
+
+  move (y + h - 1, x);
+  addch (ACS_LLCORNER);
+  for (col = 0; col < w - 2; col++)
+  {
+    addch (ACS_HLINE);
+  }
+  addch (ACS_LRCORNER);
+}
 
 
 void menu_run()
@@ -230,6 +260,8 @@ void menu_run()
 
    getaline_init();
    console_running=true;
+   clear ();
+   drawbox (6, 20, 10, 20);
    
    while(console_running)
    {

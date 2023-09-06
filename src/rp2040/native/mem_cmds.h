@@ -5,6 +5,7 @@
 void cmd_mem( const char *input );
 void cmd_colon( const char *input );
 void cmd_fill( const char *input );
+void cmd_hexedit( const char * input);
 
 
 #endif
