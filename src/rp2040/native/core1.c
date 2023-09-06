@@ -21,6 +21,7 @@
 #include <pico/rand.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
+#include <pico/sync.h>
 
 #include <hardware/clocks.h>
 
@@ -78,14 +79,14 @@ static inline void bus_data_write( uint8_t data )
 #if 0
    gpio_oc_set_by_mask( bus_config.mask_data, ((uint32_t)data) << bus_config.shift_data );
 #else
-   gpio_put_masked( bus_config.mask_data, ((uint32_t)data) << bus_config.shift_data );
+   gpio_put_masked( BUSCONFIG_MASK_DATA, ((uint32_t)data) << BUSCONFIG_SHIFT_DATA );
 #endif
 }
 
 
 static inline uint8_t bus_data_read()
 {
-   return (gpio_get_all() >> bus_config.shift_data);
+   return (gpio_get_all() >> BUSCONFIG_SHIFT_DATA);
 }
 
 
@@ -108,9 +109,12 @@ void set_bank( uint8_t bank )
 //   printf( "set_bank(%02x) -> %p\n", bank, romvec );
 }
 
+extern critical_section_t memory_blocking;
 
 static inline void handle_ramrom()
 {
+   
+   // assume that data bus direction is already set
    if( state & bus_config.mask_rw )
    {
       // read from memory and write to bus
@@ -616,32 +620,32 @@ void bus_run()
       queue_event_process();
 
       // LOW ACTIVE
-      if( !(state & bus_config.mask_reset) )
+      if( !(state & BUSCONFIG_MASK_RESET) )
       {
          system_reset();
       }
 
       // done: set clock to high
-      gpio_set_mask( bus_config.mask_clock );
+      gpio_set_mask( BUSCONFIG_MASK_CLOCK );
 
       // bus should be still valid from clock low
       state = gpio_get_all();
 
       // setup bus direction so I/O can settle
-      if( state & bus_config.mask_rw )
+      if( state & BUSCONFIG_MASK_RW )
       {
          // read from memory and write to bus
-         gpio_set_dir_out_masked( bus_config.mask_data );
+         gpio_set_dir_out_masked( BUSCONFIG_MASK_DATA);
          // note to future self: check if there's a better way for
          // external i/o then to set the GPIOs to write for a brief time
       }
       else
       {
          // read from bus and write to memory write
-         gpio_set_dir_in_masked( bus_config.mask_data );
+         gpio_set_dir_in_masked( BUSCONFIG_MASK_DATA );
       }
 
-      address = ((state & bus_config.mask_address) >> bus_config.shift_address);
+      address = ((state & BUSCONFIG_MASK_ADDRESS) >> BUSCONFIG_SHIFT_ADDRESS);
 
       // setup data
       if( (address & 0xFF00) == 0xDF00 )
@@ -652,7 +656,7 @@ void bus_run()
       else if( (address <= 0x0003) || ((address & 0xF000) == 0xD000) )
       {
          /* external i/o: keep hands off the bus */
-         gpio_set_dir_in_masked( bus_config.mask_data );
+         gpio_set_dir_in_masked( BUSCONFIG_MASK_DATA );
       }
       else
       {
@@ -660,7 +664,7 @@ void bus_run()
       }
 
       // done: set clock to low
-      gpio_clr_mask( bus_config.mask_clock );
+      gpio_clr_mask( BUSCONFIG_MASK_CLOCK );
 
       // log last states
       watchdog_states[(_queue_cycle_counter) & 0xff] = gpio_get_all();

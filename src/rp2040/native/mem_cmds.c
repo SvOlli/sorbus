@@ -7,6 +7,8 @@
 #include "mem_cmds.h"
 #include "menu.h"
 #include "cpu_detect.h"
+#include <pico/sync.h>
+
 
 extern uint8_t ram[0x10000];  // Need mutex here !!!
 
@@ -26,12 +28,14 @@ void bank_adjust( uint32_t bank, uint32_t *addr )
 /**************************************************************
    Comands for accessing and modifiying native memory
 ***************************************************************/
+extern critical_section_t memory_blocking;
 
 void cmd_mem( const char *input )
 {
    static uint32_t mem_addr;
    uint32_t mem_start, mem_end;
    uint32_t col;
+   uint8_t mem_data;
 
    if( *input )
    {
@@ -63,7 +67,12 @@ void cmd_mem( const char *input )
       {
          printf( ": %04x ", mem_addr );
       }
-      printf( " %02x", ram[mem_addr] );
+      
+      critical_section_enter_blocking(&memory_blocking);
+      mem_data=ram[mem_addr];
+      critical_section_exit(&memory_blocking);        
+
+      printf( " %02x", mem_data );
       if( col == 0x07 )
       {
          printf( " " );
@@ -125,8 +134,10 @@ void cmd_colon( const char *input )
          printf( "?: %s\n", input );
          return;
       }
-
+      critical_section_enter_blocking(&memory_blocking);
       ram[mem_addr++] = value;
+      critical_section_exit(&memory_blocking); 
+      
       mem_addr &= 0xFFFF;
    }
 
@@ -169,10 +180,14 @@ void cmd_fill( const char *input )
    for( mem_addr = mem_start; mem_addr != mem_end; mem_addr = ((mem_addr + 1) & 0xffff) )
    {
       bank_adjust( bank_selected, &mem_addr );
+      critical_section_enter_blocking(&memory_blocking);
       ram[mem_addr] = value;
+      critical_section_exit(&memory_blocking); 
    }
    bank_adjust( bank_selected, &mem_addr );
+   critical_section_enter_blocking(&memory_blocking);
    ram[mem_addr] = value;
+   critical_section_exit(&memory_blocking); 
 }
 
 void cmd_bank( const char *input )

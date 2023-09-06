@@ -31,6 +31,7 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
 queue_t queue_uart_read;
 queue_t queue_uart_write;
+critical_section_t memory_blocking;
 
 
 int main()
@@ -53,6 +54,10 @@ int main()
    queue_event_init();
 
    // setup the bus and run the bus core
+   bus_init();
+   system_init();
+   system_reboot();
+   critical_section_init(&memory_blocking);
    multicore_launch_core1( bus_run );
 
    // run interactive console -> should never return

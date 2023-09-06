@@ -21,6 +21,18 @@ typedef struct {
    uint     shift_address;
 } bus_config_t;
 
+#define BUSCONFIG_SHIFT_DATA 16
+#define BUSCONFIG_MASK_DATA 0x00FF0000L
+#define BUSCONFIG_SHIFT_ADDRESS 0
+#define BUSCONFIG_MASK_ADDRESS 0x0000FFFFL
+#define BUSCONFIG_MASK_CLOCK 0x02000000L
+#define BUSCONFIG_MASK_RW 0x01000000L
+#define BUSCONFIG_MASK_RDY 0x04000000L
+#define BUSCONFIG_MASK_IRQ 0x08000000L
+#define BUSCONFIG_MASK_NMI 0x10000000L
+#define BUSCONFIG_MASK_RESET 0x20000000L
+
+
 typedef struct {
    uint32_t bus_state;     // cache of GPIOs
    uint32_t reset_cycles;  //
