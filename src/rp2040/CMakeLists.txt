@@ -130,6 +130,8 @@ setup_target(apple1)
 
 # Native: core for implementing a custom Sorbus system
 add_executable(native_alpha
+   native_rom.h
+   cpudetect_mcp.h
    bus_rp2040_purple.c
    system_native.c
    dhara/error.c
