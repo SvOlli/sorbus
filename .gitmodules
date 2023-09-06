@@ -1,0 +1,3 @@
+[submodule "src/mcurses"]
+	path = src/mcurses
+	url = https://github.com/ChrisMicro/mcurses.git
