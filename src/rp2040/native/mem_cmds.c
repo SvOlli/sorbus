@@ -8,7 +8,7 @@
 #include "menu.h"
 #include "cpu_detect.h"
 
-extern uint8_t memory[0x10000];  // Need mutex here !!!
+extern uint8_t ram[0x10000];  // Need mutex here !!!
 
 
 uint32_t bank_selected;         // must go to core1.c !!!
@@ -63,7 +63,7 @@ void cmd_mem( const char *input )
       {
          printf( ": %04x ", mem_addr );
       }
-      printf( " %02x", memory[mem_addr] );
+      printf( " %02x", ram[mem_addr] );
       if( col == 0x07 )
       {
          printf( " " );
@@ -126,7 +126,7 @@ void cmd_colon( const char *input )
          return;
       }
 
-      memory[mem_addr++] = value;
+      ram[mem_addr++] = value;
       mem_addr &= 0xFFFF;
    }
 
@@ -169,10 +169,10 @@ void cmd_fill( const char *input )
    for( mem_addr = mem_start; mem_addr != mem_end; mem_addr = ((mem_addr + 1) & 0xffff) )
    {
       bank_adjust( bank_selected, &mem_addr );
-      memory[mem_addr] = value;
+      ram[mem_addr] = value;
    }
    bank_adjust( bank_selected, &mem_addr );
-   memory[mem_addr] = value;
+   ram[mem_addr] = value;
 }
 
 void cmd_bank( const char *input )

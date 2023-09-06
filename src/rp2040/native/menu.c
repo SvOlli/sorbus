@@ -19,6 +19,10 @@
 #include "getaline.h"
 #include "cpu_detect.h"
 
+extern void debug_internal_drive() ;
+extern void debug_internal_read_sector(uint16_t dhara_sector);
+
+
 static bool console_running; 
 
 typedef void (*cmdhandler_t)(const char *input);
@@ -35,7 +39,28 @@ typedef struct {
  void cmd_help( const char *input );
  void cmd_sys( const char *input );
  void cmd_exit( const char *input );
+
+ void cmd_dh_info (const char *input ){
+
+   debug_internal_drive();
+ }
  
+
+ void cmd_dh_read (const char *input ){
+
+   uint32_t dhara_sector=0;
+
+   if( *input )
+   {
+      get_dec( input, &dhara_sector );
+   }
+
+   dhara_sector&=0xffff;      // only 65535 sectors allowed
+
+   debug_internal_read_sector((uint16_t)dhara_sector);
+ }
+ 
+
  cmd_t cmds[] = {
     { cmd_help,   4, "help",   "display help" },
    // { cmd_cold,   4, "cold",   "fully reinitialize system" },
@@ -50,7 +75,8 @@ typedef struct {
    // { cmd_mkdir,  5, "mkdir",  "creates directory in filesystem" },
    // { cmd_chdir,  5, "chdir",  "(or 'cd') changes directory in filesystem" },
    // { cmd_chdir,  2, "cd",      NULL },
-
+    { cmd_dh_info,  5, "dh_info",    "prints infos about dhara filesystem" },
+    { cmd_dh_read, 5, "dh_rd",    "reads and prints sector from dhara filesystem '(dec)" },
     { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
     { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
 
@@ -130,7 +156,7 @@ const char *get_hex( const char *input, uint32_t *value, uint32_t digits )
 void print_welcome(void){
   
   printf("\n\n\n");
-  printf("Welcome to Sorbus MCP System\n");
+  printf("Welcome to Sorbus Native System\n");
   printf("----------------------------\n\n");  
   printf("Compiled on %s %s\n",__DATE__,__TIME__);
   printf("----------------------------\n\n");

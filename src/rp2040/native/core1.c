@@ -434,12 +434,30 @@ void debug_clocks()
    printf("CLK_RTC:             %3d.%03dMhz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
 }
 
+void debug_internal_read_sector(uint16_t dhara_sector){
+
+   uint8_t dhara_buffer[SECTOR_SIZE];
+
+   dhara_flash_read(dhara_sector,dhara_buffer);
+  
+   printf("dhara read sector $%04x:\n", dhara_sector );
+   for( int i = 0; i < SECTOR_SIZE; ++i )
+   {
+      printf( " %02x", dhara_buffer[i] );
+      if( (i & 0xF) == 0xF )
+      {
+         printf( "\n" );
+      }
+   }
+
+ }  
 
 void debug_internal_drive()
 {
    dhara_flash_info_t dhara_info;
-   uint8_t dhara_buffer[SECTOR_SIZE];
+   
    uint16_t dhara_sector = 0;
+   uint8_t dhara_buffer[SECTOR_SIZE];
 
    dhara_flash_info( dhara_sector, &dhara_buffer[0], &dhara_info );
    uint64_t hw_size  = dhara_info.erase_cells * dhara_info.erase_size;
@@ -455,15 +473,8 @@ void debug_internal_drive()
    printf("dhara gc ratio         %08x (%d)\n", dhara_info.gc_ratio, dhara_info.gc_ratio );
    printf("dhara read status:     %d\n", dhara_info.read_status );
    printf("dhara read error:      %s\n", dhara_strerror( dhara_info.read_errcode ) );
-   printf("dhara read sector $%04x:\n", dhara_sector );
-   for( int i = 0; i < SECTOR_SIZE; ++i )
-   {
-      printf( " %02x", dhara_buffer[i] );
-      if( (i & 0xF) == 0xF )
-      {
-         printf( "\n" );
-      }
-   }
+   debug_internal_read_sector(dhara_sector);
+
 }
 
 
