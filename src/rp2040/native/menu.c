@@ -80,7 +80,7 @@ typedef struct {
     { cmd_dh_read, 5, "dh_rd",    "reads and prints sector from dhara filesystem '(dec)" },
     { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
     { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
-    { cmd_hexedit,    3, "hex",    "open memory window for hexediting" },
+    { cmd_hexedit,    3, "hex",    "open memory window for hexediting (hex)" },
 
     { cmd_colon,  1, ":",      "write to memory <address> <value> .. (hex)" },
     { cmd_fill,   1, "f",      "fill memory <from> <to> <value> (hex)" },
