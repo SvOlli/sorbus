@@ -5,6 +5,7 @@
 #define QUEUE_EVENT_SIZE (32)
 
 #include <stdint.h>
+#include <pico/mutex.h>
 
 typedef void (*queue_event_handler_t)(void *data);
 
@@ -17,7 +18,8 @@ typedef struct queue_event_s {
 
 extern uint64_t _queue_cycle_counter;
 extern uint64_t _queue_next_timestamp;
-extern volatile queue_event_t *_queue_next_event;
+extern queue_event_t *_queue_next_event;
+extern mutex_t _queue_event_mutex;
 
 
 // replacement for "delete": clear out data for memory block to be reused
@@ -33,6 +35,7 @@ static inline void queue_event_drop( queue_event_t *event )
 // process event queue
 static inline void queue_event_process()
 {
+   mutex_enter_blocking( &_queue_event_mutex );
    ++_queue_cycle_counter;
    // while instead of if, because more than one entry may have same timestamp
    while( _queue_cycle_counter == _queue_next_timestamp )
@@ -44,6 +47,7 @@ static inline void queue_event_process()
       current->handler( current->data );
       queue_event_drop( current );
    }
+   mutex_exit( &_queue_event_mutex );
 }
 
 // add an event to the loop, executed at now + when clock cycles
@@ -54,6 +58,9 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
 void queue_event_cancel( queue_event_handler_t handler );
 
 // re-initialize the queue
+void queue_event_reset();
+
+// setup (and reset) the queue mutex
 void queue_event_init();
 
 #endif

@@ -47,6 +47,9 @@ int main()
    queue_init( &queue_uart_read,  sizeof(int), 128 );
    queue_init( &queue_uart_write, sizeof(int), 128 );
 
+   // setup mutex for event queue
+   queue_event_init();
+
    // setup the bus and run the bus core
    bus_init();
    system_init();

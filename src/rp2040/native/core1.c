@@ -270,7 +270,7 @@ static inline void system_reset()
    irq_timer_triggered   = false;
    watchdog_cycles_total = 0;
    set_bank( 0 );
-   queue_event_init();
+   queue_event_reset();
    // just a test, remove
    //queue_event_add( 16, timer_nmi_triggered, 0 );
    while( queue_try_remove( &queue_uart_read, &dummy ) )
