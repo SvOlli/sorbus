@@ -24,7 +24,6 @@ NMI:
    jmp   *
 
 RESET:
-
 ;-------------------------------------------------------------------------
 ;  Memory declaration
 ;-------------------------------------------------------------------------
@@ -142,8 +141,6 @@ nextitem:
    and   #$5f
    cmp   #'R'     ; check for 'R'
    beq   run
-   cmp   #'C'     ; check for 'R'
-   beq   run_cpm
    stx   L
    stx   H
    sty   YSAV
@@ -200,9 +197,6 @@ tonextitem:
 
 run:
    jmp (XAML)        ; execute supplied address
-
-run_cpm:
-   jmp $080d        ; execute CPM
 
 ;-------------------------------------------------------------------------
 ;  We're not in Store mode

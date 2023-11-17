@@ -30,8 +30,6 @@ function(setup_target targetname)
 endfunction()
 
 bin2h(krusader.h ${CMAKE_HOME_DIRECTORY}/bin/krusader_65C02.bin krusader_e000)
-bin2h(cpm_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/sorbus.exe cpm_rom)
-bin2h(bdos_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/bdos.sys bdos_rom)
 src2h(cpudetect_apple1.h cpudetect_apple1 cpudetect_0280)
 src2h(cpudetect_mcp.h cpudetect_mcp cpudetect_mcp)
 src2h(cpustate.h cpustate cpustate)
@@ -95,24 +93,3 @@ target_link_libraries(native_test
    pico_rand
    )
 setup_target(native_test)
-
-add_executable(cpm_os
-   cpm_rom.h
-   bdos_rom.h
-   native_rom.h
-   bus_rp2040_purple.c
-   system_cpm.c
-#   gpio_oc.c
-   native/core0.c
-   native/core1.c
-   native/event_queue.c
-   native/menu.c
-   )
-target_link_libraries(cpm_os
-   pico_stdlib
-   pico_multicore
-   pico_rand
-   )
-setup_target(cpm_os)
-
-

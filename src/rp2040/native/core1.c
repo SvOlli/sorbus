@@ -34,7 +34,7 @@
 
 
 // set this to 5000000 to run for 5 million cycles while keeping time
-//#define SPEED_TEST 5000000
+#define SPEED_TEST 5000000
 // this is where the write protected area starts
 #define ROM_START (0xE000)
 // the number of clock cycles a timer interrupt is triggered
@@ -446,14 +446,10 @@ void bus_run()
       {
          handle_ram();
       }
+
       // done: set clock to low
       gpio_clr_mask( bus_config.mask_clock );
-//#define PRINT_ADDRESS      
-#ifdef PRINT_ADDRESS      
-      if ((address <0xd000)&&(address >0x0800)&&(address != 0x0bb8)&&(address != 0x0bb9)&&(address != 0x0bba)){
-         printf ("Running on adress:%x %x\n",address,memory[address]);
-      }
-#endif
+
       // log last states
       watchdog_states[(_queue_cycle_counter) & 0xff] = gpio_get_all();
    }
