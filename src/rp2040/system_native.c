@@ -20,9 +20,11 @@
 #include <pico/binary_info.h>
 
 #include "native/common.h"
+#include "native/event_queue.h"
 
 bi_decl(bi_program_name("Sorbus Computer Native Core"))
 bi_decl(bi_program_description("implement an own home computer flavor"))
+bi_decl(bi_program_feature("flash cpmfs image to 0x10300000"))
 bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
 #include "bus.h"

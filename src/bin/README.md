@@ -6,3 +6,6 @@ https://github.com/st3fan/krusader
 
 6530 ROMs for JOLT and KIM-1:
 http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/kim1/index.html
+
+cpm programs have been taken from:
+https://github.com/davidgiven/cpm65/

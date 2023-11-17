@@ -82,8 +82,12 @@ add_executable(native_test
    bus_rp2040_purple.c
    system_native.c
 #   gpio_oc.c
+   dhara/error.c
+   dhara/journal.c
+   dhara/map.c
    native/core0.c
    native/core1.c
+   native/dhara_flash.c
    native/event_queue.c
    native/menu.c
    )

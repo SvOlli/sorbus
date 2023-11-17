@@ -31,6 +31,7 @@
 #endif
 
 #include "event_queue.h"
+#include "dhara_flash.h"
 
 
 // set this to 5000000 to run for 5 million cycles while keeping time
@@ -79,6 +80,19 @@ void set_bank( uint8_t bank )
 {
    // as of now only one bank exists
    memcpy( &memory[ROM_START], &native_rom[0], sizeof(native_rom) );
+}
+
+
+static inline void set_rdy( void *data )
+{
+   if((bool)data) // misusing the datapointer as boolean
+   {
+      gpio_set_mask( bus_config.mask_nmi );
+   }
+   else
+   {
+      gpio_clr_mask( bus_config.mask_nmi );
+   }
 }
 
 
@@ -284,6 +298,71 @@ static inline void system_reset()
 }
 
 
+static inline uint8_t dma_precheck()
+{
+   uint16_t *lba = (uint16_t*)&memory[0xDF70];
+   uint16_t *mem = (uint16_t*)&memory[0xDF72];
+
+   memory[address] = 0x00;
+   if( (*mem < 0x0004) || ((*mem > 0xCF80) && (*mem < 0xE000)) || (*mem > 0xFF80) )
+   {
+	  // DMA would run into I/O which is not possible, only RAM works
+	  memory[address] |= 0xF1;
+   }
+   if( *lba >= 0x8000 )
+   {
+	  // only 32768 sectors are available
+	  memory[address] |= 0xF2;
+   }
+   return memory[address];
+}
+
+
+static inline void dma_postcheck( int retval )
+{
+   uint16_t *lba = (uint16_t*)&memory[0xDF70];
+   uint16_t *mem = (uint16_t*)&memory[0xDF72];
+
+   if( retval )
+   {
+	  // report error
+	  memory[address] = 0xF4;
+   }
+   else
+   {
+	  // report success and increment pointers
+	  (*lba)++;
+	  (*mem) += PAGE_SIZE;
+   }
+}
+
+
+static inline void handle_dma_read()
+{
+   int retval;
+
+   if( dma_precheck() )
+   {
+	  return;
+   }
+   retval = dhara_flash_read( *lba, &memory[*mem] );
+   dma_postcheck( retval );
+}
+
+
+static inline void handle_dma_write()
+{
+   int retval;
+
+   if( dma_precheck() )
+   {
+	  return;
+   }
+   retval = dhara_flash_write( *lba, &memory[*mem] );
+   dma_postcheck( retval );
+}
+
+
 static inline void handle_io()
 {
    // TODO: split this up in reads and writes
@@ -359,6 +438,12 @@ static inline void handle_io()
          case 0x0B:
             watchdog_setup( data, address & 0x03 );
             break;
+         case 0x74:
+			handle_dma_read();
+			break;
+         case 0x75:
+			handle_dma_write();
+			break;
          case 0xFC: /* console UART write */
             queue_try_add( &queue_uart_write, &data );
             break;
@@ -394,8 +479,12 @@ void bus_run()
    uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
 
    time_start = time_us_64();
+   // allow this core to be suspended by core0
+   multicore_lockout_victim_init();
    for(cyc = 0; cyc < SPEED_TEST; ++cyc)
 #else
+   // allow this core to be suspended by core0
+   multicore_lockout_victim_init();
    // when not running as speed test run main loop forever
    for(;;)
 #endif

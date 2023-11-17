@@ -54,6 +54,20 @@ Watchdog
   - RAM contents
   - configuration of internals like timer, etc.
 
+Mass Storage
+------------
+System provides 65536 blocks of 128 bytes = 8MB
+Data stored in flash @ 0x10300000 (end of 16MB, 4MB payload with wear leveling)
+LBA: block index, allowed $0000-$7FFF
+DMA memory: allowed $0004-$CF80, $E000-$FF80
+- base address: $DF70
+- base address + $0: LBA low
+- base address + $1: LBA high
+- base address + $2: DMA memory low
+- base address + $3: DMA memory high
+- base address + $4: read sector (strobe, adjusts DMA memory and LBA)
+- base address + $5: write sector (strobe)
+
 Suggested I/O
 -------------
 - $D400: SID(s): 5-bit register select -> 8 SIDs max
