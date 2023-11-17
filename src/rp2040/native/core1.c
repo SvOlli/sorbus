@@ -14,11 +14,12 @@
 #include <string.h>
 
 #include "../rp2040_purple.h"
+
+#include <pico/multicore.h>
+#include <pico/platform.h>
 #include <pico/rand.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
-#include <pico/multicore.h>
-#include <pico/platform.h>
 
 #include <hardware/clocks.h>
 
@@ -461,7 +462,6 @@ void bus_run()
 
    time_start = time_us_64();
    // allow this core to be suspended by core0
-   multicore_lockout_victim_init();
    for(cyc = 0; cyc < SPEED_TEST; ++cyc)
 #else
    // allow this core to be suspended by core0
@@ -606,6 +606,7 @@ void system_init()
    memset( &memory[0x0000], 0x00, sizeof(memory) );
    srand( get_rand_32() );
 }
+
 
 void system_reboot()
 {
