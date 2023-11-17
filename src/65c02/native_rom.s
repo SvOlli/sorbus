@@ -89,17 +89,17 @@ notcr:
 
 escape:
    lda   #PROMPT
-   jsr   CHROUT     ; print prompt character
+   jsr   echo     ; print prompt character
 
 getline:
    lda   #LF
-   jsr   CHROUT     ; print newline
+   jsr   echo     ; print newline
 
    ldy   #$01     ; start a new input, 1 compensates next line
 
 backspace:
    lda   #$08
-   jsr   CHROUT
+   jsr   echo
    dey
    bmi   getline  ; buffer underflow -> restart
 
@@ -109,7 +109,7 @@ nextchar:
 
    lda   UART_READ      ; get key
    sta   IN,y     ; add to buffer
-   jsr   CHROUT     ; print character
+   jsr   echo     ; print character
 
    cmp   #CR
    bne   notcr    ; if it's not return loop
@@ -225,17 +225,17 @@ setaddr:
 nextprint:
    bne   prdata      ; no address to print
    lda   #LF
-   jsr   CHROUT        ; start new line
+   jsr   echo        ; start new line
    lda   XAMH
    jsr   prbyte      ; print hibyte of address
    lda   XAML
    jsr   prbyte      ; print lobyte of address
    lda   #$3a        ; ":"
-   jsr   CHROUT        ; print colon
+   jsr   echo        ; print colon
 
 prdata:
    lda   #$20        ; " "
-   jsr   CHROUT        ; print space
+   jsr   echo        ; print space
    lda   (XAML,x)    ; get data from address
    jsr   prbyte      ; print byte
 
@@ -278,7 +278,7 @@ prhex:
    and   #$0f     ; mask LSD for hex print
    ora   #$30     ; add ascii "0"
    cmp   #$3a     ; is still decimal
-   bcc   CHROUT     ; yes -> output
+   bcc   echo     ; yes -> output
    adc   #$06     ; adjust offset for letters a-f
 
 ; Fall through to print routine
@@ -287,28 +287,11 @@ prhex:
 ;  Subroutine to print a character to the terminal
 ;-------------------------------------------------------------------------
 
-CHROUT:
+echo:
    bit   UART_WRITE_Q
-   bmi   CHROUT
+   bmi   echo
    sta   UART_WRITE
 	rts
-
-GETIN:
-    lda   UART_READ_Q ; check input
-    bne   read_key ; no input -> return 0 
-    rts
-
-read_key:
-    lda   UART_READ      ; get key
-    rts
-
-;-------------------------------------------------------------------------
-;  Jumptable for accessing kernel routines
-;-------------------------------------------------------------------------
-.segment "TABLE"
-    jmp CHROUT    ; Prints character in A to console
-    jmp GETIN    ;  Reads character from console to A , returns 0 on none available
-
 
 .segment "VECTORS"
    .word NMI
