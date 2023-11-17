@@ -298,68 +298,50 @@ static inline void system_reset()
 }
 
 
-static inline uint8_t dma_precheck()
+static inline void handle_flash_dma()
 {
    uint16_t *lba = (uint16_t*)&memory[0xDF70];
    uint16_t *mem = (uint16_t*)&memory[0xDF72];
+   int retval = 0;
 
    memory[address] = 0x00;
    if( (*mem < 0x0004) || ((*mem > 0xCF80) && (*mem < 0xE000)) || (*mem > 0xFF80) )
    {
-	  // DMA would run into I/O which is not possible, only RAM works
-	  memory[address] |= 0xF1;
+      // DMA would run into I/O which is not possible, only RAM works
+      memory[address] |= 0xF1;
    }
    if( *lba >= 0x8000 )
    {
-	  // only 32768 sectors are available
-	  memory[address] |= 0xF2;
+      // only 32768 sectors are available
+      memory[address] |= 0xF2;
    }
-   return memory[address];
-}
-
-
-static inline void dma_postcheck( int retval )
-{
-   uint16_t *lba = (uint16_t*)&memory[0xDF70];
-   uint16_t *mem = (uint16_t*)&memory[0xDF72];
-
-   if( retval )
+   if( memory[address] )
    {
-	  // report error
-	  memory[address] = 0xF4;
+	  // error, do not continue
+      return;
+   }
+
+   if( address & 1 )
+   {
+      // odd address: write
+      retval = dhara_flash_write( *lba, &memory[*mem] );
    }
    else
    {
-	  // report success and increment pointers
-	  (*lba)++;
-	  (*mem) += PAGE_SIZE;
+      // even address: read
+      retval = dhara_flash_read( *lba, &memory[*mem] );
    }
-}
 
-
-static inline void handle_dma_read()
-{
-   int retval;
-
-   if( dma_precheck() )
+   if( retval )
    {
-	  return;
+      // report error, do not continue
+      memory[address] = 0xF4;
+      return;
    }
-   retval = dhara_flash_read( *lba, &memory[*mem] );
-   dma_postcheck( retval );
-}
 
-
-static inline void handle_dma_write()
-{
-   int retval;
-
-   if( dma_precheck() )
-   {
-	  return;
-   }
-   retval = dhara_flash_write( *lba, &memory[*mem] );
-   dma_postcheck( retval );
+   // increment pointers
+   (*lba)++;
+   (*mem) += PAGE_SIZE;
 }
 
 
@@ -438,12 +420,11 @@ static inline void handle_io()
          case 0x0B:
             watchdog_setup( data, address & 0x03 );
             break;
-         case 0x74:
-			handle_dma_read();
-			break;
-         case 0x75:
-			handle_dma_write();
-			break;
+         case 0x74: /* dma read from flash disk */
+         case 0x75: /* dma write to flash disk */
+            /* access is strobe: written data does not matter */
+            handle_flash_dma();
+            break;
          case 0xFC: /* console UART write */
             queue_try_add( &queue_uart_write, &data );
             break;
