@@ -30,11 +30,8 @@ function(setup_target targetname)
 endfunction()
 
 bin2h(krusader.h ${CMAKE_HOME_DIRECTORY}/bin/krusader_65C02.bin krusader_e000)
-# wenn man die CPM Buildumgebung hat, können die Files gebaut werden
-
-#bin2h(cpm_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/sorbus.exe cpm_rom)
-#bin2h(bdos_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/bdos.sys bdos_rom)
-#bin2h(cpmfs_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/generic-1m-cpmfs.img cpmfs_rom)
+bin2h(cpm_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/sorbus.exe cpm_rom)
+bin2h(bdos_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/bdos.sys bdos_rom)
 src2h(cpudetect_apple1.h cpudetect_apple1 cpudetect_0280)
 src2h(cpudetect_mcp.h cpudetect_mcp cpudetect_mcp)
 src2h(cpustate.h cpustate cpustate)
@@ -103,7 +100,6 @@ add_executable(cpm_os
    cpm_rom.h
    bdos_rom.h
    native_rom.h
-   cpmfs_rom.h
    bus_rp2040_purple.c
    system_cpm.c
 #   gpio_oc.c
@@ -111,18 +107,11 @@ add_executable(cpm_os
    native/core1.c
    native/event_queue.c
    native/menu.c
-   flash/devflash.c
-   flash/rawflash.c
    )
-target_include_directories(cpm_os PUBLIC ${CMAKE_HOME_DIRECTORY}/dhara )
-# wenn man die CPM Buildumgebung nicht hat, können die eingecheckten Files benutze werden
-target_include_directories(cpm_os PUBLIC ${CMAKE_HOME_DIRECTORY}/bin_headers )
-
 target_link_libraries(cpm_os
    pico_stdlib
    pico_multicore
    pico_rand
-   dhara
    )
 setup_target(cpm_os)
 

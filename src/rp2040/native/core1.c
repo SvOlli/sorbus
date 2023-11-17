@@ -24,7 +24,6 @@
 
 #include "common.h"
 #include "native_rom.h"
-#include "../flash/devflash.h"
 
 #include "../bus.h"
 #if 0
@@ -316,18 +315,6 @@ static inline void handle_io()
          case 0x0B:
             bus_data_write( watchdog_cycles_total ? 0x80 : 0x00 );
             break;
-
-         case 0x80:
-         case 0x81:
-         case 0x82:
-            bus_data_write(get_disk_lba_no(address & 0x3));
-            break;   
-         case 0x83:
-            bus_data_write(get_disk_offset_count());
-            break;
-         case 0x84:
-            bus_data_write(read_disk_data());
-            break;            
          case 0xFA: /* console UART read */
             success = queue_try_remove( &queue_uart_read, &data );
             bus_data_write( success ? data : 0x00 );
@@ -372,23 +359,6 @@ static inline void handle_io()
          case 0x0B:
             watchdog_setup( data, address & 0x03 );
             break;
-
-         // Flashdisk access :
-         // Write lba (low,mid,high)   
-         // Write read / or write operation ( 0xaa / 0x55 )
-         // Write 128 bytes of Data or read 128 bytes of data
-         case 0x80:
-         case 0x81:
-         case 0x82:
-            set_disk_lba_no(data,address & 0x03);
-            break;   
-         case 0x83:
-            trigger_disk_access(data);
-            break;
-         case 0x84:
-            write_disk_data(data);
-            break;
-
          case 0xFC: /* console UART write */
             queue_try_add( &queue_uart_write, &data );
             break;
@@ -480,20 +450,8 @@ void bus_run()
       gpio_clr_mask( bus_config.mask_clock );
 //#define PRINT_ADDRESS      
 #ifdef PRINT_ADDRESS      
-      if ((address <0xd000)&&(address >0xcddc)){
-        //printf ("Get relocation data on adress:%x %x\n",address,memory[address]);
-      }       
-      if ((address <0xcddc)&&(address >0xc000)){
-      //   printf ("Running on BDOS adress:%x %x\n",address,memory[address]);
-      }
-      if ((address <0xc000)&&(address >0x2800)){
-         printf ("Running on TPA adress:%x %x\n",address,memory[address]);
-      }
-      if ((address <0xe000)&&(address >0xD000)){
-       //  printf ("IO-access on adress:%x %x\n",address,memory[address]);
-      }
-      if ((address <0x1ff)&&(address >0x100)){
-       //  printf ("stack-access on adress:%x %x\n",address,memory[address]);
+      if ((address <0xd000)&&(address >0x0800)&&(address != 0x0bb8)&&(address != 0x0bb9)&&(address != 0x0bba)){
+         printf ("Running on adress:%x %x\n",address,memory[address]);
       }
 #endif
       // log last states

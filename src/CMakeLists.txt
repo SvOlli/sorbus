@@ -18,11 +18,3 @@ add_subdirectory(65c02)
 # the rp2040 code for the chipsets
 add_subdirectory(rp2040)
 
-# Adding dhara-libray. It only has a Makefile :(
-
-# collect up the source files
-file(GLOB DHARA_SRC_FILES_MAIN "dhara/dhara/*.c")
-file(GLOB DHARA_SRC_FILES_ECC "dhara/ecc/*.c")
-list(APPEND DHARA_SRC_FILES ${DHARA_SRC_FILES_MAIN} ${DHARA_SRC_FILES_ECC})
-# creating static-lib
-add_library(dhara ${DHARA_SRC_FILES})
