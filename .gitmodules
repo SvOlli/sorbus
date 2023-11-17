@@ -1,3 +1,0 @@
-[submodule "dhara-lib"]
-	path = src/dhara
-	url = https://github.com/dlbeer/dhara 
