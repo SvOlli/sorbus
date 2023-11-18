@@ -100,10 +100,11 @@ target_link_libraries(native_test
 setup_target(native_test)
 
 add_executable(cpm_os
-   cpm_rom.h
-   bdos_rom.h
+   # Comment in when using build from CPM 
+   #cpm_rom.h
+   #bdos_rom.h
    native_rom.h
-   cpmfs_rom.h
+   #cpmfs_rom.h
    bus_rp2040_purple.c
    system_cpm.c
 #   gpio_oc.c
