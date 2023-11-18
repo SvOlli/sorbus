@@ -91,12 +91,16 @@ add_executable(native_test
    native/core1.c
    native/event_queue.c
    native/menu.c
+   flash/devflash.c
+   flash/rawflash.c
    )
 target_link_libraries(native_test
    pico_stdlib
    pico_multicore
    pico_rand
+   dhara
    )
+target_include_directories(native_test PUBLIC ${CMAKE_HOME_DIRECTORY}/dhara )  
 setup_target(native_test)
 
 add_executable(cpm_os
