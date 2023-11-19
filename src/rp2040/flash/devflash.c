@@ -123,7 +123,7 @@ void trigger_disk_access(uint8_t data){
 		// check if already read
 		if ((current_lba&0xfffffe) != (buffer_lba&0xfffffe)){
 			// Blocksize in Flash is 512-bytes, but we read 256 as one block
-			int err=DHARA_E_NONE;
+			dhara_error_t err=DHARA_E_NONE;
 			dhara_map_read(&dhara, current_lba>>1, tmp_buf, &err);
 			if (err!=DHARA_E_NONE){
 				printf ("Error writing flash!\n");
@@ -141,7 +141,7 @@ void trigger_disk_access(uint8_t data){
 		// check if already read
 		if ((current_lba&0xfffffe) != (buffer_lba&0xfffffe)){
 			// Blocksize in Flash is 512-bytes, but we read 256 as one block
-			int err=DHARA_E_NONE;
+			dhara_error_t err=DHARA_E_NONE;
 			dhara_map_read(&dhara, current_lba>>1, tmp_buf, &err);
 			if (err!=DHARA_E_NONE){
 				printf ("Error writing flash!\n");
@@ -168,7 +168,7 @@ void write_disk_data(uint8_t data){
 	// check if 256 bytes were written
 	if ((current_offset&0xff)==0x00){
 		// Write-back buffer
-		int err=DHARA_E_NONE;
+		dhara_error_t err=DHARA_E_NONE;
 		dhara_map_write(&dhara, current_lba>>1, tmp_buf, &err);
 		if (err!=DHARA_E_NONE){
 			printf ("Error writing flash!\n");

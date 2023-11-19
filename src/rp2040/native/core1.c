@@ -56,6 +56,33 @@ uint32_t watchdog_states[256]  = { 0 };
 uint32_t watchdog_cycles_total = 0;
 
 bool trace_adress = false;
+
+// Zum Flashes des Diskimages einkommentieren . 
+//#define FLASH_CPM_FS
+#ifdef FLASH_CPM_FS
+#include "cpmfs_rom.h"
+#endif
+
+#ifdef FLASH_CPM_FS
+int flashcpmfs(void){
+   uint8_t testbuffer1[512];
+  // uint8_t testbuffer2[512];
+
+   int err=0;
+
+   for(int i =0;i<sizeof(cpmfs_rom)/512;i++){
+      memcpy(testbuffer1,&cpmfs_rom[i*512],512);
+      err+= transfer_cb(i,testbuffer1,false);
+   }
+   
+   //err+= transfer_cb(0,testbuffer2,true);
+   //err+= transfer_cb(1,testbuffer2,true);
+
+   return err;
+
+}
+#endif
+
 /******************************************************************************
  * internal functions
  ******************************************************************************/
@@ -412,6 +439,12 @@ static inline void handle_io()
  ******************************************************************************/
 void bus_run()
 {
+ 
+  flash_dev_init();
+
+ #ifdef FLASH_CPM_FS
+   flashcpmfs();
+ #endif
 #if SPEED_TEST
    uint64_t time_start, time_end;
    double time_exec;

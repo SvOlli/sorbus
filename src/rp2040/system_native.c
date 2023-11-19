@@ -50,7 +50,6 @@ int main()
    // setup the bus and run the bus core
    bus_init();
    core0_init();
-   flash_dev_init();
    system_init();
    system_reboot();
    multicore_launch_core1( bus_run );
