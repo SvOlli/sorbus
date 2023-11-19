@@ -17,6 +17,11 @@
 
 static console_type_t console_type;
 
+void core0_init(void){
+
+   multicore_lockout_victim_init();
+
+}
 
 void console_type_set( console_type_t type )
 {

@@ -55,7 +55,7 @@ bool irq_timer_triggered       = false;
 uint32_t watchdog_states[256]  = { 0 };
 uint32_t watchdog_cycles_total = 0;
 
-
+bool trace_adress = false;
 /******************************************************************************
  * internal functions
  ******************************************************************************/
@@ -372,7 +372,9 @@ static inline void handle_io()
          case 0x0B:
             watchdog_setup( data, address & 0x03 );
             break;
-
+         case 0x7f:
+            trace_adress=data;   // switch address tracing
+            break;
          // Flashdisk access :
          // Write lba (low,mid,high)   
          // Write read / or write operation ( 0xaa / 0x55 )
@@ -383,7 +385,9 @@ static inline void handle_io()
             set_disk_lba_no(data,address & 0x03);
             break;   
          case 0x83:
+            gpio_clr_mask( bus_config.mask_rdy );  // Hold CPU for Flash-access
             trigger_disk_access(data);
+            gpio_set_mask( bus_config.mask_rdy );  
             break;
          case 0x84:
             write_disk_data(data);
@@ -478,24 +482,30 @@ void bus_run()
       }
       // done: set clock to low
       gpio_clr_mask( bus_config.mask_clock );
-//#define PRINT_ADDRESS      
+#define PRINT_ADDRESS      
 #ifdef PRINT_ADDRESS      
-      if ((address <0xd000)&&(address >0xcddc)){
-        //printf ("Get relocation data on adress:%x %x\n",address,memory[address]);
-      }       
-      if ((address <0xcddc)&&(address >0xc000)){
-      //   printf ("Running on BDOS adress:%x %x\n",address,memory[address]);
-      }
-      if ((address <0xc000)&&(address >0x2800)){
-         printf ("Running on TPA adress:%x %x\n",address,memory[address]);
-      }
-      if ((address <0xe000)&&(address >0xD000)){
-       //  printf ("IO-access on adress:%x %x\n",address,memory[address]);
-      }
-      if ((address <0x1ff)&&(address >0x100)){
-       //  printf ("stack-access on adress:%x %x\n",address,memory[address]);
+      if (trace_adress){
+         if ((address <0xd000)&&(address >0xcddc)){
+         //printf ("Get relocation data on adress:%x %x\n",address,memory[address]);
+         }       
+         if ((address <0xcddc)&&(address >0xc000)){
+         //   printf ("Running on BDOS adress:%x %x\n",address,memory[address]);
+         }
+         if ((address <0xc000)&&(address >0x2800)){
+            printf ("Running on TPA adress:%x %x\n",address,memory[address]);
+         }
+         if ((address <0x2800)&&(address >0x0800)){
+            printf ("Running on CPM adress:%x %x\n",address,memory[address]);
+         }
+         if ((address <0xe000)&&(address >0xD000)){
+         //  printf ("IO-access on adress:%x %x\n",address,memory[address]);
+         }
+         if ((address <0x1ff)&&(address >0x100)){
+           printf ("stack-access on adress:%x %x\n",address,memory[address]);
+         }
       }
 #endif
+
       // log last states
       watchdog_states[(_queue_cycle_counter) & 0xff] = gpio_get_all();
    }
@@ -581,6 +591,7 @@ void system_init()
 {
    memset( &memory[0x0000], 0x00, sizeof(memory) );
    srand( get_rand_32() );
+   
 }
 
 void system_reboot()

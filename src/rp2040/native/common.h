@@ -20,6 +20,7 @@ void bus_run();
 void system_init();
 void system_reboot();
 void cpu_halt( bool stop );
+void core0_init(void);
 
 #endif
 

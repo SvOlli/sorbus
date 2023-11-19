@@ -32,7 +32,7 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 #include "bdos_rom.h"
 
 // Zum Flashes des Diskimages einkommentieren . 
-//#define FLASH_CPM_FS
+#define FLASH_CPM_FS
 #ifdef FLASH_CPM_FS
 #include "cpmfs_rom.h"
 #endif

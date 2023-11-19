@@ -3,9 +3,10 @@
 
 #define FLASH_OFFSET 1*1024*1204  // Start after 1Meg , this will give 1 Meg for the filesystem
 
+#include "dhara/error.h"
 
 void flash_dev_init(void);
-uint_fast8_t transfer_cb(uint32_t blk_op_lba,uint8_t * blk_op_addr,bool blk_op_is_read);
+dhara_error_t transfer_cb(uint32_t blk_op_lba,uint8_t * blk_op_addr,bool blk_op_is_read);
 int trim_cb(uint32_t blk_op_lba);
 uint8_t get_disk_offset_count(void);
 uint8_t get_disk_lba_no(int shifter);

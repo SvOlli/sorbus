@@ -31,10 +31,18 @@ endfunction()
 
 bin2h(krusader.h ${CMAKE_HOME_DIRECTORY}/bin/krusader_65C02.bin krusader_e000)
 # wenn man die CPM Buildumgebung hat, können die Files gebaut werden
-
-#bin2h(cpm_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/sorbus.exe cpm_rom)
-#bin2h(bdos_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/bdos.sys bdos_rom)
-#bin2h(cpmfs_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/generic-1m-cpmfs.img cpmfs_rom)
+if (EXISTS "${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/bdos.sys")
+   bin2h(cpm_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/sorbus.prg cpm_rom)
+   bin2h(bdos_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/bdos.sys bdos_rom)
+   bin2h(cpmfs_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/sorbus.bin cpmfs_rom)
+   set (CPM_BINARY_INCLUDES "cpm_rom.h;bdos_rom.h;cpmfs_rom.h")
+   set (CPM_BINARY_INCLUDE_PATH "")
+else()
+   # wenn man die CPM Buildumgebung nicht hat, können die eingecheckten Files benutze werden
+   set (CPM_BINARY_INCLUDES "")
+   set (CPM_BINARY_INCLUDE_PATH "${CMAKE_HOME_DIRECTORY}/bin_headers" )
+  
+endif()
 src2h(cpudetect_apple1.h cpudetect_apple1 cpudetect_0280)
 src2h(cpudetect_mcp.h cpudetect_mcp cpudetect_mcp)
 src2h(cpustate.h cpustate cpustate)
@@ -105,10 +113,8 @@ setup_target(native_test)
 
 add_executable(cpm_os
    # Comment in when using build from CPM 
-   #cpm_rom.h
-   #bdos_rom.h
+   ${CPM_BINARY_INCLUDES}
    native_rom.h
-   #cpmfs_rom.h
    bus_rp2040_purple.c
    system_cpm.c
 #   gpio_oc.c
@@ -120,8 +126,7 @@ add_executable(cpm_os
    flash/rawflash.c
    )
 target_include_directories(cpm_os PUBLIC ${CMAKE_HOME_DIRECTORY}/dhara )
-# wenn man die CPM Buildumgebung nicht hat, können die eingecheckten Files benutze werden
-target_include_directories(cpm_os PUBLIC ${CMAKE_HOME_DIRECTORY}/bin_headers )
+target_include_directories(cpm_os PUBLIC ${CPM_BINARY_INCLUDE_PATH})
 
 target_link_libraries(cpm_os
    pico_stdlib

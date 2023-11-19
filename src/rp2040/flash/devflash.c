@@ -6,6 +6,7 @@
 #include "devflash.h"
 
 uint32_t current_lba;
+uint32_t buffer_lba=0xffffffff;
 uint32_t current_offset;
 
 static struct dhara_map dhara;
@@ -50,7 +51,7 @@ int dhara_nand_copy(const struct dhara_nand *n,
 	return dhara_nand_prog(&nand, dst, tmp_buf, err);
 }
 
-uint_fast8_t transfer_cb(uint32_t blk_op_lba,uint8_t * blk_op_addr,bool blk_op_is_read)
+dhara_error_t transfer_cb(uint32_t blk_op_lba,uint8_t * blk_op_addr,bool blk_op_is_read)
 {
 	dhara_error_t err = DHARA_E_NONE;
 	if (blk_op_is_read)
@@ -58,7 +59,7 @@ uint_fast8_t transfer_cb(uint32_t blk_op_lba,uint8_t * blk_op_addr,bool blk_op_i
 	else
 		dhara_map_write(&dhara, blk_op_lba, blk_op_addr, &err);
 	
-	return (err == DHARA_E_NONE);
+	return err;
 }
 
 
@@ -119,8 +120,16 @@ void trigger_disk_access(uint8_t data){
 
 	if (data == 0xaa) { // Read-access
 		current_offset=0;
-		// Blocksize in Flash is 512-bytes, but we read 256 as one block
-		transfer_cb(current_lba>>1,tmp_buf,true);
+		// check if already read
+		if ((current_lba&0xfffffe) != (buffer_lba&0xfffffe)){
+			// Blocksize in Flash is 512-bytes, but we read 256 as one block
+			int err=DHARA_E_NONE;
+			dhara_map_read(&dhara, current_lba>>1, tmp_buf, &err);
+			if (err!=DHARA_E_NONE){
+				printf ("Error writing flash!\n");
+			}
+			buffer_lba=current_lba;
+		}
 		if (current_lba&0x01){
 			current_offset=256;
 		}else{
@@ -129,7 +138,17 @@ void trigger_disk_access(uint8_t data){
 	}
 	if (data == 0x55) { // Write-access
 		// Blocksize in Flash is 512-bytes, but we read 256 as one block
-		transfer_cb(current_lba>>1,tmp_buf,true);
+		// check if already read
+		if ((current_lba&0xfffffe) != (buffer_lba&0xfffffe)){
+			// Blocksize in Flash is 512-bytes, but we read 256 as one block
+			int err=DHARA_E_NONE;
+			dhara_map_read(&dhara, current_lba>>1, tmp_buf, &err);
+			if (err!=DHARA_E_NONE){
+				printf ("Error writing flash!\n");
+			}
+			buffer_lba=current_lba;
+			buffer_lba=current_lba;
+		}
 		if (current_lba&0x01){
 			current_offset=256;
 		}else{
@@ -147,10 +166,17 @@ void write_disk_data(uint8_t data){
 	}
 	tmp_buf[current_offset++]=data;
 	// check if 256 bytes were written
-	if (current_offset&0xff==0x00){
+	if ((current_offset&0xff)==0x00){
 		// Write-back buffer
-		transfer_cb(current_lba>>1,tmp_buf,true);
+		int err=DHARA_E_NONE;
+		dhara_map_write(&dhara, current_lba>>1, tmp_buf, &err);
+		if (err!=DHARA_E_NONE){
+			printf ("Error writing flash!\n");
+		}else{
+			dhara_map_sync(&dhara,&err);
+		}
 		current_offset=0xffff;
+		buffer_lba=0xffffffff;
 	}
 
 };

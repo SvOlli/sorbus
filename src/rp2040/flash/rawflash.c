@@ -6,6 +6,7 @@
 #include <string.h>
 #include <hardware/flash.h>
 #include <hardware/sync.h>
+#include <pico/multicore.h>
 #include "devflash.h"
 
 
@@ -13,7 +14,9 @@ int dhara_nand_erase(const struct dhara_nand *n, dhara_block_t b,
                      dhara_error_t *err)
 {
     int f = save_and_disable_interrupts();
+    multicore_lockout_start_blocking();
     flash_range_erase(FLASH_OFFSET + (b*4096), 4096);
+    multicore_lockout_end_blocking();
     restore_interrupts(f);
 	if (err)
 		*err = DHARA_E_NONE;
@@ -25,7 +28,9 @@ int dhara_nand_prog(const struct dhara_nand *n, dhara_page_t p,
                     dhara_error_t *err)
 {
     int f = save_and_disable_interrupts();
+    multicore_lockout_start_blocking();
     flash_range_program(FLASH_OFFSET + (p*512), data, 512);
+    multicore_lockout_end_blocking();
     restore_interrupts(f);
 	if (err)
 		*err = DHARA_E_NONE;
