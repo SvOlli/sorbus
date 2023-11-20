@@ -1,7 +1,8 @@
 
 #include "dhara_flash.h"
-#include "../dhara/nand.h"
+#include "../dhara/error.h"
 #include "../dhara/map.h"
+#include "../dhara/nand.h"
 
 #include <string.h>
 #include <stdbool.h>
@@ -9,6 +10,11 @@
 #include <hardware/flash.h>
 #include <pico/multicore.h>
 
+#include <stdio.h>
+
+#if (PAGE_SIZE != 0x200) || (SECTOR_SIZE != 0x80)
+#warn this code has been only tested on PAGE_SIZE=512 bytes and a SECTOR_SIZE=128 bytes
+#endif
 
 // taken from: https://stackoverflow.com/questions/27581671/how-to-compute-log-with-the-preprocessor
 #define LOG_1(n) (((n) >= 2) ? 1 : 0)
@@ -18,6 +24,10 @@
 #define LOG(n)   (((n) >= 1<<16) ? (16 + LOG_8((n)>>16)) : LOG_8(n))
 
 static uint8_t dhara_nand_page_buffer[PAGE_SIZE];
+static uint8_t cache[PAGE_SIZE];
+static int32_t cache_sector;
+
+#define SECTOR_MASK ((PAGE_SIZE / SECTOR_SIZE)-1)
 
 //static struct dhara_map dhara;
 static const struct dhara_nand nand =
@@ -27,8 +37,11 @@ static const struct dhara_nand nand =
    .num_blocks = (PICO_FLASH_SIZE_BYTES - FLASH_OFFSET) / BLOCK_SIZE,
 };
 
-
-static uint8_t dhara_map_buffer[2*PAGE_SIZE]; // should be PAGE_SIZE, maybe 128 is not enough
+#if PAGE_SIZE < 0x100
+static uint8_t dhara_map_buffer[2*PAGE_SIZE]; // caused a buffer overflow on 128 bytes
+#else
+static uint8_t dhara_map_buffer[PAGE_SIZE];
+#endif
 static struct dhara_map dhara;
 
 
@@ -57,14 +70,36 @@ int dhara_flash_init()
 {
    dhara_error_t err = DHARA_E_NONE;
    int retval = 0;
+   cache_sector = -1;
 
    dhara_map_init(&dhara, &nand, dhara_map_buffer, GC_RATIO);
-   dhara_map_resume(&dhara, &err);
+   retval = dhara_map_resume(&dhara, &err);
    if( err != DHARA_E_NONE )
    {
       retval = -1;
    }
    return retval;
+}
+
+/* get some info */
+void dhara_flash_info( uint16_t lba, uint8_t *data, dhara_flash_info_t *info )
+{
+   dhara_error_t err = DHARA_E_NONE;
+   int retval = 0;
+   if( !info )
+   {
+      return;
+   }
+   retval = dhara_flash_read( lba, data );
+   info->sector_size    = SECTOR_SIZE;
+   info->page_size      = PAGE_SIZE;
+   info->erase_size     = BLOCK_SIZE;
+   info->erase_cells    = (PICO_FLASH_SIZE_BYTES-FLASH_OFFSET)/BLOCK_SIZE;
+   info->pages          = dhara_map_capacity( &dhara );
+   info->sectors        = info->pages * PAGE_SIZE / SECTOR_SIZE;
+   info->gc_ratio       = GC_RATIO;
+   info->read_status    = (uint32_t)retval;
+   info->read_errcode   = (uint32_t)err;
 }
 
 /* read a sector from flash
@@ -74,29 +109,60 @@ int dhara_flash_read( uint16_t lba, uint8_t *data )
 {
    dhara_error_t err = DHARA_E_NONE;
    int retval = 0;
+   uint16_t page = lba / (PAGE_SIZE/SECTOR_SIZE);
+   uint offset = SECTOR_SIZE * (lba & SECTOR_MASK);
 
-   retval = dhara_map_read( &dhara, lba, data, &err );
-   if( err != DHARA_E_NONE )
+   if( cache_sector != lba )
    {
-      retval = -1;
+      retval = dhara_map_read( &dhara, page, &cache[0], &err );
+      cache_sector = lba;
+      if( err != DHARA_E_NONE )
+      {
+         retval = -1;
+         cache_sector = -1;
+      }
    }
+   memcpy( data, &cache[offset], SECTOR_SIZE );
+
    return retval;
 }
 
 /* write a sector from flash
  * lba: sector to write
  * data: a sector of PAGE_SIZE bytes */
-int dhara_flash_write( uint16_t lba, uint8_t *data )
+int dhara_flash_write( uint16_t lba, const uint8_t *data )
 {
    dhara_error_t err = DHARA_E_NONE;
    int retval = 0;
+   uint16_t page = lba / (PAGE_SIZE/SECTOR_SIZE);
+   uint offset = SECTOR_SIZE * (lba & SECTOR_MASK);
 
-   retval = dhara_map_write( &dhara, lba, data, &err );
+   if( cache_sector != lba )
+   {
+      retval = dhara_map_read( &dhara, page, &cache[0], &err );
+      cache_sector = lba;
+      if( err != DHARA_E_NONE )
+      {
+         retval = -1;
+         cache_sector = -1;
+         return retval;
+      }
+   }
+   memcpy( &cache[offset], data, SECTOR_SIZE );
+   retval = dhara_map_write( &dhara, page, &cache[0], &err );
    if( err != DHARA_E_NONE )
    {
       retval = -1;
    }
+
    return retval;
+}
+
+
+/* move data from journal to sectors */
+void dhara_flash_sync()
+{
+   dhara_map_sync( &dhara, 0 ); // 0 = pointer to err
 }
 
 
@@ -105,7 +171,7 @@ int dhara_flash_write( uint16_t lba, uint8_t *data )
  */
 
 /* Is the given block bad? */
-int dhara_nand_is_bad(const struct dhara_nand *n, dhara_block_t b)
+int dhara_nand_is_bad( const struct dhara_nand *n, dhara_block_t b )
 {
    // no high level api
    return 0;
@@ -115,7 +181,7 @@ int dhara_nand_is_bad(const struct dhara_nand *n, dhara_block_t b)
 /* Mark bad the given block (or attempt to). No return value is
  * required, because there's nothing that can be done in response.
  */
-void dhara_nand_mark_bad(const struct dhara_nand *n, dhara_block_t b)
+void dhara_nand_mark_bad( const struct dhara_nand *n, dhara_block_t b )
 {
    // no high level api
 }
@@ -155,7 +221,7 @@ int dhara_nand_prog(const struct dhara_nand *n, dhara_page_t p,
                     dhara_error_t *err)
 {
    dhara_block_system( true );
-   flash_range_program( FLASH_OFFSET + (p*BLOCK_SIZE), data, BLOCK_SIZE );
+   flash_range_program( FLASH_OFFSET + (p*PAGE_SIZE), data, PAGE_SIZE );
    dhara_block_system( false );
 
    if( err )
@@ -198,7 +264,7 @@ int dhara_nand_read(const struct dhara_nand *n, dhara_page_t p,
                     dhara_error_t *err)
 {
    memcpy( data,
-           (uint8_t*)XIP_NOCACHE_NOALLOC_BASE + FLASH_OFFSET + (p*BLOCK_SIZE) + offset,
+           (uint8_t*)XIP_NOCACHE_NOALLOC_BASE + FLASH_OFFSET + (p*PAGE_SIZE) + offset,
            length );
    if( err )
    {

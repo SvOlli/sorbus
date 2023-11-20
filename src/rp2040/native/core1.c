@@ -33,10 +33,11 @@
 
 #include "event_queue.h"
 #include "dhara_flash.h"
+#include "../dhara/error.h"
 
 
 // set this to 5000000 to run for 5 million cycles while keeping time
-#define SPEED_TEST 5000000
+#define SPEED_TEST 500000
 // this is where the write protected area starts
 #define ROM_START (0xE000)
 // the number of clock cycles a timer interrupt is triggered
@@ -299,6 +300,12 @@ static inline void system_reset()
 }
 
 
+static inline void handle_flash_sync( void *data )
+{
+	dhara_flash_sync();
+}
+
+
 static inline void handle_flash_dma()
 {
    uint16_t *lba = (uint16_t*)&memory[0xDF70];
@@ -306,7 +313,9 @@ static inline void handle_flash_dma()
    int retval = 0;
 
    memory[address] = 0x00;
-   if( (*mem < 0x0004) || ((*mem > 0xCF80) && (*mem < 0xE000)) || (*mem > 0xFF80) )
+   // filter out bad ranges, removing second line would write protect ROM
+   if( (*mem < 0x0004) || ((*mem > (0xD000-SECTOR_SIZE)) &&
+       (*mem < 0xE000)) || (*mem > (0x10000-SECTOR_SIZE)) )
    {
       // DMA would run into I/O which is not possible, only RAM works
       memory[address] |= 0xF1;
@@ -326,6 +335,8 @@ static inline void handle_flash_dma()
    {
       // odd address: write
       retval = dhara_flash_write( *lba, &memory[*mem] );
+      // after ~.02 seconds without additions writes run sync
+      queue_event_add( 20000, handle_flash_sync, 0 );
    }
    else
    {
@@ -342,7 +353,7 @@ static inline void handle_flash_dma()
 
    // increment pointers
    (*lba)++;
-   (*mem) += PAGE_SIZE;
+   (*mem) += SECTOR_SIZE;
 }
 
 
@@ -459,13 +470,14 @@ void bus_run()
    uint f_clk_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_USB);
    uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
    uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
+   
+   dhara_flash_info_t dhara_info;
+   uint8_t dhara_buffer[SECTOR_SIZE];
+   uint16_t dhara_sector = 0;
 
    time_start = time_us_64();
-   // allow this core to be suspended by core0
    for(cyc = 0; cyc < SPEED_TEST; ++cyc)
 #else
-   // allow this core to be suspended by core0
-   multicore_lockout_victim_init();
    // when not running as speed test run main loop forever
    for(;;)
 #endif
@@ -529,6 +541,7 @@ void bus_run()
    time_exec = (double)(time_end - time_start) / CLOCKS_PER_SEC / 10000;
    time_hz = (double)cyc / time_exec;
 
+#if 0
    for( int i = 0; i < count_of(watchdog_states); ++i )
    {
       uint32_t _state = watchdog_states[i];
@@ -542,6 +555,7 @@ void bus_run()
          (_state & bus_config.mask_irq) ? ' ' : 'I',
          (_state & bus_config.mask_rdy) ? ' ' : 'S' );
    }
+
    printf( "\nE000:" );
    for( int i = 0xE000; i < 0xE010; ++i )
    {
@@ -557,6 +571,8 @@ void bus_run()
    {
       printf( " %02x", memory[i] );
    }
+#endif
+
    printf("\n");
    printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
    printf("PLL_USB:             %3d.%03dMhz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
@@ -566,6 +582,30 @@ void bus_run()
    printf("CLK_USB:             %3d.%03dMhz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
    printf("CLK_ADC:             %3d.%03dMhz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
    printf("CLK_RTC:             %3d.%03dMhz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
+   dhara_flash_info( dhara_sector, &dhara_buffer[0], &dhara_info );
+   uint64_t hw_size  = dhara_info.erase_cells * dhara_info.erase_size;
+   uint64_t lba_size = dhara_info.sectors * dhara_info.sector_size;
+   printf("dhara hw sector size:  %08x (%d)\n", dhara_info.erase_size, dhara_info.erase_size );
+   printf("dhara hw num sectors:  %08x (%d)\n", dhara_info.erase_cells, dhara_info.erase_cells );
+   printf("dhara hw size:         %.2fMB\n", (float)hw_size / (1024*1024) );
+   printf("dhara page size:       %08x (%d)\n", dhara_info.page_size, dhara_info.page_size );
+   printf("dhara pages:           %08x (%d)\n", dhara_info.pages, dhara_info.pages );
+   printf("dhara lba sector size: %08x (%d)\n", dhara_info.sector_size, dhara_info.sector_size );
+   printf("dhara lba num sectors: %08x (%d)\n", dhara_info.sectors, dhara_info.sectors );
+   printf("dhara lba size:        %.2fMB\n", (float)lba_size / (1024*1024) );
+   printf("dhara gc ratio         %08x (%d)\n", dhara_info.gc_ratio, dhara_info.gc_ratio );
+   printf("dhara read status:     %d\n", dhara_info.read_status );
+   printf("dhara read error:      %s\n", dhara_strerror( dhara_info.read_errcode ) );
+   printf("dhara read sector $%04x:\n", dhara_sector );
+   for( int i = 0; i < SECTOR_SIZE; ++i )
+   {
+      printf( " %02x", dhara_buffer[i] );
+      if( (i & 0xF) == 0xF )
+      {
+		  printf( "\n" );
+	  }
+   }
+
    for(;;)
    {
       printf( "\rbus has terminated after %d cycles in %.06f seconds: %d.%03dMHz ",
@@ -605,6 +645,7 @@ void system_init()
 {
    memset( &memory[0x0000], 0x00, sizeof(memory) );
    srand( get_rand_32() );
+   dhara_flash_init();
 }
 
 

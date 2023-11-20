@@ -8,8 +8,8 @@ readonly MKFTL='../../build/tools/mkftl.exe'
 readonly FORMAT='sorbus'
 readonly IMG='sorbus.img'
 readonly FTL='cpm65.ftl'
-readonly SECTORSIZE=128
-readonly FLASHSIZE=$((13*1024))
+readonly SECTORSIZE=512
+readonly FLASHSIZE=$((12*1024))
 readonly ERASESIZE=4096
 
 if [ ! -f diskdefs ]; then
@@ -51,3 +51,6 @@ done
 cpmls -f "${FORMAT}" "${IMG}"
 ls -l "${IMG}"
 "${MKFTL}" -p ${SECTORSIZE} -s ${FLASHSIZE} -e ${ERASESIZE} "${IMG}" -o "${FTL}"
+set +x
+echo "all done, flash image with:"
+echo "picotool load -f -o 0x10400000 -t bin '$(readlink -f "${FTL}")'"
