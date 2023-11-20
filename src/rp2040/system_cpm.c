@@ -33,7 +33,7 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
 
 
-#define CPM_START 0x0801
+#define CPM_START 0xe000
 #define BDOS_START 0xc000
 extern uint8_t memory[0x10000];
 queue_t queue_uart_read;
@@ -63,7 +63,7 @@ int main()
    core0_init();
   
    // copy cpm-startup
-   memcpy( &memory[CPM_START], &cpm_rom[2], sizeof(cpm_rom)-2 );  // has startaddress in front
+   memcpy( &memory[CPM_START], &cpm_rom[0], sizeof(cpm_rom) );  // has startaddress in front
    memcpy( &memory[BDOS_START], &bdos_rom[0], sizeof(bdos_rom) );
 
    system_reboot();

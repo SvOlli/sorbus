@@ -37,7 +37,7 @@
 // set this to 5000000 to run for 5 million cycles while keeping time
 //#define SPEED_TEST 5000000
 // this is where the write protected area starts
-#define ROM_START (0xE000)
+#define ROM_START (0xF000)
 // the number of clock cycles a timer interrupt is triggered
 #define INTERRUPT_LENGTH (8)
 
@@ -344,17 +344,16 @@ static inline void handle_io()
             bus_data_write( watchdog_cycles_total ? 0x80 : 0x00 );
             break;
 
-         case 0x80:
-         case 0x81:
-         case 0x82:
+         case 0x70:
+         case 0x71:
             bus_data_write(get_disk_lba_no(address & 0x3));
             break;   
-         case 0x83:
-            bus_data_write(get_disk_offset_count());
+         case 0x72:
+            bus_data_write(get_disk_dma_addr(true));
             break;
-         case 0x84:
-            bus_data_write(read_disk_data());
-            break;            
+         case 0x73:
+            bus_data_write(get_disk_dma_addr(false));
+            break;
          case 0xFA: /* console UART read */
             success = queue_try_remove( &queue_uart_read, &data );
             bus_data_write( success ? data : 0x00 );
@@ -406,18 +405,25 @@ static inline void handle_io()
          // Write lba (low,mid,high)   
          // Write read / or write operation ( 0xaa / 0x55 )
          // Write 128 bytes of Data or read 128 bytes of data
-         case 0x80:
-         case 0x81:
-         case 0x82:
+         case 0x70:
+         case 0x71:
             set_disk_lba_no(data,address & 0x03);
             break;   
-         case 0x83:
+         case 0x72:
+            set_disk_dma_addr(data,true);
+            break;
+         case 0x73:
+            set_disk_dma_addr(data,false);
+            break;
+         case 0x74:
             gpio_clr_mask( bus_config.mask_rdy );  // Hold CPU for Flash-access
-            trigger_disk_access(data);
+            trigger_disk_access_read(data,memory);
             gpio_set_mask( bus_config.mask_rdy );  
             break;
-         case 0x84:
-            write_disk_data(data);
+         case 0x75:
+            gpio_clr_mask( bus_config.mask_rdy );  // Hold CPU for Flash-access
+            trigger_disk_access_write(data,memory);
+            gpio_set_mask( bus_config.mask_rdy );  
             break;
 
          case 0xFC: /* console UART write */
@@ -519,7 +525,7 @@ void bus_run()
 #ifdef PRINT_ADDRESS      
       if (trace_adress){
          if ((address <0xd000)&&(address >0xcddc)){
-         //printf ("Get relocation data on adress:%x %x\n",address,memory[address]);
+         // printf ("Get relocation data on adress:%x %x\n",address,memory[address]);
          }       
          if ((address <0xcddc)&&(address >0xc000)){
          //   printf ("Running on BDOS adress:%x %x\n",address,memory[address]);
@@ -527,7 +533,7 @@ void bus_run()
          if ((address <0xc000)&&(address >0x2800)){
             printf ("Running on TPA adress:%x %x\n",address,memory[address]);
          }
-         if ((address <0x2800)&&(address >0x0800)){
+         if ((address <0xf000)&&(address >0xe000)){
             printf ("Running on CPM adress:%x %x\n",address,memory[address]);
          }
          if ((address <0xe000)&&(address >0xD000)){

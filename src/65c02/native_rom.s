@@ -202,7 +202,7 @@ run:
    jmp (XAML)        ; execute supplied address
 
 run_cpm:
-   jmp $080d        ; execute CPM
+   jmp $e000       ; execute CPM
 
 ;-------------------------------------------------------------------------
 ;  We're not in Store mode

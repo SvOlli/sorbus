@@ -2,7 +2,7 @@
 # based upon C64-asm.cfg
 
 MEMORY {
-    ROM:      start = $E000,  size = $1F00, define = yes, file = %O, fill = yes;
+    ROM:      start = $F000,  size = $0F00, define = yes, file = %O, fill = yes;
     TABLE:    start = $FF00,  size = $FA, define = yes, file = %O, fill = yes;
     VECTORS:  start = $FFFA,  size =     6, define = yes, file = %O, fill = yes;
     ZP:       start = $0004,  size = $00FC, define = yes;
