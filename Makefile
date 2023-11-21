@@ -34,7 +34,7 @@ $(PICO_SDK_PATH)/README.md:
 	git clone --recurse-submodules $(PICO_SDK_URL) $(PICO_SDK_PATH)
 
 setup-apt:
-	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full
+	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full cpmtools
 
 $(RELEASE_ARCHIVE): all
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done

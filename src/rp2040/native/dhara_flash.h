@@ -24,13 +24,16 @@ typedef struct {
 // flash block size: 4096
 #define BLOCK_SIZE   (0x1000)
 // mass storage offset: 4M, leaving 12M raw flash for storage
-#define FLASH_OFFSET (0x400000)
+#define FLASH_START  (0x10400000)
+#define FLASH_OFFSET (FLASH_START-0x10000000)
 // full flash size found in rp2040_purple.h
 #include "../rp2040_purple.h"
 
-int dhara_flash_init();
+// returns size of disk as number of LBAs, 0=error
+uint16_t dhara_flash_init();
 int dhara_flash_read( uint16_t lba, uint8_t *data );
 int dhara_flash_write( uint16_t lba, const uint8_t *data );
+int dhara_flash_trim( uint16_t lba );
 void dhara_flash_sync();
 void dhara_flash_info( uint16_t lba, uint8_t *data, dhara_flash_info_t *info );
 

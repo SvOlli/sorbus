@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ex
+set -e
 
 cd "$(dirname "${0}")/../bin"
 
@@ -39,18 +39,18 @@ if [ ! -d "cpm" ]; then
 fi
 
 mkfs.cpm -f "${FORMAT}" "${IMG}"
-for i in cpm/* cpm/[1-9]*/*;do
+for i in cpm/[0-9]*/*;do
    # skip directories
    [ -d "${i}" ] && continue
-   user=0
-   case "${i}" in
-   cpm/[1-9]*/*) user="$(echo ${i} | cut -f2 -d/)";;
-   esac
+   user="$(echo ${i} | cut -f2 -d/)"
    cpmcp -f "${FORMAT}" "${IMG}" "${i}" ${user}:
 done
-cpmls -f "${FORMAT}" "${IMG}"
-ls -l "${IMG}"
-"${MKFTL}" -p ${SECTORSIZE} -s ${FLASHSIZE} -e ${ERASESIZE} "${IMG}" -o "${FTL}"
 set +x
+echo "Imagefile:"
+ls -l "${IMG}"
+echo "Contents:"
+cpmls -f "${FORMAT}" "${IMG}" | tr '\n' ' ' | sed -e 's/ \([0-9][0-9]*:\)/\n\1/g'
+echo
+"${MKFTL}" -p ${SECTORSIZE} -s ${FLASHSIZE} -e ${ERASESIZE} "${IMG}" -o "${FTL}"
 echo "all done, flash image with:"
 echo "picotool load -f -o 0x10400000 -t bin '$(readlink -f "${FTL}")'"

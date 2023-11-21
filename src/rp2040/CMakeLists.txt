@@ -77,8 +77,8 @@ target_link_libraries(apple1
    )
 setup_target(apple1)
 
-add_executable(native_test
-   native_rom.h
+add_executable(native_alpha
+#   native_rom.h
    bus_rp2040_purple.c
    system_native.c
 #   gpio_oc.c
@@ -91,9 +91,9 @@ add_executable(native_test
    native/event_queue.c
    native/menu.c
    )
-target_link_libraries(native_test
+target_link_libraries(native_alpha
    pico_stdlib
    pico_multicore
    pico_rand
    )
-setup_target(native_test)
+setup_target(native_alpha)

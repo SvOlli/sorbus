@@ -66,17 +66,18 @@ static inline void dhara_block_system( bool stop )
  */
 
 /* init */ 
-int dhara_flash_init()
+uint16_t dhara_flash_init()
 {
    dhara_error_t err = DHARA_E_NONE;
    int retval = 0;
    cache_sector = -1;
+   const uint16_t page_sector_ratio = PAGE_SIZE / SECTOR_SIZE;
 
-   dhara_map_init(&dhara, &nand, dhara_map_buffer, GC_RATIO);
-   retval = dhara_map_resume(&dhara, &err);
-   if( err != DHARA_E_NONE )
+   dhara_map_init( &dhara, &nand, dhara_map_buffer, GC_RATIO );
+   retval = dhara_map_resume( &dhara, &err );
+   if( err == DHARA_E_NONE )
    {
-      retval = -1;
+      retval = dhara_map_capacity( &dhara ) * page_sector_ratio;
    }
    return retval;
 }
@@ -153,6 +154,28 @@ int dhara_flash_write( uint16_t lba, const uint8_t *data )
    if( err != DHARA_E_NONE )
    {
       retval = -1;
+   }
+
+   return retval;
+}
+
+
+int dhara_flash_trim( uint16_t lba )
+{
+   dhara_error_t err = DHARA_E_NONE;
+   int retval = 0;
+
+   retval = dhara_map_trim( &dhara, lba, &err );
+   if( err != DHARA_E_NONE )
+   {
+      retval = -1;
+   }
+   else
+   {
+      if( cache_sector == lba )
+      {
+         cache_sector = -1;
+      }
    }
 
    return retval;

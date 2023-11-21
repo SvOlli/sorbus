@@ -56,9 +56,10 @@ Watchdog
 
 Mass Storage
 ------------
-System provides 65536 blocks of 128 bytes = 8MB
-Data stored in flash @ 0x10300000 (end of 16MB, 4MB payload with wear leveling)
+System provides 32768 blocks of 128 bytes = 4MB
+Data stored in flash @ 0x10400000 (end of 16MB, ~<6MB payload with wear leveling)
 LBA: block index, allowed $0000-$7FFF
+Additional blocks not used by OS
 DMA memory: allowed $0004-$CF80, $E000-$FF80
 - base address: $DF70
 - base address + $0: LBA low
@@ -67,6 +68,7 @@ DMA memory: allowed $0004-$CF80, $E000-$FF80
 - base address + $3: DMA memory high
 - base address + $4: read sector (strobe, adjusts DMA memory and LBA)
 - base address + $5: write sector (strobe)
+- base address + $7: flash discard
 
 Suggested I/O
 -------------

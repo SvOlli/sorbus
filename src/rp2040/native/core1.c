@@ -15,6 +15,7 @@
 
 #include "../rp2040_purple.h"
 
+#include <pico/binary_info.h>
 #include <pico/multicore.h>
 #include <pico/platform.h>
 #include <pico/rand.h>
@@ -24,7 +25,6 @@
 #include <hardware/clocks.h>
 
 #include "common.h"
-#include "native_rom.h"
 
 #include "../bus.h"
 #if 0
@@ -37,11 +37,19 @@
 
 
 // set this to 5000000 to run for 5 million cycles while keeping time
-#define SPEED_TEST 500000
-// this is where the write protected area starts
-#define ROM_START (0xE000)
+//#define SPEED_TEST 5000000
 // the number of clock cycles a timer interrupt is triggered
 #define INTERRUPT_LENGTH (8)
+// this is where the write protected area starts
+#define ROM_START (0xE000)
+// this is where the kernel is in raw flash
+#define KERNEL_FLASH_START (0x103FE000)
+
+// setup data for binary_info
+#define FLASH_DRIVE_INFO  "fs image at " __XSTRING(FLASH_START)
+bi_decl(bi_program_feature(FLASH_DRIVE_INFO))
+#define FLASH_KERNEL_INFO "kernel at   " __XSTRING(KERNEL_FLASH_START)
+bi_decl(bi_program_feature(FLASH_KERNEL_INFO))
 
 uint8_t memory[0x10000]; // 64k of RAM/ROM and I/O
 uint32_t state;
@@ -57,6 +65,7 @@ bool irq_timer_triggered       = false;
 uint32_t watchdog_states[256]  = { 0 };
 uint32_t watchdog_cycles_total = 0;
 
+uint16_t dhara_flash_size = 0;
 
 /******************************************************************************
  * internal functions
@@ -81,7 +90,7 @@ static inline uint8_t bus_data_read()
 void set_bank( uint8_t bank )
 {
    // as of now only one bank exists
-   memcpy( &memory[ROM_START], &native_rom[0], sizeof(native_rom) );
+   memcpy( &memory[ROM_START], KERNEL_FLASH_START, FLASH_START-KERNEL_FLASH_START );
 }
 
 
@@ -315,7 +324,7 @@ static inline void handle_flash_dma()
    memory[address] = 0x00;
    // filter out bad ranges, removing second line would write protect ROM
    if( (*mem < 0x0004) || ((*mem > (0xD000-SECTOR_SIZE)) &&
-       (*mem < 0xE000)) || (*mem > (0x10000-SECTOR_SIZE)) )
+       (*mem < ROM_START)) || (*mem > (0x10000-SECTOR_SIZE)) )
    {
       // DMA would run into I/O which is not possible, only RAM works
       memory[address] |= 0xF1;
@@ -331,17 +340,22 @@ static inline void handle_flash_dma()
       return;
    }
 
-   if( address & 1 )
+   switch( address & 3 )
    {
-      // odd address: write
-      retval = dhara_flash_write( *lba, &memory[*mem] );
-      // after ~.02 seconds without additions writes run sync
-      queue_event_add( 20000, handle_flash_sync, 0 );
-   }
-   else
-   {
-      // even address: read
-      retval = dhara_flash_read( *lba, &memory[*mem] );
+      case 0: // read
+         retval = dhara_flash_read( *lba, &memory[*mem] );
+         break;
+      case 1: // write
+         retval = dhara_flash_write( *lba, &memory[*mem] );
+         // after ~.02 seconds without additions writes run sync
+         queue_event_add( 20000, handle_flash_sync, 0 );
+         break;
+      case 3: // trim
+         retval = dhara_flash_trim( *lba );
+         queue_event_add( 20000, handle_flash_sync, 0 );
+         break;
+      default:
+         break;
    }
 
    if( retval )
@@ -434,6 +448,7 @@ static inline void handle_io()
             break;
          case 0x74: /* dma read from flash disk */
          case 0x75: /* dma write to flash disk */
+         case 0x77: /* flash disk trim, no dma address used */
             /* access is strobe: written data does not matter */
             handle_flash_dma();
             break;
@@ -556,8 +571,8 @@ void bus_run()
          (_state & bus_config.mask_rdy) ? ' ' : 'S' );
    }
 
-   printf( "\nE000:" );
-   for( int i = 0xE000; i < 0xE010; ++i )
+   printf( "\nROM:" );
+   for( int i = ROM_START; i < ROM_START+0x10; ++i )
    {
       printf( " %02x", memory[i] );
    }
@@ -645,7 +660,7 @@ void system_init()
 {
    memset( &memory[0x0000], 0x00, sizeof(memory) );
    srand( get_rand_32() );
-   dhara_flash_init();
+   dhara_flash_size = dhara_flash_init();
 }
 
 

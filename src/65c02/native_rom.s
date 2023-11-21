@@ -19,9 +19,35 @@ WATCHDOG_HIGH_START    = $DF0B
 ; ...best not make use of opcode that are not supported by 65816 CPUs
 .PC02
 
+;-------------------------------------------------------------------------
+; jumptable
+;-------------------------------------------------------------------------
+
+   jmp   wozmon
+hdd:
+   jmp   hddtest
 IRQ:
 NMI:
    jmp   *
+
+HDDLBA := $DF70
+HDDDMA := $DF72
+HDDRD  := $DF74
+HDDWR  := $DF75
+
+hddtest:
+   lda   #$00
+   sta   HDDLBA+0
+   sta   HDDLBA+1
+   sta   HDDDMA+0
+   lda   #$20 ; write sectors to $2000 following
+   sta   HDDDMA+1
+   ldx   #$10 ; read first 16 sectors to $2000-$27FF
+:
+   sta   HDDRD
+   dex   
+   bne   :-
+   jmp   wozmon
 
 RESET:
 ;-------------------------------------------------------------------------
@@ -285,7 +311,7 @@ echo:
    bit   UART_WRITE_Q
    bmi   echo
    sta   UART_WRITE
-	rts
+   rts
 
 .segment "VECTORS"
    .word NMI

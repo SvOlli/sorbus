@@ -16,13 +16,28 @@ static uint32_t pagesize = 512;
 static uint32_t erasesize = 4096;
 static uint32_t flashsize = 12*1024*1024; /* bytes */
 static uint8_t gcratio = 2;
+static bool debug_info = false;
 
 static uint8_t* flashdata;
+
+static void debugf(const char* s, ...)
+{
+   va_list ap;
+   va_start(ap, s);
+   if( !debug_info )
+   {
+      return;
+   }
+   fprintf(stderr, "Debug: ");
+   vfprintf(stderr, s, ap);
+   fprintf(stderr, "\n");
+   va_end(ap);
+}
 
 int dhara_nand_erase( const struct dhara_nand *n, dhara_block_t b,
                       dhara_error_t *err )
 {
-printf( "  dhara_nand_erase(b=%08x)\n", b );
+   debugf( "  dhara_nand_erase(b=%08x)\n", b );
    memset(flashdata + (b*erasesize), 0xff, erasesize);
    if( err )
    {
@@ -48,13 +63,14 @@ int dhara_nand_read( const struct dhara_nand *n, dhara_page_t p,
                      uint8_t *data,
                      dhara_error_t *err )
 {
-printf( "> dhara_nand_read(p=%08x,o=%08x,l=%08x)\n", p, offset, length );
+   debugf( "> dhara_nand_read(p=%08x,o=%08x,l=%08x)\n", p, offset, length );
    if (p >= (flashsize/pagesize))
    {
       if( err )
       {
          *err = DHARA_E_BAD_BLOCK;
       }
+      debugf( "< dhara_nand_read = %s\n", dhara_strerror( DHARA_E_BAD_BLOCK ) );
       return -1;
    }
 
@@ -63,29 +79,34 @@ printf( "> dhara_nand_read(p=%08x,o=%08x,l=%08x)\n", p, offset, length );
    {
       *err = DHARA_E_NONE;
    }
-printf( "< dhara_nand_read\n" );
+   debugf( "< dhara_nand_read\n" );
    return 0;
 }
 
 int dhara_nand_is_bad( const struct dhara_nand* n, dhara_block_t b )
 {
+   debugf( "  dhara_nand_is_bad(b=%04x)\n", b );
    return 0;
 }
 
 void dhara_nand_mark_bad( const struct dhara_nand *n, dhara_block_t b )
 {
+   debugf( "  dhara_nand_mark_bad(b=%04x)\n", b );
 }
 
 int dhara_nand_is_free( const struct dhara_nand *n, dhara_page_t p )
 {
+   debugf( "> dhara_nand_is_free(p=%04x)\n", p );
    const uint8_t* ptr = flashdata + (p*pagesize);
    for( int i=0; i<pagesize; i++ )
    {
       if( ptr[i] != 0xff )
       {
+         debugf( "< dhara_nand_is_free = used\n" );
          return 0;
       }
    }
+   debugf( "< dhara_nand_is_free = free\n" );
    return 1;
 }
 
@@ -93,6 +114,7 @@ int dhara_nand_copy( const struct dhara_nand *n,
                      dhara_page_t src, dhara_page_t dst,
                      dhara_error_t *err )
 {
+   debugf( "> dhara_nand_copy(src=%04x,dst=%04x)\n", src, dst );
    const uint8_t* psrc = flashdata + (src*pagesize);
    uint8_t* pdst = flashdata + (dst*pagesize);
    memcpy(pdst, psrc, pagesize);
@@ -100,6 +122,7 @@ int dhara_nand_copy( const struct dhara_nand *n,
    {
       *err = DHARA_E_NONE;
    }
+   debugf( "< dhara_nand_copy\n" );
    return 0;
 }
 
@@ -142,10 +165,14 @@ int main(int argc, char* const* argv)
    int sectorno;
    int opt;
 
-   while( (opt = getopt(argc, argv, "o:p:e:s:g:")) >= 0 )
+   while( (opt = getopt(argc, argv, "o:p:e:s:g:d")) >= 0 )
    {
       switch (opt)
       {
+         case 'd':
+            debug_info = true;
+            break;
+
          case 'o':
             outputfilename = optarg;
             break;
@@ -202,9 +229,13 @@ int main(int argc, char* const* argv)
       panic("flash size is not a multiple of erase size");
    }
 
+   if( pagesize < 512 )
+   {
+      fprintf( stderr, "warning: pagesize of %d is below 512, dhara will perform sub par\n", pagesize );
+   }
+
    uint8_t *buffer   = (uint8_t*)malloc(pagesize);
    uint8_t *page_buf = (uint8_t*)malloc(/*erasesize*/ 2*pagesize);
-
 
    struct dhara_nand nand;
    nand.log2_page_size = ilog2(pagesize);
@@ -219,7 +250,7 @@ int main(int argc, char* const* argv)
    dhara_map_init(&dhara, &nand, page_buf, gcratio);
    dhara_error_t err = DHARA_E_NONE;
    dhara_map_resume(&dhara, &err);
-   printf( "dhara_map_resume()=%d\n", err );
+   debugf( "dhara_map_resume()=%d\n", err );
    printf( "Number of physical erase blocks: %d\n", nand.num_blocks );
 
    uint32_t lba = dhara_map_capacity( &dhara );
@@ -242,7 +273,7 @@ int main(int argc, char* const* argv)
    if( sectors == lba )
    {
       fprintf( stderr, "WARNING: logical image completely fills the FTL filesystem; you\n" );
-      fprintf( stderr, "will have GC thrash if you try to write to it" );
+      fprintf( stderr, "will have GC thrash if you try to write to it\n" );
    }
 
    for( sectorno=0; sectorno<sectors; sectorno++ )
@@ -259,7 +290,7 @@ int main(int argc, char* const* argv)
          exit( 1 );
       }
    }
-   fclose(inf);
+   fclose( inf );
    dhara_map_sync( &dhara, &err );
    printf( "%d sectors of %d bytes read from '%s'\n", sectorno, pagesize, inputfilename );
 
@@ -272,7 +303,7 @@ int main(int argc, char* const* argv)
    dhara_map_init( &dhara, &nand, page_buf, gcratio );
    err = DHARA_E_NONE;
    dhara_map_resume( &dhara, &err );
-   printf( "dhara_map_resume()=%d\n", err );
+   debugf( "dhara_map_resume()=%s\n", dhara_strerror( err ) );
 
    FILE* outf = fopen( outputfilename, "wb" );
    if( !outf )
