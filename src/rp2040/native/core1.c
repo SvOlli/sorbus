@@ -58,7 +58,7 @@ uint32_t watchdog_cycles_total = 0;
 bool trace_adress = false;
 
 // Zum Flashes des Diskimages einkommentieren . 
-//#define FLASH_CPM_FS
+#define FLASH_CPM_FS
 #ifdef FLASH_CPM_FS
 #include "cpmfs_rom.h"
 #endif

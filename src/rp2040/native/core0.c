@@ -39,6 +39,8 @@ void console_rp2040()
    console_type = CONSOLE_TYPE_65C02;
 }
 
+int soh =0;
+int count =0;
 
 void console_65c02()
 {
@@ -47,24 +49,37 @@ void console_65c02()
    if( in == PICO_ERROR_TIMEOUT )
    {
       in = getchar_timeout_us(10);
-      if( in == '~' )
+ 
+      /*if( in == '~' )
       {
          console_type = CONSOLE_TYPE_RP2040;
          in = PICO_ERROR_TIMEOUT;
-      }
+      }*/
    }
    if( in != PICO_ERROR_TIMEOUT )
    {
       if( queue_try_add( &queue_uart_read, &in ) )
-      {
-         // need to handle overflow?
+      {         // need to handle overflow?
+       if( in == 0x01 ){
+         soh=1;
+         count=0;
+
+       }
+       if (soh==1){
+          count++;
+       }
+       if (count == 131){
+          printf ("doe") ;
+
+       }
       }
+
    }
 
    if( queue_try_remove( &queue_uart_write, &out ) )
    {
       //printf("%02x ",out );
-      putchar( out );
+      putchar_raw( out & 0x00ff);
    }
 }
 

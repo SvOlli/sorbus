@@ -45,7 +45,7 @@ int main()
 {
    // setup UART
    stdio_init_all();
-   uart_set_translate_crlf( uart0, true );
+   //uart_set_translate_crlf( uart0, true );
 
    // give some time to connect to console
    sleep_ms(2000);
@@ -54,8 +54,8 @@ int main()
    set_sys_clock_khz ( 133000, false );
 
    // setup between UART core and bus core
-   queue_init( &queue_uart_read,  sizeof(int), 128 );
-   queue_init( &queue_uart_write, sizeof(int), 128 );
+   queue_init( &queue_uart_read,  sizeof(int), 512 );
+   queue_init( &queue_uart_write, sizeof(int), 512 );
 
    // setup the bus and run the bus core
    bus_init();

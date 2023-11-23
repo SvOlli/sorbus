@@ -296,10 +296,12 @@ CHROUT:
 GETIN:
     lda   UART_READ_Q ; check input
     bne   read_key ; no input -> return 0 
+    sec
     rts
 
 read_key:
     lda   UART_READ      ; get key
+    clc
     rts
 
 ;-------------------------------------------------------------------------
@@ -307,7 +309,9 @@ read_key:
 ;-------------------------------------------------------------------------
 .segment "TABLE"
     jmp CHROUT    ; Prints character in A to console
-    jmp GETIN    ;  Reads character from console to A , returns 0 on none available
+    jmp GETIN    ;  Reads character from console to A , returns carry set on none available
+    jmp CHROUT    ; Writes a character to AUX channel 
+    jmp GETIN    ;  Reads character from AUX to A , returns carry set on none available
 
 
 .segment "VECTORS"
