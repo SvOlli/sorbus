@@ -8,6 +8,7 @@
  */
 
 #include <stdio.h>
+#include <pico/multicore.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
 
@@ -66,6 +67,8 @@ void console_65c02()
 
 void console_run()
 {
+   multicore_lockout_victim_init();
+
    for(;;)
    {
       switch( console_type )

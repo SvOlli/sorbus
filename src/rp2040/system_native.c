@@ -20,6 +20,8 @@
 #include <pico/binary_info.h>
 
 #include "native/common.h"
+#include "native/event_queue.h"
+
 
 bi_decl(bi_program_name("Sorbus Computer Native Core"))
 bi_decl(bi_program_description("implement an own home computer flavor"))
@@ -47,10 +49,10 @@ int main()
    queue_init( &queue_uart_read,  sizeof(int), 128 );
    queue_init( &queue_uart_write, sizeof(int), 128 );
 
+   // setup mutex for event queue
+   queue_event_init();
+
    // setup the bus and run the bus core
-   bus_init();
-   system_init();
-   system_reboot();
    multicore_launch_core1( bus_run );
 
    // run interactive console -> should never return

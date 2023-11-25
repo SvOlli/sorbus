@@ -1,0 +1,6 @@
+mkftl is written by David Given for FUZIX and used with permission.
+It has been changed a bit to better fix this project.
+
+Code is taken from
+https://github.com/davidgiven/FUZIX/blob/rpipico/Standalone/mkftl.c
+

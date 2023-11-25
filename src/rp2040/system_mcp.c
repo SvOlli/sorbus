@@ -17,6 +17,7 @@
 #include <pico/multicore.h>
 #include <pico/platform.h>
 #include <pico/binary_info.h>
+#include <hardware/flash.h>
 
 #include <hardware/clocks.h>
 
@@ -28,7 +29,6 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 #include "cpu_detect.h"
 #include "payload_mcp.h"
 #include "getaline.h"
-#include "fake_eeprom.h"
 
 #define MEM_ACCESS 0
 #define SHOW_CLOCK 0
@@ -84,6 +84,23 @@ uint8_t memcheck[] = {
    0xD0, 0xED,
    0xF0, 0xFE
 };
+
+
+uint32_t flash_size_detect()
+{
+   uint32_t size;
+   /* sizes:    1MB               16MB */
+   for( size = (1 << 20); size < (1 << 25); size <<= 1 )
+   {
+      const uint8_t *flash_base = (const uint8_t *)XIP_BASE;
+      if( !memcmp( flash_base, flash_base + size, FLASH_SECTOR_SIZE ) )
+      {
+         break;
+      }
+   }
+
+   return size;
+}
 
 
 void bank_adjust( uint32_t bank, uint32_t *addr )

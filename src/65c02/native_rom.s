@@ -1,3 +1,10 @@
+; IMPORTANT NOTE
+; ==============
+;
+; This is not the real rom for the native mode. It is just a minimal
+; environment used to testing purposes.
+;
+; The read ROM code is in another castle. (ahm, sorry, repository)
 
 .segment "CODE"
 
@@ -19,11 +26,58 @@ WATCHDOG_HIGH_START    = $DF0B
 ; ...best not make use of opcode that are not supported by 65816 CPUs
 .PC02
 
+;-------------------------------------------------------------------------
+; jumptable
+;-------------------------------------------------------------------------
+
+RESET:
+   jmp   wozmon
+hdd:
+   jmp   hddtest
 IRQ:
 NMI:
    jmp   *
 
-RESET:
+IDLBA  := $DF70
+IDDMA  := $DF72
+IDREAD := $DF74
+IDWRT  := $DF75
+
+hddtest:
+   lda   #$00
+   sta   IDLBA+0
+   sta   IDLBA+1
+   sta   IDDMA+0
+   lda   #$20 ; write sectors to $2000 following
+   sta   IDDMA+1
+   ldx   #$10 ; read first 16 sectors to $2000-$27FF
+:
+   sta   IDREAD
+   dex
+   bne   :-
+
+   ; X is still 0
+   stx   IDLBA+0
+   stx   IDDMA+0
+   lda   #$20
+   sta   IDLBA+1
+   sta   IDDMA+1
+
+   sta   IDWRT
+
+   ; X is still 0
+@next:
+   lda   @successmsg,x
+   beq   @done
+   jsr   echo
+   inx
+   bne   @next
+@done:
+   jmp   wozmon
+
+@successmsg:
+   .byte "SUCCESS",10,0
+
 ;-------------------------------------------------------------------------
 ;  Memory declaration
 ;-------------------------------------------------------------------------
@@ -285,7 +339,7 @@ echo:
    bit   UART_WRITE_Q
    bmi   echo
    sta   UART_WRITE
-	rts
+   rts
 
 .segment "VECTORS"
    .word NMI

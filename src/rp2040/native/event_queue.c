@@ -10,7 +10,8 @@
 
 uint64_t      _queue_cycle_counter  = 0;
 uint64_t      _queue_next_timestamp = 0;
-volatile queue_event_t *_queue_next_event    = 0;
+queue_event_t *_queue_next_event    = 0;
+mutex_t       _queue_event_mutex;
 
 static queue_event_t queue_events[QUEUE_EVENT_SIZE] = { 0 };
 
@@ -33,22 +34,38 @@ static inline uint32_t cycles_until( uint64_t start, uint64_t end )
 // replacement for "new": get an empty event
 static inline queue_event_t *queue_event_get()
 {
+   queue_event_t *retval = 0;
+
+   mutex_enter_blocking( &_queue_event_mutex );
    for( int i = 0; i < count_of(queue_events); ++i )
    {
       if( !(queue_events[i].timestamp) )
       {
-         return &queue_events[i];
+         retval = &queue_events[i];
+         break;
       }
    }
-   return 0;
+   mutex_exit( &_queue_event_mutex );
+   return retval;
+}
+
+
+// clean out queue totally
+void queue_event_reset()
+{
+   mutex_enter_blocking( &_queue_event_mutex );
+   memset( &queue_events[0], 0x00, sizeof(queue_events) );
+   _queue_next_timestamp = 0;
+   mutex_exit( &_queue_event_mutex );
 }
 
 
 // clean out queue totally
 void queue_event_init()
 {
-   memset( &queue_events[0], 0x00, sizeof(queue_events) );
-   _queue_next_timestamp = 0;
+   // TODO: check if mutex is already initialized
+   mutex_init( &_queue_event_mutex );
+   queue_event_reset();
 }
 
 
@@ -65,6 +82,7 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    newevent->data      = data;
    newevent->next      = 0;
 
+   mutex_enter_blocking( &_queue_event_mutex );
    if( !_queue_next_event )
    {
       // that's easy: no next event means no events at all
@@ -96,6 +114,7 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    }
 
    _queue_next_timestamp = _queue_next_event->timestamp;
+   mutex_exit( &_queue_event_mutex );
 }
 
 
@@ -104,6 +123,7 @@ void queue_event_cancel( queue_event_handler_t handler )
    queue_event_t *current  = 0;
    queue_event_t *previous = 0;
 
+   mutex_enter_blocking( &_queue_event_mutex );
    for( current = _queue_next_event; current; current = current->next )
    {
       if( current->handler == handler )
@@ -119,8 +139,41 @@ void queue_event_cancel( queue_event_handler_t handler )
 
          queue_event_drop( current );
 
-         return; // canceling first only, remove return to cancel all
+         break; // canceling first only, remove break to cancel all
       }
       previous = current;
    }
+   mutex_exit( &_queue_event_mutex );
+}
+
+
+bool queue_event_contains( queue_event_handler_t handler )
+{
+   bool retval = false;
+   queue_event_t *current  = 0;
+   queue_event_t *previous = 0;
+
+   mutex_enter_blocking( &_queue_event_mutex );
+   for( current = _queue_next_event; current; current = current->next )
+   {
+      if( current->handler == handler )
+      {
+         if( previous )
+         {
+            previous->next = current->next;
+         }
+         else
+         {
+            _queue_next_event = _queue_next_event->next;
+         }
+
+         retval = true;
+
+         break; // canceling first only, remove break to cancel all
+      }
+      previous = current;
+   }
+   mutex_exit( &_queue_event_mutex );
+
+   return retval;
 }

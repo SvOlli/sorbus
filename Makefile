@@ -11,7 +11,6 @@ PICO_SDK_PATH_CMAKE ?= -DPICO_SDK_PATH=$(PICO_SDK_PATH)
 RELEASE_ARCHIVE := SorbusComputerCores.zip
 
 PICO_SDK_URL ?= https://github.com/raspberrypi/pico-sdk.git
-PICO_BOARD ?= pico
 BUILD_DIR ?= $(CURDIR)/build
 SRC_DIR := $(CURDIR)/src
 JOBS ?= 4
@@ -19,7 +18,7 @@ JOBS ?= 4
 .PHONY: all clean distclean release setup-apt
 
 all: $(PICO_SDK_PATH)/README.md
-	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(PICO_SDK_PATH_CMAKE) -DPICO_BOARD=$(PICO_BOARD)
+	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(PICO_SDK_PATH_CMAKE)
 	make -C $(BUILD_DIR) -j$(JOBS)
 
 clean:
@@ -31,10 +30,10 @@ distclean:
 
 $(PICO_SDK_PATH)/README.md:
 	mkdir -p $(PICO_SDK_PATH)
-	git clone --recurse-submodules $(PICO_SDK_URL) $(PICO_SDK_PATH)
+	git clone --depth 1 --recurse-submodules --shallow-submodules $(PICO_SDK_URL) $(PICO_SDK_PATH)
 
 setup-apt:
-	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full
+	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full cpmtools
 
 $(RELEASE_ARCHIVE): all
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done

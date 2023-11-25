@@ -56,7 +56,6 @@ add_executable(mcp
    payload_mcp.h
    system_mcp.c
    getaline.c
-   fake_eeprom.c
    )
 target_link_libraries(mcp
    pico_stdlib
@@ -77,19 +76,21 @@ target_link_libraries(apple1
    )
 setup_target(apple1)
 
-add_executable(native_test
-   native_rom.h
+add_executable(native_alpha
    bus_rp2040_purple.c
    system_native.c
-#   gpio_oc.c
+   dhara/error.c
+   dhara/journal.c
+   dhara/map.c
    native/core0.c
    native/core1.c
+   native/dhara_flash.c
    native/event_queue.c
    native/menu.c
    )
-target_link_libraries(native_test
+target_link_libraries(native_alpha
    pico_stdlib
    pico_multicore
    pico_rand
    )
-setup_target(native_test)
+setup_target(native_alpha)

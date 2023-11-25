@@ -26,3 +26,21 @@ The project is fully open source, licensend under GPL v3:
 
 [An addtional page](https://xayax.net/sorbus/) has been setup to explain more
 about the ideas of the system, as well as some usecases.
+
+To access the RP2040 without super user rights, make sure that your user is
+in the groups "plugdev" and "dialout". You also need to add a udev rule.
+
+/etc/udev/rules.d/99-picotool.rules:
+```
+SUBSYSTEM=="usb", \
+    ATTRS{idVendor}=="2e8a", \
+    ATTRS{idProduct}=="0003", \
+    MODE="660", \
+    GROUP="plugdev"
+SUBSYSTEM=="usb", \
+    ATTRS{idVendor}=="2e8a", \
+    ATTRS{idProduct}=="000a", \
+    MODE="660", \
+    GROUP="plugdev"
+```
+

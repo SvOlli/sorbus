@@ -14,16 +14,17 @@
 #include <string.h>
 
 #include "../rp2040_purple.h"
+
+#include <pico/binary_info.h>
+#include <pico/multicore.h>
+#include <pico/platform.h>
 #include <pico/rand.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
-#include <pico/multicore.h>
-#include <pico/platform.h>
 
 #include <hardware/clocks.h>
 
 #include "common.h"
-#include "native_rom.h"
 
 #include "../bus.h"
 #if 0
@@ -31,14 +32,25 @@
 #endif
 
 #include "event_queue.h"
+#include "dhara_flash.h"
+#include "../dhara/error.h"
 
 
 // set this to 5000000 to run for 5 million cycles while keeping time
-#define SPEED_TEST 5000000
-// this is where the write protected area starts
-#define ROM_START (0xE000)
+//#define SPEED_TEST 5000000
 // the number of clock cycles a timer interrupt is triggered
 #define INTERRUPT_LENGTH (8)
+// this is where the write protected area starts
+#define ROM_START (0xE000)
+// this is where the kernel is in raw flash
+#define KERNEL_FLASH_START_ADDR 0x103FE000
+#define KERNEL_FLASH_START (KERNEL_FLASH_START_ADDR)
+
+// setup data for binary_info
+#define FLASH_DRIVE_INFO  "fs image at " __XSTRING(FLASH_START_ADDR)
+bi_decl(bi_program_feature(FLASH_DRIVE_INFO))
+#define FLASH_KERNEL_INFO "kernel   at " __XSTRING(KERNEL_FLASH_START_ADDR)
+bi_decl(bi_program_feature(FLASH_KERNEL_INFO))
 
 uint8_t memory[0x10000]; // 64k of RAM/ROM and I/O
 uint32_t state;
@@ -54,6 +66,7 @@ bool irq_timer_triggered       = false;
 uint32_t watchdog_states[256]  = { 0 };
 uint32_t watchdog_cycles_total = 0;
 
+uint16_t dhara_flash_size = 0;
 
 /******************************************************************************
  * internal functions
@@ -78,7 +91,7 @@ static inline uint8_t bus_data_read()
 void set_bank( uint8_t bank )
 {
    // as of now only one bank exists
-   memcpy( &memory[ROM_START], &native_rom[0], sizeof(native_rom) );
+   memcpy( &memory[ROM_START], (void*)KERNEL_FLASH_START, FLASH_START-KERNEL_FLASH_START );
 }
 
 
@@ -270,7 +283,7 @@ static inline void system_reset()
    irq_timer_triggered   = false;
    watchdog_cycles_total = 0;
    set_bank( 0 );
-   queue_event_init();
+   queue_event_reset();
    // just a test, remove
    //queue_event_add( 16, timer_nmi_triggered, 0 );
    while( queue_try_remove( &queue_uart_read, &dummy ) )
@@ -281,6 +294,79 @@ static inline void system_reset()
    {
       // just loop until queue is empty
    }
+}
+
+
+static inline void handle_flash_sync( void *data )
+{
+   dhara_flash_sync();
+}
+
+
+static inline void handle_flash_dma()
+{
+   uint16_t *lba = (uint16_t*)&memory[0xDF70];
+   uint16_t *mem = (uint16_t*)&memory[0xDF72];
+   int retval = 0;
+
+   memory[address] = 0x00;
+   // filter out bad ranges, removing second line would write protect ROM
+   if( (*mem < 0x0004) || ((*mem > (0xD000-SECTOR_SIZE)) &&
+       (*mem < ROM_START)) || (*mem > (0x10000-SECTOR_SIZE)) )
+   {
+      // DMA would run into I/O which is not possible, only RAM works
+      memory[address] |= 0xF1;
+   }
+   if( *lba >= 0x8000 )
+   {
+      // only 32768 sectors are available
+      memory[address] |= 0xF2;
+   }
+   if( memory[address] )
+   {
+    // error, do not continue
+      return;
+   }
+
+   switch( address & 3 )
+   {
+      case 0: // read
+         retval = dhara_flash_read( *lba, &memory[*mem] );
+         if( queue_event_contains( handle_flash_sync ) )
+         {
+            // delay any waiting sync events
+            queue_event_cancel( handle_flash_sync );
+            queue_event_add( 20000, handle_flash_sync, 0 );
+         }
+         break;
+      case 1: // write
+         retval = dhara_flash_write( *lba, &memory[*mem] );
+         // drop any waiting sync events, since a new one is created
+         queue_event_cancel( handle_flash_sync );
+         // after ~.02 seconds without additions writes run sync
+         queue_event_add( 20000, handle_flash_sync, 0 );
+         break;
+      case 3: // trim
+         retval = dhara_flash_trim( *lba );
+         // drop any waiting sync events, since a new one is created
+         queue_event_cancel( handle_flash_sync );
+         // after ~.02 seconds without additions writes run sync
+         queue_event_add( 20000, handle_flash_sync, 0 );
+         break;
+      default:
+         break;
+   }
+
+   if( retval )
+   {
+      // report error, do not continue
+      memory[address] = 0xF4;
+      return;
+   }
+
+   // increment pointers
+   (*lba)++;
+   (*mem) += SECTOR_SIZE;
 }
 
 
@@ -359,6 +445,12 @@ static inline void handle_io()
          case 0x0B:
             watchdog_setup( data, address & 0x03 );
             break;
+         case 0x74: /* dma read from flash disk */
+         case 0x75: /* dma write to flash disk */
+         case 0x77: /* flash disk trim, no dma address used */
+            /* access is strobe: written data does not matter */
+            handle_flash_dma();
+            break;
          case 0xFC: /* console UART write */
             queue_try_add( &queue_uart_write, &data );
             break;
@@ -392,10 +484,22 @@ void bus_run()
    uint f_clk_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_USB);
    uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
    uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
+   
+   dhara_flash_info_t dhara_info;
+   uint8_t dhara_buffer[SECTOR_SIZE];
+   uint16_t dhara_sector = 0;
+
+   bus_init();
+   system_init();
+   system_reboot();
 
    time_start = time_us_64();
    for(cyc = 0; cyc < SPEED_TEST; ++cyc)
 #else
+   bus_init();
+   system_init();
+   system_reboot();
+
    // when not running as speed test run main loop forever
    for(;;)
 #endif
@@ -472,12 +576,13 @@ void bus_run()
          (_state & bus_config.mask_irq) ? ' ' : 'I',
          (_state & bus_config.mask_rdy) ? ' ' : 'S' );
    }
-   printf( "\nE000:" );
-   for( int i = 0xE000; i < 0xE010; ++i )
+
+   printf( "\nROM:" );
+   for( int i = ROM_START; i < ROM_START+0x10; ++i )
    {
       printf( " %02x", memory[i] );
    }
-   printf("\n[...]\nFFF0:");
+   printf("\nFFF0:");
    for( int i = 0xFFF0; i < 0x10000; ++i )
    {
       printf( " %02x", memory[i] );
@@ -496,6 +601,30 @@ void bus_run()
    printf("CLK_USB:             %3d.%03dMhz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
    printf("CLK_ADC:             %3d.%03dMhz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
    printf("CLK_RTC:             %3d.%03dMhz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
+   dhara_flash_info( dhara_sector, &dhara_buffer[0], &dhara_info );
+   uint64_t hw_size  = dhara_info.erase_cells * dhara_info.erase_size;
+   uint64_t lba_size = dhara_info.sectors * dhara_info.sector_size;
+   printf("dhara hw sector size:  %08x (%d)\n", dhara_info.erase_size, dhara_info.erase_size );
+   printf("dhara hw num sectors:  %08x (%d)\n", dhara_info.erase_cells, dhara_info.erase_cells );
+   printf("dhara hw size:         %.2fMB\n", (float)hw_size / (1024*1024) );
+   printf("dhara page size:       %08x (%d)\n", dhara_info.page_size, dhara_info.page_size );
+   printf("dhara pages:           %08x (%d)\n", dhara_info.pages, dhara_info.pages );
+   printf("dhara lba sector size: %08x (%d)\n", dhara_info.sector_size, dhara_info.sector_size );
+   printf("dhara lba num sectors: %08x (%d)\n", dhara_info.sectors, dhara_info.sectors );
+   printf("dhara lba size:        %.2fMB\n", (float)lba_size / (1024*1024) );
+   printf("dhara gc ratio         %08x (%d)\n", dhara_info.gc_ratio, dhara_info.gc_ratio );
+   printf("dhara read status:     %d\n", dhara_info.read_status );
+   printf("dhara read error:      %s\n", dhara_strerror( dhara_info.read_errcode ) );
+   printf("dhara read sector $%04x:\n", dhara_sector );
+   for( int i = 0; i < SECTOR_SIZE; ++i )
+   {
+      printf( " %02x", dhara_buffer[i] );
+      if( (i & 0xF) == 0xF )
+      {
+         printf( "\n" );
+      }
+   }
+
    for(;;)
    {
       printf( "\rbus has terminated after %d cycles in %.06f seconds: %d.%03dMHz ",
@@ -535,7 +664,9 @@ void system_init()
 {
    memset( &memory[0x0000], 0x00, sizeof(memory) );
    srand( get_rand_32() );
+   dhara_flash_size = dhara_flash_init();
 }
+
 
 void system_reboot()
 {
