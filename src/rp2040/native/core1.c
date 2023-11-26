@@ -43,13 +43,12 @@
 // this is where the write protected area starts
 #define ROM_START (0xE000)
 // this is where the kernel is in raw flash
-#define KERNEL_FLASH_START_ADDR 0x103FE000
-#define KERNEL_FLASH_START (KERNEL_FLASH_START_ADDR)
+#define FLASH_KERNEL_START (FLASH_KERNEL_START_TXT)
 
 // setup data for binary_info
-#define FLASH_DRIVE_INFO  "fs image at " __XSTRING(FLASH_START_ADDR)
+#define FLASH_DRIVE_INFO  "fs image at " __XSTRING(FLASH_START_TXT)
 bi_decl(bi_program_feature(FLASH_DRIVE_INFO))
-#define FLASH_KERNEL_INFO "kernel   at " __XSTRING(KERNEL_FLASH_START_ADDR)
+#define FLASH_KERNEL_INFO "kernel   at " __XSTRING(KERNEL_FLASH_START_TXT)
 bi_decl(bi_program_feature(FLASH_KERNEL_INFO))
 
 uint8_t memory[0x10000]; // 64k of RAM/ROM and I/O
@@ -91,7 +90,7 @@ static inline uint8_t bus_data_read()
 void set_bank( uint8_t bank )
 {
    // as of now only one bank exists
-   memcpy( &memory[ROM_START], (void*)KERNEL_FLASH_START, FLASH_START-KERNEL_FLASH_START );
+   memcpy( &memory[ROM_START], (void*)FLASH_KERNEL_START, FLASH_DRIVE_START-FLASH_KERNEL_START );
 }
 
 

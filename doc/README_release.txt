@@ -10,3 +10,10 @@ Cores available are:
 - Monitor Command Prompt: MCP
 - Apple 1
 
+In alpha state there also is a new native core. This core defines a new
+custom computer. This requires two binary images to be flashed as well,
+which are under heavy development:
+- Sorbus Native Kernel
+- Internal Drive Image
+Because, these files are in an early stage, they are not part of this
+distribution. This will change, once they've matured.

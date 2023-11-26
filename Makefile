@@ -19,7 +19,7 @@ JOBS ?= 4
 
 all: $(PICO_SDK_PATH)/README.md
 	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(PICO_SDK_PATH_CMAKE)
-	make -C $(BUILD_DIR) -j$(JOBS)
+	make -C $(BUILD_DIR) -j$(JOBS) && echo "\nbuild was successful\n"
 
 clean:
 	make -C $(BUILD_DIR) clean

@@ -31,6 +31,7 @@ static uint8_t dhara_nand_page_buffer[PAGE_SIZE];
 static uint8_t cache[PAGE_SIZE];
 static int32_t cache_page;
 
+#define FLASH_DRIVE_OFFSET      (FLASH_DRIVE_START-0x10000000)
 #define SECTOR_MASK ((PAGE_SIZE / SECTOR_SIZE)-1)
 
 //static struct dhara_map dhara;
@@ -38,7 +39,7 @@ static const struct dhara_nand nand =
 {
    .log2_page_size = LOG(PAGE_SIZE),
    .log2_ppb = LOG(BLOCK_SIZE) - LOG(PAGE_SIZE),
-   .num_blocks = (PICO_FLASH_SIZE_BYTES - FLASH_OFFSET) / BLOCK_SIZE,
+   .num_blocks = (PICO_FLASH_SIZE_BYTES - FLASH_DRIVE_OFFSET) / BLOCK_SIZE,
 };
 
 static uint8_t dhara_map_buffer[PAGE_SIZE];
@@ -81,7 +82,7 @@ void dhara_flash_info( uint16_t lba, uint8_t *data, dhara_flash_info_t *info )
    info->sector_size    = SECTOR_SIZE;
    info->page_size      = PAGE_SIZE;
    info->erase_size     = BLOCK_SIZE;
-   info->erase_cells    = (PICO_FLASH_SIZE_BYTES-FLASH_OFFSET)/BLOCK_SIZE;
+   info->erase_cells    = (PICO_FLASH_SIZE_BYTES-FLASH_DRIVE_OFFSET)/BLOCK_SIZE;
    info->pages          = dhara_map_capacity( &dhara );
    info->sectors        = info->pages * PAGE_SIZE / SECTOR_SIZE;
    info->gc_ratio       = GC_RATIO;
@@ -214,7 +215,7 @@ int dhara_nand_erase( const struct dhara_nand *n, dhara_block_t b,
 {
    uint32_t interrupts = save_and_disable_interrupts();
    multicore_lockout_start_blocking();
-   flash_range_erase( FLASH_OFFSET + (b * BLOCK_SIZE), BLOCK_SIZE );
+   flash_range_erase( FLASH_DRIVE_OFFSET + (b * BLOCK_SIZE), BLOCK_SIZE );
    multicore_lockout_end_blocking();
    restore_interrupts( interrupts );
 
@@ -240,7 +241,7 @@ int dhara_nand_prog( const struct dhara_nand *n, dhara_page_t p,
 {
    uint32_t interrupts = save_and_disable_interrupts();
    multicore_lockout_start_blocking();
-   flash_range_program( FLASH_OFFSET + (p*PAGE_SIZE), data, PAGE_SIZE );
+   flash_range_program( FLASH_DRIVE_OFFSET + (p*PAGE_SIZE), data, PAGE_SIZE );
    multicore_lockout_end_blocking();
    restore_interrupts( interrupts );
 
@@ -284,7 +285,7 @@ int dhara_nand_read( const struct dhara_nand *n, dhara_page_t p,
                      dhara_error_t *err )
 {
    memcpy( data,
-           (uint8_t*)XIP_NOCACHE_NOALLOC_BASE + FLASH_OFFSET + (p*PAGE_SIZE) + offset,
+           (uint8_t*)XIP_NOCACHE_NOALLOC_BASE + FLASH_DRIVE_OFFSET + (p*PAGE_SIZE) + offset,
            length );
    if( err )
    {

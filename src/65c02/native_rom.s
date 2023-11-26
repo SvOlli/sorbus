@@ -22,6 +22,8 @@ WATCHDOG_LOW           = $DF09
 WATCHDOG_MID           = $DF0A
 WATCHDOG_HIGH_START    = $DF0B
 
+BANK   = $DFFF
+
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
 .PC02
@@ -30,13 +32,24 @@ WATCHDOG_HIGH_START    = $DF0B
 ; jumptable
 ;-------------------------------------------------------------------------
 
+; start of ROM: do proper softreset from any bank
+   stz   BANK
+   jmp   ($FFFC)
+
+; $E006: WozMon
 RESET:
    jmp   wozmon
+; $E009: print character
+   jmp   echo
+; $E00C: print string
+   jmp   print
+; $E00F: test internal drive (temporary)
 hdd:
    jmp   hddtest
 IRQ:
 NMI:
    jmp   *
+
 
 IDLBA  := $DF70
 IDDMA  := $DF72
@@ -65,18 +78,11 @@ hddtest:
 
    sta   IDWRT
 
-   ; X is still 0
-@next:
-   lda   @successmsg,x
-   beq   @done
-   jsr   echo
-   inx
-   bne   @next
-@done:
+   jsr   print
+   .byte 10,"SUCCESS",10,0
+
    jmp   wozmon
 
-@successmsg:
-   .byte "SUCCESS",10,0
 
 ;-------------------------------------------------------------------------
 ;  Memory declaration
@@ -339,6 +345,39 @@ echo:
    bit   UART_WRITE_Q
    bmi   echo
    sta   UART_WRITE
+   rts
+
+;-------------------------------------------------------------------------
+;  WozMon end
+;-------------------------------------------------------------------------
+
+print:
+   sta   YSAV
+   php
+   pla
+   sta   MODE
+   pla
+   sta   L
+   pla
+   sta   H
+@loop:
+   inc   L
+   bne   :+
+   inc   H
+:
+   lda   (L)
+   beq   @out
+   jsr   echo
+   bra   @loop
+@out:
+   lda   H
+   pha
+   lda   L
+   pha
+   lda   MODE
+   pha
+   lda   YSAV
+   plp
    rts
 
 .segment "VECTORS"
