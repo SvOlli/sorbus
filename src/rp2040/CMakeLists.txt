@@ -30,17 +30,24 @@ function(setup_target targetname)
 endfunction()
 
 bin2h(krusader.h ${CMAKE_HOME_DIRECTORY}/bin/krusader_65C02.bin krusader_e000)
+bin2h(cpm_rom.h ${CMAKE_HOME_DIRECTORY}/bin_headers/mem_dump2.bin cpm_rom)
 # wenn man die CPM Buildumgebung hat, können die Files gebaut werden
-if (EXISTS "${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/bdos.sys")
-   bin2h(cpm_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/sorbus.prg cpm_rom)
-   bin2h(bdos_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/bdos.sys bdos_rom)
+if (EXISTS "${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/")
+   add_custom_command( OUTPUT cpm_rom.bin
+      DEPENDS  ${CMAKE_CURRENT_BINARY_DIR}/../65c02/native_rom.bin 
+      DEPENDS  ${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj/bdos.sys
+      DEPENDS  ${CMAKE_HOME_DIRECTORY}/../../cpm65/sorbus.prg
+      COMMAND ${CMAKE_HOME_DIRECTORY}/tools/bin_merge.py --infile "${CMAKE_HOME_DIRECTORY}/bin_headers/cpm.json" -o "${CMAKE_CURRENT_BINARY_DIR}" -s  "${CMAKE_HOME_DIRECTORY}/../../build/65c02/" "./" "${CMAKE_HOME_DIRECTORY}/../../cpm65/.obj" "${CMAKE_HOME_DIRECTORY}/../../cpm65"
+   )
+   bin2h(rom_bin.h ${CMAKE_CURRENT_BINARY_DIR}/cpm_rom.bin rom_bin)
    bin2h(cpmfs_rom.h ${CMAKE_HOME_DIRECTORY}/../../cpm65/sorbus.bin cpmfs_rom)
-   set (CPM_BINARY_INCLUDES "cpm_rom.h;bdos_rom.h;cpmfs_rom.h")
-   set (CPM_BINARY_INCLUDE_PATH "")
+   # Tell Cmake, we have dependency
+   set (CPM_BINARY_INCLUDES "rom_bin.h" )
+   set (CPM_BINARY_INCLUDE_PATH "" )
 else()
-   # wenn man die CPM Buildumgebung nicht hat, können die eingecheckten Files benutze werden
-   set (CPM_BINARY_INCLUDES "")
-   set (CPM_BINARY_INCLUDE_PATH "${CMAKE_HOME_DIRECTORY}/bin_headers" )
+   # wenn man die CPM Buildumgebung nicht hat, können die eingecheckten Files benutzt werden
+   set (CPM_BINARY_INCLUDES "" )
+   set (CPM_BINARY_INCLUDE_PATH "${CMAKE_HOME_DIRECTORY}/bin_headers/" )
   
 endif()
 src2h(cpudetect_apple1.h cpudetect_apple1 cpudetect_0280)
@@ -49,7 +56,7 @@ src2h(cpustate.h cpustate cpustate)
 src2h(payload_mcp.h payload_mcp payload_mcp)
 src2h(a1hello.h a1hello a1hello_0800)
 src2h(cpudetect_65.h cpudetect_65 cpudetect_code)
-src2h(native_rom.h native_rom native_rom)
+#src2h(native_rom.h native_rom native_rom)
 
 add_executable(getaline_test
    getaline_test.c
@@ -91,7 +98,7 @@ target_link_libraries(apple1
 setup_target(apple1)
 
 add_executable(native_test
-   native_rom.h
+   ${CPM_BINARY_INCLUDES}   
    bus_rp2040_purple.c
    system_native.c
 #   gpio_oc.c
@@ -109,31 +116,7 @@ target_link_libraries(native_test
    dhara
    )
 target_include_directories(native_test PUBLIC ${CMAKE_HOME_DIRECTORY}/dhara )  
+target_include_directories(native_test PUBLIC ${CPM_BINARY_INCLUDE_PATH})
+
 setup_target(native_test)
-
-add_executable(cpm_os
-   # Comment in when using build from CPM 
-   ${CPM_BINARY_INCLUDES}
-   native_rom.h
-   bus_rp2040_purple.c
-   system_cpm.c
-#   gpio_oc.c
-   native/core0.c
-   native/core1.c
-   native/event_queue.c
-   native/menu.c
-   flash/devflash.c
-   flash/rawflash.c
-   )
-target_include_directories(cpm_os PUBLIC ${CMAKE_HOME_DIRECTORY}/dhara )
-target_include_directories(cpm_os PUBLIC ${CPM_BINARY_INCLUDE_PATH})
-
-target_link_libraries(cpm_os
-   pico_stdlib
-   pico_multicore
-   pico_rand
-   dhara
-   )
-setup_target(cpm_os)
-
 

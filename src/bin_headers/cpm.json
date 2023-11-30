@@ -1,0 +1,23 @@
+{    
+  "output":"cpm_rom.bin",
+  "start":"0xe000",
+  "size" :"0x1fff",  
+  "sections":[
+    { "name":"bdos",
+      "start":"0xe000",
+      "size" :"0x0fff",
+      "file" :"bdos.sys"
+    },
+    { "name":"cpm_hal",
+      "start":"0xf000",
+      "size" :"0x07ff",
+      "file" :"sorbus.prg",
+      "fill" :"0xff"     
+    },
+    { "name":"kernal",
+      "start":"0xf800",
+      "size" :"0x07ff",
+      "file" :"native_rom.bin"       
+    }
+  ]
+}

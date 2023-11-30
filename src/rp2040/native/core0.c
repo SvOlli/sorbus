@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
+#include <pico/multicore.h>
 
 #include "common.h"
 #include "menu.h"
@@ -60,7 +61,7 @@ void console_65c02()
    {
       if( queue_try_add( &queue_uart_read, &in ) )
       {         // need to handle overflow?
-       if( in == 0x01 ){
+       if (( in == 0x01 )&& (soh ==0 )){
          soh=1;
          count=0;
 
@@ -69,7 +70,7 @@ void console_65c02()
           count++;
        }
        if (count == 131){
-          printf ("doe") ;
+          count--;
 
        }
       }
@@ -78,8 +79,13 @@ void console_65c02()
 
    if( queue_try_remove( &queue_uart_write, &out ) )
    {
+      if (count == 131){
+         count--;
+      }
+
       //printf("%02x ",out );
       putchar_raw( out & 0x00ff);
+
    }
 }
 

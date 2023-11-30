@@ -202,12 +202,12 @@ run:
    jmp (XAML)        ; execute supplied address
 
 run_cpm:
-   jmp $e000       ; execute CPM
+   jmp $f000       ; execute CPM
 
 ;-------------------------------------------------------------------------
 ;  We're not in Store mode
 ;-------------------------------------------------------------------------
-
+ 
 notstore:
    bmi   xamnext     ; bit 7: 0=XAM, 1=block XAM
 

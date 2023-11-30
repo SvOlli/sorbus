@@ -23,7 +23,7 @@
 #include <hardware/clocks.h>
 
 #include "common.h"
-#include "native_rom.h"
+#include "rom_bin.h"
 #include "../flash/devflash.h"
 
 #include "../bus.h"
@@ -37,7 +37,9 @@
 // set this to 5000000 to run for 5 million cycles while keeping time
 //#define SPEED_TEST 5000000
 // this is where the write protected area starts
-#define ROM_START (0xF000)
+#define ROM_START (0xF800)
+// this is where the operating-system starts. For relocation, it has to be writeable
+#define CPM_START (0xE000)
 // the number of clock cycles a timer interrupt is triggered
 #define INTERRUPT_LENGTH (8)
 
@@ -58,7 +60,7 @@ uint32_t watchdog_cycles_total = 0;
 bool trace_adress = false;
 
 // Zum Flashes des Diskimages einkommentieren . 
-#define FLASH_CPM_FS
+//#define FLASH_CPM_FS
 #ifdef FLASH_CPM_FS
 #include "cpmfs_rom.h"
 #endif
@@ -106,7 +108,7 @@ static inline uint8_t bus_data_read()
 void set_bank( uint8_t bank )
 {
    // as of now only one bank exists
-   memcpy( &memory[ROM_START], &native_rom[0], sizeof(native_rom) );
+   memcpy( &memory[CPM_START], &rom_bin[0], sizeof(rom_bin) );
 }
 
 
