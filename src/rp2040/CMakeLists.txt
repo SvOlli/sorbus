@@ -9,6 +9,7 @@ pico_sdk_init()
 #string(REPLACE "-O3" "-O6" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wunused-variable")
+set(FIRMWARE_BASE "${CMAKE_CURRENT_BINARY_DIR}/native_firmware")
 
 function(bin2h h_file bin_file label)
    add_custom_command(OUTPUT ${h_file}
@@ -20,6 +21,24 @@ function(src2h h_file bin_file label)
    add_custom_command(OUTPUT ${h_file}
       COMMAND $<TARGET_FILE:bin2h> $<TARGET_FILE:${bin_file}> "${h_file}" "${label}"
       DEPENDS ${bin_file} ${BIN2H})
+endfunction()
+
+function(concat)
+   cmake_parse_arguments(
+      ARGS    # prefix of output variables
+      ""      # list of names of the boolean arguments (only defined ones will be true)
+      "OUT"   # list of names of mono-valued arguments
+      "IN"    # list of names of multi-valued arguments (output variables are lists)
+      ${ARGN} # arguments of the function to parse, here we take the all original ones
+   )
+   if(NOT ARGS_OUT)
+      message(FATAL_ERROR "You must provide an output file")
+   endif(NOT ARGS_OUT)
+   file(WRITE ${ARGS_OUT} "")
+   foreach(in_file ${ARGS_IN})
+      file(READ ${in_file} CONTENTS)
+      file(APPEND ${ARGS_OUT} "${CONTENTS}")
+   endforeach()
 endfunction()
 
 function(setup_target targetname)
@@ -38,6 +57,7 @@ src2h(a1hello.h a1hello a1hello_0800)
 src2h(cpudetect_65.h cpudetect_65 cpudetect_code)
 src2h(native_rom.h native_rom native_rom)
 
+# getaline_test: test core to test getaline input functionality
 add_executable(getaline_test
    getaline_test.c
    getaline.c
@@ -48,6 +68,7 @@ target_link_libraries(getaline_test
    )
 setup_target(getaline_test)
 
+# Monitor Command Prompt: core for watching the 65C02 work
 add_executable(mcp
    bus_rp2040_purple.c
    cpudetect_mcp.h
@@ -63,6 +84,7 @@ target_link_libraries(mcp
    )
 setup_target(mcp)
 
+# Apple 1: core for mimicking the Apple 1 Computer
 add_executable(apple1
    krusader.h
    cpudetect_apple1.h
@@ -76,6 +98,7 @@ target_link_libraries(apple1
    )
 setup_target(apple1)
 
+# Native: core for implementing a custom Sorbus system
 add_executable(native_alpha
    bus_rp2040_purple.c
    system_native.c
