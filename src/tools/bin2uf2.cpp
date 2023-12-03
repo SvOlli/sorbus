@@ -158,7 +158,6 @@ int bin2uf2(FILE *in, long address, FILE *out) {
             if (page < last_page) {
                 // Create a dummy page, if it does not exist yet. note that all present pages are first
                 // zeroed before they are filled with any contents, so a dummy page will be all zeros.
-                auto &dummy = pages[page];
             }
         }
     }

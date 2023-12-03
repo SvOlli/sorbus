@@ -28,3 +28,8 @@ add_executable(bin2uf2
 target_include_directories(bin2uf2 PRIVATE
    ${PICO_SDK_PATH}/src/common/boot_uf2/include
    )
+
+# tool to concatinate binary data
+add_executable(binjoin
+   binjoin.c
+   )

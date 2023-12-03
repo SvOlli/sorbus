@@ -10,6 +10,8 @@ Cores available are:
 - Monitor Command Prompt: MCP
 - Apple 1
 
+For how to handle these cores, take a look at https://xayax.net/sorbus/
+
 In alpha state there also is a new native core. This core defines a new
 custom computer. This requires two binary images to be flashed as well,
 which are under heavy development:

@@ -46,12 +46,14 @@
 #define FLASH_KERNEL_START (FLASH_KERNEL_START_TXT)
 
 // setup data for binary_info
-#define FLASH_DRIVE_INFO  "fs image at " __XSTRING(FLASH_START_TXT)
+#define FLASH_DRIVE_INFO  "fs image at " __XSTRING(FLASH_DRIVE_START_TXT)
 bi_decl(bi_program_feature(FLASH_DRIVE_INFO))
-#define FLASH_KERNEL_INFO "kernel   at " __XSTRING(KERNEL_FLASH_START_TXT)
+#define FLASH_KERNEL_INFO "kernel   at " __XSTRING(FLASH_KERNEL_START_TXT)
 bi_decl(bi_program_feature(FLASH_KERNEL_INFO))
 
-uint8_t memory[0x10000]; // 64k of RAM/ROM and I/O
+uint8_t ram[0xE000]; // 52k of RAM and I/O
+uint8_t rom[0x4000]; // two banks of 8k ROM
+uint8_t *romvec;     // pointer into current ROM bank
 uint32_t state;
 uint32_t address;
 
@@ -90,26 +92,37 @@ static inline uint8_t bus_data_read()
 void set_bank( uint8_t bank )
 {
    // as of now only one bank exists
-   memcpy( &memory[ROM_START], (void*)FLASH_KERNEL_START, FLASH_DRIVE_START-FLASH_KERNEL_START );
+   if( bank > 1 )
+   {
+      bank = 0;
+   }
+   romvec = &rom[bank * 0x2000];
+//   printf( "set_bank(%d) -> %p\n", bank, romvec );
 }
 
 
-static inline void handle_ram()
+static inline void handle_ramrom()
 {
-   // assume that data bus direction is already set
-   if( state & bus_config.mask_rw )
+   if( address < ROM_START )
    {
-      // read from memory and write to bus
-      bus_data_write( memory[address] );
+      if( state & bus_config.mask_rw )
+      {
+         // read from memory and write to bus
+         bus_data_write( ram[address] );
+      }
+      else
+      {
+         ram[address] = bus_data_read();
+      }
    }
    else
    {
-      // read from bus and write to memory write
-      // WozMon (and Krusader) is in ROM, so only accept writes below romstart
-      if( address < ROM_START )
+      if( state & bus_config.mask_rw )
       {
-         memory[address] = bus_data_read();
+         // read from memory and write to bus
+         bus_data_write( romvec[address & 0x1FFF] );
       }
+      // no else, since ROM can not be written
    }
 }
 
@@ -304,24 +317,24 @@ static inline void handle_flash_sync( void *data )
 
 static inline void handle_flash_dma()
 {
-   uint16_t *lba = (uint16_t*)&memory[0xDF70];
-   uint16_t *mem = (uint16_t*)&memory[0xDF72];
+   uint16_t *lba = (uint16_t*)&ram[0xDF70];
+   uint16_t *mem = (uint16_t*)&ram[0xDF72];
    int retval = 0;
 
-   memory[address] = 0x00;
+   ram[address] = 0x00;
    // filter out bad ranges, removing second line would write protect ROM
    if( (*mem < 0x0004) || ((*mem > (0xD000-SECTOR_SIZE)) &&
        (*mem < ROM_START)) || (*mem > (0x10000-SECTOR_SIZE)) )
    {
       // DMA would run into I/O which is not possible, only RAM works
-      memory[address] |= 0xF1;
+      ram[address] |= 0xF1;
    }
    if( *lba >= 0x8000 )
    {
       // only 32768 sectors are available
-      memory[address] |= 0xF2;
+      ram[address] |= 0xF2;
    }
-   if( memory[address] )
+   if( ram[address] )
    {
     // error, do not continue
       return;
@@ -330,7 +343,7 @@ static inline void handle_flash_dma()
    switch( address & 3 )
    {
       case 0: // read
-         retval = dhara_flash_read( *lba, &memory[*mem] );
+         retval = dhara_flash_read( *lba, &ram[*mem] );
          if( queue_event_contains( handle_flash_sync ) )
          {
             // delay any waiting sync events
@@ -339,7 +352,7 @@ static inline void handle_flash_dma()
          }
          break;
       case 1: // write
-         retval = dhara_flash_write( *lba, &memory[*mem] );
+         retval = dhara_flash_write( *lba, &ram[*mem] );
          // drop any waiting sync events, since a new one is created
          queue_event_cancel( handle_flash_sync );
          // after ~.02 seconds without additions writes run sync
@@ -359,7 +372,7 @@ static inline void handle_flash_dma()
    if( retval )
    {
       // report error, do not continue
-      memory[address] = 0xF4;
+      ram[address] = 0xF4;
       return;
    }
 
@@ -418,7 +431,7 @@ static inline void handle_io()
             break;
          default:
             /* everything else is handled like RAM by design */
-            handle_ram();
+            handle_ramrom();
             break;
       }
    }
@@ -453,12 +466,15 @@ static inline void handle_io()
          case 0xFC: /* console UART write */
             queue_try_add( &queue_uart_write, &data );
             break;
+         case 0xFE: /* DEBUG only! pull reset line low */
+            system_reset();
+            break;
          case 0xFF: /* set bankswitch register for $F000-$FFFF */
             set_bank( bus_data_read() );
             break;
          default:
             /* everything else is handled like RAM by design */
-            handle_ram();
+            handle_ramrom();
             break;
       }
    }
@@ -547,7 +563,7 @@ void bus_run()
       }
       else
       {
-         handle_ram();
+         handle_ramrom();
       }
 
       // done: set clock to low
@@ -579,17 +595,17 @@ void bus_run()
    printf( "\nROM:" );
    for( int i = ROM_START; i < ROM_START+0x10; ++i )
    {
-      printf( " %02x", memory[i] );
+      printf( " %02x", ram[i] );
    }
    printf("\nFFF0:");
    for( int i = 0xFFF0; i < 0x10000; ++i )
    {
-      printf( " %02x", memory[i] );
+      printf( " %02x", ram[i] );
    }
    printf("\n[...]\n0200:");
    for( int i = 0x0200; i < 0x0210; ++i )
    {
-      printf( " %02x", memory[i] );
+      printf( " %02x", ram[i] );
    }
    printf("\n");
    printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
@@ -650,18 +666,19 @@ void cpu_halt( bool stop )
 // intended to be replaced by rom_load and ram_load in the future
 bool system_memory_load( uint16_t address, uint16_t size, uint8_t *data )
 {
-   if( (address + size) > 0x10000 )
+   if( (address + size) > 0xD000 )
    {
       return false;
    }
-   memcpy( &memory[address], data, size );
+   memcpy( &ram[address], data, size );
    return true;
 }
 
 
 void system_init()
 {
-   memset( &memory[0x0000], 0x00, sizeof(memory) );
+   memset( &ram[0x0000], 0x00, sizeof(ram) );
+   memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof(rom) );
    srand( get_rand_32() );
    dhara_flash_size = dhara_flash_init();
 }

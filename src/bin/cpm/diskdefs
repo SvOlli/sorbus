@@ -1,0 +1,23 @@
+
+# required by mkfs.cpm
+
+diskdef sorbus
+    seclen 128
+    tracks 128
+    sectrk 256
+    blocksize 2048
+    maxdir 1024
+    boottrk 0
+    os 2.2
+end
+
+# overriding default ibm-3740 so we can skip "-f" parameter
+diskdef ibm-3740
+    seclen 128
+    tracks 128
+    sectrk 256
+    blocksize 2048
+    maxdir 1024
+    boottrk 0
+    os 2.2
+end

@@ -14,31 +14,60 @@ set(FIRMWARE_BASE "${CMAKE_CURRENT_BINARY_DIR}/native_firmware")
 function(bin2h h_file bin_file label)
    add_custom_command(OUTPUT ${h_file}
       COMMAND $<TARGET_FILE:bin2h> "${bin_file}" "${h_file}" "${label}"
-      DEPENDS ${bin_file} ${BIN2H})
+      DEPENDS ${bin_file} ${BIN2H}
+   )
 endfunction()
 
 function(src2h h_file bin_file label)
    add_custom_command(OUTPUT ${h_file}
       COMMAND $<TARGET_FILE:bin2h> $<TARGET_FILE:${bin_file}> "${h_file}" "${label}"
-      DEPENDS ${bin_file} ${BIN2H})
+      DEPENDS ${bin_file} ${BIN2H}
+   )
 endfunction()
 
-function(concat)
-   cmake_parse_arguments(
-      ARGS    # prefix of output variables
-      ""      # list of names of the boolean arguments (only defined ones will be true)
-      "OUT"   # list of names of mono-valued arguments
-      "IN"    # list of names of multi-valued arguments (output variables are lists)
-      ${ARGN} # arguments of the function to parse, here we take the all original ones
+function(bbin2uf2 uf2_file bin_file start_addr)
+   add_custom_target(${uf2_file} ALL
+      $<TARGET_FILE:bin2uf2> $<TARGET_FILE:${bin_file}> "${start_addr}" "${uf2_file}.uf2"
+      DEPENDS ${bin_file} ${BIN2UF2}
    )
-   if(NOT ARGS_OUT)
-      message(FATAL_ERROR "You must provide an output file")
-   endif(NOT ARGS_OUT)
-   file(WRITE ${ARGS_OUT} "")
-   foreach(in_file ${ARGS_IN})
-      file(READ ${in_file} CONTENTS)
-      file(APPEND ${ARGS_OUT} "${CONTENTS}")
+endfunction()
+
+function(bin2uf2 uf2_file bin_file start_addr)
+   add_custom_target(${uf2_file} ALL
+      $<TARGET_FILE:bin2uf2> "${bin_file}" "${start_addr}" "${uf2_file}.uf2"
+      DEPENDS ${bin_file} ${BIN2UF2}
+   )
+endfunction()
+
+function(dharawrite out_file in_file)
+   add_custom_target(${out_file} ALL
+      $<TARGET_FILE:dharatool> dharawrite "${in_file}" "${out_file}"
+      DEPENDS ${in_file} ${dharatool}
+   )
+endfunction()
+
+function(gencpmfs out_file)
+   add_custom_command(OUTPUT ${out_file}
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh" "${out_file}" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
+   )
+endfunction()
+
+function(genfirmware firmware native_rom cpm_rom cpm_dhara)
+   add_custom_command(OUTPUT ${firmware}
+      COMMAND $<TARGET_FILE:binjoin> "${firmware}" $<TARGET_FILE:${native_rom}> "${cpm_rom}" $<TARGET_FILE:${cpm_dhara}>
+      DEPENDS ${native_rom} ${cpm_rom} ${cpmfs} ${BINJOIN}
+   )
+endfunction()
+
+function(uf2join output)
+   set(inputs)
+   foreach(input ${ARGN})
+      set(inputs ${inputs} ${input}.uf2)
    endforeach()
+   add_custom_command(OUTPUT ${output}
+      COMMAND $<TARGET_FILE:binjoin> ${output}.uf2 ${inputs}
+      DEPENDS ${BINJOIN} ${ARGN}
+   )
 endfunction()
 
 function(setup_target targetname)
@@ -117,3 +146,18 @@ target_link_libraries(native_alpha
    pico_rand
    )
 setup_target(native_alpha)
+# firmware for Native core
+add_custom_target(native_firmware ALL
+   DEPENDS native_alpha_full
+)
+bbin2uf2(native_kernel native_rom 0x103FC000)
+bin2uf2(native_cpm_rom "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/cpm_rom.bin" 0x103FE000)
+bin2uf2(native_cpmfs_dhara native_cpmfs.dhara 0x10400000)
+uf2join(native_alpha_full
+   native_alpha
+   native_kernel
+   native_cpm_rom
+   native_cpmfs_dhara
+)
+gencpmfs(native_cpmfs.img)
+dharawrite(native_cpmfs.dhara native_cpmfs.img)

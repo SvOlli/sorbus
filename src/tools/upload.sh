@@ -5,7 +5,10 @@ readonly device="/dev/ttyACM0"
 readonly topdir="../../"
 
 file="$(readlink -f "${1}")"
-[ -f "${file}" ] || file="$(readlink -f "${mydir}/../../build/rp2040/mcp.elf")"
+[ -f "${file}" ] || {
+cat "${mydir}/../../build/rp2040/native_alpha.uf2" "${mydir}/../../build/rp2040/native_kernel.uf2" > "${mydir}/../../build/rp2040/native_test.uf2"
+file="$(readlink -f "${mydir}/../../build/rp2040/native_test.uf2")"
+}
 
 set -ex
 cd "${mydir}"

@@ -12,6 +12,9 @@ flash, using the following commands:
 - picotool load -o 0x103FE000 -t bin <kernel>
 - picotool load -o 0x10400000 -t bin <filesystem>
 
+(This is a subject to change, because it's now possible to create a UF2 file
+with everything firmware.)
+
 
 Memory map
 ----------
@@ -20,7 +23,8 @@ Memory map
 - $0004-$CFFF: RAM
 - $D000-$DEFF: I/O provided by external boards
 - $DF00-$DFFF: I/O provided by main RP2040 board
-- $E000-$FFFF: ROM (might be banked in future)
+- $E000-$FFFF: ROM bank 0 (custom firmware)
+- $E000-$FFFF: ROM bank 1 (CP/M-65 firmware containing BIOS, BDOS and CCP)
 
 Internal I/O ($DF00-$DFFF)
 --------------------------

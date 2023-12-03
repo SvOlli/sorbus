@@ -83,7 +83,7 @@ long loadfile( uint8_t* buffer, const uint32_t buffer_size, const char *filename
 
    fclose( f );
 
-   printf( "file '%s' loaded, %d (0x%08x) bytes\n", filename, file_size, file_size );
+   printf( "file '%s' loaded, %ld (0x%08lx) bytes\n", filename, file_size, file_size );
    return file_size;
 }
 

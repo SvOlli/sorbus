@@ -7,6 +7,7 @@ else
 $(info Using global pico sdk at: $(PICO_SDK_PATH))
 endif
 PICO_SDK_PATH_CMAKE ?= -DPICO_SDK_PATH=$(PICO_SDK_PATH)
+#EXTRA_CMAKE_ARGS += -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
 RELEASE_ARCHIVE := SorbusComputerCores.zip
 
@@ -18,7 +19,7 @@ JOBS ?= 4
 .PHONY: all clean distclean release setup-apt
 
 all: $(PICO_SDK_PATH)/README.md
-	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(PICO_SDK_PATH_CMAKE)
+	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(PICO_SDK_PATH_CMAKE) $(EXTRA_CMAKE_ARGS)
 	make -C $(BUILD_DIR) -j$(JOBS) && echo "\nbuild was successful\n"
 
 clean:

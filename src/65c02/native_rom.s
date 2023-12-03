@@ -8,21 +8,8 @@
 
 .segment "CODE"
 
-UART_READ    = $DFFA; read from uart input
-UART_READ_Q  = $DFFB; can be $00-$7f in normal operation
-UART_WRITE   = $DFFC; write to uart output
-UART_WRITE_Q = $DFFD; can be $00-$7f in normal operation
+.include "native.inc"
 
-TIMER_IRQ_VALUE_REPEAT = $DF00
-TIMER_IRQ_VALUE_SINGLE = $DF02
-TIMER_NMI_VALUE_REPEAT = $DF04
-TIMER_NMI_VALUE_SINGLE = $DF06
-WATCHDOG_STOP          = $DF08
-WATCHDOG_LOW           = $DF09
-WATCHDOG_MID           = $DF0A
-WATCHDOG_HIGH_START    = $DF0B
-
-BANK   = $DFFF
 
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
@@ -43,26 +30,89 @@ RESET:
    jmp   echo
 ; $E00C: print string
    jmp   print
-; $E00F: test internal drive (temporary)
-hdd:
+; $E00F: run CP/M
+   jmp   runcpm
+; $E012: jmp to the reset vector of specific bank in A
+   jmp   bankreset
+; $E015: load file
+   jmp   todo
+; $E018: test internal drive (temporary)
    jmp   hddtest
+; $E01B: dump CP/M ROM to RAM @ $A000
+   jmp   bankcopy
 IRQ:
 NMI:
+todo:
    jmp   *
 
+bankcopy:
+   php
+   sei
+   ldy   #@copyend-@copystart
+:
+   lda   @copystart,y
+   sta   $0200,y
+   dey
+   bpl   :-
+   
+   iny
+   lda   #$e0
+   sty   $04
+   sta   $05
+   lda   #$a0
+   sty   $06
+   sta   $07
+   
+   jsr   $0200
+   
+   plp
+   jmp   wozmon
 
-IDLBA  := $DF70
-IDDMA  := $DF72
-IDREAD := $DF74
-IDWRT  := $DF75
+@copystart:
+   lda   #$01
+   sta   BANK
+:
+   lda   ($04),y
+   sta   ($06),y
+   iny
+   bne   :-
+   lda   $04
+   and   #$7f
+   sta   UARTWR
+   inc   $07
+   inc   $05
+   bne   :-
+   
+;   sta   $DFFE
 
+   stz   BANK
+   rts
+@copyend:
+
+runcpm:
+   lda   #$0a
+   sta   UARTWR
+   lda   #$01
+bankreset:
+   ldx   #$05
+:
+   ldy   @jmpcode,x
+   sty   $fa,x
+   dex
+   bpl   :-
+   sei
+   jmp   $00fa
+@jmpcode:
+   sta   BANK
+   jmp   $F000
+   
 hddtest:
    lda   #$00
-   sta   IDLBA+0
-   sta   IDLBA+1
-   sta   IDDMA+0
+   sta   IDLBAL
+   sta   IDLBAH
+   sta   IDMEML
    lda   #$20 ; write sectors to $2000 following
-   sta   IDDMA+1
+   sta   IDMEMH
    ldx   #$10 ; read first 16 sectors to $2000-$27FF
 :
    sta   IDREAD
@@ -70,18 +120,24 @@ hddtest:
    bne   :-
 
    ; X is still 0
-   stx   IDLBA+0
-   stx   IDDMA+0
+   stx   IDLBAL
+   stx   IDMEML
    lda   #$20
-   sta   IDLBA+1
-   sta   IDDMA+1
+   sta   IDLBAH
+   sta   IDMEMH
 
+   ldx   #$10
+:
    sta   IDWRT
+   dex
+   bne   :-
 
    jsr   print
    .byte 10,"SUCCESS",10,0
 
    jmp   wozmon
+
+
 
 
 ;-------------------------------------------------------------------------
@@ -163,10 +219,10 @@ backspace:
    bmi   getline  ; buffer underflow -> restart
 
 nextchar:
-   lda   UART_READ_Q ; check input
+   lda   UARTRS   ; check input
    beq   nextchar ; no input -> loop
 
-   lda   UART_READ      ; get key
+   lda   UARTRD   ; get key
    sta   IN,y     ; add to buffer
    jsr   echo     ; print character
 
@@ -342,9 +398,9 @@ prhex:
 ;-------------------------------------------------------------------------
 
 echo:
-   bit   UART_WRITE_Q
+   bit   UARTWS
    bmi   echo
-   sta   UART_WRITE
+   sta   UARTWR
    rts
 
 ;-------------------------------------------------------------------------
@@ -379,6 +435,42 @@ print:
    lda   YSAV
    plp
    rts
+
+.if 0
+.macro bankjsr bank,address
+   php                  ; 3= 3
+   sta   @BANKA         ; 4= 7
+   lda   #<address      ; 2= 9
+   sta   @BANKJSR+1     ; 4=13
+   lda   #>address      ; 2=15
+   sta   @BANKJSR+2     ; 4=19
+   lda   #bank          ; 2=21
+   plp                  ; 4=25
+   jsr   bank_jsr_code  ; 6=31
+.endmacro
+
+bank_jsr_code:
+   sta   @BANKID        ; 4=35
+   php                  ; 3=38
+   lda   BANK           ; 4=42
+   sta   @BANKRB+1      ; 4=46
+@BANKID:
+   lda   #$ba           ; 2=48 ; banknumber
+   sta   BANK           ; 4=52
+@BANKA:
+   lda   #$aa           ; 2=54 ; stored accumulator
+   plp                  ; 3=57 ; get processor status from stack
+@BANKJSR:
+   jsr   $0000          ; 6=63 ; address
+   php                  ; 3=66
+   pha                  ; 3=69
+@BANKRB:
+   lda   #$00           ; 2=71
+   sta   BANK           ; 4=75
+   pla                  ; 4=79
+   plp                  ; 4=83
+   rts                  ; 6=89
+.endif
 
 .segment "VECTORS"
    .word NMI

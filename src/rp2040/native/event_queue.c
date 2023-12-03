@@ -2,6 +2,7 @@
 #include "event_queue.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 #ifndef count_of
@@ -74,7 +75,21 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    uint64_t timestamp = _queue_cycle_counter + when;
 
    queue_event_t *newevent = queue_event_get();
-   assert( newevent );
+   if( !newevent )
+   {
+      printf( "Could not find place in event queue:\n" );
+      printf( "addr    |timestamp       |handler |data    |next\n" );
+      for( int i = 0; i < count_of(queue_events); ++i )
+      {
+         printf( "%08x|%16llx|%08x|%08x|%08x\n",
+                 (uint32_t)&queue_events[i],
+                 (uint64_t)queue_events[i].timestamp,
+                 (uint32_t)queue_events[i].handler,
+                 (uint32_t)queue_events[i].data,
+                 (uint32_t)queue_events[i].next );
+      }
+      assert( newevent );
+   }
 
    // fill in data
    newevent->timestamp = timestamp;
