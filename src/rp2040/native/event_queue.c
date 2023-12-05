@@ -166,27 +166,15 @@ bool queue_event_contains( queue_event_handler_t handler )
 {
    bool retval = false;
    queue_event_t *current  = 0;
-   queue_event_t *previous = 0;
 
    mutex_enter_blocking( &_queue_event_mutex );
    for( current = _queue_next_event; current; current = current->next )
    {
       if( current->handler == handler )
       {
-         if( previous )
-         {
-            previous->next = current->next;
-         }
-         else
-         {
-            _queue_next_event = _queue_next_event->next;
-         }
-
          retval = true;
-
-         break; // canceling first only, remove break to cancel all
+         break; // found one, no need to search further
       }
-      previous = current;
    }
    mutex_exit( &_queue_event_mutex );
 
