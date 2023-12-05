@@ -322,6 +322,11 @@ static inline void handle_flash_dma()
    int retval = 0;
 
    ram[address] = 0x00;
+   if( !dhara_flash_size )
+   {
+      // size = 0: no dhara image found
+      ram[address] |= 0xF0;
+   }
    // filter out bad ranges, removing second line would write protect ROM
    if( (*mem < 0x0004) || ((*mem > (0xD000-SECTOR_SIZE)) &&
        (*mem < ROM_START)) || (*mem > (0x10000-SECTOR_SIZE)) )
