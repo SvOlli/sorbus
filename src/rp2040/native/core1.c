@@ -92,7 +92,7 @@ static inline uint8_t bus_data_read()
 void set_bank( uint8_t bank )
 {
    // as of now only one bank exists
-   if( bank > 1 )
+   if( bank >= (sizeof(rom) / 0x2000) )
    {
       bank = 0;
    }
@@ -382,6 +382,32 @@ static inline void handle_flash_dma()
 }
 
 
+static inline void dump_state( int i, uint32_t _state )
+{
+      printf( "%3d:%04x %c %02x %c%c%c%c\n",
+         i,
+         (_state & bus_config.mask_address) >> (bus_config.shift_address),
+         (_state & bus_config.mask_rw) ? 'r' : 'w',
+         (_state & bus_config.mask_data) >> (bus_config.shift_data),
+         (_state & bus_config.mask_reset) ? ' ' : 'R',
+         (_state & bus_config.mask_nmi) ? ' ' : 'N',
+         (_state & bus_config.mask_irq) ? ' ' : 'I',
+         (_state & bus_config.mask_rdy) ? ' ' : 'S' );
+}
+
+
+void system_trap()
+{
+   printf( "system trap triggered, last cpu actions:\n" );
+   for( int i = 0; i < count_of(watchdog_states); ++i )
+   {
+      uint32_t _state = watchdog_states[(i + _queue_cycle_counter) & 0xFF];
+      dump_state( count_of(watchdog_states)-i, _state );
+   }
+   dump_state( 0, gpio_get_all() );
+}
+
+
 static inline void handle_io()
 {
    // TODO: split this up in reads and writes
@@ -466,8 +492,9 @@ static inline void handle_io()
          case 0xFC: /* console UART write */
             queue_try_add( &queue_uart_write, &data );
             break;
-         case 0xFE: /* DEBUG only! pull reset line low */
-            system_reset();
+         case 0xFE: /* DEBUG only! */
+            system_trap();
+            system_reboot();
             break;
          case 0xFF: /* set bankswitch register for $F000-$FFFF */
             set_bank( bus_data_read() );
@@ -578,19 +605,7 @@ void bus_run()
    time_exec = (double)(time_end - time_start) / CLOCKS_PER_SEC / 10000;
    time_hz = (double)cyc / time_exec;
 
-   for( int i = 0; i < count_of(watchdog_states); ++i )
-   {
-      uint32_t _state = watchdog_states[i];
-      printf( "%3d:%04x %c %02x %c%c%c%c\n",
-         i,
-         (_state & bus_config.mask_address) >> (bus_config.shift_address),
-         (_state & bus_config.mask_rw) ? 'r' : 'w',
-         (_state & bus_config.mask_data) >> (bus_config.shift_data),
-         (_state & bus_config.mask_reset) ? ' ' : 'R',
-         (_state & bus_config.mask_nmi) ? ' ' : 'N',
-         (_state & bus_config.mask_irq) ? ' ' : 'I',
-         (_state & bus_config.mask_rdy) ? ' ' : 'S' );
-   }
+   system_trap();
 
    printf( "\nROM:" );
    for( int i = ROM_START; i < ROM_START+0x10; ++i )
