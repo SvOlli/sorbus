@@ -30,12 +30,14 @@ Internal I/O ($DF00-$DFFF)
 --------------------------
 - $DF80-$DFF9: RAM containing copy of $FF80-$FFF9 of first ROM bank
                -> switching code
-- $DFFA: (R) serial in queue read
-- $DFFB: (R) serial in queue size (up to 127, >127: error)
+- $DFFA: (R) UART in queue read
+- $DFFA: (W) config UART: bit 0=enable crlf conversion
+- $DFFB: (R) serial in queue size (up to 240, 255: error)
 - $DFFC: (W) serial out queue write
-- $DFFC: (R) serial out queue size (up to 127, >127: error)
+- $DFFD: (R) serial out queue size (up to 127, >127: error)
 - $DFFE: (R) random value
 - $DFFF: (proposed) bank select register for $E000-$FFFF, allowing 2MB of ROM
+         ROM starts at bank 1 (default), bank 0 is RAM
 
 Timer ($DF00-$DF07)
 -------------------

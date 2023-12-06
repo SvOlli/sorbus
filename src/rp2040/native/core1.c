@@ -553,6 +553,9 @@ static inline void handle_io()
             /* access is strobe: written data does not matter */
             handle_flash_dma();
             break;
+         case 0xFA: /* UART read: enable crlf conversion */
+            uart_set_translate_crlf( uart0, data & 1 );
+            break;
          case 0xFC: /* console UART write */
             queue_try_add( &queue_uart_write, &data );
             break;

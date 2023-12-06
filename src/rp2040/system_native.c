@@ -46,7 +46,7 @@ int main()
    set_sys_clock_khz( 133000, false );
 
    // setup between UART core and bus core
-   queue_init( &queue_uart_read,  sizeof(int), 128 );
+   queue_init( &queue_uart_read,  sizeof(int), 240 );
    queue_init( &queue_uart_write, sizeof(int), 128 );
 
    // setup mutex for event queue
