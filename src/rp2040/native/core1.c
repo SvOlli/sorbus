@@ -51,9 +51,9 @@ bi_decl(bi_program_feature(FLASH_DRIVE_INFO))
 #define FLASH_KERNEL_INFO "kernel   at " __XSTRING(FLASH_KERNEL_START_TXT)
 bi_decl(bi_program_feature(FLASH_KERNEL_INFO))
 
-uint8_t ram[0xE000]; // 52k of RAM and I/O
-uint8_t rom[0x4000]; // two banks of 8k ROM
-uint8_t *romvec;     // pointer into current ROM bank
+uint8_t ram[0x10000];   // 64k of RAM and I/O
+uint8_t rom[FLASH_DRIVE_START_TXT-FLASH_KERNEL_START_TXT]; // buffer for roms
+const uint8_t *romvec;  // pointer into current ROM/RAM bank at $E000
 uint32_t state;
 uint32_t address;
 
@@ -91,46 +91,42 @@ static inline uint8_t bus_data_read()
 
 void set_bank( uint8_t bank )
 {
-   // as of now only one bank exists
-   if( bank >= (sizeof(rom) / 0x2000) )
+   // rom banks are counted starting with 1, as 0 is RAM
+   if( bank > (sizeof(rom) / 0x2000) )
    {
-      bank = 0;
+      bank = 1;
    }
-   romvec = &rom[bank * 0x2000];
+   if( bank == 0 )
+   {
+      romvec = &ram[0xE000];
+   }
+   else
+   {
+      romvec = &rom[(bank - 1) * 0x2000];
+   }
 //   printf( "set_bank(%d) -> %p\n", bank, romvec );
 }
 
 
 static inline void handle_ramrom()
 {
-   if( address < ROM_START )
+   if( state & bus_config.mask_rw )
    {
-      if( state & bus_config.mask_rw )
+      // read from memory and write to bus
+      if( address < ROM_START )
       {
-         // read from memory and write to bus
          bus_data_write( ram[address] );
       }
       else
       {
-         ram[address] = bus_data_read();
+         bus_data_write( romvec[address & 0x1FFF] );
       }
    }
    else
    {
-      if( state & bus_config.mask_rw )
-      {
-         // read from memory and write to bus
-         bus_data_write( romvec[address & 0x1FFF] );
-      }
-      // no else, since ROM can not be written
+      // always write to RAM
+      ram[address] = bus_data_read();
    }
-}
-
-
-static inline void trigger_watchdog()
-{
-   // first step: halt CPU
-   gpio_clr_mask( bus_config.mask_rdy );
 }
 
 
@@ -294,7 +290,7 @@ static inline void system_reset()
    timer_irq_total       = 0;
    irq_timer_triggered   = false;
    watchdog_cycles_total = 0;
-   set_bank( 0 );
+   set_bank( 1 );
    queue_event_reset();
    // just a test, remove
    //queue_event_add( 16, timer_nmi_triggered, 0 );
@@ -328,8 +324,9 @@ static inline void handle_flash_dma()
       ram[address] |= 0xF0;
    }
    // filter out bad ranges, removing second line would write protect ROM
-   if( (*mem < 0x0004) || ((*mem > (0xD000-SECTOR_SIZE)) &&
-       (*mem < ROM_START)) || (*mem > (0x10000-SECTOR_SIZE)) )
+   if( (*mem < 0x0004) ||                                       // zeropage I/O
+       ((*mem > (0xD000-SECTOR_SIZE)) && (*mem < ROM_START)) || // $Dxxx I/O
+       (*mem > (0x10000-SECTOR_SIZE)) )                         // would go out of bounds
    {
       // DMA would run into I/O which is not possible, only RAM works
       ram[address] |= 0xF1;
@@ -341,7 +338,7 @@ static inline void handle_flash_dma()
    }
    if( ram[address] )
    {
-    // error, do not continue
+      // error, do not continue
       return;
    }
 
@@ -387,10 +384,10 @@ static inline void handle_flash_dma()
 }
 
 
-static inline void dump_state( int i, uint32_t _state )
+void debug_dump_state( int lineno, uint32_t _state )
 {
       printf( "%3d:%04x %c %02x %c%c%c%c\n",
-         i,
+         lineno,
          (_state & bus_config.mask_address) >> (bus_config.shift_address),
          (_state & bus_config.mask_rw) ? 'r' : 'w',
          (_state & bus_config.mask_data) >> (bus_config.shift_data),
@@ -401,15 +398,76 @@ static inline void dump_state( int i, uint32_t _state )
 }
 
 
-void system_trap()
+void debug_backtrace()
 {
    printf( "system trap triggered, last cpu actions:\n" );
    for( int i = 0; i < count_of(watchdog_states); ++i )
    {
       uint32_t _state = watchdog_states[(i + _queue_cycle_counter) & 0xFF];
-      dump_state( count_of(watchdog_states)-i, _state );
+      debug_dump_state( count_of(watchdog_states)-i, _state );
    }
-   dump_state( 0, gpio_get_all() );
+   debug_dump_state( 0, gpio_get_all() );
+}
+
+
+void debug_clocks()
+{
+   uint f_pll_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_SYS_CLKSRC_PRIMARY);
+   uint f_pll_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_USB_CLKSRC_PRIMARY);
+   uint f_rosc     = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_ROSC_CLKSRC);
+   uint f_clk_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_SYS);
+   uint f_clk_peri = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_PERI);
+   uint f_clk_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_USB);
+   uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
+   uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
+   
+   printf("\n");
+   printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
+   printf("PLL_USB:             %3d.%03dMhz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
+   printf("ROSC:                %3d.%03dMhz\n", f_rosc    / 1000, f_rosc % 1000 );
+   printf("CLK_SYS:             %3d.%03dMhz\n", f_clk_sys / 1000, f_clk_sys % 1000 );
+   printf("CLK_PERI:            %3d.%03dMhz\n", f_clk_peri / 1000, f_clk_peri % 1000 );
+   printf("CLK_USB:             %3d.%03dMhz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
+   printf("CLK_ADC:             %3d.%03dMhz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
+   printf("CLK_RTC:             %3d.%03dMhz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
+}
+
+
+void debug_internal_drive()
+{
+   dhara_flash_info_t dhara_info;
+   uint8_t dhara_buffer[SECTOR_SIZE];
+   uint16_t dhara_sector = 0;
+
+   dhara_flash_info( dhara_sector, &dhara_buffer[0], &dhara_info );
+   uint64_t hw_size  = dhara_info.erase_cells * dhara_info.erase_size;
+   uint64_t lba_size = dhara_info.sectors * dhara_info.sector_size;
+   printf("dhara hw sector size:  %08x (%d)\n", dhara_info.erase_size, dhara_info.erase_size );
+   printf("dhara hw num sectors:  %08x (%d)\n", dhara_info.erase_cells, dhara_info.erase_cells );
+   printf("dhara hw size:         %.2fMB\n", (float)hw_size / (1024*1024) );
+   printf("dhara page size:       %08x (%d)\n", dhara_info.page_size, dhara_info.page_size );
+   printf("dhara pages:           %08x (%d)\n", dhara_info.pages, dhara_info.pages );
+   printf("dhara lba sector size: %08x (%d)\n", dhara_info.sector_size, dhara_info.sector_size );
+   printf("dhara lba num sectors: %08x (%d)\n", dhara_info.sectors, dhara_info.sectors );
+   printf("dhara lba size:        %.2fMB\n", (float)lba_size / (1024*1024) );
+   printf("dhara gc ratio         %08x (%d)\n", dhara_info.gc_ratio, dhara_info.gc_ratio );
+   printf("dhara read status:     %d\n", dhara_info.read_status );
+   printf("dhara read error:      %s\n", dhara_strerror( dhara_info.read_errcode ) );
+   printf("dhara read sector $%04x:\n", dhara_sector );
+   for( int i = 0; i < SECTOR_SIZE; ++i )
+   {
+      printf( " %02x", dhara_buffer[i] );
+      if( (i & 0xF) == 0xF )
+      {
+         printf( "\n" );
+      }
+   }
+}
+
+
+void system_trap()
+{
+   debug_backtrace();
 }
 
 
@@ -523,19 +581,6 @@ void bus_run()
    uint32_t time_hz;
    uint32_t cyc;
 
-   uint f_pll_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_SYS_CLKSRC_PRIMARY);
-   uint f_pll_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_USB_CLKSRC_PRIMARY);
-   uint f_rosc     = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_ROSC_CLKSRC);
-   uint f_clk_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_SYS);
-   uint f_clk_peri = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_PERI);
-   uint f_clk_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_USB);
-   uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
-   uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
-   
-   dhara_flash_info_t dhara_info;
-   uint8_t dhara_buffer[SECTOR_SIZE];
-   uint16_t dhara_sector = 0;
-
    bus_init();
    system_init();
    system_reboot();
@@ -610,7 +655,9 @@ void bus_run()
    time_exec = (double)(time_end - time_start) / CLOCKS_PER_SEC / 10000;
    time_hz = (double)cyc / time_exec;
 
-   system_trap();
+   debug_backtrace();
+   debug_clocks();
+   debug_internal_drive();
 
    printf( "\nROM:" );
    for( int i = ROM_START; i < ROM_START+0x10; ++i )
@@ -626,38 +673,6 @@ void bus_run()
    for( int i = 0x0200; i < 0x0210; ++i )
    {
       printf( " %02x", ram[i] );
-   }
-   printf("\n");
-   printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
-   printf("PLL_USB:             %3d.%03dMhz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
-   printf("ROSC:                %3d.%03dMhz\n", f_rosc    / 1000, f_rosc % 1000 );
-   printf("CLK_SYS:             %3d.%03dMhz\n", f_clk_sys / 1000, f_clk_sys % 1000 );
-   printf("CLK_PERI:            %3d.%03dMhz\n", f_clk_peri / 1000, f_clk_peri % 1000 );
-   printf("CLK_USB:             %3d.%03dMhz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
-   printf("CLK_ADC:             %3d.%03dMhz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
-   printf("CLK_RTC:             %3d.%03dMhz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
-   dhara_flash_info( dhara_sector, &dhara_buffer[0], &dhara_info );
-   uint64_t hw_size  = dhara_info.erase_cells * dhara_info.erase_size;
-   uint64_t lba_size = dhara_info.sectors * dhara_info.sector_size;
-   printf("dhara hw sector size:  %08x (%d)\n", dhara_info.erase_size, dhara_info.erase_size );
-   printf("dhara hw num sectors:  %08x (%d)\n", dhara_info.erase_cells, dhara_info.erase_cells );
-   printf("dhara hw size:         %.2fMB\n", (float)hw_size / (1024*1024) );
-   printf("dhara page size:       %08x (%d)\n", dhara_info.page_size, dhara_info.page_size );
-   printf("dhara pages:           %08x (%d)\n", dhara_info.pages, dhara_info.pages );
-   printf("dhara lba sector size: %08x (%d)\n", dhara_info.sector_size, dhara_info.sector_size );
-   printf("dhara lba num sectors: %08x (%d)\n", dhara_info.sectors, dhara_info.sectors );
-   printf("dhara lba size:        %.2fMB\n", (float)lba_size / (1024*1024) );
-   printf("dhara gc ratio         %08x (%d)\n", dhara_info.gc_ratio, dhara_info.gc_ratio );
-   printf("dhara read status:     %d\n", dhara_info.read_status );
-   printf("dhara read error:      %s\n", dhara_strerror( dhara_info.read_errcode ) );
-   printf("dhara read sector $%04x:\n", dhara_sector );
-   for( int i = 0; i < SECTOR_SIZE; ++i )
-   {
-      printf( " %02x", dhara_buffer[i] );
-      if( (i & 0xF) == 0xF )
-      {
-         printf( "\n" );
-      }
    }
 
    for(;;)
@@ -680,18 +695,6 @@ void cpu_halt( bool stop )
    {
       gpio_set_mask( bus_config.mask_rdy );
    }
-}
-
-
-// intended to be replaced by rom_load and ram_load in the future
-bool system_memory_load( uint16_t address, uint16_t size, uint8_t *data )
-{
-   if( (address + size) > 0xD000 )
-   {
-      return false;
-   }
-   memcpy( &ram[address], data, size );
-   return true;
 }
 
 

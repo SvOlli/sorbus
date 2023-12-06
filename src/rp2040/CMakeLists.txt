@@ -150,13 +150,11 @@ setup_target(native_alpha)
 add_custom_target(native_firmware ALL
    DEPENDS native_alpha_full
 )
-bbin2uf2(native_kernel native_rom 0x103FC000)
-bin2uf2(native_cpm_rom "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/cpm_rom.bin" 0x103FE000)
+bbin2uf2(native_kernel native_rom 0x103FE000)
 bin2uf2(native_cpmfs_dhara native_cpmfs.dhara 0x10400000)
 uf2join(native_alpha_full
    native_alpha
    native_kernel
-   native_cpm_rom
    native_cpmfs_dhara
 )
 gencpmfs(native_cpmfs.img)

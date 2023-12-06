@@ -7,7 +7,7 @@ diskdef sorbus
     sectrk 256
     blocksize 2048
     maxdir 1024
-    boottrk 0
+    boottrk 1
     os 2.2
 end
 
@@ -18,6 +18,6 @@ diskdef ibm-3740
     sectrk 256
     blocksize 2048
     maxdir 1024
-    boottrk 0
+    boottrk 1
     os 2.2
 end

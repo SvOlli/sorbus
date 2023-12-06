@@ -19,93 +19,112 @@
 ; jumptable
 ;-------------------------------------------------------------------------
 
-; start of ROM: do proper softreset from any bank
-   stz   BANK
-   jmp   ($FFFC)
-
-; $E006: WozMon
+; $E000: WozMon
 RESET:
    jmp   wozmon
+; $E003: run bootblock 0 from internal drive
+   jmp   boot
+; $E006: run bootblock id in $0f from internal drive
+   jmp   bootx
 ; $E009: print character
    jmp   echo
 ; $E00C: print string
    jmp   print
-; $E00F: run CP/M
-   jmp   runcpm
-; $E012: jmp to the reset vector of specific bank in A
-   jmp   bankreset
-; $E015: load file
+; $E00F: load file
    jmp   todo
-; $E018: test internal drive (temporary)
+; $E012: test internal drive (temporary)
    jmp   hddtest
-; $E01B: dump CP/M ROM to RAM @ $A000
-   jmp   bankcopy
 IRQ:
 NMI:
 todo:
    jmp   *
 
-bankcopy:
-   php
+bootx:
+   lda   $0f
+   .byte $2c   ; skip following 2-byte instruction
+boot:
+   lda   #$00
+   ; boottrack is 32k, memory at $E000 is 8k
+   ; starting at boot+2 can load other 8k offsets from internal drive
    sei
-   ldy   #@copyend-@copystart
-:
-   lda   @copystart,y
-   sta   $0200,y
-   dey
-   bpl   :-
-   
-   iny
-   lda   #$e0
-   sty   $04
-   sta   $05
-   lda   #$a0
-   sty   $06
-   sta   $07
-   
-   jsr   $0200
-   
-   plp
+   ldx   #$ff
+   tsx
+   jsr   print ; preserves all registers... spooky.
+   .byte 13,10
+   .byte "Sorbus Computer Native Core",13,10
+   .byte "===========================",13,10
+   .byte "Checking Bootsector... ",0
+   ror
+   ror
+   ror
+   and   #$c0
+   sta   IDLBAL
+   inx
+   stx   IDLBAH
+   stx   IDMEML
+   lda   #$02      ; write sector to $0200 for checking
+   sta   IDMEMH
+
+   sta   IDREAD
+   dec   IDLBAL    ; reset LBA for re-reading to $E000
+   stx   IDMEML    ; adjust target memory to
+   lda   #$E0      ; $E000 following
+   sta   IDMEMH
+
+   lda   IDREAD
+   beq   @checksig
+   jsr   print
+   .byte "no internal drive",0
+   bra   @errend
+
+@notfound:
+   jsr   print
+   .byte "no boot signature",0
+@errend:
+   jsr   print
+   .byte " found.",13,10,"Starting WozMon",13,10,0
    jmp   wozmon
 
-@copystart:
-   lda   #$01
-   sta   BANK
+@checksig:
+   ldx   #$04
 :
-   lda   ($04),y
-   sta   ($06),y
-   iny
-   bne   :-
-   lda   $04
-   and   #$7f
-   sta   UARTWR
-   inc   $07
-   inc   $05
-   bne   :-
-   
-;   sta   $DFFE
-
-   stz   BANK
-   rts
-@copyend:
-
-runcpm:
-   lda   #$0a
-   sta   UARTWR
-   lda   #$01
-bankreset:
-   ldx   #$05
-:
-   ldy   @jmpcode,x
-   sty   $fa,x
+   lda   $0200,x
+   cmp   @signature,x
+   bne   @notfound
    dex
    bpl   :-
-   sei
-   jmp   $00fa
-@jmpcode:
-   sta   BANK
-   jmp   $F000
    
+   jsr   print
+   .byte "found. Loading Hi-RAM from sector 00",0
+   lda   IDLBAL
+   jsr   prbyte
+   jsr   print
+   .byte ".",13,10,0
+
+   ldy   #$40    ; banksize ($2000) / sectorsize ($80)
+:
+   sta   IDREAD
+   dey
+   bne   :-
+   ; leave with Y = 0, as required in @jmpcode
+   
+   ldx   #$05
+:
+   lda   @jmpcode,x
+   sta   $01fa,x
+   dex
+   bpl   :-
+   jmp   $01fa
+   
+@signature:
+   .byte "SBC23"
+@signatureend:
+
+@jmpcode:
+   sty   BANK      ; Y = 0
+   jmp   ($FFFC)
+@jmpcodeend:
+
 hddtest:
    lda   #$00
    sta   IDLBAL

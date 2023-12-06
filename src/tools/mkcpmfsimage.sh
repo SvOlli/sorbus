@@ -2,16 +2,18 @@
 
 set -e
 
-readonly FORMAT='sorbus'
-
 if [ ${#} -ne 2 ]; then
    cat <<EOF
 usage: $0 <output_image> <path_to_cpm_data>
 EOF
    exit 1
 fi
-readonly IMAGE="$(readlink -f ${1})"
+
+touch "${1}"
+readonly IMAGE="$(readlink -f "${1}")"
 readonly CPM_DIR="${2}"
+readonly FORMAT='sorbus'
+readonly BOOTIMAGE='cpm_rom.bin'
 
 cd "${CPM_DIR}" ||
 {
@@ -37,7 +39,7 @@ if [ ${cpmtools_missing} -ne 0 ]; then
 fi
 
 rm -f "${IMAGE}"
-mkfs.cpm -f "${FORMAT}" "${IMAGE}"
+mkfs.cpm -f "${FORMAT}" -b "${BOOTIMAGE}" "${IMAGE}"
 for i in [0-9]*/*;do
    # skip directories
    [ -d "${i}" ] && continue
