@@ -10,6 +10,7 @@
 
 .include "native.inc"
 
+.define MAGIC_AT_FFF5 0
 
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
@@ -57,16 +58,25 @@ boot:
    ror
    ror
    ror
+.if MAGIC_AT_FFF5
+   ora   #$3f     ; load last sector of 8k block
+.else
    and   #$c0
+.endif
    sta   IDLBAL
    inx
    stx   IDLBAH
    stx   IDMEML
-   lda   #$02      ; write sector to $0200 for checking
-   sta   IDMEMH
+   ldy   #$02      ; write sector to $0200 for checking
+   sty   IDMEMH
 
    sta   IDREAD
+.if MAGIC_AT_FFF5
+   and   #$c0
+   sta   IDLBAL    ; reset LBA for reading to $E000
+.else
    dec   IDLBAL    ; reset LBA for re-reading to $E000
+.endif
    stx   IDMEML    ; adjust target memory to
    lda   #$E0      ; $E000 following
    sta   IDMEMH
@@ -88,7 +98,11 @@ boot:
 @checksig:
    ldx   #$04
 :
+.if MAGIC_AT_FFF5
+   lda   $0275,x
+.else
    lda   $0200,x
+.endif
    cmp   @signature,x
    bne   @notfound
    dex

@@ -142,7 +142,7 @@ static inline void watchdog_setup( uint8_t value, uint8_t config )
    config &= 0x03;
    if( config )
    {
-      if( watchdog_cycles_total )
+      if( queue_event_contains( watchdog_trigger ) )
       {
          // timer is running: restart
          queue_event_cancel( watchdog_trigger );
@@ -150,7 +150,8 @@ static inline void watchdog_setup( uint8_t value, uint8_t config )
       }
       else
       {
-         // set register
+         // not running, set 24 bit value
+         watchdog_cycles_total &= ~(0xFF << ((config-1) * 8));
          watchdog_cycles_total |= (value << ((config-1) * 8));
          if( config == 3 )
          {
