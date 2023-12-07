@@ -1,0 +1,33 @@
+{
+  "output":"cpm_rom.bin",
+  "start":"0xe000",
+  "size" :"0x1fff",
+  "__commment" :"you can add a global fillup here also",
+  "fill" : "0xab",
+  "sections":[
+    { "name":"bdos",
+      "start":"0xe000",
+      "size" :"0x0fff",
+      "file" :"bdos.sys"
+    },
+    { "name":"cpm_hal",
+      "start":"0xf000",
+      "size" :"0x07ff",
+      "file" :"sorbus.prg",
+      "__commment" :"a section will be filled, when fill byte is defined",
+      "fill" :"0xfe"
+    },
+    { "name":"kernal",
+      "start":"0xf800",
+      "size" :"0x07ff",
+      "file" :"native_rom.bin"
+    },
+    { "__commment" :"a section without file-name will be filled, when fill byte is defined",
+      "name":"fillup",
+      "__commment2" :"this section will be ignored , it is not in addressrange",
+      "start":"0xc000",
+      "size" :"0x1fff",
+      "fill" :"0xfe"
+    }
+  ]
+}

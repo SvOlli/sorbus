@@ -1,0 +1,18 @@
+{
+  "output":"cpm_rom.bin",
+  "start":"0xe000",
+  "size" :"0x1fff",
+  "sections":[
+    { "name":"bdos",
+      "start":"0xe800",
+      "size" :"0x1000",
+      "file" :"bdos.sys"
+    },
+    { "name":"cpm_hal",
+      "start":"0xe000",
+      "size" :"0x0800",
+      "file" :"sorbus.prg",
+      "fill" :"0xff"
+    }
+  ]
+}
