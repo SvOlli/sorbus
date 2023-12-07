@@ -10,8 +10,6 @@
 
 .include "native.inc"
 
-.define MAGIC_AT_FFF5 0
-
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
 .PC02
@@ -35,6 +33,8 @@ RESET:
    jmp   todo
 ; $E012: test internal drive (temporary)
    jmp   hddtest
+; $E015: copy $E000 RAM to $2000
+   jmp   dumpram0
 IRQ:
 NMI:
 todo:
@@ -52,36 +52,22 @@ boot:
    tsx
    jsr   print ; preserves all registers... spooky.
    .byte 13,10
-   .byte "Sorbus Computer Native Core",13,10
-   .byte "===========================",13,10
+   .byte "Sorbus Computer Native Core",10
+   .byte "===========================",10
    .byte "Checking Bootsector... ",0
    ror
    ror
    ror
-.if MAGIC_AT_FFF5
-   ora   #$3f     ; load last sector of 8k block
-.else
    and   #$c0
-.endif
    sta   IDLBAL
    inx
    stx   IDLBAH
    stx   IDMEML
-   ldy   #$02      ; write sector to $0200 for checking
+   ldy   #$01      ; write sector to $0100 for checking
    sty   IDMEMH
 
-   sta   IDREAD
-.if MAGIC_AT_FFF5
-   and   #$c0
-   sta   IDLBAL    ; reset LBA for reading to $E000
-.else
-   dec   IDLBAL    ; reset LBA for re-reading to $E000
-.endif
-   stx   IDMEML    ; adjust target memory to
-   lda   #$E0      ; $E000 following
-   sta   IDMEMH
+   jsr   secread  ;sta   IDREAD
 
-   lda   IDREAD
    beq   @checksig
    jsr   print
    .byte "no internal drive",0
@@ -92,17 +78,18 @@ boot:
    .byte "no boot signature",0
 @errend:
    jsr   print
-   .byte " found.",13,10,"Starting WozMon",13,10,0
+   .byte " found.",10,"Starting WozMon",10,0
    jmp   wozmon
 
 @checksig:
+   dec   IDLBAL    ; reset LBA for re-reading to $E000
+   stx   IDMEML    ; adjust target memory to
+   lda   #$E0      ; $E000 following
+   sta   IDMEMH
+
    ldx   #$04
 :
-.if MAGIC_AT_FFF5
-   lda   $0275,x
-.else
-   lda   $0200,x
-.endif
+   lda   $0103,x
    cmp   @signature,x
    bne   @notfound
    dex
@@ -113,11 +100,11 @@ boot:
    lda   IDLBAL
    jsr   prbyte
    jsr   print
-   .byte ".",13,10,0
+   .byte ".",10,0
 
    ldy   #$40    ; banksize ($2000) / sectorsize ($80)
 :
-   sta   IDREAD
+   jsr   secread  ;sta   IDREAD
    dey
    bne   :-
    ; leave with Y = 0, as required in @jmpcode
@@ -125,19 +112,69 @@ boot:
    ldx   #$05
 :
    lda   @jmpcode,x
-   sta   $01fa,x
+   sta   $0180,x
    dex
    bpl   :-
-   jmp   $01fa
+;   jmp   wozmon
+   jsr   print
+   .byte "jumping to E000 in bank 0",10,0
+   jmp   $0180
    
 @signature:
    .byte "SBC23"
 @signatureend:
 
 @jmpcode:
-   sty   BANK      ; Y = 0
-   jmp   ($FFFC)
+   stz   BANK      ; Y = 0
+   jmp   $E000
+   ;sta   $DFFE
 @jmpcodeend:
+
+secread:
+   jsr   print
+   .byte "loading sector ",0
+   lda   IDLBAH
+   jsr   prbyte
+   lda   IDLBAL
+   jsr   prbyte
+   jsr   print
+   .byte " to ",0
+   lda   IDMEMH
+   jsr   prbyte
+   lda   IDMEML
+   jsr   prbyte
+   sta   IDREAD
+   lda   #$0a
+   jmp   echo
+
+dumpram0:
+   ldy   #@dumpcodeend-@dumpcode
+:
+   lda   @dumpcode,y
+   sta   $0280,y
+   dey
+   bpl   :-
+   iny
+   sty   $04
+   lda   #$e0
+   sta   $05
+   sty   $06
+   lda   #$20
+   sta   $07
+   jmp   $0280
+@dumpcode:
+   dec   BANK
+:
+   lda   ($04),y
+   sta   ($06),y
+   iny
+   bne   :-
+   inc   $07
+   inc   $05
+   bne   :-
+   inc   BANK
+   jmp   wozmon
+@dumpcodeend:
 
 hddtest:
    lda   #$00

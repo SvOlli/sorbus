@@ -1,18 +1,20 @@
 #!/bin/sh
 
-readonly mydir="$(dirname "${0}")"
+readonly mydir="$(readlink -f "$(dirname "${0}")")"
 readonly device="/dev/ttyACM0"
 readonly topdir="../../"
 
-file="$(readlink -f "${1}")"
-[ -f "${file}" ] || {
-cat "${mydir}/../../build/rp2040/native_alpha.uf2" "${mydir}/../../build/rp2040/native_kernel.uf2" > "${mydir}/../../build/rp2040/native_test.uf2"
-file="$(readlink -f "${mydir}/../../build/rp2040/native_test.uf2")"
-}
+if [ -n "${1}" ]; then
+   file="$(readlink -f "${1}")"
+fi
 
 set -ex
 cd "${mydir}"
 make -C "${topdir}"
+if [ -z "${file}" ]; then
+   cat "${mydir}/../../build/rp2040/native_alpha.uf2" "${mydir}/../../build/rp2040/native_kernel.uf2" > "${mydir}/../../build/rp2040/native_test.uf2"
+   file="$(readlink -f "${mydir}/../../build/rp2040/native_test.uf2")"
+fi
 picotool info "${file}" -a
 picotool load "${file}" -f
 picotool reboot -f

@@ -49,6 +49,7 @@ endfunction()
 function(gencpmfs out_file)
    add_custom_command(OUTPUT ${out_file}
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh" "${out_file}" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/cpm_rom.bin"
    )
 endfunction()
 
@@ -151,11 +152,11 @@ add_custom_target(native_firmware ALL
    DEPENDS native_alpha_full
 )
 bbin2uf2(native_kernel native_rom 0x103FE000)
-bin2uf2(native_cpmfs_dhara native_cpmfs.dhara 0x10400000)
+bin2uf2(native_cpmfs native_cpmfs.dhara 0x10400000)
 uf2join(native_alpha_full
    native_alpha
    native_kernel
-   native_cpmfs_dhara
+   native_cpmfs
 )
 gencpmfs(native_cpmfs.img)
 dharawrite(native_cpmfs.dhara native_cpmfs.img)

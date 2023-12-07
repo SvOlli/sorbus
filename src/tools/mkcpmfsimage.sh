@@ -27,7 +27,7 @@ if [ ! -f diskdefs ]; then
 fi
 
 cpmtools_missing=0
-for i in mkfs.cpm cpmcp; do
+for i in mkfs.cpm cpmcp cpmchattr; do
    type $i || {
       echo "'$i' not found. Are cpmtools installed?"
       cpmtools_missing=1
@@ -46,6 +46,7 @@ for i in [0-9]*/*;do
    user="${i%/*}"
    cpmcp -f "${FORMAT}" "${IMAGE}" "${i}" ${user}:
 done
+cpmchattr -f "${FORMAT}" "${IMAGE}" sr 0:ccp.sys
 set +x
 echo "Imagefile:"
 ls -l "${IMAGE}"

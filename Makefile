@@ -20,6 +20,7 @@ JOBS ?= 4
 
 all: $(PICO_SDK_PATH)/README.md
 	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(PICO_SDK_PATH_CMAKE) $(EXTRA_CMAKE_ARGS)
+	rm -f $(BUILD_DIR)/rp2040/native_cpmfs.img # stupid workaround
 	make -C $(BUILD_DIR) -j$(JOBS) && echo "\nbuild was successful\n"
 
 clean:

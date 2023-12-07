@@ -104,7 +104,8 @@ void set_bank( uint8_t bank )
    {
       romvec = &rom[(bank - 1) * 0x2000];
    }
-//   printf( "set_bank(%d) -> %p\n", bank, romvec );
+   ram[0xDFFF] = bank;
+//   printf( "set_bank(%02x) -> %p\n", bank, romvec );
 }
 
 
@@ -517,8 +518,7 @@ static inline void handle_io()
             bus_data_write( rand() & 0xFF );
             break;
          case 0xFF: /* read bank number */
-            bus_data_write( 0 ); // no bank switching implemented, yet
-            break;
+            /* just slip through to ram shadow */
          default:
             /* everything else is handled like RAM by design */
             handle_ramrom();
@@ -563,7 +563,8 @@ static inline void handle_io()
             system_trap();
             system_reboot();
             break;
-         case 0xFF: /* set bankswitch register for $F000-$FFFF */
+         case 0xFF: /* set bankswitch register for $E000-$FFFF */
+            /* when changing from 0xFF make sure to adjust in set_bank() */
             set_bank( bus_data_read() );
             break;
          default:
