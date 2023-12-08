@@ -135,12 +135,24 @@ add_executable(native_alpha
    dhara/error.c
    dhara/journal.c
    dhara/map.c
+   getaline.c
+   cpu_detect.c
+#   gpio_oc.c
    native/core0.c
    native/core1.c
    native/dhara_flash.c
    native/event_queue.c
    native/menu.c
+   native/mem_cmds.c
+   native/system_cmds.c
    )
+
+target_include_directories(native_alpha
+   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} 
+   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/rp2040
+   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/rp2040/native
+)
+
 target_link_libraries(native_alpha
    pico_stdlib
    pico_multicore

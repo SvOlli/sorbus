@@ -27,12 +27,10 @@ void console_type_set( console_type_t type )
 
 void console_rp2040()
 {
-   printf( "\nwatchdog triggered! CPU stopped using RDY\n" );
-
-   printf( "\nrebooting system!\n" );
+   print_welcome();
    menu_run();
-   system_reboot();
-   console_type = CONSOLE_TYPE_65C02;
+   // system_reboot(); should not be called from Core 0 
+   console_type_set(CONSOLE_TYPE_65C02);
 }
 
 

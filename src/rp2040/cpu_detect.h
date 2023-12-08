@@ -14,6 +14,7 @@ typedef enum {
 cputype_t cpu_detect();
 const char *cputype_name( cputype_t cputype );
 unsigned char cpu_detect_raw();
+cputype_t get_cpu_type();
 
 #endif
 

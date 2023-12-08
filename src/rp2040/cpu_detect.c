@@ -102,6 +102,13 @@ cputype_t cpu_detect()
 #endif
 
    cpu_detect_result = memory[0xF];
+
+   return get_cpu_type();   
+
+}
+
+cputype_t get_cpu_type(){
+
    // run complete, evaluate detected code
    switch( cpu_detect_result )
    {
