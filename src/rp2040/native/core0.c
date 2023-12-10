@@ -68,6 +68,7 @@ void console_65c02()
 void console_run()
 {
    multicore_lockout_victim_init();
+   console_type_set( CONSOLE_TYPE_65C02 );
 
    for(;;)
    {

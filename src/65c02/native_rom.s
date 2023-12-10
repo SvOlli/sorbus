@@ -8,7 +8,13 @@
 
 .segment "CODE"
 
-.include "native.inc"
+; zeropage addresses used by this part of ROM
+
+ASAVE := $FC
+PSAVE := $FD
+TMP16 := $FE
+
+.include "native_rom.inc"
 
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
@@ -18,27 +24,61 @@
 ; jumptable
 ;-------------------------------------------------------------------------
 
+.if 0
 ; $E000: WozMon
-RESET:
-   jmp   wozmon
+   jmp   RESET
 ; $E003: run bootblock 0 from internal drive
    jmp   boot
 ; $E006: run bootblock id in $0f from internal drive
    jmp   bootx
-; $E009: print character
-   jmp   echo
-; $E00C: print string
-   jmp   print
-; $E00F: load file
-   jmp   todo
-; $E012: test internal drive (temporary)
+; $E009: test internal drive (temporary)
    jmp   hddtest
-; $E015: copy $E000 RAM to $2000
+; $E00C: copy $E000 RAM to $2000
    jmp   dumpram0
-IRQ:
-NMI:
+.endif
+
+RESET:
+   cld
+   sei
+   ldx   #$05
+:
+   lda   @vectab,x
+   sta   UVNMI,x
+   dex
+   bpl   :-
+   txs
+@iloop:
+   jsr   PRINT
+   .byte 10,"Sorbus Native: 0-3)Boot, T)IM, W)ozMon? ",0
+:
+   jsr   chrin
+   bcs   :-
+   and   #$df     ; make uppercase
+   cmp   #$10     ; '0'
+   bcc   :+
+   cmp   #$14     ; '4'
+   bcc   @bootblock
+:
+   cmp   #'T'
+   bne   :+
+   jmp   timstart
+:
+   cmp   #'W'
+   bne   @iloop
+   lda   #$0a
+   jsr   chrout
+   jmp   wozstart
+@bootblock:
+   and   #$03
+   jmp   boot+2
+
+@vectab:
+   .word todo
+   .word todo
+   .word todo
+
 todo:
-   jmp   *
+   stz   TRAP
 
 bootx:
    lda   $0f
@@ -47,39 +87,34 @@ boot:
    lda   #$00
    ; boottrack is 32k, memory at $E000 is 8k
    ; starting at boot+2 can load other 8k offsets from internal drive
-   sei
-   ldx   #$ff
-   tsx
-   jsr   print ; preserves all registers... spooky.
-   .byte 13,10
-   .byte "Sorbus Computer Native Core",10
-   .byte "===========================",10
-   .byte "Checking Bootsector... ",0
+   jsr   PRINT ; preserves all registers... spooky.
+   .byte 10,"Checking Bootsector... ",0
    ror
    ror
    ror
    and   #$c0
    sta   IDLBAL
-   inx
+   ldx   #$00
    stx   IDLBAH
    stx   IDMEML
-   ldy   #$01      ; write sector to $0100 for checking
+   ldy   #$01        ; write sector to $0100 for checking
    sty   IDMEMH
 
-   jsr   secread  ;sta   IDREAD
+   sta   IDREAD      ; jsr   secread
 
+   lda   IDREAD
    beq   @checksig
-   jsr   print
+   jsr   PRINT
    .byte "no internal drive",0
    bra   @errend
 
 @notfound:
-   jsr   print
+   jsr   PRINT
    .byte "no boot signature",0
 @errend:
-   jsr   print
-   .byte " found.",10,"Starting WozMon",10,0
-   jmp   wozmon
+   jsr   PRINT
+   .byte " found.",10,0
+   jmp   $E000
 
 @checksig:
    dec   IDLBAL    ; reset LBA for re-reading to $E000
@@ -95,16 +130,19 @@ boot:
    dex
    bpl   :-
    
-   jsr   print
-   .byte "found. Loading Hi-RAM from sector 00",0
+   jsr   PRINT
+   .byte "found.",10,"Loading E000 from bootblock ",0
    lda   IDLBAL
-   jsr   prbyte
-   jsr   print
-   .byte ".",10,0
+   rol
+   rol
+   rol
+   and   #$03
+   ora   #$30
+   jsr   chrout
 
-   ldy   #$40    ; banksize ($2000) / sectorsize ($80)
+   ldy   #$40        ; banksize ($2000) / sectorsize ($80)
 :
-   jsr   secread  ;sta   IDREAD
+   sta   IDREAD      ; jsr   secread
    dey
    bne   :-
    ; leave with Y = 0, as required in @jmpcode
@@ -116,8 +154,8 @@ boot:
    dex
    bpl   :-
 ;   jmp   wozmon
-   jsr   print
-   .byte "jumping to E000 in bank 0",10,0
+   jsr   PRINT
+   .byte 10,"Jumping to E000 in bank 0",10,0
    jmp   $0180
    
 @signature:
@@ -127,17 +165,31 @@ boot:
 @jmpcode:
    stz   BANK      ; Y = 0
    jmp   $E000
-   ;sta   $DFFE
+   ;sta   TRAP
+   inc   BANK     ; BANK has to be $00 upon call
+   jsr   copybios
+   stz   BANK
+   rts
 @jmpcodeend:
 
+copybios:
+   ldx   #$00
+:
+   lda   BIOS,x
+   sta   BIOS,x
+   inx
+   bne   :-
+   rts
+
+.if 0
 secread:
-   jsr   print
+   jsr   PRINT
    .byte "loading sector ",0
    lda   IDLBAH
    jsr   prbyte
    lda   IDLBAL
    jsr   prbyte
-   jsr   print
+   jsr   PRINT
    .byte " to ",0
    lda   IDMEMH
    jsr   prbyte
@@ -145,8 +197,10 @@ secread:
    jsr   prbyte
    sta   IDREAD
    lda   #$0a
-   jmp   echo
+   jmp   chrout
+.endif
 
+.if 0
 dumpram0:
    ldy   #@dumpcodeend-@dumpcode
 :
@@ -173,7 +227,7 @@ dumpram0:
    inc   $05
    bne   :-
    inc   BANK
-   jmp   wozmon
+   jmp   wozstart
 @dumpcodeend:
 
 hddtest:
@@ -202,345 +256,115 @@ hddtest:
    dex
    bne   :-
 
-   jsr   print
+   jsr   PRINT
    .byte 10,"SUCCESS",10,0
 
-   jmp   wozmon
+   jmp   $E000
+.endif
 
-
-
-
-;-------------------------------------------------------------------------
-;  Memory declaration
-;-------------------------------------------------------------------------
-
-XAML            :=     $24            ; Last "opened" location Low
-XAMH            :=     $25            ; Last "opened" location High
-STL             :=     $26            ; Store address Low
-STH             :=     $27            ; Store address High
-L               :=     $28            ; Hex value parsing Low
-H               :=     $29            ; Hex value parsing High
-YSAV            :=     $2A            ; Used to see if hex value is given
-MODE            :=     $2B            ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
-
-IN              :=     $0200 ;,$027F     Input buffer
-
-; KBD b7..b0 are inputs, b6..b0 is ASCII input, b7 is constant high
-;     Programmed to respond to low to high KBD strobe
-; DSP b6..b0 are outputs, b7 is input
-;     CB2 goes low when data is written, returns high when CB1 goes high
-; Interrupts are enabled, though not used. KBD can be jumpered to IRQ,
-; whereas DSP can be jumpered to NMI.
-
-;-------------------------------------------------------------------------
-;  Constants
-;-------------------------------------------------------------------------
-
-BS              :=     $7f            ; "_": interpreted as backspace
-CR              :=     $0d            ; carriage return
-LF              :=     $0a            ; linefeed
-ESC             :=     $1b            ; ESC key
-PROMPT          :=     $5c            ; "\": prompt character
-
-;-------------------------------------------------------------------------
-;  Let's get started
-;
-;  Remark the RESET routine is only to be entered by asserting the RESET
-;  line of the system. This ensures that the data direction registers
-;  are selected.
-;-------------------------------------------------------------------------
-
-wozmon:
-   cld            ; just initializing bare minimum
-   cli            ; note: not even stack pointer
-   ldx   #$ff
-   txs
-   lda   #ESC     ; KBD and DSP control register mask
-
-; Program falls through to the GETLINE routine to save some program bytes
-; Please note that Y still holds $7F, which will cause an automatic Escape
-
-;-------------------------------------------------------------------------
-; The GETLINE process
-;-------------------------------------------------------------------------
-
-notcr:
-   cmp   #BS         ; check for backspace key
-   beq   backspace   ;   and jump to handling
-   cmp   #ESC        ; check for escape key
-   beq   escape      ;   and jump to handling
-   iny               ; advance to next char in buffer
-   bpl   nextchar    ; treat input buffer overflow like escape key
-
-escape:
-   lda   #PROMPT
-   jsr   echo     ; print prompt character
-
-getline:
-   lda   #LF
-   jsr   echo     ; print newline
-
-   ldy   #$01     ; start a new input, 1 compensates next line
-
-backspace:
-   lda   #$08
-   jsr   echo
-   dey
-   bmi   getline  ; buffer underflow -> restart
-
-nextchar:
-   lda   UARTRS   ; check input
-   beq   nextchar ; no input -> loop
-
-   lda   UARTRD   ; get key
-   sta   IN,y     ; add to buffer
-   jsr   echo     ; print character
-
-   cmp   #CR
-   bne   notcr    ; if it's not return loop
-
-; Line received, now let's parse it
-
-   lda   #$00     ; default mode is XAM
-   ldy   #$ff     ; reset input index
-   tax
-
-setstore:
-   asl
-
-setmode:
-   sta   MODE     ; set mode flags
-
-blskip:
-   iny
-
-nextitem:
-   lda   IN,y     ; get character from buffer
-   cmp   #CR      ; CR -> end of line
-   beq   getline
-   ora   #$80
-   cmp   #$ae     ; check for '.'
-   bcc   blskip   ; skip everything below '.', e.g. space
-   beq   setmode  ; '.' sets block XAM mode
-   cmp   #$ba     ; check for ':'
-   beq   setstore ; set STOR mode $
-   and   #$5f
-   cmp   #'R'     ; check for 'R'
-   beq   run
-   stx   L
-   stx   H
-   sty   YSAV
-
-nexthex:
-   lda   IN,y     ; get character for hex test
-   and   #$df     ; convert a->A, also wrecks '0'->$10
-   cmp   #$10
-   bcc   nohex
-   cmp   #'G'     ; $41-$46
-   bcs   nohex
-   cmp   #$1a     ; test for digit
-   bcc   dig      ; it is a digit
-   adc   #$b8     ; adjust for A-F
-   cmp   #$fa     ; test for hex letter
-   bcc   nohex    ; it isn't a hex letter
-
-dig:
-   asl
-   asl
-   asl
-   asl
-
-   ldx   #$04  ; process 4 bits
-hexshift:
-   asl         ; move most significant bit into carry
-   rol   L     ; rotate carry through 16 bit address lobyte
-   rol   H     ; ...hibyte
-   dex
-   bne   hexshift
-   iny
-   bne   nexthex
-
-nohex:
-   cpy   YSAV     ; at least one digit in buffer
-   beq   escape   ; no -> restart
-
-   bit   MODE        ; check top 2 bits of mode
-   bvc   notstore    ; bit 6: 0 is STOR, 1 is XAM or block XAM
-
-; STOR mode, save LSD of new hex byte
-
-   lda   L           ; LSD of hex data
-   sta   (STL,x)     ; X=0 -> store at address in STL
-   inc   STL
-   bne   nextitem
-   inc   STH
-tonextitem:
-   jmp   nextitem
-
-;-------------------------------------------------------------------------
-;  RUN user's program from last opened location
-;-------------------------------------------------------------------------
-
-run:
-   jmp (XAML)        ; execute supplied address
-
-;-------------------------------------------------------------------------
-;  We're not in Store mode
-;-------------------------------------------------------------------------
-
-notstore:
-   bmi   xamnext     ; bit 7: 0=XAM, 1=block XAM
-
-; We're in XAM mode now
-   ldx   #$02        ; copy 2 bytes
-setaddr:
-   lda   L-1,x       ; copy hex data to
-   sta   STL-1,x     ; ..."store index"
-   sta   XAML-1,x    ; ...and "XAM index"
-   dex
-   bne   setaddr
-
-; Print address and data from this address, fall through next BNE.
-
-nextprint:
-   bne   prdata      ; no address to print
-   lda   #LF
-   jsr   echo        ; start new line
-   lda   XAMH
-   jsr   prbyte      ; print hibyte of address
-   lda   XAML
-   jsr   prbyte      ; print lobyte of address
-   lda   #$3a        ; ":"
-   jsr   echo        ; print colon
-
-prdata:
-   lda   #$20        ; " "
-   jsr   echo        ; print space
-   lda   (XAML,x)    ; get data from address
-   jsr   prbyte      ; print byte
-
-xamnext:
-   stx   MODE        ; set mode to XAM
-   lda   XAML        ; check if
-   cmp   L           ; ...there's
-   lda   XAMH        ; ...more to
-   sbc   H           ; ...print
-   bcs   tonextitem
-
-   inc   XAML
-   bne   :+
-   inc   XAMH
+bankjsr:
+   php
+   pha
+   phx
+   phy
+   tsx
+   lda   $0103,x
+   sta   TMP16+0
+   clc
+   adc   #$02
+   sta   $0103,x
+   lda   $0104,x
+   sta   TMP16+1
+   bcc   :+
+   inc   $0104,x
 :
-   lda   XAML
-   and   #$07        ; start new line every 8 addresses
-   bpl   nextprint
+   ldy   #$01
+   lda   (TMP16),y
+   pha
+   iny
+   lda   (TMP16),y
+   sta   TMP16+1
+   pla
+   sta   TMP16+0
+   ply
+   plx
+   pla
+   plp
+   jmp   (TMP16)
 
-;-------------------------------------------------------------------------
-;  Subroutine to print a byte in A in hex form (destructive)
-;-------------------------------------------------------------------------
-
-prbyte:
-   pha            ; save A for LSD
-   lsr            ; move MSD down to LSD
-   lsr
-   lsr
-   lsr
-   jsr   prhex    ; print MSD
-   pla            ; restore A for LSD
-
-; Fall through to print hex routine
-
-;-------------------------------------------------------------------------
-;  Subroutine to print a hexadecimal digit
-;-------------------------------------------------------------------------
-
-prhex:
-   and   #$0f     ; mask LSD for hex print
-   ora   #$30     ; add ascii "0"
-   cmp   #$3a     ; is still decimal
-   bcc   echo     ; yes -> output
-   adc   #$06     ; adjust offset for letters a-f
-
-; Fall through to print routine
-
-;-------------------------------------------------------------------------
-;  Subroutine to print a character to the terminal
-;-------------------------------------------------------------------------
-
-echo:
-   bit   UARTWS
-   bmi   echo
-   sta   UARTWR
-   rts
-
-;-------------------------------------------------------------------------
-;  WozMon end
-;-------------------------------------------------------------------------
-
-print:
-   sta   YSAV
+.segment "BIOS"
+BIOS:
+CHRIN:
+   jmp   chrin
+CHROUT:
+   jmp   chrout
+PRINT:
+   sta   ASAVE
    php
    pla
-   sta   MODE
+   sta   PSAVE
    pla
-   sta   L
+   sta   TMP16+0
    pla
-   sta   H
+   sta   TMP16+1
 @loop:
-   inc   L
+   inc   TMP16+0
    bne   :+
-   inc   H
+   inc   TMP16+1
 :
-   lda   (L)
+   lda   (TMP16)
    beq   @out
-   jsr   echo
+   jsr   chrout
    bra   @loop
 @out:
-   lda   H
+   lda   TMP16+1
    pha
-   lda   L
+   lda   TMP16+0
    pha
-   lda   MODE
+   lda   PSAVE
    pha
-   lda   YSAV
+   lda   ASAVE
    plp
    rts
 
-.if 0
-.macro bankjsr bank,address
-   php                  ; 3= 3
-   sta   @BANKA         ; 4= 7
-   lda   #<address      ; 2= 9
-   sta   @BANKJSR+1     ; 4=13
-   lda   #>address      ; 2=15
-   sta   @BANKJSR+2     ; 4=19
-   lda   #bank          ; 2=21
-   plp                  ; 4=25
-   jsr   bank_jsr_code  ; 6=31
-.endmacro
+chrin:
+   lda   UARTRS ; check input
+   bne   :+     ; data available, fetch it
+   sec          ; no input -> return 0 and set carry
+   rts
+:
+   lda   UARTRD ; get key value
+   clc
+   rts
 
-bank_jsr_code:
-   sta   @BANKID        ; 4=35
-   php                  ; 3=38
-   lda   BANK           ; 4=42
-   sta   @BANKRB+1      ; 4=46
-@BANKID:
-   lda   #$ba           ; 2=48 ; banknumber
-   sta   BANK           ; 4=52
-@BANKA:
-   lda   #$aa           ; 2=54 ; stored accumulator
-   plp                  ; 3=57 ; get processor status from stack
-@BANKJSR:
-   jsr   $0000          ; 6=63 ; address
-   php                  ; 3=66
-   pha                  ; 3=69
-@BANKRB:
-   lda   #$00           ; 2=71
-   sta   BANK           ; 4=75
-   pla                  ; 4=79
-   plp                  ; 4=83
-   rts                  ; 6=89
-.endif
+chrout:
+   bit   UARTWS
+   bmi   CHROUT
+   sta   UARTWR
+   rts
+
+BANKJSR:
+   php
+   pha
+   lda   BANK
+   sta   PSAVE
+   lda   #$01
+   sta   BANK
+   pla
+   plp
+   jsr   bankjsr
+   php
+   pha
+   lda   PSAVE
+   sta   BANK
+   pla
+   plp
+   rts
+
+NMI:
+   jmp   (UVNMI)
+IRQ:
+   jmp   (UVIRQ)
 
 .segment "VECTORS"
    .word NMI

@@ -66,5 +66,7 @@ src2hex(a1hello.hex a1hello 0x0800)
 
 add_executable(native_rom
    native_rom.s
+   native_tim.s
+   native_woz.s
    )
 target_type(native_rom native_rom)

@@ -26,35 +26,45 @@ Memory map
 - $E000-$FFFF: ROM bank 0 (custom firmware)
 - $E000-$FFFF: ROM bank 1 (CP/M-65 firmware containing BIOS, BDOS and CCP)
 
-Internal I/O ($DF00-$DFFF)
---------------------------
-- $DF80-$DFF9: RAM containing copy of $FF80-$FFF9 of first ROM bank
-               -> switching code
-- $DFFA: (R) UART in queue read
-- $DFFA: (W) config UART: bit 0=enable crlf conversion
-- $DFFB: (R) serial in queue size (up to 240, 255: error)
-- $DFFC: (W) serial out queue write
-- $DFFD: (R) serial out queue size (up to 127, >127: error)
-- $DFFE: (R) random value
-- $DFFF: (proposed) bank select register for $E000-$FFFF, allowing 2MB of ROM
-         ROM starts at bank 1 (default), bank 0 is RAM
 
-Timer ($DF00-$DF07)
+Internal I/O ($DF00-$DFFF)
+==========================
+The following memory areas are space reserved for that functional group.
+
+
+Miscellaneous ($DF00-$DF0F)
+---------------------------
+- $DF00: bank select register for $E000-$FFFF
+         ROM starts at bank 1 (default), bank 0 is RAM
+         more banks can be added, if bank set > max_bank, bank is set to default
+- $DF01: (S) trap: print out debug information and reboot system
+- $DF02: (R) random value
+- $DF03-$DF0A: reserved for future use
+- $DF0B: UART config: bit 0=enable crlf conversion
+- $DF0C: (R) UART in queue read
+- $DF0D: (R) serial in queue size (up to 240, 255: error)
+- $DF0E: (W) serial out queue write
+- $DF0F: (R) serial out queue size (up to 127, >127: error)
+
+
+Timer ($DF10-$DF1F)
 -------------------
-- two timmers triggering IRQ and NMI
-- base address IRQ timer: $DF00
-- base address NMI timer: $DF04
+- two 16 bit timers triggering either IRQ or NMI
+- base address IRQ timer: $DF10
+- base address NMI timer: $DF14
 - base address + 0 = set low counter for repeating timer, stops timer
 - base address + 1 = set high counter for repeating timer, starts timer
 - base address + 2 = set low counter for single shot timer, stops timer
 - base address + 3 = set high counter for single shot timer, starts timer
 - reading any register return $80 if timer was triggered, $00 otherwise
   reading clears flag; todo(?): $40 indicates timer is running
+- IMPORTANT: this might change, if 16-bit counters are not sufficiant
 
-Watchdog ($DF08-$DF0B)
+
+Watchdog ($DF20-$DF23)
 ----------------------
 - counter is 24 bit
-- base address: $DF08
+- base address: $DF20
 - base address + 0: turn off
 - base address + 1: set low counter, write resets watchdog when running
 - base address + 2: set mid counter, write resets watchdog when running
@@ -67,30 +77,55 @@ Watchdog ($DF08-$DF0B)
   - RAM contents
   - configuration of internals like timer, etc.
 
+
 Internal Drive ($DF70-$DF77)
 ----------------------------
 System provides 32768 blocks of 128 bytes = 4MB
 Data stored in flash @ 0x10400000 (12MB, ~<6MB payload with wear leveling)
 LBA: block index, allowed $0000-$7FFF (4MB for OS)
 Additional blocks not used by OS
-DMA memory: allowed $0004-$CF80, $E000-$FF80
+DMA memory: allowed $0004-$CF80, $DF80-$FF80
 - base address: $DF70
 - base address + $0: LBA low
 - base address + $1: LBA high
 - base address + $2: DMA memory low
 - base address + $3: DMA memory high
-- base address + $4: read sector (strobe, adjusts DMA memory and LBA)
-- base address + $5: write sector (strobe)
+- base address + $4: (S) read sector (strobe, adjusts DMA memory and LBA)
+- base address + $5: (S) write sector (strobe)
 - base address + $6: (unused)
-- base address + $7: flash discard
+- base address + $7: (S) flash discard
 Each transfer stops CPU until transfer is completed
 
-Suggested I/O
--------------
+
+RAM Vectors ($DF78-$DF7F)
+-------------------------
+These vectors are RAM to support installing own handlers for interrupts
+- $DF78/$DF79 (reserved)
+- $DF7A/$DF7B NMI
+- $DF7C/$DF7D suggested for BRK (or non-BRK) based IRQ
+- $DF7E/$DF7F IRQ
+Since IRQ and BRK are handled by $FFFE/$FFFF, it is up to the handler
+defined in $DF7E/$DF7F to check for BRK and then jmp ($DF7C)
+TIM uses $DF7C/$DF7D for a non-BRK interrupt
+
+
+Scratchpad RAM ($DF80-$DFFF)
+----------------------------
+128 bytes of RAM intended to be used to store a sector from internal drive,
+e.g. directory data.
+
+
+Unused addresses in $DF00-$DF7F behave like RAM, except that they can't be
+used with internal drives DMA.
+
+
+Suggested External I/O Addresses
+================================
 - $D400: SID(s): 5-bit register select -> 8 SIDs max
 - $DA00: RIOT: 1 will take up full page
 - $DB00: ACIA(s): 2-bit register select -> 64 ACIAs max
 - $DC00: VIA(s): 4-bit register select -> 16 VIAs max
+
 
 Chip-Select-GA
 ==============

@@ -104,7 +104,6 @@ void set_bank( uint8_t bank )
    {
       romvec = &rom[(bank - 1) * 0x2000];
    }
-   ram[0xDFFF] = bank;
 //   printf( "set_bank(%02x) -> %p\n", bank, romvec );
 }
 
@@ -326,9 +325,9 @@ static inline void handle_flash_dma()
       ram[address] |= 0xF0;
    }
    // filter out bad ranges, removing second line would write protect ROM
-   if( (*mem < 0x0004) ||                                       // zeropage I/O
-       ((*mem > (0xD000-SECTOR_SIZE)) && (*mem < ROM_START)) || // $Dxxx I/O
-       (*mem > (0x10000-SECTOR_SIZE)) )                         // would go out of bounds
+   if( (*mem < 0x0004) ||                                    // zeropage I/O
+       ((*mem > (0xD000-SECTOR_SIZE)) && (*mem < 0xDF80)) || // $Dxxx I/O
+       (*mem > (0x10000-SECTOR_SIZE)) )                      // would go out of bounds
    {
       // DMA would run into I/O which is not possible, only RAM works
       ram[address] |= 0xF1;
@@ -484,41 +483,39 @@ static inline void handle_io()
       /* I/O read */
       switch( address & 0xFF )
       {
-         case 0x00:
-         case 0x01:
-         case 0x02:
-         case 0x03:
-            bus_data_write( irq_timer_triggered ? 0x80 : 0x00 );
-            irq_timer_triggered = false;
+         case 0x02: /* random */
+            bus_data_write( rand() & 0xFF );
             break;
-         case 0x04:
-         case 0x05:
-         case 0x06:
-         case 0x07:
-            bus_data_write( nmi_timer_triggered ? 0x80 : 0x00 );
-            nmi_timer_triggered = false;
-            break;
-         case 0x08:
-         case 0x09:
-         case 0x0A:
-         case 0x0B:
-            bus_data_write( watchdog_cycles_total ? 0x80 : 0x00 );
-            break;
-         case 0xFA: /* console UART read */
+         case 0x0C: /* console UART read */
             success = queue_try_remove( &queue_uart_read, &data );
             bus_data_write( success ? data : 0x00 );
             break;
-         case 0xFB: /* console UART read queue */
+         case 0x0D: /* console UART read queue */
             bus_data_write( queue_get_level( &queue_uart_read )  );
             break;
-         case 0xFD: /* console UART write queue */
+         case 0x0F: /* console UART write queue */
             bus_data_write( queue_get_level( &queue_uart_write )  );
             break;
-         case 0xFE: /* random */
-            bus_data_write( rand() & 0xFF );
+         case 0x10: /* is timer for IRQ running */
+         case 0x11:
+         case 0x12:
+         case 0x13: /* fall throughs are intended */
+            bus_data_write( irq_timer_triggered ? 0x80 : 0x00 );
+            irq_timer_triggered = false;
             break;
-         case 0xFF: /* read bank number */
-            /* just slip through to ram shadow */
+         case 0x14: /* is timer for NMI running */
+         case 0x15:
+         case 0x16:
+         case 0x17: /* fall throughs are intended */
+            bus_data_write( nmi_timer_triggered ? 0x80 : 0x00 );
+            nmi_timer_triggered = false;
+            break;
+         case 0x20: /* is timer for watchdog running */
+         case 0x21:
+         case 0x22:
+         case 0x23: /* fall throughs are intended */
+            bus_data_write( watchdog_cycles_total ? 0x80 : 0x00 );
+            break;
          default:
             /* everything else is handled like RAM by design */
             handle_ramrom();
@@ -531,20 +528,35 @@ static inline void handle_io()
       data = bus_data_read();
       switch( address & 0xFF )
       {
-         case 0x00:
-         case 0x01:
-         case 0x02:
-         case 0x03:
-         case 0x04:
-         case 0x05:
-         case 0x06:
-         case 0x07:
+         case 0x00: /* set bankswitch register for $E000-$FFFF */
+            set_bank( bus_data_read() );
+            handle_ramrom(); /* make sure register is mirrored to RAM for read */
+            break;
+         case 0x01: /* DEBUG only! */
+            system_trap();
+            system_reboot();
+            break;
+         case 0x0B: /* UART read: enable crlf conversion */
+            uart_set_translate_crlf( uart0, data & 1 );
+            handle_ramrom(); /* make sure register is mirrored to RAM for read */
+            break;
+         case 0x0E: /* console UART write */
+            queue_try_add( &queue_uart_write, &data );
+            break;
+         case 0x10: /* setup timer for IRQ or NMI */
+         case 0x11:
+         case 0x12:
+         case 0x13:
+         case 0x14:
+         case 0x15:
+         case 0x16:
+         case 0x17: /* fall throughs are intended */
             timer_setup( data, address & 0x07 );
             break;
-         case 0x08:
-         case 0x09:
-         case 0x0A:
-         case 0x0B:
+         case 0x20: /* setup timer for watchdog */
+         case 0x21:
+         case 0x22:
+         case 0x23: /* fall throughs are intended */
             watchdog_setup( data, address & 0x03 );
             break;
          case 0x74: /* dma read from flash disk */
@@ -552,20 +564,6 @@ static inline void handle_io()
          case 0x77: /* flash disk trim, no dma address used */
             /* access is strobe: written data does not matter */
             handle_flash_dma();
-            break;
-         case 0xFA: /* UART read: enable crlf conversion */
-            uart_set_translate_crlf( uart0, data & 1 );
-            break;
-         case 0xFC: /* console UART write */
-            queue_try_add( &queue_uart_write, &data );
-            break;
-         case 0xFE: /* DEBUG only! */
-            system_trap();
-            system_reboot();
-            break;
-         case 0xFF: /* set bankswitch register for $E000-$FFFF */
-            /* when changing from 0xFF make sure to adjust in set_bank() */
-            set_bank( bus_data_read() );
             break;
          default:
             /* everything else is handled like RAM by design */
