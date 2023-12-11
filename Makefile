@@ -35,6 +35,7 @@ $(PICO_SDK_PATH)/README.md:
 	git clone --depth 1 --recurse-submodules --shallow-submodules $(PICO_SDK_URL) $(PICO_SDK_PATH)
 
 setup-apt:
+	sudo apt update
 	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full cpmtools
 
 $(RELEASE_ARCHIVE): all

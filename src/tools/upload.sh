@@ -15,7 +15,7 @@ if [ -z "${file}" ]; then
    cat "${mydir}/../../build/rp2040/native_alpha.uf2" "${mydir}/../../build/rp2040/native_kernel.uf2" > "${mydir}/../../build/rp2040/native_test.uf2"
    file="$(readlink -f "${mydir}/../../build/rp2040/native_test.uf2")"
 fi
-picotool info "${file}" -a
+picotool info "${file}" -a || :
 picotool load "${file}" -f
 picotool reboot -f
 while [ ! -c "${device}" ]; do sleep 0.33; done

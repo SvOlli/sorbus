@@ -268,22 +268,22 @@ bankjsr:
    phx
    phy
    tsx
-   lda   $0103,x
-   sta   TMP16+0
+   lda   $0103,x     ; find address lobyte of payload address
+   sta   TMP16+0     ; save it
    clc
-   adc   #$02
+   adc   #$02        ; skip two bytes on return address (payload)
    sta   $0103,x
-   lda   $0104,x
-   sta   TMP16+1
+   lda   $0104,x     ; find address hibyte of payload address
+   sta   TMP16+1     ; save it
    bcc   :+
-   inc   $0104,x
+   inc   $0104,x     ; adjust hibyte of return address, if required
 :
-   ldy   #$01
-   lda   (TMP16),y
+   ldy   #$01        ; jsr stores return address - 1 on stack, compensate
+   lda   (TMP16),y   ; get lobyte of payload (target address)
    pha
    iny
-   lda   (TMP16),y
-   sta   TMP16+1
+   lda   (TMP16),y   ; get hibyte of payload (target address)
+   sta   TMP16+1     ; reuse vector for jump address
    pla
    sta   TMP16+0
    ply
@@ -299,6 +299,42 @@ CHRIN:
 CHROUT:
    jmp   chrout
 PRINT:
+   jmp   print
+BANKJSR:
+   php
+   pha
+   lda   BANK
+   sta   PSAVE
+   lda   #$01
+   sta   BANK
+   pla
+   plp
+   jsr   bankjsr
+   php
+   pha
+   lda   PSAVE
+   sta   BANK
+   pla
+   plp
+   rts
+
+chrin:
+   lda   UARTRS ; check input
+   bne   :+     ; data available, fetch it
+   sec          ; no input -> return 0 and set carry
+   rts
+:
+   lda   UARTRD ; get key value
+   clc
+   rts
+
+chrout:
+   bit   UARTWS
+   bmi   chrout
+   sta   UARTWR
+   rts
+
+print:
    sta   ASAVE
    php
    pla
@@ -324,40 +360,6 @@ PRINT:
    lda   PSAVE
    pha
    lda   ASAVE
-   plp
-   rts
-
-chrin:
-   lda   UARTRS ; check input
-   bne   :+     ; data available, fetch it
-   sec          ; no input -> return 0 and set carry
-   rts
-:
-   lda   UARTRD ; get key value
-   clc
-   rts
-
-chrout:
-   bit   UARTWS
-   bmi   CHROUT
-   sta   UARTWR
-   rts
-
-BANKJSR:
-   php
-   pha
-   lda   BANK
-   sta   PSAVE
-   lda   #$01
-   sta   BANK
-   pla
-   plp
-   jsr   bankjsr
-   php
-   pha
-   lda   PSAVE
-   sta   BANK
-   pla
    plp
    rts
 
