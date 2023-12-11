@@ -30,6 +30,11 @@ function(target_type_addr target system startaddr)
    endif()
 endfunction()
 
+add_executable(native_writeboot1
+   native_writeboot1.s
+   )
+target_type_addr(native_writeboot1 native 0x1000)
+
 add_executable(cpudetect_mcp
    cpudetect_mcp.s
    )

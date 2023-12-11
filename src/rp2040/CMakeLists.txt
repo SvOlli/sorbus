@@ -47,9 +47,10 @@ function(dharawrite out_file in_file)
 endfunction()
 
 function(gencpmfs out_file)
+   file(GLOB CPM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/*/*")
    add_custom_command(OUTPUT ${out_file}
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh" "${out_file}" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
-      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/cpm_rom.bin"
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/cpm_rom.bin" ${CPM_FILES}
    )
 endfunction()
 

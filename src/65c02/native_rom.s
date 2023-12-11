@@ -16,6 +16,9 @@ TMP16 := $FE
 
 .include "native_rom.inc"
 
+trampoline := $0180
+copybios   := trampoline
+
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
 .PC02
@@ -53,10 +56,10 @@ RESET:
 :
    jsr   chrin
    bcs   :-
-   and   #$df     ; make uppercase
-   cmp   #$10     ; '0'
+   jsr   uppercase
+   cmp   #'0'
    bcc   :+
-   cmp   #$14     ; '4'
+   cmp   #'4'
    bcc   @bootblock
 :
    cmp   #'T'
@@ -73,9 +76,37 @@ RESET:
    jmp   boot+2
 
 @vectab:
-   .word todo
-   .word todo
-   .word todo
+   .word unmi
+   .word ubrk
+   .word uirq
+
+uirq:
+   ;stz   TRAP
+   sta   ASAVE
+   php
+   php
+   pla
+   and   #$10
+   bne   ubrk
+   lda   ASAVE
+   plp
+   jsr   print
+   .byte 10,"IRQ",10,0
+   rti
+
+ubrk:
+   ;stz   TRAP
+   lda   ASAVE
+   plp
+   jsr   print
+   .byte 10,"BRK",10,0
+   rti
+
+unmi:
+   ;stz   TRAP
+   jsr   print
+   .byte 10,"NMI",10,0
+   rti
 
 todo:
    stz   TRAP
@@ -147,32 +178,33 @@ boot:
    bne   :-
    ; leave with Y = 0, as required in @jmpcode
    
-   ldx   #$05
+   ldx   #(@trampolineend-@trampoline-1)
 :
-   lda   @jmpcode,x
-   sta   $0180,x
+   lda   @trampoline,x
+   sta   trampoline,x
    dex
    bpl   :-
 ;   jmp   wozmon
    jsr   PRINT
    .byte 10,"Jumping to E000 in bank 0",10,0
-   jmp   $0180
+   jmp   trampoline+@jmpbank0-@trampoline
    
 @signature:
    .byte "SBC23"
 @signatureend:
 
-@jmpcode:
+@trampoline:
+   inc   BANK              ; this routine will only be called from bank 0 (RAM)
+   jsr   @copybios
+   stz   BANK              ; set BANK back to $00 (RAM)
+   rts
+@jmpbank0:
    stz   BANK      ; Y = 0
    jmp   $E000
    ;sta   TRAP
-   inc   BANK     ; BANK has to be $00 upon call
-   jsr   copybios
-   stz   BANK
-   rts
-@jmpcodeend:
+@trampolineend:
 
-copybios:
+@copybios:
    ldx   #$00
 :
    lda   BIOS,x
@@ -180,6 +212,33 @@ copybios:
    inx
    bne   :-
    rts
+
+uppercase:
+   cmp   #'a'
+   bcc   :+
+   cmp   #'z'
+   bcs   :+
+   and   #$df
+:
+   rts
+
+prhex:
+   pha            ; save A for LSD
+   lsr            ; move MSD down to LSD
+   lsr
+   lsr
+   lsr
+   jsr   :+       ; print MSD
+   pla            ; restore A for LSD
+:
+   and   #$0f     ; mask LSD for hex print
+   ora   #'0'     ; add ascii "0"
+   cmp   #':'     ; is still decimal
+   bcc   :+       ; yes -> output
+   adc   #$06     ; adjust offset for letters a-f
+:
+   jmp   chrout
+
 
 .if 0
 secread:
@@ -235,9 +294,9 @@ hddtest:
    sta   IDLBAL
    sta   IDLBAH
    sta   IDMEML
-   lda   #$20 ; write sectors to $2000 following
+   lda   #$20        ; write sectors to $2000 following
    sta   IDMEMH
-   ldx   #$10 ; read first 16 sectors to $2000-$27FF
+   ldx   #$10        ; read first 16 sectors to $2000-$27FF
 :
    sta   IDREAD
    dex
@@ -262,7 +321,7 @@ hddtest:
    jmp   $E000
 .endif
 
-bankjsr:
+bank1jsr:
    php
    pha
    phx
@@ -298,9 +357,11 @@ CHRIN:
    jmp   chrin
 CHROUT:
    jmp   chrout
+CHRCFG:
+   jmp   chrcfg
 PRINT:
    jmp   print
-BANKJSR:
+BANK1JSR:
    php
    pha
    lda   BANK
@@ -309,7 +370,7 @@ BANKJSR:
    sta   BANK
    pla
    plp
-   jsr   bankjsr
+   jsr   bank1jsr
    php
    pha
    lda   PSAVE
@@ -332,6 +393,17 @@ chrout:
    bit   UARTWS
    bmi   chrout
    sta   UARTWR
+   rts
+
+chrcfg:
+   bcs   @clear
+   ora   UARTCF
+   bra   @store
+@clear:
+   eor   #$ff
+   and   UARTCF
+@store:
+   sta   UARTCF
    rts
 
 print:

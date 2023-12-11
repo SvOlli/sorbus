@@ -4,6 +4,7 @@
 ;-------------------------------------------------------------------------
 
 .include "native_rom.inc"
+.segment "CODE"
 
 ;-------------------------------------------------------------------------
 ;  Memory declaration
@@ -60,10 +61,6 @@ PROMPT          :=     $5c            ; "\": prompt character
 
 wozstart:
 wozmon:
-   cld            ; just initializing bare minimum
-   cli            ; note: not even stack pointer
-   ldx   #$ff
-   txs
    lda   #ESC     ; KBD and DSP control register mask
 
 ; Program falls through to the GETLINE routine to save some program bytes
@@ -83,35 +80,34 @@ notcr:
 
 escape:
    lda   #PROMPT
-   jsr   echo     ; print prompt character
+   jsr   CHROUT   ; print prompt character
 
 getline:
    lda   #LF
-   jsr   echo     ; print newline
+   jsr   CHROUT   ; print newline
 
    ldy   #$01     ; start a new input, 1 compensates next line
 
 backspace:
    lda   #$08
-   jsr   echo
+   jsr   CHROUT
    dey
    bmi   getline  ; buffer underflow -> restart
 
 nextchar:
-   lda   UARTRS   ; check input
-   beq   nextchar ; no input -> loop
-
-   lda   UARTRD   ; get key
+   jsr   CHRIN
+   bcs   nextchar
+   jsr   uppercase
    sta   IN,y     ; add to buffer
-   jsr   echo     ; print character
+   jsr   CHROUT   ; print character
 
    cmp   #CR
    bne   notcr    ; if it's not return loop
 
 ; Line received, now let's parse it
 
-   lda   #$00     ; default mode is XAM
    ldy   #$ff     ; reset input index
+   lda   #$00     ; default mode is XAM
    tax
 
 setstore:
@@ -142,12 +138,11 @@ nextitem:
 
 nexthex:
    lda   IN,y     ; get character for hex test
-   and   #$df     ; convert a->A, also wrecks '0'->$10
-   cmp   #$10
+   cmp   #'0'
    bcc   nohex
    cmp   #'G'     ; $41-$46
    bcs   nohex
-   cmp   #$1a     ; test for digit
+   cmp   #':'     ; test for digit
    bcc   dig      ; it is a digit
    adc   #$b8     ; adjust for A-F
    cmp   #$fa     ; test for hex letter
@@ -214,19 +209,19 @@ setaddr:
 nextprint:
    bne   prdata      ; no address to print
    lda   #LF
-   jsr   echo        ; start new line
+   jsr   CHROUT      ; start new line
    lda   XAMH
-   jsr   prbyte      ; print hibyte of address
+   jsr   prhex       ; print hibyte of address
    lda   XAML
-   jsr   prbyte      ; print lobyte of address
-   lda   #$3a        ; ":"
-   jsr   echo        ; print colon
+   jsr   prhex       ; print lobyte of address
+   lda   #':'        ; ":"
+   jsr   CHROUT      ; print colon
 
 prdata:
-   lda   #$20        ; " "
-   jsr   echo        ; print space
+   lda   #' '        ; " "
+   jsr   CHROUT      ; print space
    lda   (XAML,x)    ; get data from address
-   jsr   prbyte      ; print byte
+   jsr   prhex       ; print byte
 
 xamnext:
    stx   MODE        ; set mode to XAM
@@ -242,42 +237,7 @@ xamnext:
 :
    lda   XAML
    and   #$07        ; start new line every 8 addresses
-   bpl   nextprint
-
-;-------------------------------------------------------------------------
-;  Subroutine to print a byte in A in hex form (destructive)
-;-------------------------------------------------------------------------
-
-prbyte:
-   pha            ; save A for LSD
-   lsr            ; move MSD down to LSD
-   lsr
-   lsr
-   lsr
-   jsr   prhex    ; print MSD
-   pla            ; restore A for LSD
-
-; Fall through to print hex routine
-
-;-------------------------------------------------------------------------
-;  Subroutine to print a hexadecimal digit
-;-------------------------------------------------------------------------
-
-prhex:
-   and   #$0f     ; mask LSD for hex print
-   ora   #$30     ; add ascii "0"
-   cmp   #$3a     ; is still decimal
-   bcc   echo     ; yes -> output
-   adc   #$06     ; adjust offset for letters a-f
-
-; Fall through to print routine
-
-;-------------------------------------------------------------------------
-;  Subroutine to print a character to the terminal
-;-------------------------------------------------------------------------
-
-echo:
-   jmp   CHROUT
+   bpl   nextprint   ; jmp
 
 ;-------------------------------------------------------------------------
 ;  WozMon end

@@ -9,13 +9,29 @@ core installed.
 Cores available are:
 - Monitor Command Prompt: MCP
 - Apple 1
+- Native Core utilizing an internal flash drive
 
 For how to handle these cores, take a look at https://xayax.net/sorbus/
 
-In alpha state there also is a new native core. This core defines a new
-custom computer. This requires two binary images to be flashed as well,
-which are under heavy development:
-- Sorbus Native Kernel
-- Internal Drive Image
-Because, these files are in an early stage, they are not part of this
-distribution. This will change, once they've matured.
+These files are provided:
+
+sorbus-computer-apple1.uf2:
+The firmware for emulating an Apple 1.
+
+sorbus-computer-mcp.uf2:
+The firmware for the Monitor Command Prompt.
+
+sorbus-computer-native_alpha.uf2:
+The firmware for the Native system. This requires a separatly flashed
+kernel image as well as a filesystem image.
+
+sorbus-computer-native_kernel.uf2:
+The kernel required for the Native system.
+
+sorbus-computer-native_cpmfs.uf2:
+The filesystem image containing a CP/M-65 installation for the Native
+system.
+
+sorbus-computer-native_alpha_full.uf2:
+This image contains all data for the Native system in one file: firmware,
+kernel and filesystem image.

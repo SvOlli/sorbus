@@ -37,10 +37,12 @@ int main()
 {
    // setup UART
    stdio_init_all();
-   uart_set_translate_crlf( uart0, true );
+   console_set_crlf( true );
 
+#if 0
    // give some time to connect to console
    sleep_ms( 2000 );
+#endif
 
    // for toying with overclocking
    set_sys_clock_khz( 133000, false );

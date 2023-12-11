@@ -1,9 +1,10 @@
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
+#include <unistd.h>
 
 int main( int argc, char *argv[] )
 {
@@ -97,13 +98,28 @@ int main( int argc, char *argv[] )
       fprintf( f, " %02x", buffer[i] );
       if( (addr & 0x07) == 0x07 )
       {
-         fprintf( f, "\n" );
+         if( f == stdout )
+         {
+            fprintf( f, "\r\n" );
+            usleep( 10000 );
+         }
+         else
+         {
+            fprintf( f, "\n" );
+         }
       }
       addr++;
    }
    if( addr & 0x07 )
    {
-      fprintf( f, "\n" );
+      if( f == stdout )
+      {
+         fprintf( f, "\r\n" );
+      }
+      else
+      {
+         fprintf( f, "\n" );
+      }
    }
    fclose( f );
 

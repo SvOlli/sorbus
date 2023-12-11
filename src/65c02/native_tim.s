@@ -117,8 +117,6 @@ NCMDS     := <(ADRHIS-ADRLOS)
 
 .segment "CODE"
 
-   .byte "TIMSTART"
-
 timstart:
 timreset:
    ldx   #$05
@@ -134,21 +132,22 @@ timreset:
    stx   HSPTR          ; CLEAR HSPTR FLAGS
    stx   HSROP
    cli                  ; ENABLE INTS
-   BRK                  ; ENTER TIM BY BRK -> timintrq
+   brk                  ; ENTER TIM BY BRK -> timintrq
    
 timnmint:
    sta   ACC
-   lda   #'#'          ; SET A=# TO INDICATE NMINT ENTRY
-   bne   bintcom       ; jmp to interrupt common code
+   lda   #'#'           ; SET A=# TO INDICATE NMINT ENTRY
+   bne   bintcom        ; jmp to interrupt common code
 timintrq:
-   sta   ACC           ; SAVE ACC
-   pla               ; FLAGS TO A
-   pha               ; RESTORE STACK STATUS
-   and   #$10          ; TEST BRK FLAG
-   beq   buirq         ; USER INTERRUPT
+   sta   ACC            ; SAVE ACC
+   pla                  ; FLAGS TO A
+   pha                  ; RESTORE STACK STATUS
+   and   #$10           ; TEST BRK FLAG
+   beq   buirq          ; USER INTERRUPT
 
    asl               ; SET A=space (10 X 2 = 20)
-bintcom:  sta   TMPC          ; SAVE INT TYPE FLAG
+bintcom:
+   sta   TMPC          ; SAVE INT TYPE FLAG
    cld               ; CLEAR DECIMAL MODE
    lsr               ; # IS ODD, space IS EVEN
                      ; SET CY FOR PC BRK CORRECTION
@@ -599,7 +598,7 @@ space:
    tya
    pha
    lda   #' '
-   jsr   WRT           ; TYPE SP
+   jsr   WRT         ; TYPE SP
    pla               ; RESTORE A,x,y
    tay
    pla
@@ -662,8 +661,8 @@ RDOB:
    jsr   RDOC
    cmp   #$0D           ; CR?
    bne   RDOB1
-   pla                  ;YES - GO TO START
-   pla                  ;CLEANING STACK UP FIRST
+   pla                  ; YES - GO TO START
+   pla                  ; CLEANING STACK UP FIRST
    pla
    jmp   start
 
@@ -692,16 +691,16 @@ RDOB4:
    tax
    pla                  ; RESTORE Y
    tay
-   txa                  ;SET Z & N FLAGS FOR RETURN
+   txa                  ; SET Z & N FLAGS FOR RETURN
    rts
 
 hexit:
    cmp   #$3A
-   php               ; SAVE FLAGS
+   php                  ; SAVE FLAGS
    and   #$0F
    plp
-   bcc   hex09         ; 0-9
-   adc   #$08          ; ALPHA ACC 8+CY=9
+   bcc   hex09          ; 0-9
+   adc   #$08           ; ALPHA ACC 8+CY=9
 hex09:
    rts
 

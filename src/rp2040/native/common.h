@@ -14,6 +14,7 @@ extern queue_t queue_uart_write;
 // Core0: handle (user) I/O
 void console_type_set( console_type_t type );
 void console_run();
+void console_set_crlf( bool enable );
 
 // Core1: handle 65c02 bus
 void bus_run();

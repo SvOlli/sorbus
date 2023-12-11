@@ -3,6 +3,7 @@
 
 .global  timstart
 .global  wozstart
-.global  echo
 .global  print
-.global  prbyte
+.global  prhex
+.global  copybios
+.global  uppercase

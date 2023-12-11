@@ -69,6 +69,11 @@ uint32_t watchdog_cycles_total = 0;
 
 uint16_t dhara_flash_size = 0;
 
+/* magic addresses that cannot be addressed otherwise */
+#define MEM_ADDR_UART_CONTROL (0xDF0B)
+#define MEM_ADDR_ID_LBA       (0xDF70)
+#define MEM_ADDR_ID_MEM       (0xDF72)
+
 /******************************************************************************
  * internal functions
  ******************************************************************************/
@@ -279,7 +284,7 @@ static inline void system_reset()
    int dummy;
    static int cycles_since_start = 0;
    
-   // if we're the one causing the reset, make sure it's not for ever
+   /* if we're the one causing the reset, make sure it's not for ever */
    if( ++cycles_since_start > 8 )
    {
       gpio_set_mask( bus_config.mask_reset );
@@ -291,18 +296,25 @@ static inline void system_reset()
    timer_irq_total       = 0;
    irq_timer_triggered   = false;
    watchdog_cycles_total = 0;
-   set_bank( 1 );
+
    queue_event_reset();
-   // just a test, remove
-   //queue_event_add( 16, timer_nmi_triggered, 0 );
+
    while( queue_try_remove( &queue_uart_read, &dummy ) )
    {
-      // just loop until queue is empty
+      /* just loop until queue is empty */
    }
    while( queue_try_remove( &queue_uart_write, &dummy ) )
    {
-      // just loop until queue is empty
+      /* just loop until queue is empty */
    }
+
+   /* setup bank */
+   set_bank( 1 );
+
+   /* setup serial console */
+   console_set_crlf( true );
+   /* this needs to be set, as core0 cannot access RAM */
+   ram[MEM_ADDR_UART_CONTROL] = 0x01;
 }
 
 
@@ -314,8 +326,8 @@ static inline void handle_flash_sync( void *data )
 
 static inline void handle_flash_dma()
 {
-   uint16_t *lba = (uint16_t*)&ram[0xDF70];
-   uint16_t *mem = (uint16_t*)&ram[0xDF72];
+   uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
+   uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
    int retval = 0;
 
    ram[address] = 0x00;
@@ -537,7 +549,7 @@ static inline void handle_io()
             system_reboot();
             break;
          case 0x0B: /* UART read: enable crlf conversion */
-            uart_set_translate_crlf( uart0, data & 1 );
+            console_set_crlf( data & 1 );
             handle_ramrom(); /* make sure register is mirrored to RAM for read */
             break;
          case 0x0E: /* console UART write */

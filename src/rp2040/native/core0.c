@@ -7,6 +7,7 @@
  * for the Sorbus Computer
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
@@ -15,8 +16,17 @@
 #include "common.h"
 #include "menu.h"
 
+#include "event_queue.h"
+extern void system_trap();
 
 static console_type_t console_type;
+static bool console_crlf_enabled;
+
+void console_set_crlf( bool enable )
+{
+   uart_set_translate_crlf( uart0, enable );
+   console_crlf_enabled = enable;
+}
 
 
 void console_type_set( console_type_t type )
@@ -43,9 +53,11 @@ void console_65c02()
    if( in == PICO_ERROR_TIMEOUT )
    {
       in = getchar_timeout_us(10);
-      if( in == '~' )
+      if( in == 0x1d ) /* 0x1d = CTRL+] */
       {
          console_type = CONSOLE_TYPE_RP2040;
+         queue_event_add( 1, system_trap, 0 );
+
          in = PICO_ERROR_TIMEOUT;
       }
    }
