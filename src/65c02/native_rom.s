@@ -1,11 +1,9 @@
 ; IMPORTANT NOTE
 ; ==============
 ;
-; This is not the real rom for the native mode. It is just a minimal
-; environment used to testing purposes.
-;
-; The read ROM code is in another castle. (ahm, sorry, repository)
+; This ROM for the native mode is in very early development.
 
+.define VERSION "0.1"
 .segment "CODE"
 
 ; zeropage addresses used by this part of ROM
@@ -14,10 +12,12 @@ ASAVE := $FC
 PSAVE := $FD
 TMP16 := $FE
 
+SECTOR_BUFFER := $DF80
+TRAMPOLINE    := $0100
+
 .include "native_rom.inc"
 
-trampoline := $0180
-copybios   := trampoline
+copybios   := TRAMPOLINE
 
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
@@ -27,20 +27,7 @@ copybios   := trampoline
 ; jumptable
 ;-------------------------------------------------------------------------
 
-.if 0
-; $E000: WozMon
-   jmp   RESET
-; $E003: run bootblock 0 from internal drive
-   jmp   boot
-; $E006: run bootblock id in $0f from internal drive
-   jmp   bootx
-; $E009: test internal drive (temporary)
-   jmp   hddtest
-; $E00C: copy $E000 RAM to $2000
-   jmp   dumpram0
-.endif
-
-RESET:
+reset:
    cld
    sei
    ldx   #$05
@@ -50,9 +37,23 @@ RESET:
    dex
    bpl   :-
    txs
+   lda   #$01
+   dec               ; 65C02 opcode that is a NOP in 6502
+   beq   @iloop      ; no NMOS 6502, continue
+@printerror:
+   ldx   #$00
+@printchar:
+   lda   @no65c02message,x
+   jsr   chrout
+   iny
+   bne   @printchar
+   beq   @printerror ; endless loop reprinting message
+@no65c02message:
+   .byte "65C02 required", 10, 0
+
 @iloop:
    jsr   PRINT
-   .byte 10,"Sorbus Native: 0-3)Boot, T)IM, W)ozMon? ",0
+   .byte 10,"Sorbus Native V", VERSION, ": 0-3)Boot, T)IM, W)ozMon? ", 0
 :
    jsr   chrin
    bcs   :-
@@ -66,6 +67,11 @@ RESET:
    bne   :+
    jmp   timstart
 :
+.if 1
+   ; for speed measurement
+   cmp   #'S'
+   beq   :-
+.endif
    cmp   #'W'
    bne   @iloop
    lda   #$0a
@@ -83,13 +89,13 @@ RESET:
 uirq:
    ;stz   TRAP
    sta   ASAVE
-   php
+   ;php              ; only required when doing more than print
    php
    pla
    and   #$10
    bne   ubrk
    lda   ASAVE
-   plp
+   ;plp              ; only required when doing more than print
    jsr   print
    .byte 10,"IRQ",10,0
    rti
@@ -97,7 +103,7 @@ uirq:
 ubrk:
    ;stz   TRAP
    lda   ASAVE
-   plp
+   ;plp              ; only required when doing more than print
    jsr   print
    .byte 10,"BRK",10,0
    rti
@@ -119,32 +125,42 @@ boot:
    ; boottrack is 32k, memory at $E000 is 8k
    ; starting at boot+2 can load other 8k offsets from internal drive
    jsr   PRINT ; preserves all registers... spooky.
-   .byte 10,"Checking Bootsector... ",0
+   .byte 10,"Checking bootblock ",0
+   and   #$03
+   pha
+   ora   #'0'
+   jsr   CHROUT
+   pla
+   clc
    ror
    ror
    ror
-   and   #$c0
    sta   IDLBAL
    ldx   #$00
    stx   IDLBAH
+.if (<SECTOR_BUFFER <> $00)
+   lda   #<SECTOR_BUFFER
+   sta   IDMEML
+.else
    stx   IDMEML
-   ldy   #$01        ; write sector to $0100 for checking
-   sty   IDMEMH
+.endif
+   lda   #>SECTOR_BUFFER
+   sta   IDMEMH
 
-   sta   IDREAD      ; jsr   secread
+   sta   IDREAD
 
    lda   IDREAD
    beq   @checksig
    jsr   PRINT
-   .byte "no internal drive",0
+   .byte ": no internal drive",0
    bra   @errend
 
 @notfound:
    jsr   PRINT
-   .byte "no boot signature",0
+   .byte ": no boot signature",0
 @errend:
    jsr   PRINT
-   .byte " found.",10,0
+   .byte " found",10,0
    jmp   $E000
 
 @checksig:
@@ -155,40 +171,32 @@ boot:
 
    ldx   #$04
 :
-   lda   $0103,x
+   lda   SECTOR_BUFFER+3,x
    cmp   @signature,x
    bne   @notfound
    dex
    bpl   :-
-   
+
    jsr   PRINT
-   .byte "found.",10,"Loading E000 from bootblock ",0
-   lda   IDLBAL
-   rol
-   rol
-   rol
-   and   #$03
-   ora   #$30
-   jsr   chrout
+   .byte ": found.",10,"Loading... ",0
 
    ldy   #$40        ; banksize ($2000) / sectorsize ($80)
 :
-   sta   IDREAD      ; jsr   secread
+   sta   IDREAD
    dey
    bne   :-
    ; leave with Y = 0, as required in @jmpcode
-   
+
    ldx   #(@trampolineend-@trampoline-1)
 :
    lda   @trampoline,x
-   sta   trampoline,x
+   sta   TRAMPOLINE,x
    dex
    bpl   :-
-;   jmp   wozmon
    jsr   PRINT
-   .byte 10,"Jumping to E000 in bank 0",10,0
-   jmp   trampoline+@jmpbank0-@trampoline
-   
+   .byte "Go",10,0
+   jmp   TRAMPOLINE+@jmpbank0-@trampoline
+
 @signature:
    .byte "SBC23"
 @signatureend:
@@ -201,7 +209,6 @@ boot:
 @jmpbank0:
    stz   BANK      ; Y = 0
    jmp   $E000
-   ;sta   TRAP
 @trampolineend:
 
 @copybios:
@@ -230,8 +237,8 @@ prhex:
    lsr
    jsr   :+       ; print MSD
    pla            ; restore A for LSD
-:
    and   #$0f     ; mask LSD for hex print
+:
    ora   #'0'     ; add ascii "0"
    cmp   #':'     ; is still decimal
    bcc   :+       ; yes -> output
@@ -239,87 +246,6 @@ prhex:
 :
    jmp   chrout
 
-
-.if 0
-secread:
-   jsr   PRINT
-   .byte "loading sector ",0
-   lda   IDLBAH
-   jsr   prbyte
-   lda   IDLBAL
-   jsr   prbyte
-   jsr   PRINT
-   .byte " to ",0
-   lda   IDMEMH
-   jsr   prbyte
-   lda   IDMEML
-   jsr   prbyte
-   sta   IDREAD
-   lda   #$0a
-   jmp   chrout
-.endif
-
-.if 0
-dumpram0:
-   ldy   #@dumpcodeend-@dumpcode
-:
-   lda   @dumpcode,y
-   sta   $0280,y
-   dey
-   bpl   :-
-   iny
-   sty   $04
-   lda   #$e0
-   sta   $05
-   sty   $06
-   lda   #$20
-   sta   $07
-   jmp   $0280
-@dumpcode:
-   dec   BANK
-:
-   lda   ($04),y
-   sta   ($06),y
-   iny
-   bne   :-
-   inc   $07
-   inc   $05
-   bne   :-
-   inc   BANK
-   jmp   wozstart
-@dumpcodeend:
-
-hddtest:
-   lda   #$00
-   sta   IDLBAL
-   sta   IDLBAH
-   sta   IDMEML
-   lda   #$20        ; write sectors to $2000 following
-   sta   IDMEMH
-   ldx   #$10        ; read first 16 sectors to $2000-$27FF
-:
-   sta   IDREAD
-   dex
-   bne   :-
-
-   ; X is still 0
-   stx   IDLBAL
-   stx   IDMEML
-   lda   #$20
-   sta   IDLBAH
-   sta   IDMEMH
-
-   ldx   #$10
-:
-   sta   IDWRT
-   dex
-   bne   :-
-
-   jsr   PRINT
-   .byte 10,"SUCCESS",10,0
-
-   jmp   $E000
-.endif
 
 bank1jsr:
    php
@@ -353,15 +279,15 @@ bank1jsr:
 
 .segment "BIOS"
 BIOS:
-CHRIN:
+CHRIN:               ; reading character from UART
    jmp   chrin
-CHROUT:
+CHROUT:              ; writing character to UART
    jmp   chrout
-CHRCFG:
+CHRCFG:              ; setting parameters for UART
    jmp   chrcfg
-PRINT:
+PRINT:               ; print a string while keeping all registers
    jmp   print
-BANK1JSR:
+BANK1JSR:            ; from RAM, jump to ROM bank 1 to a subroutine
    php
    pha
    lda   BANK
@@ -380,25 +306,25 @@ BANK1JSR:
    rts
 
 chrin:
-   lda   UARTRS ; check input
-   bne   :+     ; data available, fetch it
-   sec          ; no input -> return 0 and set carry
+   lda   UARTRS      ; check for size of input queue
+   bne   :+          ; data available, fetch it
+   sec               ; no input -> return 0 and set carry
    rts
 :
-   lda   UARTRD ; get key value
+   lda   UARTRD      ; get key value
    clc
    rts
 
 chrout:
-   bit   UARTWS
+   bit   UARTWS      ; wait for buffer to accept data
    bmi   chrout
-   sta   UARTWR
+   sta   UARTWR      ; write data to output queue
    rts
 
 chrcfg:
-   bcs   @clear
+   bcs   @clear      ; carry on: set bits, off: clear bits
    ora   UARTCF
-   bra   @store
+   bra   @store      ; bne would also work here
 @clear:
    eor   #$ff
    and   UARTCF
@@ -407,20 +333,20 @@ chrcfg:
    rts
 
 print:
-   sta   ASAVE
+   sta   ASAVE       ; this routine changes A and P, so save those
    php
    pla
    sta   PSAVE
-   pla
+   pla               ; get address of text from stack
    sta   TMP16+0
    pla
    sta   TMP16+1
 @loop:
-   inc   TMP16+0
-   bne   :+
+   inc   TMP16+0     ; since JSR stores return address - 1, start with
+   bne   :+          ; ...incrementing the pointer
    inc   TMP16+1
 :
-   lda   (TMP16)
+   lda   (TMP16)     ; C02 opcode
    beq   @out
    jsr   chrout
    bra   @loop
@@ -435,6 +361,10 @@ print:
    plp
    rts
 
+RESET:
+   lda   #$01
+   sta   BANK
+   jmp   reset
 NMI:
    jmp   (UVNMI)
 IRQ:

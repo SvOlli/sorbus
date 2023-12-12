@@ -118,7 +118,6 @@ NCMDS     := <(ADRHIS-ADRLOS)
 .segment "CODE"
 
 timstart:
-timreset:
    ldx   #$05
 :
    lda   timvecs,x      ; INITALIZE INT VECTORS
@@ -133,7 +132,7 @@ timreset:
    stx   HSROP
    cli                  ; ENABLE INTS
    brk                  ; ENTER TIM BY BRK -> timintrq
-   
+
 timnmint:
    sta   ACC
    lda   #'#'           ; SET A=# TO INDICATE NMINT ENTRY

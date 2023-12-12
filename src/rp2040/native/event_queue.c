@@ -37,7 +37,7 @@ static inline queue_event_t *queue_event_get()
 {
    queue_event_t *retval = 0;
 
-   mutex_enter_blocking( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_LOCK();
    for( int i = 0; i < count_of(queue_events); ++i )
    {
       if( !(queue_events[i].timestamp) )
@@ -46,7 +46,7 @@ static inline queue_event_t *queue_event_get()
          break;
       }
    }
-   mutex_exit( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_UNLOCK();
    return retval;
 }
 
@@ -54,10 +54,10 @@ static inline queue_event_t *queue_event_get()
 // clean out queue totally
 void queue_event_reset()
 {
-   mutex_enter_blocking( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_LOCK();
    memset( &queue_events[0], 0x00, sizeof(queue_events) );
    _queue_next_timestamp = 0;
-   mutex_exit( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_UNLOCK();
 }
 
 
@@ -97,7 +97,7 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    newevent->data      = data;
    newevent->next      = 0;
 
-   mutex_enter_blocking( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_LOCK();
    if( !_queue_next_event )
    {
       // that's easy: no next event means no events at all
@@ -105,6 +105,11 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    }
    else
    {
+      // due to speed constrains, only one event per timestamp is allowed
+      if( newevent->timestamp == _queue_next_event->timestamp )
+      {
+         (newevent->timestamp)++;
+      }
       // is it earlier than the first entry in queue?
       if( newevent->timestamp < _queue_next_event->timestamp )
       {
@@ -117,6 +122,11 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
          queue_event_t *previous = _queue_next_event;
          for( current = _queue_next_event; current; current = current->next )
          {
+            // due to speed constrains, only one event per timestamp is allowed
+            if( newevent->timestamp == _queue_next_event->timestamp )
+            {
+               (newevent->timestamp)++;
+            }
             if( newevent->timestamp < current->timestamp )
             {
                break;
@@ -129,7 +139,7 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    }
 
    _queue_next_timestamp = _queue_next_event->timestamp;
-   mutex_exit( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_UNLOCK();
 }
 
 
@@ -138,7 +148,7 @@ void queue_event_cancel( queue_event_handler_t handler )
    queue_event_t *current  = 0;
    queue_event_t *previous = 0;
 
-   mutex_enter_blocking( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_LOCK();
    for( current = _queue_next_event; current; current = current->next )
    {
       if( current->handler == handler )
@@ -158,7 +168,7 @@ void queue_event_cancel( queue_event_handler_t handler )
       }
       previous = current;
    }
-   mutex_exit( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_UNLOCK();
 }
 
 
@@ -167,7 +177,7 @@ bool queue_event_contains( queue_event_handler_t handler )
    bool retval = false;
    queue_event_t *current  = 0;
 
-   mutex_enter_blocking( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_LOCK();
    for( current = _queue_next_event; current; current = current->next )
    {
       if( current->handler == handler )
@@ -176,7 +186,7 @@ bool queue_event_contains( queue_event_handler_t handler )
          break; // found one, no need to search further
       }
    }
-   mutex_exit( &_queue_event_mutex );
+   QUEUE_EVENT_MUTEX_UNLOCK();
 
    return retval;
 }

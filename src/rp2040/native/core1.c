@@ -8,6 +8,7 @@
  */
 
 #include <ctype.h>
+#include <malloc.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,13 +64,16 @@ uint32_t timer_nmi_total       = 0;
 
 bool nmi_timer_triggered       = false;
 bool irq_timer_triggered       = false;
+bool cpu_running               = false;
+bool cpu_running_request       = true;
 
 uint32_t watchdog_states[256]  = { 0 };
 uint32_t watchdog_cycles_total = 0;
 
 uint16_t dhara_flash_size = 0;
 
-/* magic addresses that cannot be addressed otherwise */
+
+// magic addresses that cannot be addressed otherwise
 #define MEM_ADDR_UART_CONTROL (0xDF0B)
 #define MEM_ADDR_ID_LBA       (0xDF70)
 #define MEM_ADDR_ID_MEM       (0xDF72)
@@ -77,6 +81,7 @@ uint16_t dhara_flash_size = 0;
 /******************************************************************************
  * internal functions
  ******************************************************************************/
+
 
 static inline void bus_data_write( uint8_t data )
 {
@@ -109,7 +114,6 @@ void set_bank( uint8_t bank )
    {
       romvec = &rom[(bank - 1) * 0x2000];
    }
-//   printf( "set_bank(%02x) -> %p\n", bank, romvec );
 }
 
 
@@ -282,38 +286,39 @@ static inline void reset_clear( void *data )
 static inline void system_reset()
 {
    int dummy;
-   static int cycles_since_start = 0;
-   
-   /* if we're the one causing the reset, make sure it's not for ever */
-   if( ++cycles_since_start > 8 )
+
+   if( queue_event_contains( reset_clear ) )
    {
-      gpio_set_mask( bus_config.mask_reset );
-      cycles_since_start = 0;
+      // reset sequence is already initiated
+      return;
    }
 
+   // clear some internal states
    timer_nmi_total       = 0;
    nmi_timer_triggered   = false;
    timer_irq_total       = 0;
    irq_timer_triggered   = false;
    watchdog_cycles_total = 0;
 
+   // clear event queue and setup end of reset event
    queue_event_reset();
+   queue_event_add( 8, reset_clear, 0 );
+
+   // setup bank
+   set_bank( 1 );
 
    while( queue_try_remove( &queue_uart_read, &dummy ) )
    {
-      /* just loop until queue is empty */
+      // just loop until queue is empty
    }
    while( queue_try_remove( &queue_uart_write, &dummy ) )
    {
-      /* just loop until queue is empty */
+      // just loop until queue is empty
    }
 
-   /* setup bank */
-   set_bank( 1 );
-
-   /* setup serial console */
+   // setup serial console
    console_set_crlf( true );
-   /* this needs to be set, as core0 cannot access RAM */
+   // this needs to be set, as core0 cannot access RAM
    ram[MEM_ADDR_UART_CONTROL] = 0x01;
 }
 
@@ -433,7 +438,7 @@ void debug_clocks()
    uint f_clk_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_USB);
    uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
    uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
-   
+
    printf("\n");
    printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
    printf("PLL_USB:             %3d.%03dMhz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
@@ -446,6 +451,64 @@ void debug_clocks()
 }
 
 
+void debug_heap()
+{
+   extern char __StackLimit, __bss_end__;
+   struct mallinfo m = mallinfo();
+
+   uint32_t total_heap = &__StackLimit  - &__bss_end__;
+   uint32_t free_heap = total_heap - m.uordblks;
+
+   printf("\n");
+   printf( "total heap: %08x (%d)\n", total_heap, total_heap );
+   printf( "free  heap: %08x (%d)\n", free_heap,  free_heap );
+}
+
+
+debug_hexdump( uint8_t *memory, uint32_t size, uint16_t address )
+{
+   for( uint32_t i = 0; i < size; i += 0x10 )
+   {
+      printf( "%04x:", address + i );
+
+      for( uint8_t j = 0; j < 0x10; ++j )
+      {
+         uint16_t a = address + i + j;
+         if( (i + j) > size )
+         {
+            while( j < 0x10 )
+            {
+               printf( "   " );
+               ++j;
+            }
+            break;
+         }
+         printf( " %02x", memory[a] );
+      }
+      printf( "  " );
+      for( uint8_t j = 0; j < 0x10; ++j )
+      {
+         uint16_t a = address + i + j;
+         if( (i + j) > size )
+         {
+            break;
+         }
+         uint8_t v = memory[a];
+         if( (v >= 32) && (v <= 127) )
+         {
+            printf( "%c", v );
+         }
+         else
+         {
+            printf( "." );
+         }
+      }
+
+      printf( "\n" );
+   }
+}
+
+
 void debug_internal_drive()
 {
    dhara_flash_info_t dhara_info;
@@ -455,6 +518,7 @@ void debug_internal_drive()
    dhara_flash_info( dhara_sector, &dhara_buffer[0], &dhara_info );
    uint64_t hw_size  = dhara_info.erase_cells * dhara_info.erase_size;
    uint64_t lba_size = dhara_info.sectors * dhara_info.sector_size;
+   printf("\n");
    printf("dhara hw sector size:  %08x (%d)\n", dhara_info.erase_size, dhara_info.erase_size );
    printf("dhara hw num sectors:  %08x (%d)\n", dhara_info.erase_cells, dhara_info.erase_cells );
    printf("dhara hw size:         %.2fMB\n", (float)hw_size / (1024*1024) );
@@ -467,118 +531,111 @@ void debug_internal_drive()
    printf("dhara read status:     %d\n", dhara_info.read_status );
    printf("dhara read error:      %s\n", dhara_strerror( dhara_info.read_errcode ) );
    printf("dhara read sector $%04x:\n", dhara_sector );
-   for( int i = 0; i < SECTOR_SIZE; ++i )
-   {
-      printf( " %02x", dhara_buffer[i] );
-      if( (i & 0xF) == 0xF )
-      {
-         printf( "\n" );
-      }
-   }
+
+   debug_hexdump( dhara_buffer, SECTOR_SIZE, 0 );
 }
 
 
 void system_trap()
 {
-   debug_backtrace();
+   int data = SYSTEM_TRAP;
+   queue_try_add( &queue_uart_write, &data );
 }
 
 
 static inline void handle_io()
 {
-   // TODO: split this up in reads and writes
    uint8_t data = state >> bus_config.shift_data;
    bool success;
 
    if( state & bus_config.mask_rw )
    {
-      /* I/O read */
+      // I/O read
       switch( address & 0xFF )
       {
-         case 0x02: /* random */
+         case 0x02: // random
             bus_data_write( rand() & 0xFF );
             break;
-         case 0x0C: /* console UART read */
+         case 0x0C: // console UART read
             success = queue_try_remove( &queue_uart_read, &data );
             bus_data_write( success ? data : 0x00 );
             break;
-         case 0x0D: /* console UART read queue */
+         case 0x0D: // console UART read queue
             bus_data_write( queue_get_level( &queue_uart_read )  );
             break;
-         case 0x0F: /* console UART write queue */
+         case 0x0F: // console UART write queue
             bus_data_write( queue_get_level( &queue_uart_write )  );
             break;
-         case 0x10: /* is timer for IRQ running */
+         case 0x10: // is timer for IRQ running
          case 0x11:
          case 0x12:
-         case 0x13: /* fall throughs are intended */
+         case 0x13: // fall throughs are intended
             bus_data_write( irq_timer_triggered ? 0x80 : 0x00 );
             irq_timer_triggered = false;
             break;
-         case 0x14: /* is timer for NMI running */
+         case 0x14: // is timer for NMI running
          case 0x15:
          case 0x16:
-         case 0x17: /* fall throughs are intended */
+         case 0x17: // fall throughs are intended
             bus_data_write( nmi_timer_triggered ? 0x80 : 0x00 );
             nmi_timer_triggered = false;
             break;
-         case 0x20: /* is timer for watchdog running */
+         case 0x20: // is timer for watchdog running
          case 0x21:
          case 0x22:
-         case 0x23: /* fall throughs are intended */
+         case 0x23: // fall throughs are intended
             bus_data_write( watchdog_cycles_total ? 0x80 : 0x00 );
             break;
          default:
-            /* everything else is handled like RAM by design */
+            // everything else is handled like RAM by design
             handle_ramrom();
             break;
       }
    }
    else
    {
-      /* I/O write */
+      // I/O write
       data = bus_data_read();
       switch( address & 0xFF )
       {
-         case 0x00: /* set bankswitch register for $E000-$FFFF */
+         case 0x00: // set bankswitch register for $E000-$FFFF
             set_bank( bus_data_read() );
-            handle_ramrom(); /* make sure register is mirrored to RAM for read */
+            handle_ramrom(); // make sure register is mirrored to RAM for read
             break;
-         case 0x01: /* DEBUG only! */
+         case 0x01: // DEBUG only!
             system_trap();
-            system_reboot();
             break;
-         case 0x0B: /* UART read: enable crlf conversion */
+         case 0x0B: // UART read: enable crlf conversion
             console_set_crlf( data & 1 );
-            handle_ramrom(); /* make sure register is mirrored to RAM for read */
+            handle_ramrom(); // make sure register is mirrored to RAM for read
             break;
-         case 0x0E: /* console UART write */
+         case 0x0E: // console UART write
             queue_try_add( &queue_uart_write, &data );
             break;
-         case 0x10: /* setup timer for IRQ or NMI */
+         case 0x10: // setup timer for IRQ or NMI
          case 0x11:
          case 0x12:
          case 0x13:
          case 0x14:
          case 0x15:
          case 0x16:
-         case 0x17: /* fall throughs are intended */
+         case 0x17: // fall throughs are intended
             timer_setup( data, address & 0x07 );
             break;
-         case 0x20: /* setup timer for watchdog */
+         case 0x20: // setup timer for watchdog
          case 0x21:
          case 0x22:
-         case 0x23: /* fall throughs are intended */
+         case 0x23: // fall throughs are intended
             watchdog_setup( data, address & 0x03 );
             break;
-         case 0x74: /* dma read from flash disk */
-         case 0x75: /* dma write to flash disk */
-         case 0x77: /* flash disk trim, no dma address used */
-            /* access is strobe: written data does not matter */
+         case 0x74: // dma read from flash disk
+         case 0x75: // dma write to flash disk
+         case 0x77: // flash disk trim, no dma address used
+            // access is strobe: written data does not matter
             handle_flash_dma();
             break;
          default:
-            /* everything else is handled like RAM by design */
+            // everything else is handled like RAM by design
             handle_ramrom();
             break;
       }
@@ -599,6 +656,18 @@ void bus_run()
    bus_init();
    system_init();
    system_reboot();
+   for(int i = 0; i < 10; ++i )
+   {
+      gpio_set_mask( bus_config.mask_clock );
+      sleep_us( 2 );
+      gpio_clr_mask( bus_config.mask_clock );
+      sleep_us( 2 );
+   }
+   reset_clear( 0 );
+
+   // inject keypress for menu to run in tight loop
+   int data = 'S';
+   queue_try_add( &queue_uart_read, &data );
 
    time_start = time_us_64();
    for(cyc = 0; cyc < SPEED_TEST; ++cyc)
@@ -645,12 +714,12 @@ void bus_run()
       // setup data
       if( (address & 0xFF00) == 0xDF00 )
       {
-         /* internal i/o */
+         // internal I/O
          handle_io();
       }
       else if( (address <= 0x0003) || ((address & 0xF000) == 0xD000) )
       {
-         /* external i/o: keep hands off the bus */
+         // external i/o: keep hands off the bus
          gpio_set_dir_in_masked( bus_config.mask_data );
       }
       else
@@ -672,44 +741,18 @@ void bus_run()
 
    debug_backtrace();
    debug_clocks();
+   debug_heap();
    debug_internal_drive();
+   //debug_hexdump( rom, sizeof(rom), 0xE000 );
 
-   printf( "\nROM:" );
-   for( int i = ROM_START; i < ROM_START+0x10; ++i )
-   {
-      printf( " %02x", ram[i] );
-   }
-   printf("\nFFF0:");
-   for( int i = 0xFFF0; i < 0x10000; ++i )
-   {
-      printf( " %02x", ram[i] );
-   }
-   printf("\n[...]\n0200:");
-   for( int i = 0x0200; i < 0x0210; ++i )
-   {
-      printf( " %02x", ram[i] );
-   }
-
+   printf( "\n" );
    for(;;)
    {
       printf( "\rbus has terminated after %d cycles in %.06f seconds: %d.%03dMHz ",
               cyc, time_exec, time_hz / 1000000, (time_hz % 1000000) / 1000 );
-      sleep_ms(2000);
+      sleep_ms( 2000 );
    }
 #endif
-}
-
-
-void cpu_halt( bool stop )
-{
-   if( stop )
-   {
-      gpio_clr_mask( bus_config.mask_rdy );
-   }
-   else
-   {
-      gpio_set_mask( bus_config.mask_rdy );
-   }
 }
 
 
@@ -727,8 +770,6 @@ void system_reboot()
    // make sure that RDY line is high
    gpio_set_mask( bus_config.mask_rdy | bus_config.mask_irq | bus_config.mask_nmi );
 
-   // pull reset line for a couple of cycles
+   // pull reset line to system_reset gets executed
    gpio_clr_mask( bus_config.mask_reset );
-   queue_event_add( INTERRUPT_LENGTH, reset_clear, 0 );
-   cpu_halt( false );
 }

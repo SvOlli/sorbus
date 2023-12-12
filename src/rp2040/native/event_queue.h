@@ -4,6 +4,15 @@
 
 #define QUEUE_EVENT_SIZE (32)
 
+/* mutex is only required when core 0 also wants to use the event queue */
+#if 1
+#define QUEUE_EVENT_MUTEX_LOCK()   /* mutex disabled */
+#define QUEUE_EVENT_MUTEX_UNLOCK() /* mutex disabled */
+#else
+#define QUEUE_EVENT_MUTEX_LOCK()   mutex_enter_blocking( &_queue_event_mutex );
+#define QUEUE_EVENT_MUTEX_UNLOCK() mutex_exit( &_queue_event_mutex );
+#endif
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <pico/mutex.h>
@@ -36,19 +45,19 @@ static inline void queue_event_drop( queue_event_t *event )
 // process event queue
 static inline void queue_event_process()
 {
-   mutex_enter_blocking( &_queue_event_mutex );
    ++_queue_cycle_counter;
    // while instead of if, because more than one entry may have same timestamp
-   while( _queue_cycle_counter == _queue_next_timestamp )
+   if( _queue_cycle_counter == _queue_next_timestamp )
    {
+      QUEUE_EVENT_MUTEX_LOCK();
       queue_event_t *current = _queue_next_event;
       _queue_next_event      = _queue_next_event->next;
       _queue_next_timestamp  = _queue_next_event ? _queue_next_event->timestamp : 0;
 
       current->handler( current->data );
       queue_event_drop( current );
+      QUEUE_EVENT_MUTEX_UNLOCK();
    }
-   mutex_exit( &_queue_event_mutex );
 }
 
 // add an event to the loop, executed at now + when clock cycles

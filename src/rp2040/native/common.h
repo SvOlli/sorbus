@@ -7,6 +7,8 @@ typedef enum console_type_e {
    CONSOLE_TYPE_RP2040
 } console_type_t;
 
+#define SYSTEM_TRAP (0x1000)
+
 // communication between Core0 and Core1 via terminal
 extern queue_t queue_uart_read;
 extern queue_t queue_uart_write;

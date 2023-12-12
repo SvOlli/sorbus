@@ -16,11 +16,37 @@
 #include "common.h"
 #include "menu.h"
 
+#include "../bus.h"
+
 #include "event_queue.h"
 extern void system_trap();
 
-static console_type_t console_type;
-static bool console_crlf_enabled;
+console_type_t console_type;
+bool console_crlf_enabled;
+
+bool console_wants_stop = false;
+bool bus_wants_stop     = false;
+
+
+void console_reset()
+{
+   gpio_clr_mask( bus_config.mask_reset);
+}
+
+
+void console_cpu_pause( bool stop )
+{
+printf( "console_cpu_pause:%d\n", stop ? 1 : 0 );
+   if( stop )
+   {
+      gpio_clr_mask( bus_config.mask_rdy );
+   }
+   else
+   {
+      gpio_set_mask( bus_config.mask_rdy );
+   }
+}
+
 
 void console_set_crlf( bool enable )
 {
@@ -41,6 +67,7 @@ void console_rp2040()
 
    printf( "\nrebooting system!\n" );
    menu_run();
+   console_cpu_pause( false );
    system_reboot();
    console_type = CONSOLE_TYPE_65C02;
 }
@@ -55,9 +82,8 @@ void console_65c02()
       in = getchar_timeout_us(10);
       if( in == 0x1d ) /* 0x1d = CTRL+] */
       {
+         console_cpu_pause( true );
          console_type = CONSOLE_TYPE_RP2040;
-         queue_event_add( 1, system_trap, 0 );
-
          in = PICO_ERROR_TIMEOUT;
       }
    }
@@ -71,8 +97,16 @@ void console_65c02()
 
    if( queue_try_remove( &queue_uart_write, &out ) )
    {
-      //printf("%02x ",out );
-      putchar( out );
+      if( out == SYSTEM_TRAP )
+      {
+         console_cpu_pause( true );
+         console_type = CONSOLE_TYPE_RP2040;
+      }
+      else
+      {
+         //printf("%02x ",out );
+         putchar( out );
+      }
    }
 }
 

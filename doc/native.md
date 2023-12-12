@@ -139,3 +139,35 @@ Out of 16 bit address
 
 A GAL 20v8 could only decode 4 chip selects
 (or mayby 7, based upon implementation)
+
+
+Notes On Implementation in RP2040
+=================================
+
+Multicore Architecture
+----------------------
+Core 0 runs the console and handles user interaction. Core 1 drives the
+bus for the CPU implementing the system. To have a rather efficient
+(fast as in ~1MHz) system, core 1 really has to come up with some tricks.
+So, everything "event" aspect, such as timers, watchdog and other things
+will be run by an event queue. This means on every clock cycle there is
+a check if something was scheduled for this specific clock cycle. Again
+due to performance, only one event will happen during that clock cycle.
+If two events are scheduled for the same clock cycle, the second one
+scheduled will be delay by one clock cycle (and again until there is a
+free slot). The size of the queue is 32 event. This should be sufficiant,
+as there are not much things that could add to the event queue, and in
+most cases, a new event from the same source replaces the old one.
+
+However: again due to performance the queue is not thread safe! So only
+core 1 is allowed to interact with it.
+
+Core 0 on the other is allowed to do two things on the hardware side:
+- pull the RDY line low (to stop the CPU) and back high (to let the CPU
+  continue)
+- pull the RESET line to low (but not back to high again), this may be
+  only done if the RDY line is high, or immediately pulled high after
+  the reset line was pulled low (immediately = in the next code line!)
+
+If core 1 should want to use the RDY line for some reason, this should
+be implemented using "queue_uart_write" with characters > 0xFF.
