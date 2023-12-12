@@ -56,12 +56,9 @@ int main()
    // init mcurses
    setFunction_putchar(putchar); //putchar_raw
    setFunction_getchar(getchar); //putchar_raw
-   initscr();          
+   initscr();
 
    // setup the bus and run the bus core
-   bus_init();
-   system_init();
-   system_reboot();
    critical_section_init(&memory_blocking);
    multicore_launch_core1( bus_run );
 

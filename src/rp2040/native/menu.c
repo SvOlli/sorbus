@@ -76,7 +76,7 @@ typedef struct {
    // { cmd_mkdir,  5, "mkdir",  "creates directory in filesystem" },
    // { cmd_chdir,  5, "chdir",  "(or 'cd') changes directory in filesystem" },
    // { cmd_chdir,  2, "cd",      NULL },
-    { cmd_dh_info,  5, "dh_info",    "prints infos about dhara filesystem" },
+    { cmd_dh_info,  5, "dh_in",    "prints infos about dhara filesystem" },
     { cmd_dh_read, 5, "dh_rd",    "reads and prints sector from dhara filesystem '(dec)" },
     { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
     { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
@@ -228,30 +228,33 @@ void drawbox (uint8_t y, uint8_t x, uint8_t h, uint8_t w)
   uint8_t col;
 
   move (y, x);
-  addch (ACS_ULCORNER);
+  addch ('+');
   for (col = 0; col < w - 2; col++)
   {
-    addch (ACS_HLINE);
+    putchar ('-');
   }
-  addch (ACS_URCORNER);
+  addch ('+');
 
   for (line = 0; line < h - 2; line++)
   {
     move (line + y + 1, x);
-    addch (ACS_VLINE);
+    addch ('|');
     move (line + y + 1, x + w - 1);
-    addch (ACS_VLINE);
+    addch ('I');
   }
 
   move (y + h - 1, x);
-  addch (ACS_LLCORNER);
+  addch ('+');
   for (col = 0; col < w - 2; col++)
   {
-    addch (ACS_HLINE);
+    addch ('=');
   }
-  addch (ACS_LRCORNER);
+  addch ('+');
+  move (y + h + 1, 0);
 }
 
+#define FIRST_LINE      1
+#define LAST_LINE       (LINES - 1)
 
 void menu_run()
 {
@@ -261,6 +264,7 @@ void menu_run()
    getaline_init();
    console_running=true;
    clear ();
+   setscrreg (FIRST_LINE, LAST_LINE);
    drawbox (6, 20, 10, 20);
    
    while(console_running)

@@ -31,7 +31,7 @@ static inline void put_mem(uint32_t mem_addr ,uint8_t value){
 
 
       critical_section_enter_blocking(&memory_blocking);
-      memory[mem_addr] = value;
+      ram[mem_addr] = value;
       critical_section_exit(&memory_blocking); 
 }      
 
@@ -40,7 +40,7 @@ static inline uint8_t get_mem(uint32_t mem_addr ){
     uint8_t value;
     
     //critical_section_enter_blocking(&memory_blocking);
-    value=memory[mem_addr];
+    value=ram[mem_addr];
     //critical_section_exit(&memory_blocking); 
 
     return value;
