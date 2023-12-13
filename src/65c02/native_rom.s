@@ -76,7 +76,9 @@ reset:
    bne   @iloop
    lda   #$0a
    jsr   chrout
-   jmp   wozstart
+:  ; workaround for WozMon not handling RTS when executing external code
+   jsr   wozstart
+   bra   :-
 @bootblock:
    and   #$03
    jmp   boot+2
@@ -89,21 +91,20 @@ reset:
 uirq:
    ;stz   TRAP
    sta   ASAVE
-   ;php              ; only required when doing more than print
-   php
    pla
+   pha
    and   #$10
    bne   ubrk
    lda   ASAVE
-   ;plp              ; only required when doing more than print
    jsr   print
    .byte 10,"IRQ",10,0
+   bit   TMICRL
+   bmi   sbtimer
    rti
 
 ubrk:
    ;stz   TRAP
    lda   ASAVE
-   ;plp              ; only required when doing more than print
    jsr   print
    .byte 10,"BRK",10,0
    rti
@@ -112,6 +113,12 @@ unmi:
    ;stz   TRAP
    jsr   print
    .byte 10,"NMI",10,0
+   bit   TMICRL
+   bpl   notimer
+sbtimer:
+   jsr   print
+   .byte "triggered by sorbus timer",10,0
+notimer:
    rti
 
 todo:

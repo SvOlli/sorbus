@@ -165,6 +165,10 @@ void queue_event_cancel( queue_event_handler_t handler )
          queue_event_drop( current );
 
          break; // canceling first only, remove break to cancel all
+                // due to implementation logic, NEVER cancel all:
+                // when handling the event, a new one might be created within
+                // the handler, before the current one is removed by
+                // queue_event_handler()
       }
       previous = current;
    }

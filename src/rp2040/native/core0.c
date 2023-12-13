@@ -14,7 +14,6 @@
 #include <pico/util/queue.h>
 
 #include "common.h"
-#include "menu.h"
 
 #include "../bus.h"
 
@@ -26,6 +25,7 @@ bool console_crlf_enabled;
 
 bool console_wants_stop = false;
 bool bus_wants_stop     = false;
+int  invoke_type = 0;
 
 
 void console_reset()
@@ -36,7 +36,6 @@ void console_reset()
 
 void console_cpu_pause( bool stop )
 {
-printf( "console_cpu_pause:%d\n", stop ? 1 : 0 );
    if( stop )
    {
       gpio_clr_mask( bus_config.mask_rdy );
@@ -44,6 +43,8 @@ printf( "console_cpu_pause:%d\n", stop ? 1 : 0 );
    else
    {
       gpio_set_mask( bus_config.mask_rdy );
+      console_wants_stop = false;
+      bus_wants_stop     = false;
    }
 }
 
@@ -63,10 +64,22 @@ void console_type_set( console_type_t type )
 
 void console_rp2040()
 {
-   printf( "\nwatchdog triggered! CPU stopped using RDY\n" );
+   const char *invoke = "magic key combo";
+   switch( invoke_type )
+   {
+      case SYSTEM_TRAP:
+         invoke = "trap";
+         break;
+      case SYSTEM_WATCHDOG:
+         invoke = "watchdog";
+         break;
+      default:
+         break;
+   }
+   printf( "\n%s triggered! CPU stopped using RDY"
+           "\nexpect some nice menu here in the future"
+           "\nrebooting system!\n", invoke );
 
-   printf( "\nrebooting system!\n" );
-   menu_run();
    console_cpu_pause( false );
    system_reboot();
    console_type = CONSOLE_TYPE_65C02;
@@ -82,7 +95,9 @@ void console_65c02()
       in = getchar_timeout_us(10);
       if( in == 0x1d ) /* 0x1d = CTRL+] */
       {
+         invoke_type = in;
          console_cpu_pause( true );
+         console_wants_stop = true;
          console_type = CONSOLE_TYPE_RP2040;
          in = PICO_ERROR_TIMEOUT;
       }
@@ -97,10 +112,17 @@ void console_65c02()
 
    if( queue_try_remove( &queue_uart_write, &out ) )
    {
-      if( out == SYSTEM_TRAP )
+      if( (out == SYSTEM_TRAP) || (out == SYSTEM_WATCHDOG) )
       {
+         invoke_type = out;
+         bus_wants_stop = true;
          console_cpu_pause( true );
          console_type = CONSOLE_TYPE_RP2040;
+      }
+      else if( out == 0x7f )
+      {
+         const char bs_seq[] = { 8, ' ', 8, 0 };
+         printf( bs_seq );
       }
       else
       {

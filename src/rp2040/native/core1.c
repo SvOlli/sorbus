@@ -71,7 +71,7 @@ uint32_t watchdog_states[256]  = { 0 };
 uint32_t watchdog_cycles_total = 0;
 
 uint16_t dhara_flash_size = 0;
-
+#define DHARA_SYNC_DELAY (20000)
 
 // magic addresses that cannot be addressed otherwise
 #define MEM_ADDR_UART_CONTROL (0xDF0B)
@@ -117,6 +117,12 @@ void set_bank( uint8_t bank )
 }
 
 
+void system_trap( int type )
+{
+   queue_try_add( &queue_uart_write, &type );
+}
+
+
 static inline void handle_ramrom()
 {
    if( state & bus_config.mask_rw )
@@ -139,10 +145,9 @@ static inline void handle_ramrom()
 }
 
 
-static inline void watchdog_trigger( void *data )
+static inline void event_watchdog( void *data )
 {
-   uint32_t mode = (uint32_t)data; // 0 = watchdog, 1 = key
-   //watchdog_triggered = true;
+   system_trap( SYSTEM_WATCHDOG );
 }
 
 
@@ -151,11 +156,11 @@ static inline void watchdog_setup( uint8_t value, uint8_t config )
    config &= 0x03;
    if( config )
    {
-      if( queue_event_contains( watchdog_trigger ) )
+      if( queue_event_contains( event_watchdog ) )
       {
          // timer is running: restart
-         queue_event_cancel( watchdog_trigger );
-         queue_event_add( watchdog_cycles_total, watchdog_trigger, 0 );
+         queue_event_cancel( event_watchdog );
+         queue_event_add( watchdog_cycles_total, event_watchdog, 0 );
       }
       else
       {
@@ -165,59 +170,47 @@ static inline void watchdog_setup( uint8_t value, uint8_t config )
          if( config == 3 )
          {
             // start watchdog
-            queue_event_add( watchdog_cycles_total, watchdog_trigger, 0 );
+            queue_event_add( watchdog_cycles_total, event_watchdog, 0 );
          }
       }
    }
    else
    {
       // stop watchdog
-      queue_event_cancel( watchdog_trigger );
+      queue_event_cancel( event_watchdog );
       watchdog_cycles_total = 0;
    }
 }
 
 
-static inline void timer_nmi_clear( void *data )
-{
-   gpio_set_mask( bus_config.mask_nmi );
-}
-
-
-static inline void timer_nmi_triggered( void *data )
+static inline void event_timer_nmi( void *data )
 {
    // trigger NMI
    gpio_clr_mask( bus_config.mask_nmi );
 
-   // clear NMI signal soon
-   queue_event_add( INTERRUPT_LENGTH, timer_nmi_clear, 0 );
+   // set state for reading
+   nmi_timer_triggered = true;
 
    // restart time if requested
    if( timer_nmi_total )
    {
-      queue_event_add( timer_nmi_total, timer_nmi_triggered, 0 );
+      queue_event_add( timer_nmi_total, event_timer_nmi, 0 );
    }
 }
 
 
-static inline void timer_irq_clear( void *data )
-{
-   gpio_set_mask( bus_config.mask_irq );
-}
-
-
-static inline void timer_irq_triggered( void *data )
+static inline void event_timer_irq( void *data )
 {
    // trigger IRQ
    gpio_clr_mask( bus_config.mask_irq );
 
-   // clear IRQ signal soon
-   queue_event_add( INTERRUPT_LENGTH, timer_irq_clear, 0 );
+   // set state for reading
+   irq_timer_triggered = true;
 
    // restart time if requested
    if( timer_irq_total )
    {
-      queue_event_add( timer_irq_total, timer_irq_triggered, 0 );
+      queue_event_add( timer_irq_total, event_timer_irq, 0 );
    }
 }
 
@@ -227,7 +220,7 @@ static inline void timer_setup( uint8_t value, uint8_t config )
    config &= 0x07;
    // config bits (decoded from address)
    //           0        1
-   // bit 0: lowbyte  highbyte
+   // bit 0: lobyte   hibyte
    // bit 1: repeat   oneshot
    // bit 2: irq      nmi
 
@@ -239,7 +232,7 @@ static inline void timer_setup( uint8_t value, uint8_t config )
       {
          // highbyte: store and start timer
          timer_nmi_total |= value << 8;
-         queue_event_add( timer_nmi_total, timer_nmi_triggered, 0 );
+         queue_event_add( timer_nmi_total, event_timer_nmi, 0 );
          if( config & (1<<1) )
          {
             // oneshot
@@ -249,7 +242,7 @@ static inline void timer_setup( uint8_t value, uint8_t config )
       else
       {
          // lowbyte: store and stop timer
-         queue_event_cancel( timer_nmi_triggered );
+         queue_event_cancel( event_timer_nmi );
          timer_nmi_total = value;
       }
    }
@@ -260,7 +253,7 @@ static inline void timer_setup( uint8_t value, uint8_t config )
       {
          // highbyte: store and start timer
          timer_irq_total |= value << 8;
-         queue_event_add( timer_irq_total, timer_irq_triggered, 0 );
+         queue_event_add( timer_irq_total, event_timer_irq, 0 );
          if( config & (1<<1) )
          {
             // oneshot
@@ -270,7 +263,7 @@ static inline void timer_setup( uint8_t value, uint8_t config )
       else
       {
          // lowbyte: store and stop timer
-         queue_event_cancel( timer_irq_triggered );
+         queue_event_cancel( event_timer_irq );
          timer_irq_total = value;
       }
    }
@@ -323,7 +316,7 @@ static inline void system_reset()
 }
 
 
-static inline void handle_flash_sync( void *data )
+static inline void event_flash_sync( void *data )
 {
    dhara_flash_sync();
 }
@@ -349,7 +342,7 @@ static inline void handle_flash_dma()
       // DMA would run into I/O which is not possible, only RAM works
       ram[address] |= 0xF1;
    }
-   if( *lba >= 0x8000 )
+   if( *lba >= 0x8000 ) // could also be if( *lba >= dhara_flash_size )
    {
       // only 32768 sectors are available
       ram[address] |= 0xF2;
@@ -364,26 +357,26 @@ static inline void handle_flash_dma()
    {
       case 0: // read
          retval = dhara_flash_read( *lba, &ram[*mem] );
-         if( queue_event_contains( handle_flash_sync ) )
+         if( queue_event_contains( event_flash_sync ) )
          {
             // delay any waiting sync events
-            queue_event_cancel( handle_flash_sync );
-            queue_event_add( 20000, handle_flash_sync, 0 );
+            queue_event_cancel( event_flash_sync );
+            queue_event_add( DHARA_SYNC_DELAY, event_flash_sync, 0 );
          }
          break;
       case 1: // write
          retval = dhara_flash_write( *lba, &ram[*mem] );
          // drop any waiting sync events, since a new one is created
-         queue_event_cancel( handle_flash_sync );
+         queue_event_cancel( event_flash_sync );
          // after ~.02 seconds without additions writes run sync
-         queue_event_add( 20000, handle_flash_sync, 0 );
+         queue_event_add( DHARA_SYNC_DELAY, event_flash_sync, 0 );
          break;
       case 3: // trim
          retval = dhara_flash_trim( *lba );
          // drop any waiting sync events, since a new one is created
-         queue_event_cancel( handle_flash_sync );
+         queue_event_cancel( event_flash_sync );
          // after ~.02 seconds without additions writes run sync
-         queue_event_add( 20000, handle_flash_sync, 0 );
+         queue_event_add( DHARA_SYNC_DELAY, event_flash_sync, 0 );
          break;
       default:
          break;
@@ -465,7 +458,7 @@ void debug_heap()
 }
 
 
-debug_hexdump( uint8_t *memory, uint32_t size, uint16_t address )
+void debug_hexdump( uint8_t *memory, uint32_t size, uint16_t address )
 {
    for( uint32_t i = 0; i < size; i += 0x10 )
    {
@@ -536,13 +529,6 @@ void debug_internal_drive()
 }
 
 
-void system_trap()
-{
-   int data = SYSTEM_TRAP;
-   queue_try_add( &queue_uart_write, &data );
-}
-
-
 static inline void handle_io()
 {
    uint8_t data = state >> bus_config.shift_data;
@@ -572,6 +558,7 @@ static inline void handle_io()
          case 0x13: // fall throughs are intended
             bus_data_write( irq_timer_triggered ? 0x80 : 0x00 );
             irq_timer_triggered = false;
+            gpio_set_mask( bus_config.mask_irq );
             break;
          case 0x14: // is timer for NMI running
          case 0x15:
@@ -579,6 +566,7 @@ static inline void handle_io()
          case 0x17: // fall throughs are intended
             bus_data_write( nmi_timer_triggered ? 0x80 : 0x00 );
             nmi_timer_triggered = false;
+            gpio_set_mask( bus_config.mask_nmi );
             break;
          case 0x20: // is timer for watchdog running
          case 0x21:
@@ -603,7 +591,7 @@ static inline void handle_io()
             handle_ramrom(); // make sure register is mirrored to RAM for read
             break;
          case 0x01: // DEBUG only!
-            system_trap();
+            system_trap( SYSTEM_TRAP );
             break;
          case 0x0B: // UART read: enable crlf conversion
             console_set_crlf( data & 1 );

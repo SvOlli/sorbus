@@ -30,11 +30,6 @@ function(target_type_addr target system startaddr)
    endif()
 endfunction()
 
-add_executable(native_writeboot1
-   native_writeboot1.s
-   )
-target_type_addr(native_writeboot1 native 0x1000)
-
 add_executable(cpudetect_mcp
    cpudetect_mcp.s
    )
@@ -75,3 +70,20 @@ add_executable(native_rom
    native_woz.s
    )
 target_type(native_rom native_rom)
+
+add_executable(native_cpm_bootblock
+   linkcpm.s
+   )
+target_type(native_cpm_bootblock native_rom)
+# This doesn't work, as the glorious CMake de-duplicates the
+# "--large-alignment" option, which needs to be passed twice.
+# Since it only disables warnings, so be it.
+#target_link_options(native_cpm_bootblock PUBLIC
+#   --asm-args --large-alignment
+#   --ld-args --large-alignment
+#   )
+
+add_executable(native_writeboot1
+   native_writeboot1.s
+   )
+target_type_addr(native_writeboot1 native 0x1000)

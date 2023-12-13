@@ -23,6 +23,8 @@ The project is fully open source, licensend under GPL v3:
       [Pico-SDK](https://github.com/raspberrypi/pico-sdk) from the
       Raspberry Pi Foundation, which will be downloaded if not previously
       configured. However it's dependencies must also be preinstalled.
+  - for generating the CP/M-65 filesystem
+    [cpmtools](https://github.com/lipro-cpm4l/cpmtools) is also required
 
 [An addtional page](https://xayax.net/sorbus/) has been setup to explain more
 about the ideas of the system, as well as some usecases.

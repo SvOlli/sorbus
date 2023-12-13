@@ -2,18 +2,25 @@
 
 set -e
 
-if [ ${#} -ne 2 ]; then
+if [ ${#} -ne 3 ]; then
    cat <<EOF
-usage: $0 <output_image> <path_to_cpm_data>
+usage: $0 <output_image> <path_to_cpm_bootblock> <path_to_cpm_data>
+
+<path_to_cpm_data> will be scanned for directories with the numbers
+"0" to "15". The files in that directory will be copied to the
+corresponding "user partition".
 EOF
    exit 1
 fi
 
-touch "${1}"
-readonly IMAGE="$(readlink -f "${1}")"
-readonly CPM_DIR="${2}"
 readonly FORMAT='sorbus'
-readonly BOOTIMAGE='cpm_rom.bin'
+touch "${1}"
+readonly OUTPUT="$(readlink -f "${1}")"
+shift # strip off first argument: output image
+readonly BOOTBLOCK="$(readlink -f "${1}")"
+shift
+readonly CPM_DIR="${1}"
+shift # strip off second argument: bootblock
 
 cd "${CPM_DIR}" ||
 {
@@ -38,18 +45,18 @@ if [ ${cpmtools_missing} -ne 0 ]; then
    exit 12
 fi
 
-rm -f "${IMAGE}"
-mkfs.cpm -f "${FORMAT}" -b "${BOOTIMAGE}" "${IMAGE}"
+rm -f "${OUTPUT}"
+mkfs.cpm -f "${FORMAT}" -b "${BOOTBLOCK}" "${OUTPUT}"
 for i in [0-9]*/*;do
    # skip directories
    [ -d "${i}" ] && continue
    user="${i%/*}"
-   cpmcp -f "${FORMAT}" "${IMAGE}" "${i}" ${user}:
+   cpmcp -f "${FORMAT}" "${OUTPUT}" "${i}" ${user}:
 done
-cpmchattr -f "${FORMAT}" "${IMAGE}" sr 0:ccp.sys
+cpmchattr -f "${FORMAT}" "${OUTPUT}" sr 0:ccp.sys
 set +x
 echo "Imagefile:"
-ls -l "${IMAGE}"
+ls -l "${OUTPUT}"
 echo "Contents:"
-cpmls -f "${FORMAT}" -d "${IMAGE}"
+cpmls -f "${FORMAT}" -d "${OUTPUT}"
 echo

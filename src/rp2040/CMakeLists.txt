@@ -49,8 +49,8 @@ endfunction()
 function(gencpmfs out_file)
    file(GLOB CPM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/*/*")
    add_custom_command(OUTPUT ${out_file}
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh" "${out_file}" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
-      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/cpm_rom.bin" ${CPM_FILES}
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh" "${out_file}" $<TARGET_FILE:native_cpm_bootblock> "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
+      DEPENDS ${native_cpm_bootblock} ${CPM_FILES}
    )
 endfunction()
 
@@ -140,7 +140,6 @@ add_executable(native_alpha
    native/core1.c
    native/dhara_flash.c
    native/event_queue.c
-   native/menu.c
    )
 target_link_libraries(native_alpha
    pico_stdlib

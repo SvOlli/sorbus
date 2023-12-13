@@ -57,7 +57,8 @@ Timer ($DF10-$DF1F)
 - base address + 2 = set low counter for single shot timer, stops timer
 - base address + 3 = set high counter for single shot timer, starts timer
 - reading any register return $80 if timer was triggered, $00 otherwise
-  reading clears flag; todo(?): $40 indicates timer is running
+- reading also resets IRQ or NMI line back to high
+- reading clears flag; todo(?): $40 indicates timer is running
 - IMPORTANT: this might change, if 16-bit counters are not sufficiant
 
 
@@ -70,12 +71,8 @@ Watchdog ($DF20-$DF23)
 - base address + 2: set mid counter, write resets watchdog when running
 - base address + 3: set high counter, stars watchdog, reset when running
 - read on any address shows watchdog active
-
+- triggered watchdog handled similar to trap ($DF01)
 - todo(?): can be triggered by number of nmis or irqs
-- triggered watchdog dumps as much as useful
-  - current bus state
-  - RAM contents
-  - configuration of internals like timer, etc.
 
 
 Internal Drive ($DF70-$DF77)

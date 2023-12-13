@@ -10,8 +10,8 @@ MEMORY {
 }
 SEGMENTS {
     ZEROPAGE: load = ZP,       type = zp,  optional = yes;
-    DATA:     load = ROM,      type = ro,  optional = yes;
     CODE:     load = ROM,      type = ro;
+    DATA:     load = ROM,      type = ro,  optional = yes;
     BIOS:     load = BIOS,     type = ro;
     VECTORS:  load = VECTORS,  type = ro;
 }

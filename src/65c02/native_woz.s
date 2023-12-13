@@ -45,7 +45,8 @@ IN              :=     $0200 ;,$027F     Input buffer
 ;  Constants
 ;-------------------------------------------------------------------------
 
-BS              :=     $7f            ; "_": interpreted as backspace
+DEL             :=     $7f            ; "_": interpreted as backspace
+BS              :=     $08            ; "_": interpreted as backspace
 CR              :=     $0d            ; carriage return
 LF              :=     $0a            ; linefeed
 ESC             :=     $1b            ; ESC key
@@ -60,7 +61,7 @@ PROMPT          :=     $5c            ; "\": prompt character
 ;-------------------------------------------------------------------------
 
 wozstart:
-wozmon:
+   cli
    lda   #ESC     ; KBD and DSP control register mask
 
 ; Program falls through to the GETLINE routine to save some program bytes
@@ -71,6 +72,8 @@ wozmon:
 ;-------------------------------------------------------------------------
 
 notcr:
+   cmp   #DEL        ; check for alternative backspace key
+   beq   backspace   ;   and jump to handling
    cmp   #BS         ; check for backspace key
    beq   backspace   ;   and jump to handling
    cmp   #ESC        ; check for escape key
@@ -89,8 +92,6 @@ getline:
    ldy   #$01     ; start a new input, 1 compensates next line
 
 backspace:
-   lda   #$08
-   jsr   CHROUT
    dey
    bmi   getline  ; buffer underflow -> restart
 
