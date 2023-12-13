@@ -55,9 +55,7 @@ reset:
    jsr   PRINT
    .byte 10,"Sorbus Native V", VERSION, ": 0-3)Boot, T)IM, W)ozMon? ", 0
 :
-   jsr   chrin
-   bcs   :-
-   jsr   uppercase
+   jsr   chrinuc
    cmp   #'0'
    bcc   :+
    cmp   #'4'
@@ -67,7 +65,7 @@ reset:
    bne   :+
    jmp   timstart
 :
-.if 1
+.if 0
    ; for speed measurement
    cmp   #'S'
    beq   :-
@@ -158,23 +156,20 @@ boot:
 
    lda   IDREAD
    beq   @checksig
-   jsr   PRINT
-   .byte ": no internal drive",0
-   bra   @errend
 
 @notfound:
    jsr   PRINT
-   .byte ": no boot signature",0
-@errend:
-   jsr   PRINT
-   .byte " found",10,0
+   .byte ": failed",10,0
    jmp   $E000
 
 @checksig:
    dec   IDLBAL    ; reset LBA for re-reading to $E000
+.if SECTOR_BUFFER <> $DF80
+   ; when SECTOR_BUFFER is $DF80, then it's advanced to $E000 already
    stx   IDMEML    ; adjust target memory to
    lda   #$E0      ; $E000 following
    sta   IDMEMH
+.endif
 
    ldx   #$04
 :
@@ -227,6 +222,9 @@ boot:
    bne   :-
    rts
 
+chrinuc:
+   jsr   chrin
+   bcs   chrinuc
 uppercase:
    cmp   #'a'
    bcc   :+
@@ -236,7 +234,13 @@ uppercase:
 :
    rts
 
-prhex:
+prhex16:          ; output 16 bit value in X,A
+   pha
+   txa
+   jsr   prhex
+   pla
+   ; fall through
+prhex:            ; output 8 bit value in A
    pha            ; save A for LSD
    lsr            ; move MSD down to LSD
    lsr

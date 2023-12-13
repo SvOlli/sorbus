@@ -16,8 +16,8 @@
 ;  DISPLAY COMMANDS
 ;  ----------------
 
-;  .R          DISPLAY REGISTERS (PC,F,A,x,y,SP)
-;  .M  ADDR    DISPLAY MEMORY ( 8.byteS BEGINNING AT ADDR )
+;  .R          DISPLAY REGISTERS (PC,F,A,X,Y,SP)
+;  .M  ADDR    DISPLAY MEMORY ( 8 BYTES BEGINNING AT ADDR )
 
 
 ;  ALTER COMMAND (:)
@@ -46,7 +46,7 @@
 ;      TIM IS NORMALLY ENTERED WHEN A 'BRK' INSTRUKTION IS
 ;          ENCOUNTERED DURING PROGRAM EXECUTION.  AT THAT
 ;          TIME CPU REGISTERS ARE OUTPUT:    PC F A X Y SP
-;          and   CONTrol   IS GIVEN TO THE KEYBOARD.
+;          and   CONTROL   IS GIVEN TO THE KEYBOARD.
 ;      USER MAY ENTER TIM BY PROGRAMMED BRK OR INDUCED NMI.  NMI
 ;          ENTRIES CAUSE A '#' TO PRECEDE THE '.' IN THE CPU REGISTER
 ;          PRINTOUT FORMAT
@@ -72,7 +72,7 @@
 ;          AND ALTER COMMANDS.  BRK HAS A '00' OPERATION CODE.
 ;      TO SET A BREAKPOINT SIMPLY DISPLAY THE MEMORY LOCATION
 ;          (FIRST INSTRUCTION.byte) AT WHICH THE BREAKPOINT IS
-;          TO BE plaCED THEN ALTER THE LOCATION TO '00'.  THERE IS
+;          TO BE PLACED THEN ALTER THE LOCATION TO '00'.  THERE IS
 ;          NO LIMIT TO THE NUMBER OF BREAKPOINTS THAT CAN BE
 ;          ACTIVE AT ONE TIME.
 ;      TO RESET A BREAKPOINT, RESTORE THE ALTERED MEMORY LOCATION
@@ -120,90 +120,85 @@ NCMDS     := <(ADRHIS-ADRLOS)
 timstart:
    ldx   #$05
 :
-   lda   timvecs,x      ; INITALIZE INT VECTORS
+   lda   timvecs,x      ; initalize int vectors
    sta   UVNMI,x
    dex
    bpl   :-
 
    txs
    inx
-   stx   MAJORT         ; INIT MAJOR T COUNT To ZERO
-   stx   HSPTR          ; CLEAR HSPTR FLAGS
+   stx   MAJORT         ; init major t count to zero
+   stx   HSPTR          ; clear hsptr flags
    stx   HSROP
-   cli                  ; ENABLE INTS
-   brk                  ; ENTER TIM BY BRK -> timintrq
+   cli                  ; enable ints
+   brk                  ; enter tim by brk -> timintrq
 
 timnmint:
    sta   ACC
-   lda   #'#'           ; SET A=# TO INDICATE NMINT ENTRY
+   lda   #'#'           ; set A=# to indicate nmint entry
    bne   bintcom        ; jmp to interrupt common code
 timintrq:
-   sta   ACC            ; SAVE ACC
-   pla                  ; FLAGS TO A
-   pha                  ; RESTORE STACK STATUS
-   and   #$10           ; TEST BRK FLAG
-   beq   buirq          ; USER INTERRUPT
+   sta   ACC            ; save acc
+   pla                  ; flags to a
+   pha                  ; restore stack status
+   and   #$10           ; test brk flag
+   beq   buirq          ; user interrupT
 
-   asl               ; SET A=space (10 X 2 = 20)
+   asl                  ; set A=space (10 X 2 = 20)
 bintcom:
-   sta   TMPC          ; SAVE INT TYPE FLAG
-   cld               ; CLEAR DECIMAL MODE
-   lsr               ; # IS ODD, space IS EVEN
-                     ; SET CY FOR PC BRK CORRECTION
+   sta   TMPC           ; save int type flag
+   cld                  ; clear decimal mode
+   lsr                  ; # is odd, space is even
+                        ; set cy for pc brk correction
 
-   stx   XR            ; SAVE X
-   sty   YR            ; Y
+   stx   XR             ; save X
+   sty   YR             ; save Y
    pla
-   sta   FLGS          ; FLAGS
+   sta   FLGS           ; save flags
    pla
-   adc   #$FF          ; CY SET TO PC-1 FOR BRK
+   adc   #$FF           ; cy set to pc-1 for brk
    sta   PCL
    pla
    adc   #$FF
    sta   PCH
    tsx
-   stx   SP            ; SAVE ORIG SP
+   stx   SP             ; save orig sp
 
    jsr   CRLF
    ldx   TMPC
 
    lda   #'*'
    jsr   WRTWO
-   lda   #'R'          ; SET FOR R DISPLAY TO PERMIT
-   bne   S0            ;   IMMEDIATE ALTER FOLLOWING BREAKPOINT.
+   lda   #'R'           ; set for r display to permit
+   bne   S0             ;   immediate alter following breakpoint.
 
 buirq:
    lda   ACC
-   jmp   (UVBRK)       ; control to user intrq service routine
+   jmp   (UVBRK)        ; control to user intrq service routine
 
 start:
-   lda   #$00          ;NEXT COMMAND FROM USER
-   sta   HSPTR         ;CLEAR H. S. PAPER TAPE FLAG
-   sta   WRAP          ;CLEAR ADDRESS WRAP-AROUND FLAG
+   lda   #$00           ; next command from user
+   sta   HSPTR          ; clear h.s. paper tape flag
+   sta   WRAP           ; clear address wrap-around flag
    jsr   CRLF
-   lda   #'.'          ; TYPE PROMPTING '.'
+   lda   #'.'           ; type prompting '.'
    jsr   WROC
-   jsr   RDOC          ; READ CMD, CHAR RETURNED In A
+   jsr   RDOC           ; read cmd, char returned in A
 
-   cmp   #'a'           ; check if convert to uppercase required
-   bcc   S0
-   cmp   #'z'           ;
-   bcs   S0
-   and   #$df           ; strip off lowercase bit
 S0:
-   ldx   #NCMDS-1       ; LOCK-UP CMD
+   ldx   #NCMDS-1       ; lock-up cmd
 S1:
    cmp   CMDS,x
    bne   S2
 
-   lda   SAVX           ; SAVE PRIVIOUS CMD
+   lda   SAVX           ; save previous cmd
    sta   PREVC
-   stx   SAVX           ; SAVE CURRENT CMD INdex
+   stx   SAVX           ; save current cmd index
    lda   ADRHIS,x
-   sta   ACMD+1         ;   ALL CMD CODE BEGINS ON MP1
+   sta   ACMD+1         ;   all cmd code begins on mp1
    lda   ADRLOS,x
    sta   ACMD+0
-   cpx   #$03           ; IF :, R OR M (0, 1, OR 2) space 2
+   cpx   #$03           ; if :, r or m (0, 1, or 2) space 2
    bcs   IJMP
    jsr   spac2
 
@@ -212,92 +207,93 @@ IJMP:
 
 S2:
    dex
-   bpl   S1             ; LOOP FOR ALL CMDS
+   bpl   S1             ; loop for all cmds
 
 ERROPR:
-   lda   #'?'           ; OPERATOR ERR, TYPE '?', RESTART
+   lda   #'?'           ; operator err, type '?', restart
    jsr   WROC
-   bcc   start          ; jmp   START (WROC RETURNS CY=0)
+   bcc   start          ; jmp   START (wroc returns cy=0)
 
 DCMP:
-   sec                  ; TMP2-TMP0 DOUBLE SUBTRACT
+   sec                  ; TMP2-TMP0 double subtract
    lda   TMP2+0
    sbc   TMP0+0
    sta   DIFF
    lda   TMP2+1
    sbc   TMP0+1
-   tay                  ; RETURN HIGH ORDER PART IN Y
-   ora   DIFF           ; OR LO FOR EQU TEST
+   tay                  ; return high order part in Y
+   ora   DIFF           ; or lo for equ test
    rts
 
 PUTP:
-   lda   TMP0+0         ; MOVE TMP0 TO PCH,PCL
+   lda   TMP0+0         ; move TMP0 to PCH,PCL
    sta   PCL
    lda   TMP0+1
    sta   PCH
    rts
 
 ZTMP:
-   lda   #$00           ; CLEAR REGS
+   lda   #$00           ; clear regs
    sta   TMP0+0,x
    sta   TMP0+1,x
    rts
 
 
-;  READ AND STOREBYTE.  NO STORE IF space OR RCNT=0.
+;  read and store byte.  no store if space or rcnt=0.
 
 BYTE:
-   jsr   RDOB           ; CHAR IN A, CY=0 IF SP
+   jsr   RDOB           ; char in A, cy=0 if sp
    bcc   BY3            ; space
 
-   ldx   #$00           ; STORE.byte
+   ldx   #$00           ; store byte
    sta   (TMP0,x)
 
-   cmp   (TMP0,x)       ; TEST FOR VALID WRITE (RAM)
+   cmp   (TMP0,x)       ; test for valid write (RAM)
    beq   BY2
-   pla                  ; ERR, CLEAR jsr   ADR IN STACK
+   pla                  ; err, clear jsr adr in stack
    pla
    jmp   ERROPR
 
 BY2:
-   jsr   CADD           ; INCR CKSUM
+   jsr   CADD           ; incr cksum
 BY3:
-   jsr   INCTMP         ; GO INCR TMPC ADR
+   jsr   INCTMP         ; go incr tmpc adr
    dec   RCNT
    rts
 
 SETR:
-   lda   #FLGS          ; SET TO ACCESS REGS
+   lda   #FLGS          ; set to access regs
    sta   TMP0
    lda   #$00
    sta   TMP0+1
    lda   #$05
    rts
 
-CMDS:     .byte ':'   , 'R'    , 'M'    , 'G', 'H' , 'L', 'W' ; W MUST BE LAST CMD IN CHAIN
+CMDS:     .byte ':'   , 'R'    , 'M'    , 'G', 'H' , 'L', 'W'
+   ; W MUST BE LAST CMD IN CHAIN
 ADRLOS:   .byte <ALTER, <DSPLYR, <DSPLYM, <GO, <HSP, <LH, <WO
 ADRHIS:   .byte >ALTER, >DSPLYR, >DSPLYM, >GO, >HSP, >LH, >WO
 
 
-;  DISPLAY REG CMD - A,P,x,y, AND SP
+;  display reg cmd - P,A,X,Y, AND SP
 
 DSPLYR:
-   jsr   WRPC           ; WRITE PC
+   jsr   WRPC           ; write pc
    jsr   SETR
-   bne   M0             ; USE DSPLYM
+   bne   M0             ; use DSPLYM
 
 DSPLYM:
-   jsr   RDOA           ; READ MEM ADR INTO TMPC
-   bcc   ERRS1          ; ERR IF NO ADDR
+   jsr   RDOA           ; read mem adr into TMPC
+   bcc   ERRS1          ; err if no addr
    lda   #$08
 M0:
    sta   TMPC
    ldy   #$00
 M1:
-   jsr   space          ; TYPE 8.byteS OF MEM
-   lda   (TMP0),y       ; (TMP0) PRESERVED FOR POSS ALTER
+   jsr   space          ; type 8 bytes of mem
+   lda   (TMP0),y       ; (TMP0) preserved for poss alter
    jsr   WROB
-   iny                  ; INCR INDEX
+   iny                  ; incr index
    dec   TMPC
    bne   M1
 BEQS1:
@@ -309,23 +305,23 @@ ERRS1:
 ;  ALTER LAST DISPLAYED ITEM (ADR IN TMPC)
 
 ALTER:
-   dec   PREVC          ; R INdex = 1
+   dec   PREVC          ; r index = 1
    bne   A3
 
-   jsr   RDOA           ; CY=0 IF SP
+   jsr   RDOA           ; cy=0 if SP
    bcc   A2             ; space
-   jsr   PUTP           ; ALTER PC
+   jsr   PUTP           ; alter pc
 A2:
-   jsr   SETR           ; ALTER R*S
-   bne   A4             ; jmp   A4 (SETR RETURNS ACC = 5)
+   jsr   SETR           ; alter r*s
+   bne   A4             ; jmp a4 (setr returns acc = 5)
 A3:
-   jsr   WROA           ; ALTER M, TYPE ADR
-   lda   #$08           ; SET CNT=8
+   jsr   WROA           ; alter M, type adr
+   lda   #$08           ; set cnt=8
 
 A4:
    sta   RCNT
 A5:
-   jsr   space          ; PRESERVES Y
+   jsr   space          ; preserves Y
    jsr   BYTE
    bne   A5
 A9:
@@ -333,7 +329,7 @@ A9:
 
 GO:
    ldx   SP
-   txs                  ; ORIG OR NEW SP VALUE TO SP
+   txs                  ; orig or new SP value to SP
    lda   PCH
    pha
    lda   PCL
@@ -346,43 +342,43 @@ GO:
    rti
 
 HSP:
-   inc   HSROP         ; TOGGLE BIT C
+   inc   HSROP         ; toggle bit C
    jmp   start
 
 LH:
-   jsr   RDOC          ; READ secOND CMD CHAR
+   jsr   RDOC          ; read second cmd char
    jsr   CRLF
-   ldx   HSROP         ; ENABLE PTR OPTION IF SET
+   ldx   HSROP         ; enable ptr option if set
    stx   HSPTR
 LH1:
    jsr   RDOC
-   cmp   #':'          ; FIND NEXT BCD MARK (:)
+   cmp   #':'          ; find next bcd mark (:)
    bne   LH1
 
    ldx   #$04
-   jsr   ZTMP          ; CLEAR CKSUM REGS TMP4
+   jsr   ZTMP          ; clear cksum regs TMP4
    jsr   RDOB
    bne   LH2
 
-   ldx   #$00          ; CLEAR HS ror   FLAG
+   ldx   #$00          ; clear hs ror flag
    stx   HSPTR
-   beq   BEQS1         ; FINISHED
+   beq   BEQS1         ; finished
 
 LH2:
    sta   RCNT          ; RCNT
-   jsr   CADD          ; BCD LNGH TO CKSUM
-   jsr   RDOB          ; SA HO TO TMP0+1
+   jsr   CADD          ; bcd lngh to cksum
+   jsr   RDOB          ; sa ho to TMP0+1 (sa=startaddress)
    sta   TMP0+1
-   jsr   CADD          ; ADD TO CKSUM
-   jsr   RDOB          ; SA LO TO TMP0
+   jsr   CADD          ; add to cksum
+   jsr   RDOB          ; sa lo to TMP0
    sta   TMP0
-   jsr   CADD          ; ADD TO CKSUM
+   jsr   CADD          ; add to cksum
 
 LH3:
-   jsr   BYTE          ; BYTE SUB/R DECRS RCNT On EXIT
+   jsr   BYTE          ; byte sub/r decrs rcnt on exit
    bne   LH3
-   jsr   RDOA          ; CKSUM FROM HEX BCD TO TMP0
-   lda   TMP4+0        ; TMP4 TO TMP2 FOR DCMP
+   jsr   RDOA          ; cksum from hex bcd to TMP0
+   lda   TMP4+0        ; TMP4 to TMP2 for DCMP
    sta   TMP2+0
    lda   TMP4+1
    sta   TMP2+1
@@ -392,49 +388,49 @@ ERRP1:
    jmp   ERROPR
 
 WO:
-   jsr   RDOC           ; RD 2ND CMD CHAR
+   jsr   RDOC           ; rd 2nd cmd char
    sta   TMPC
    jsr   space
    jsr   RDOA
-   jsr   T2T2           ; SA TO TMP2
-   jsr   space          ; SPACE BEFORE NEXT ADDRESS
+   jsr   T2T2           ; sa to TMP2
+   jsr   space          ; space before next address
    jsr   RDOA
-   jsr   T2T2           ; SA TO TMP0, EA TO TMP2
-   jsr   RDOC           ; DELAY FOR FINAL CR
+   jsr   T2T2           ; sa to TMP0, ea to TMP2
+   jsr   RDOC           ; delay for final CR
    lda   TMPC
 
    cmp   #'H'
    bne   WB
 
 WH0:
-   ldx   WRAP           ; IF ADDR HAS WRAPPED AROUND
-   bne   BCCST          ; THEN TERMINATE WRITE OPERATION
+   ldx   WRAP           ; if addr has wrapped around
+   bne   BCCST          ; then terminate write operation
 
    jsr   CRLF
    ldx   #$18
-   stx   RCNT           ; RCNT=24
-   ldx   #$04           ; CLEAR CKSUM
+   stx   RCNT           ; rcnt=24
+   ldx   #$04           ; clear cksum
    jsr   ZTMP
 
    lda   #';'
-   jsr   WROC           ; WR BCD MARK
+   jsr   WROC           ; wr bcd mark
 
-   jsr   DCMP           ; EA-SA (TMP0+2-TMP0) DIFF IN LOC DIFF,+1
-   tya                  ; MS.byte OF DIFF
+   jsr   DCMP           ; ea-sa (TMP0+2-TMP0) diff in LOC DIFF,+1
+   tya                  ; ms byte of diff
    bne   WH1
    lda   DIFF
    cmp   #$17
-   bcs   WH1            ; DIFF GT 24
-   sta   RCNT           ; INCR LAST RCNT
+   bcs   WH1            ; diff gt 24
+   sta   RCNT           ; incr last RCNT
    inc   RCNT
 WH1:
    lda   RCNT
-   jsr   CADD           ; ADD TO CKSUM
-   jsr   WROB           ; BCD CNT IN A
-   lda   TMP0+1         ; SA HO
+   jsr   CADD           ; add to cksum
+   jsr   WROB           ; bcd cnt in A
+   lda   TMP0+1         ; sa ho
    jsr   CADD
    jsr   WROB
-   lda   TMP0           ; SA LO
+   lda   TMP0           ; sa lo
    jsr   CADD
    jsr   WROB
 
@@ -442,39 +438,39 @@ WH2:
    ldy   #$00
    lda   (TMP0),y
 
-   jsr   CADD           ; inc   CKSUM, PRESERVES A
+   jsr   CADD           ; inc CKSUM, preserves A
    jsr   WROB
-   jsr   INCTMP         ; inc   SA
+   jsr   INCTMP         ; inc sa
    dec   RCNT
-   bne   WH2            ; LOOP FOR OP TO 24.byte
+   bne   WH2            ; loop for op to 24 byte
 
-   jsr   WROA4          ; WRITE CKSUM
+   jsr   WROA4          ; write cksum
 
    jsr   DCMP
-   bcs   WH0            ; LOOP WHILE EA GT OR = SA
+   bcs   WH0            ; loop while ea gt or = sa
 BCCST:
    jmp   start
 
 
 WB:
-   inc   SAVX           ; SAVX TO = NCMDS FOR ASCII SUB/R
+   inc   SAVX           ; SAVX to = NCMDS for ASCII sub/r
 WB1:
-   lda   WRAP           ;IF ADDR HAS WRAPPED AROUND
-   bne   BCCST          ;THEN TERMINATE WRITE OPERATION
+   lda   WRAP           ; if addr has wrapped around
+   bne   BCCST          ; then terminate write operation
 
    lda   #$04
    sta   ACMD
    jsr   CRLF
-   jsr   WROA           ; OUTPUT HEX ADR
+   jsr   WROA           ; output hex adr
 
 WBNPF:
    jsr   space
    ldx   #9
-   stx   TMPC           ; LOOP CNT =9
+   stx   TMPC           ; loop cnt = 9
    lda   (TMP0-9,x)
-   sta   TMPC2          ; BYTE TO TMPC2
+   sta   TMPC2          ; byte to TMPC2
    lda   #'B'
-   bne   WBF2           ; WRITE @
+   bne   WBF2           ; write @
 
 WBF1:
    lda   #'P'
@@ -483,30 +479,30 @@ WBF1:
    lda   #'N'
 
 WBF2:
-   jsr   WROC           ; WRIRE N OR R
+   jsr   WROC           ; write n or r
    dec   TMPC
-   bne   WBF1           ; LOOP
+   bne   WBF1           ; loop
    lda   #'F'
-   jsr   WROC           ; WRITE F
+   jsr   WROC           ; write f
 
    jsr   INCTMP
 
-   dec   ACMD           ; TEST FOR MULTIPLE OF FOUR
+   dec   ACMD           ; test for multiple of four
    bne   WBNPF
 
    jsr   DCMP
-   bcs   WB1            ; LOOP WHILE EA GT OR = SA
+   bcs   WB1            ; loop while ea gt or = sa
    bcc   BCCST
 
 CADD:
-   pha                  ; SAVE A
+   pha                  ; save A
    clc
    adc   TMP4
    sta   TMP4
    lda   TMP4+1
    adc   #$00
    sta   TMP4+1
-   pla                  ; RESTORE A
+   pla                  ; restore A
    rts
 
 CRLF:
@@ -515,7 +511,7 @@ CRLF:
    jsr   WRTWO
    rts
 
-;  WRITE ADR FROM TMP0 STORES
+;  write adr from TMP0 stores
 
 WROA:
    ldx   #$01
@@ -535,8 +531,8 @@ WROA1:
    jsr   WROB
    pla
 
-;  WRITE.byte - A = BYTE
-;  UNPACK.byte DATA INTO TWO ASCII CHARS: A=BYTE; X,A=CHARS
+;  write byte - A = byte
+;  unpack byte data into two ASCII chars: A=byte; X,A=chars
 
 WROB:
    pha
@@ -544,13 +540,13 @@ WROB:
    lsr
    lsr
    lsr
-   jsr   ASCII         ; CONVERT TO ASCII
+   jsr   ASCII          ; convert to ascii
    tax
    pla
    and   #$0F
    jsr   ASCII
 
-;  WRITE 2 CHARS - X,A = CHARS
+;  write 2 chars - X,A = chars
 
 WRTWO:
    pha
@@ -562,8 +558,13 @@ WROC:
    jmp   CHROUT
 RDT:
 RDOC:
+.if 1
+   jsr   chrinuc
+.else
    jsr   CHRIN
    bcs   RDOC
+   jsr   uppercase
+.endif
    jmp   CHROUT
 
 ASCII:
@@ -575,14 +576,14 @@ ASCII:
 
 ASC1:
    adc   #$3A
-   pha                  ; TEST FOR LETTER B IN ADR DURING WBNPF
+   pha                  ; test for letter b in adr during wbnpf
    cmp   #'B'
    bne   ASCX
    lda   SAVX
    cmp   #NCMDS
-   bne   ASCX           ; NOT WB CMD
+   bne   ASCX           ; not wb cmd
    pla
-   lda   #' '           ; FOR WB, BLANK @'S IN ADR
+   lda   #' '           ; for wb, blank @'s in adr
    pha
 ASCX:
    pla
@@ -591,18 +592,29 @@ ASCX:
 spac2:
    jsr   space
 space:
-   pha               ; SAVE A,x,y
+.ifpc02
+   pha                  ; save A,X,Y
+   phx
+   phy
+   lda   #' '
+   jsr   WRT
+   ply                  ; restore A,X,Y
+   plx
+   pla
+.else
+   pha                  ; save A,X,Y
    txa
    pha
    tya
    pha
    lda   #' '
-   jsr   WRT         ; TYPE SP
-   pla               ; RESTORE A,x,y
+   jsr   WRT            ; type SP
+   pla                  ; restore A,X,Y
    tay
    pla
    tax
    pla
+.endif
    rts
 
 T2T2:
@@ -618,92 +630,111 @@ T2T21:
    bne   T2T21
    rts
 
-;INCREMENT (TMP0,TMP0+1) BY 1
+;increment (TMP0,TMP0+1) by 1
+.ifpc02
 INCTMP:
-   inc   TMP0          ;LOW.byte
+   inc   TMP0+0         ; low byte
+   bne   INCT1
+   inc   TMP0+1         ; high byte
+   beq   SETWRP
+INCT1:
+   rts
+.else
+INCTMP:
+   inc   TMP0           ; low byte
    beq   INCT1
    rts
 
 INCT1:
-   inc   TMP0+1        ;HIGH.byte
+   inc   TMP0+1         ; high byte
    beq   SETWRP
    rts
+.endif
 
 SETWRP:
-   inc   WRAP          ;POINTER HAS WRAPPED AROUND - SET FLAG
+   inc   WRAP           ; pointer has wrapped around - set flag
    rts
 
-; READ HEX ADR; RETURN HO IN TMP0; LO IN TMP0+1 AND CY=1
-;    IF SP CY=0
+; read hex adr; return ho in TMP0; LO in TMP0+1 and CY=1
+;    if SP CY=0
 
 RDOA:
-   jsr   RDOB          ; READ 2 CHAR.byte
-   bcc   RDOA2         ; space
+   jsr   RDOB           ; read 2 char byte
+   bcc   RDOA2          ; space
 
    sta   TMP0+1
 RDOA2:
    jsr   RDOB
-   bcc   RDEXIT        ; SP
+   bcc   RDEXIT         ; SP
    sta   TMP0
 RDEXIT:
    rts
 
-;  READ HEX.byte AND RETURN IN A, AND CY=1
-;    IF SP CY=0
-;    Y REG IS PRESERVED
+;  read hex byte and return in A, and cy=1
+;    if SP CY=0
+;    Y reg is preserved
 
 RDOB:
-   tya                  ; SAVE Y
+.ifpc02
+   phy
+.else
+   tya                  ; save Y
    pha
-   lda   #$00           ; SET DATA = 0
+.endif
+   lda   #$00           ; set data = 0
    sta   ACMD
    jsr   RDOC
    cmp   #$0D           ; CR?
    bne   RDOB1
-   pla                  ; YES - GO TO START
-   pla                  ; CLEANING STACK UP FIRST
+   pla                  ; yes - go to start
+   pla                  ; cleaning stack up first
    pla
    jmp   start
 
 RDOB1:
    cmp   #' '           ; space
    bne   RDOB2
-   jsr   RDOC           ; READ NEXT CHAR
+   jsr   RDOC           ; read next char
    cmp   #' '
    bne   RDOB3
    clc                  ; CY=0
    bcc   RDOB4
 
 RDOB2:
-   jsr   hexit          ; TO HEX
+   jsr   hexit          ; to hex
    asl
    asl
    asl
    asl
    sta   ACMD
-   jsr   RDOC           ; 2ND CHAR ASSUMED HEX
+   jsr   RDOC           ; 2nd char assumed hex
 RDOB3:
    jsr   hexit
    ora   ACMD
    sec                  ; CY=1
 RDOB4:
+.ifpc02
+   ply                  ; restore Y
+   tax                  ; set Z & N flags for return
+.else
    tax
-   pla                  ; RESTORE Y
+   pla                  ; restore Y
    tay
-   txa                  ; SET Z & N FLAGS FOR RETURN
+   txa                  ; set Z & N flags for return
+.endif
    rts
 
 hexit:
    cmp   #$3A
-   php                  ; SAVE FLAGS
+   php                  ; save flags
    and   #$0F
    plp
    bcc   hex09          ; 0-9
-   adc   #$08           ; ALPHA ACC 8+CY=9
+   adc   #$08           ; alpha acc 8+CY=9
 hex09:
    rts
 
 timvecs:
    .word timnmint
-   .word timnmint    ; default user intrq to nmint
+   .word timnmint       ; default user intrq to nmint
    .word timintrq

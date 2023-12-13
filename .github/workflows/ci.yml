@@ -1,4 +1,4 @@
-name: CI
+name: TestBuild
 
 on: [push, pull_request]
 
@@ -6,7 +6,7 @@ permissions:
   contents: write
 
 jobs:
-  CI:
+  TestBuild:
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out code'

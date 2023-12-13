@@ -57,8 +57,7 @@ Timer ($DF10-$DF1F)
 - base address + 2 = set low counter for single shot timer, stops timer
 - base address + 3 = set high counter for single shot timer, starts timer
 - reading any register return $80 if timer was triggered, $00 otherwise
-- reading also resets IRQ or NMI line back to high
-- reading clears flag; todo(?): $40 indicates timer is running
+- reading clears flag and also resets IRQ or NMI line back to high
 - IMPORTANT: this might change, if 16-bit counters are not sufficiant
 
 
@@ -146,9 +145,9 @@ Multicore Architecture
 Core 0 runs the console and handles user interaction. Core 1 drives the
 bus for the CPU implementing the system. To have a rather efficient
 (fast as in ~1MHz) system, core 1 really has to come up with some tricks.
-So, everything "event" aspect, such as timers, watchdog and other things
-will be run by an event queue. This means on every clock cycle there is
-a check if something was scheduled for this specific clock cycle. Again
+So, every "event" aspect, such as timers, watchdog and other things will
+be run by an event queue. This means on every clock cycle there is a
+check if something was scheduled for this specific clock cycle. Again
 due to performance, only one event will happen during that clock cycle.
 If two events are scheduled for the same clock cycle, the second one
 scheduled will be delay by one clock cycle (and again until there is a

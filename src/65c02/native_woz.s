@@ -96,9 +96,13 @@ backspace:
    bmi   getline  ; buffer underflow -> restart
 
 nextchar:
+.if 1
+   jsr   chrinuc
+.else
    jsr   CHRIN
    bcs   nextchar
    jsr   uppercase
+.endif
    sta   IN,y     ; add to buffer
    jsr   CHROUT   ; print character
 
