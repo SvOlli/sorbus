@@ -3,7 +3,7 @@
 ;  WozMon for native core
 ;-------------------------------------------------------------------------
 
-.include "native_rom.inc"
+.include "native_kernel.inc"
 .segment "CODE"
 
 ;-------------------------------------------------------------------------
@@ -45,8 +45,8 @@ IN              :=     $0200 ;,$027F     Input buffer
 ;  Constants
 ;-------------------------------------------------------------------------
 
-DEL             :=     $7f            ; "_": interpreted as backspace
-BS              :=     $08            ; "_": interpreted as backspace
+DEL             :=     $7f            ; DEL: interpreted as backspace
+BS              :=     $08            ; "^H": interpreted as backspace
 CR              :=     $0d            ; carriage return
 LF              :=     $0a            ; linefeed
 ESC             :=     $1b            ; ESC key

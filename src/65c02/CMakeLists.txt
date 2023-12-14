@@ -14,8 +14,8 @@ function(target_type target system)
       target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/rawram.ld")
    elseif( "${system}" STREQUAL "mcp" )
       target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/rawram.ld")
-   elseif( "${system}" STREQUAL "native_rom" )
-      target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/native_rom.ld")
+   elseif( "${system}" STREQUAL "native_kernel" )
+      target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/native_kernel.ld")
    elseif( "${system}" STREQUAL "native" )
       target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/rawram.ld")
    else()
@@ -64,17 +64,17 @@ target_compile_options(a1hello
 target_type_addr(a1hello apple1 0x0800)
 src2hex(a1hello.hex a1hello 0x0800)
 
-add_executable(native_rom
-   native_rom.s
+add_executable(native_kernel
+   native_kernel.s
    native_tim.s
    native_woz.s
    )
-target_type(native_rom native_rom)
+target_type(native_kernel native_kernel)
 
 add_executable(native_cpm_bootblock
    linkcpm.s
    )
-target_type(native_cpm_bootblock native_rom)
+target_type(native_cpm_bootblock native_kernel)
 # This doesn't work, as the glorious CMake de-duplicates the
 # "--large-alignment" option, which needs to be passed twice.
 # Since it only disables warnings, so be it.

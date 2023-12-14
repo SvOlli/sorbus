@@ -113,7 +113,7 @@ LCNT      := TMPC2
 
 NCMDS     := <(ADRHIS-ADRLOS)
 
-.include "native_rom.inc"
+.include "native_kernel.inc"
 
 .segment "CODE"
 

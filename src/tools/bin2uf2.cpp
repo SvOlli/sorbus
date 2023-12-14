@@ -36,6 +36,7 @@
  */
 
 #include <cstdio>
+#include <cerrno>
 #include <map>
 #include <set>
 #include <vector>
@@ -104,79 +105,83 @@ struct page_fragment {
     uint32_t bytes;
 };
 
-static int usage() {
-    fprintf(stderr, "Usage: bin2uf2 (-v) <input binary file> <start address> <output UF2 file>\n");
-    return ERROR_ARGS;
+static int usage()
+{
+   fprintf( stderr, "Usage: bin2uf2 (-v) <output UF2 file> <start address> "
+                    "<input binary file> (<input binary file>...)\n" );
+   return ERROR_ARGS;
 }
 
-int realize_page(FILE *in, const std::vector<page_fragment> &fragments, uint8_t *buf, uint buf_len) {
-    assert(buf_len >= PAGE_SIZE);
-    for(auto& frag : fragments) {
-        assert(frag.page_offset >= 0 && frag.page_offset < PAGE_SIZE && frag.page_offset + frag.bytes <= PAGE_SIZE);
-        if (fseek(in, frag.file_offset, SEEK_SET)) {
-            return fail_read_error();
-        }
-        if (1 != fread(buf + frag.page_offset, frag.bytes, 1, in)) {
-            return fail_read_error();
-        }
-    }
-    return 0;
+int realize_page( FILE *in, const std::vector<page_fragment> &fragments,
+                  uint8_t *buf, uint buf_len )
+{
+   assert(buf_len >= PAGE_SIZE);
+   for(auto& frag : fragments)
+   {
+      assert( (frag.page_offset >= 0) &&
+              (frag.page_offset < PAGE_SIZE) &&
+              ((frag.page_offset + frag.bytes) <= PAGE_SIZE) );
+      if (fseek(in, frag.file_offset, SEEK_SET))
+      {
+         return fail_read_error();
+      }
+      if (1 != fread( buf + frag.page_offset, frag.bytes, 1, in) )
+      {
+         return fail_read_error();
+      }
+   }
+   return 0;
 }
 
-int bin2uf2(FILE *in, long address, FILE *out) {
-    std::map<uint32_t, std::vector<page_fragment>> pages;
-    fseek(in, 0, SEEK_END);
-    long in_size = ftell(in);
-    fseek(in, 0, SEEK_SET);
-    int rc = 0;
+int bin2uf2(FILE *in, long address, FILE *out)
+{
+   std::map<uint32_t, std::vector<page_fragment>> pages;
+   fseek(in, 0, SEEK_END);
+   long in_size = ftell(in);
+   fseek(in, 0, SEEK_SET);
+   int rc = 0;
 
-    if( (address < FLASH_START) ||
-        (address + in_size) > (FLASH_START + 0x1000000u) ) // 16MB, maximum available range
-    {
-        return fail(ERROR_OUT_OF_FLASH_RANGE, "Data no in flash range");
-    }
+   if( (address < FLASH_START) ||
+       (address + in_size) > (FLASH_START + 0x1000000u) ) // 16MB, maximum available range
+   {
+      return fail( ERROR_OUT_OF_FLASH_RANGE, "Data no in flash range" );
+   }
 
-    for( long i = 0; i < in_size; i += PAGE_SIZE )
-    {
-        uint32_t bytes = PAGE_SIZE;
-        if( (in_size - i) < PAGE_SIZE )
-        {
-            bytes = in_size - i;
-        }
-        pages[address+i].push_back( page_fragment(i, 0, bytes) );
-    }
+   for( long i = 0; i < in_size; i += PAGE_SIZE )
+   {
+      uint32_t bytes = PAGE_SIZE;
+      if( (in_size - i) < PAGE_SIZE )
+      {
+         bytes = in_size - i;
+      }
+      pages[address+i].push_back( page_fragment(i, 0, bytes) );
+   }
 
-    std::set<uint32_t> touched_sectors;
-    for (auto& page_entry : pages) {
-        uint32_t sector = page_entry.first / FLASH_SECTOR_ERASE_SIZE;
-        touched_sectors.insert(sector);
-    }
+   std::set<uint32_t> touched_sectors;
+   for( auto& page_entry : pages )
+   {
+      uint32_t sector = page_entry.first / FLASH_SECTOR_ERASE_SIZE;
+      touched_sectors.insert(sector);
+   }
 
-    uint32_t last_page = pages.rbegin()->first;
-    for (uint32_t sector : touched_sectors) {
-        for (uint32_t page = sector * FLASH_SECTOR_ERASE_SIZE; page < (sector + 1) * FLASH_SECTOR_ERASE_SIZE; page += PAGE_SIZE) {
-            if (page < last_page) {
-                // Create a dummy page, if it does not exist yet. note that all present pages are first
-                // zeroed before they are filled with any contents, so a dummy page will be all zeros.
-            }
-        }
-    }
-
-    uint page_num = 0;
-    uf2_block block;
-    block.magic_start0 = UF2_MAGIC_START0;
-    block.magic_start1 = UF2_MAGIC_START1;
-    block.flags = UF2_FLAG_FAMILY_ID_PRESENT;
-    block.payload_size = PAGE_SIZE;
-    block.num_blocks = (uint32_t)pages.size();
-    block.file_size = RP2040_FAMILY_ID;
-    block.magic_end = UF2_MAGIC_END;
-    for(auto& page_entry : pages) {
-        block.target_addr = page_entry.first;
-        block.block_no = page_num++;
-        if (verbose) {
-            printf("Page %d / %d %08x%s\n", block.block_no, block.num_blocks, block.target_addr,
-                   page_entry.second.empty() ? " (padding)": "");
+   uint page_num = 0;
+   uf2_block block;
+   block.magic_start0 = UF2_MAGIC_START0;
+   block.magic_start1 = UF2_MAGIC_START1;
+   block.flags = UF2_FLAG_FAMILY_ID_PRESENT;
+   block.payload_size = PAGE_SIZE;
+   block.num_blocks = (uint32_t)pages.size();
+   block.file_size = RP2040_FAMILY_ID;
+   block.magic_end = UF2_MAGIC_END;
+   for( auto& page_entry : pages )
+   {
+      block.target_addr = page_entry.first;
+      block.block_no = page_num++;
+      if( verbose )
+      {
+         printf( "Page %d / %d %08x%s\n", block.block_no, block.num_blocks,
+                 block.target_addr,
+                 page_entry.second.empty() ? " (padding)": "");
         }
         memset(block.data, 0, sizeof(block.data));
         rc = realize_page(in, page_entry.second, block.data, sizeof(block.data));
@@ -188,37 +193,59 @@ int bin2uf2(FILE *in, long address, FILE *out) {
     return 0;
 }
 
-int main(int argc, char **argv) {
-    int arg = 1;
-    if (arg < argc && !strcmp(argv[arg], "-v")) {
-        verbose = true;
-        arg++;
-    }
-    if (argc < arg + 3) {
-        return usage();
-    }
-    const char *in_filename = argv[arg++];
-    FILE *in = fopen(in_filename, "rb");
-    if (!in) {
-        fprintf(stderr, "Can't open input file '%s'\n", in_filename);
-        return ERROR_ARGS;
-    }
-    long address = std::stol(argv[arg++], 0, 16);
-    const char *out_filename = argv[arg++];
-    FILE *out = fopen(out_filename, "wb");
-    if (!out) {
-        fprintf(stderr, "Can't open output file '%s'\n", out_filename);
-        return ERROR_ARGS;
-    }
 
-    int rc = bin2uf2(in, address, out);
-    fclose(in);
-    fclose(out);
-    if (rc) {
-        remove(out_filename);
-        if (error_msg[0]) {
-            fprintf(stderr, "ERROR: %s\n", error_msg);
-        }
-    }
-    return rc;
+int main( int argc, char **argv )
+{
+   int rc = 0;
+   int arg = 1;
+   if( (arg < argc) && !strcmp(argv[arg], "-v") )
+   {
+       verbose = true;
+       arg++;
+   }
+   if( argc < arg + 3 )
+   {
+      return usage();
+   }
+
+   const char *out_filename = argv[arg++];
+   FILE *out = fopen( out_filename, "wb" );
+   if( !out )
+   {
+      fprintf( stderr, "%s: Can't open output file '%s': %s\n",
+               argv[0], out_filename, strerror(errno) );
+      return ERROR_ARGS;
+   }
+
+   long address = std::stol( argv[arg++], 0, 0 );
+
+   while( arg < argc )
+   {
+      const char *in_filename = argv[arg++];
+      FILE *in = fopen( in_filename, "rb" );
+      if( !in )
+      {
+          fprintf( stderr, "%s: Can't open input file '%s': %s\n",
+                   argv[0], in_filename, strerror(errno) );
+          return ERROR_ARGS;
+      }
+
+      rc = bin2uf2(in, address, out);
+      fclose( in );
+
+      if( rc )
+      {
+         fclose(out);
+         remove(out_filename);
+         if( error_msg[0] )
+         {
+            fprintf( stderr, "%s: ERROR: %s\n",
+                     argv[0], error_msg);
+         }
+         return rc;
+      }
+   }
+   fclose( out );
+
+   return rc;
 }

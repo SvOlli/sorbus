@@ -25,16 +25,16 @@ function(src2h h_file bin_file label)
    )
 endfunction()
 
-function(bbin2uf2 uf2_file bin_file start_addr)
+function(bbin2uf2 uf2_file start_addr bin_file)
    add_custom_target(${uf2_file} ALL
-      $<TARGET_FILE:bin2uf2> $<TARGET_FILE:${bin_file}> "${start_addr}" "${uf2_file}.uf2"
+      $<TARGET_FILE:bin2uf2> "${uf2_file}.uf2" "${start_addr}" $<TARGET_FILE:${bin_file}>
       DEPENDS ${bin_file} ${BIN2UF2}
    )
 endfunction()
 
-function(bin2uf2 uf2_file bin_file start_addr)
+function(bin2uf2 uf2_file start_addr bin_file)
    add_custom_target(${uf2_file} ALL
-      $<TARGET_FILE:bin2uf2> "${bin_file}" "${start_addr}" "${uf2_file}.uf2"
+      $<TARGET_FILE:bin2uf2> "${uf2_file}.uf2" "${start_addr}" "${bin_file}"
       DEPENDS ${bin_file} ${BIN2UF2}
    )
 endfunction()
@@ -149,13 +149,13 @@ target_link_libraries(native_alpha
 setup_target(native_alpha)
 # firmware for Native core
 add_custom_target(native_firmware ALL
-   DEPENDS native_alpha_full
+   DEPENDS native_alpha_full native_rom
 )
-bbin2uf2(native_kernel native_rom 0x103FE000)
-bin2uf2(native_cpmfs native_cpmfs.dhara 0x10400000)
+bbin2uf2(native_rom 0x103FE000 native_kernel)
+bin2uf2(native_cpmfs 0x10400000 native_cpmfs.dhara)
 uf2join(native_alpha_full
    native_alpha
-   native_kernel
+   native_rom
    native_cpmfs
 )
 gencpmfs(native_cpmfs.img)

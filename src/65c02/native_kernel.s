@@ -15,7 +15,7 @@ TMP16 := $FE
 SECTOR_BUFFER := $DF80
 TRAMPOLINE    := $0100
 
-.include "native_rom.inc"
+.include "native_kernel.inc"
 
 copybios   := TRAMPOLINE
 
