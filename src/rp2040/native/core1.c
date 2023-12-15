@@ -58,6 +58,9 @@ const uint8_t *romvec;  // pointer into current ROM/RAM bank at $E000
 uint32_t state;
 uint32_t address;
 
+// measure time used for processing one million clock cycles (mcc)
+uint64_t time_per_mcc          = 1; // in case a division is done
+
 // no need to volatile these, as they are only used within bus_run loop
 uint32_t timer_irq_total       = 0;
 uint32_t timer_nmi_total       = 0;
@@ -142,6 +145,27 @@ static inline void handle_ramrom()
       // always write to RAM
       ram[address] = bus_data_read();
    }
+}
+
+
+static inline void event_estimate_cpufreq( void *data )
+{
+   // event handler for estimating the 65C02 CPU speed
+   // this event is exactly 1 time in queue
+   // cornercase: 2 times when leaving this handler before
+   //             queue_event_process() removes calling event
+
+   static uint64_t time_last = 0;
+   uint64_t time_now = time_us_64();
+
+   if( bus_config.mask_rdy )
+   {
+      // only count time when CPU is not halted
+      time_per_mcc = time_now - time_last;
+   }
+   time_last = time_now;
+
+   queue_event_add( 1000000, event_estimate_cpufreq, 0 );
 }
 
 
@@ -311,6 +335,8 @@ static inline void system_reset()
    // clear event queue and setup end of reset event
    queue_event_reset();
    queue_event_add( 8, event_clear_reset, 0 );
+   // start measurement of cpu speed once every million clocks
+   queue_event_add( 9, event_estimate_cpufreq, 0 );
 
    // setup bank
    set_bank( 1 );
@@ -449,16 +475,18 @@ void debug_clocks()
    uint f_clk_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_USB);
    uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
    uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
+   uint time_hz = (double)1000000.0 / ((double)(time_per_mcc) / CLOCKS_PER_SEC / 10000);
 
    printf("\n");
-   printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
-   printf("PLL_USB:             %3d.%03dMhz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
-   printf("ROSC:                %3d.%03dMhz\n", f_rosc    / 1000, f_rosc % 1000 );
-   printf("CLK_SYS:             %3d.%03dMhz\n", f_clk_sys / 1000, f_clk_sys % 1000 );
-   printf("CLK_PERI:            %3d.%03dMhz\n", f_clk_peri / 1000, f_clk_peri % 1000 );
-   printf("CLK_USB:             %3d.%03dMhz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
-   printf("CLK_ADC:             %3d.%03dMhz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
-   printf("CLK_RTC:             %3d.%03dMhz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
+   printf("PLL_SYS:             %3d.%03dMHz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
+   printf("PLL_USB:             %3d.%03dMHz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
+   printf("ROSC:                %3d.%03dMHz\n", f_rosc    / 1000, f_rosc    % 1000 );
+   printf("CLK_SYS:             %3d.%03dMHz\n", f_clk_sys / 1000, f_clk_sys % 1000 );
+   printf("CLK_PERI:            %3d.%03dMHz\n", f_clk_peri / 1000, f_clk_peri % 1000 );
+   printf("CLK_USB:             %3d.%03dMHz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
+   printf("CLK_ADC:             %3d.%03dMHz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
+   printf("CLK_RTC:             %3d.%03dMHz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
+   printf("65C02 CLK:           %3d.%06dMHz\n", time_hz / 1000000, time_hz % 1000000 );
 }
 
 
