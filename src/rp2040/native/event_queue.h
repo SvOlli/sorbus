@@ -4,18 +4,8 @@
 
 #define QUEUE_EVENT_SIZE (32)
 
-/* mutex is only required when core 0 also wants to use the event queue */
-#if 1
-#define QUEUE_EVENT_MUTEX_LOCK()   /* mutex disabled */
-#define QUEUE_EVENT_MUTEX_UNLOCK() /* mutex disabled */
-#else
-#define QUEUE_EVENT_MUTEX_LOCK()   mutex_enter_blocking( &_queue_event_mutex );
-#define QUEUE_EVENT_MUTEX_UNLOCK() mutex_exit( &_queue_event_mutex );
-#endif
-
 #include <stdbool.h>
 #include <stdint.h>
-#include <pico/mutex.h>
 
 typedef void (*queue_event_handler_t)(void *data);
 
@@ -29,7 +19,6 @@ typedef struct queue_event_s {
 extern uint64_t _queue_cycle_counter;
 extern uint64_t _queue_next_timestamp;
 extern queue_event_t *_queue_next_event;
-extern mutex_t _queue_event_mutex;
 
 
 // replacement for "delete": clear out data for memory block to be reused
@@ -49,14 +38,19 @@ static inline void queue_event_process()
    // while instead of if, because more than one entry may have same timestamp
    if( _queue_cycle_counter == _queue_next_timestamp )
    {
-      QUEUE_EVENT_MUTEX_LOCK();
-      queue_event_t *current = _queue_next_event;
-      _queue_next_event      = _queue_next_event->next;
-      _queue_next_timestamp  = _queue_next_event ? _queue_next_event->timestamp : 0;
+      queue_event_handler_t handler;
+      void                  *data;
+      queue_event_t         *current;
 
-      current->handler( current->data );
+      current               = _queue_next_event;
+      _queue_next_event     = _queue_next_event->next;
+      _queue_next_timestamp = _queue_next_event ? _queue_next_event->timestamp : 0;
+
+      handler = current->handler;
+      data    = current->data;
+
       queue_event_drop( current );
-      QUEUE_EVENT_MUTEX_UNLOCK();
+      handler( data );
    }
 }
 

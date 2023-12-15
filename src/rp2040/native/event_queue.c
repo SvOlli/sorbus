@@ -12,9 +12,32 @@
 uint64_t      _queue_cycle_counter  = 0;
 uint64_t      _queue_next_timestamp = 0;
 queue_event_t *_queue_next_event    = 0;
-mutex_t       _queue_event_mutex;
 
 static queue_event_t queue_events[QUEUE_EVENT_SIZE] = { 0 };
+
+void debug_queue_event( const char *text );
+
+static inline void queue_event_debug( const char *text )
+{
+/*
+   uint64_t               timestamp;
+   queue_event_handler_t  handler;
+   void                   *data;
+   struct queue_event_s   *next;
+ */
+   queue_event_t *event;
+   int i = 0;
+   printf( "%s: %016llx:%016llx\n", text, _queue_cycle_counter, _queue_next_timestamp );
+   for( event = _queue_next_event; event; event = event->next )
+   {
+      printf( "%02d:%016llx:%p:%p\n",
+              i++,
+              event->timestamp,
+              event->handler,
+              event->data );
+   }
+   printf( "done.\n" );
+}
 
 
 #if 0
@@ -37,7 +60,6 @@ static inline queue_event_t *queue_event_get()
 {
    queue_event_t *retval = 0;
 
-   QUEUE_EVENT_MUTEX_LOCK();
    for( int i = 0; i < count_of(queue_events); ++i )
    {
       if( !(queue_events[i].timestamp) )
@@ -46,7 +68,6 @@ static inline queue_event_t *queue_event_get()
          break;
       }
    }
-   QUEUE_EVENT_MUTEX_UNLOCK();
    return retval;
 }
 
@@ -54,18 +75,15 @@ static inline queue_event_t *queue_event_get()
 // clean out queue totally
 void queue_event_reset()
 {
-   QUEUE_EVENT_MUTEX_LOCK();
    memset( &queue_events[0], 0x00, sizeof(queue_events) );
+   _queue_next_event = 0;
    _queue_next_timestamp = 0;
-   QUEUE_EVENT_MUTEX_UNLOCK();
 }
 
 
 // clean out queue totally
 void queue_event_init()
 {
-   // TODO: check if mutex is already initialized
-   mutex_init( &_queue_event_mutex );
    queue_event_reset();
 }
 
@@ -77,17 +95,7 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    queue_event_t *newevent = queue_event_get();
    if( !newevent )
    {
-      printf( "Could not find place in event queue:\n" );
-      printf( "addr    |timestamp       |handler |data    |next\n" );
-      for( int i = 0; i < count_of(queue_events); ++i )
-      {
-         printf( "%08x|%16llx|%08x|%08x|%08x\n",
-                 (uint32_t)&queue_events[i],
-                 (uint64_t)queue_events[i].timestamp,
-                 (uint32_t)queue_events[i].handler,
-                 (uint32_t)queue_events[i].data,
-                 (uint32_t)queue_events[i].next );
-      }
+      queue_event_debug( "Could not find place in event queue:\n" );
       assert( newevent );
    }
 
@@ -96,8 +104,6 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    newevent->handler   = handler;
    newevent->data      = data;
    newevent->next      = 0;
-
-   QUEUE_EVENT_MUTEX_LOCK();
    if( !_queue_next_event )
    {
       // that's easy: no next event means no events at all
@@ -105,13 +111,15 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    }
    else
    {
+      bool insert = false;
       // due to speed constrains, only one event per timestamp is allowed
       if( newevent->timestamp == _queue_next_event->timestamp )
       {
          (newevent->timestamp)++;
+         // now it's larger and can't be processes in "<" case
       }
       // is it earlier than the first entry in queue?
-      if( newevent->timestamp < _queue_next_event->timestamp )
+      else if( newevent->timestamp < _queue_next_event->timestamp )
       {
          newevent->next    = _queue_next_event;
          _queue_next_event = newevent;
@@ -123,23 +131,25 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
          for( current = _queue_next_event; current; current = current->next )
          {
             // due to speed constrains, only one event per timestamp is allowed
-            if( newevent->timestamp == _queue_next_event->timestamp )
+            if( newevent->timestamp == current->timestamp )
             {
                (newevent->timestamp)++;
+               // now it's larger and can't be in "<" case
             }
-            if( newevent->timestamp < current->timestamp )
+            else if( newevent->timestamp < current->timestamp )
             {
+               insert = true;
                break;
             }
             previous = current;
          }
+         assert( insert );
          previous->next = newevent;
          newevent->next = current;
       }
    }
 
    _queue_next_timestamp = _queue_next_event->timestamp;
-   QUEUE_EVENT_MUTEX_UNLOCK();
 }
 
 
@@ -148,7 +158,6 @@ void queue_event_cancel( queue_event_handler_t handler )
    queue_event_t *current  = 0;
    queue_event_t *previous = 0;
 
-   QUEUE_EVENT_MUTEX_LOCK();
    for( current = _queue_next_event; current; current = current->next )
    {
       if( current->handler == handler )
@@ -164,15 +173,10 @@ void queue_event_cancel( queue_event_handler_t handler )
 
          queue_event_drop( current );
 
-         break; // canceling first only, remove break to cancel all
-                // due to implementation logic, NEVER cancel all:
-                // when handling the event, a new one might be created within
-                // the handler, before the current one is removed by
-                // queue_event_handler()
+         break;
       }
       previous = current;
    }
-   QUEUE_EVENT_MUTEX_UNLOCK();
 }
 
 
@@ -181,7 +185,6 @@ bool queue_event_contains( queue_event_handler_t handler )
    bool retval = false;
    queue_event_t *current  = 0;
 
-   QUEUE_EVENT_MUTEX_LOCK();
    for( current = _queue_next_event; current; current = current->next )
    {
       if( current->handler == handler )
@@ -190,7 +193,6 @@ bool queue_event_contains( queue_event_handler_t handler )
          break; // found one, no need to search further
       }
    }
-   QUEUE_EVENT_MUTEX_UNLOCK();
 
    return retval;
 }

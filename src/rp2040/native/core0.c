@@ -65,6 +65,11 @@ void console_type_set( console_type_t type )
 void console_rp2040()
 {
    const char *invoke = "magic key combo";
+
+   console_cpu_pause( true );
+   debug_backtrace();
+   debug_clocks();
+
    switch( invoke_type )
    {
       case SYSTEM_TRAP:
@@ -82,7 +87,11 @@ void console_rp2040()
 
    console_cpu_pause( false );
    system_reboot();
+
    console_type = CONSOLE_TYPE_65C02;
+
+   // restore CRLF setting for 65C02
+   uart_set_translate_crlf( uart0, console_crlf_enabled );
 }
 
 
@@ -96,7 +105,6 @@ void console_65c02()
       if( in == 0x1d ) /* 0x1d = CTRL+] */
       {
          invoke_type = in;
-         console_cpu_pause( true );
          console_wants_stop = true;
          console_type = CONSOLE_TYPE_RP2040;
          in = PICO_ERROR_TIMEOUT;
@@ -116,7 +124,6 @@ void console_65c02()
       {
          invoke_type = out;
          bus_wants_stop = true;
-         console_cpu_pause( true );
          console_type = CONSOLE_TYPE_RP2040;
       }
       else if( out == 0x7f )

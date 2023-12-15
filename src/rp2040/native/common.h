@@ -31,5 +31,6 @@ void debug_clocks();
 void debug_heap();
 void debug_hexdump( uint8_t *memory, uint32_t size, uint16_t address );
 void debug_internal_drive();
+void debug_queue_event( const char *text );
 
 #endif

@@ -152,8 +152,6 @@ static inline void event_estimate_cpufreq( void *data )
 {
    // event handler for estimating the 65C02 CPU speed
    // this event is exactly 1 time in queue
-   // cornercase: 2 times when leaving this handler before
-   //             queue_event_process() removes calling event
 
    static uint64_t time_last = 0;
    uint64_t time_now = time_us_64();
@@ -214,9 +212,6 @@ static inline void event_timer_nmi( void *data )
 {
    // event handler for timer nmi
    // this event is max 1 time in queue
-   // cornercase: 2 times when leaving this handler before
-   //             queue_event_process() removes calling event
-   //             (not valid in single shot mode)
 
    // trigger NMI
    gpio_clr_mask( bus_config.mask_nmi );
@@ -236,9 +231,6 @@ static inline void event_timer_irq( void *data )
 {
    // event handler for timer irq
    // this event is max 1 time in queue
-   // cornercase: 2 times when leaving this handler before
-   //             queue_event_process() removes calling event
-   //             (not valid in single shot mode)
 
    // trigger IRQ
    gpio_clr_mask( bus_config.mask_irq );
@@ -464,6 +456,52 @@ void debug_backtrace()
    debug_dump_state( 0, gpio_get_all() );
 }
 
+
+const char* debug_handler_name( queue_event_handler_t h )
+{
+   if( h == event_clear_reset )
+   {
+      return "event_clear_reset";
+   }
+   if( h == event_estimate_cpufreq )
+   {
+      return "event_estimate_cpufreq";
+   }
+   if( h == event_flash_sync )
+   {
+      return "event_flash_sync";
+   }
+   if( h == event_timer_irq )
+   {
+      return "event_timer_irq";
+   }
+   if( h == event_timer_nmi )
+   {
+      return "event_timer_nmi";
+   }
+   if( h == event_watchdog )
+   {
+      return "event_watchdog";
+   }
+}
+
+
+void debug_queue_event( const char *text )
+{
+   queue_event_t *event;
+   int i = 0;
+   printf( "%s: %016llx:%016llx\n", text, _queue_cycle_counter, _queue_next_timestamp );
+   for( event = _queue_next_event; event; event = event->next )
+   {
+      printf( "%02d:%016llx:%p:%-24s:%08x\n",
+              i++,
+              event->timestamp,
+              event->handler,
+              debug_handler_name( event->handler ),
+              event->data );
+   }
+   printf( "done.\n" );
+}
 
 void debug_clocks()
 {
@@ -697,7 +735,7 @@ void bus_run()
       gpio_clr_mask( bus_config.mask_clock );
       sleep_us( 2 );
    }
-   reset_clear( 0 );
+   //event_clear_reset( 0 );
 
    // inject keypress for menu to run in tight loop
    int data = 'S';
