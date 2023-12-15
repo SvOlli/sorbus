@@ -1,7 +1,7 @@
 
 .segment "CODE"
 ; BIOS ($E000-$E7FF)
-.incbin "../bin/cpm/sorbus.prg"
+.incbin "../bin/cpm/sorbus.bin"
 
 .align $800,$FF
 ; BDOS ($E800-$FEFF)

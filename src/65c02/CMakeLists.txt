@@ -73,6 +73,8 @@ target_type(native_kernel native_kernel)
 
 add_executable(native_cpm_bootblock
    linkcpm.s
+   ../bin/cpm/sorbus.bin
+   ../bin/cpm/bdos.sys
    )
 target_type(native_cpm_bootblock native_kernel)
 # This doesn't work, as the glorious CMake de-duplicates the
