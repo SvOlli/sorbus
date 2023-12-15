@@ -105,6 +105,7 @@ ubrk:
    lda   ASAVE
    jsr   print
    .byte 10,"BRK",10,0
+   stz   $DF01
    rti
 
 unmi:

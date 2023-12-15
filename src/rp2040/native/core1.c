@@ -147,6 +147,9 @@ static inline void handle_ramrom()
 
 static inline void event_watchdog( void *data )
 {
+   // event handler for watchdog timer
+   // this event is max 1 time in queue
+
    system_trap( SYSTEM_WATCHDOG );
 }
 
@@ -185,6 +188,12 @@ static inline void watchdog_setup( uint8_t value, uint8_t config )
 
 static inline void event_timer_nmi( void *data )
 {
+   // event handler for timer nmi
+   // this event is max 1 time in queue
+   // cornercase: 2 times when leaving this handler before
+   //             queue_event_process() removes calling event
+   //             (not valid in single shot mode)
+
    // trigger NMI
    gpio_clr_mask( bus_config.mask_nmi );
 
@@ -201,6 +210,12 @@ static inline void event_timer_nmi( void *data )
 
 static inline void event_timer_irq( void *data )
 {
+   // event handler for timer irq
+   // this event is max 1 time in queue
+   // cornercase: 2 times when leaving this handler before
+   //             queue_event_process() removes calling event
+   //             (not valid in single shot mode)
+
    // trigger IRQ
    gpio_clr_mask( bus_config.mask_irq );
 
@@ -270,7 +285,7 @@ static inline void timer_setup( uint8_t value, uint8_t config )
 }
 
 
-static inline void reset_clear( void *data )
+static inline void event_clear_reset( void *data )
 {
    gpio_set_mask( bus_config.mask_reset );
 }
@@ -280,7 +295,7 @@ static inline void system_reset()
 {
    int dummy;
 
-   if( queue_event_contains( reset_clear ) )
+   if( queue_event_contains( event_clear_reset ) )
    {
       // reset sequence is already initiated
       return;
@@ -295,7 +310,7 @@ static inline void system_reset()
 
    // clear event queue and setup end of reset event
    queue_event_reset();
-   queue_event_add( 8, reset_clear, 0 );
+   queue_event_add( 8, event_clear_reset, 0 );
 
    // setup bank
    set_bank( 1 );
@@ -318,6 +333,9 @@ static inline void system_reset()
 
 static inline void event_flash_sync( void *data )
 {
+   // event handler for flushing dhara journal
+   // this event is max 1 time in queue
+
    dhara_flash_sync();
 }
 

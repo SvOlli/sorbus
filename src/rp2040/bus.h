@@ -21,13 +21,6 @@ typedef struct {
    uint     shift_address;
 } bus_config_t;
 
-typedef struct {
-   uint32_t bus_state;     // cache of GPIOs
-   uint32_t reset_cycles;  //
-   uint32_t nmi_cycles;    //
-}
-bus_state_t;
-
 extern const bus_config_t bus_config;
 
 void bus_init();

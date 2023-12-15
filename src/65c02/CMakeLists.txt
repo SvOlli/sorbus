@@ -83,7 +83,7 @@ target_type(native_cpm_bootblock native_kernel)
 #   --ld-args --large-alignment
 #   )
 
-add_executable(native_writeboot1
-   native_writeboot1.s
+add_executable(native_writeboot
+   native_writeboot.s
    )
-target_type_addr(native_writeboot1 native 0x1000)
+target_type_addr(native_writeboot native 0x1000)
