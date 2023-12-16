@@ -5,7 +5,7 @@
 ; Terminal Interface Monitor
 ; Code take from 6530-004 RRIOT and heavily modified:
 ; - removed all bitbanging code to replace with subroutines for UART handling
-; - commands changed to be more expandable
+; - command interpreter changed to be more expandable and relocatable
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -212,7 +212,11 @@ S2:
 ERROPR:
    lda   #'?'           ; operator err, type '?', restart
    jsr   WROC
+.ifpc02
+   bra   start
+.else
    bcc   start          ; jmp   START (wroc returns cy=0)
+.endif
 
 DCMP:
    sec                  ; TMP2-TMP0 double subtract
@@ -252,7 +256,11 @@ BYTE:
    beq   BY2
    pla                  ; err, clear jsr adr in stack
    pla
+.ifpc02
+   bra   ERROPR
+.else
    jmp   ERROPR
+.endif
 
 BY2:
    jsr   CADD           ; incr cksum
@@ -632,11 +640,14 @@ T2T21:
 
 ;increment (TMP0,TMP0+1) by 1
 .ifpc02
+   ; technically not 65C02 code, but this version uses 2 bytes less of ROM
 INCTMP:
    inc   TMP0+0         ; low byte
    bne   INCT1
    inc   TMP0+1         ; high byte
-   beq   SETWRP
+   bne   INCT1
+   inc   WRAP           ; pointer has wrapped around - set flag
+   rts
 INCT1:
    rts
 .else
@@ -649,11 +660,11 @@ INCT1:
    inc   TMP0+1         ; high byte
    beq   SETWRP
    rts
-.endif
 
 SETWRP:
    inc   WRAP           ; pointer has wrapped around - set flag
    rts
+.endif
 
 ; read hex adr; return ho in TMP0; LO in TMP0+1 and CY=1
 ;    if SP CY=0

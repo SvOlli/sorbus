@@ -39,8 +39,6 @@
 
 // set this to 5000000 to run for 5 million cycles while keeping time
 //#define SPEED_TEST 5000000
-// the number of clock cycles a timer interrupt is triggered
-#define INTERRUPT_LENGTH (8)
 // this is where the write protected area starts
 #define ROM_START (0xE000)
 // this is where the kernel is in raw flash
@@ -70,7 +68,7 @@ bool irq_timer_triggered       = false;
 bool cpu_running               = false;
 bool cpu_running_request       = true;
 
-uint32_t watchdog_states[256]  = { 0 };
+uint32_t buslog_states[256]    = { 0 };
 uint32_t watchdog_cycles_total = 0;
 
 uint16_t dhara_flash_size = 0;
@@ -115,6 +113,8 @@ void set_bank( uint8_t bank )
    }
    else
    {
+      // if there are too many banks, the data could be copied from flash
+      // to a single 8K RAM buffer during each bankswitch
       romvec = &rom[(bank - 1) * 0x2000];
    }
 }
@@ -448,10 +448,10 @@ void debug_dump_state( int lineno, uint32_t _state )
 void debug_backtrace()
 {
    printf( "system trap triggered, last cpu actions:\n" );
-   for( int i = 0; i < count_of(watchdog_states); ++i )
+   for( int i = 0; i < count_of(buslog_states); ++i )
    {
-      uint32_t _state = watchdog_states[(i + _queue_cycle_counter) & 0xFF];
-      debug_dump_state( count_of(watchdog_states)-i, _state );
+      uint32_t _state = buslog_states[(i + _queue_cycle_counter) & 0xFF];
+      debug_dump_state( count_of(buslog_states)-i, _state );
    }
    debug_dump_state( 0, gpio_get_all() );
 }
@@ -728,18 +728,6 @@ void bus_run()
    bus_init();
    system_init();
    system_reboot();
-   for(int i = 0; i < 10; ++i )
-   {
-      gpio_set_mask( bus_config.mask_clock );
-      sleep_us( 2 );
-      gpio_clr_mask( bus_config.mask_clock );
-      sleep_us( 2 );
-   }
-   //event_clear_reset( 0 );
-
-   // inject keypress for menu to run in tight loop
-   int data = 'S';
-   queue_try_add( &queue_uart_read, &data );
 
    time_start = time_us_64();
    for(cyc = 0; cyc < SPEED_TEST; ++cyc)
@@ -803,7 +791,10 @@ void bus_run()
       gpio_clr_mask( bus_config.mask_clock );
 
       // log last states
-      watchdog_states[(_queue_cycle_counter) & 0xff] = gpio_get_all();
+      if( state & bus_config.mask_rdy )
+      {
+         buslog_states[(_queue_cycle_counter) & 0xff] = gpio_get_all();
+      }
    }
 
 #if SPEED_TEST
@@ -839,6 +830,9 @@ void system_init()
 
 void system_reboot()
 {
+   // clear out cpu state log
+   memset( &buslog_states[0], 0, sizeof(buslog_states) );
+
    // make sure that RDY line is high
    gpio_set_mask( bus_config.mask_rdy | bus_config.mask_irq | bus_config.mask_nmi );
 

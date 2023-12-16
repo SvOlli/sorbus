@@ -37,19 +37,19 @@ reset:
    dex
    bpl   :-
    txs
-   lda   #$01
+   lda   #$00
    dec               ; 65C02 opcode that is a NOP in 6502
-   beq   @iloop      ; no NMOS 6502, continue
+   bne   @iloop      ; no NMOS 6502, continue
 @printerror:
-   ldx   #$00
+   tax
 @printchar:
    lda   @no65c02message,x
-   jsr   chrout
-   iny
-   bne   @printchar
    beq   @printerror ; endless loop reprinting message
+   jsr   chrout
+   inx
+   bne   @printchar
 @no65c02message:
-   .byte "65C02 required", 10, 0
+   .byte "65C02 required", 13, 0
 
 @iloop:
    jsr   PRINT

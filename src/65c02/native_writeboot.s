@@ -25,8 +25,6 @@ PRINT  = $FF09
    bcs   :-
 
    jsr   CHROUT         ; print out successful input, just for fun
-   lda   #10
-   jsr   CHROUT
 
    asl                  ; convert bootblock number to starting sector
    asl
@@ -41,6 +39,9 @@ PRINT  = $FF09
    sta   ID_MEM+0
    lda   #$E0           ; $E000 is sane, as DMA always works with RAM
    sta   ID_MEM+1
+
+   lda   #10
+   jsr   CHROUT
 
    ldy   #$40           ; number of sectors to write
    lda   #'.'           ; print out a dot for every sector written

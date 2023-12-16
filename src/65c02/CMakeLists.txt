@@ -89,3 +89,8 @@ add_executable(native_writeboot
    native_writeboot.s
    )
 target_type_addr(native_writeboot native 0x1000)
+
+add_executable(native_memcheck
+   memcheck.s
+   )
+target_type_addr(native_memcheck native 0x0100)

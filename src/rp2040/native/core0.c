@@ -68,6 +68,7 @@ void console_rp2040()
 
    console_cpu_pause( true );
    debug_backtrace();
+   debug_heap();
    debug_clocks();
 
    switch( invoke_type )
