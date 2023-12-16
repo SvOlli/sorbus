@@ -64,12 +64,12 @@ void console_type_set( console_type_t type )
 
 void console_rp2040()
 {
+   int in;
+   bool leave = false;
+
    const char *invoke = "magic key combo";
 
    console_cpu_pause( true );
-   debug_backtrace();
-   debug_heap();
-   debug_clocks();
 
    switch( invoke_type )
    {
@@ -82,12 +82,42 @@ void console_rp2040()
       default:
          break;
    }
-   printf( "\n%s triggered! CPU stopped using RDY"
-           "\nexpect some nice menu here in the future"
-           "\nrebooting system!\n", invoke );
+   printf( "\n%s triggered! CPU stopped using RDY\n"
+           , invoke );
+
+   while( !leave )
+   {
+      printf( "\nB)acktrace, E)vent queue, H)eap, I)nternal drive, S)peeds"
+              "\nC)ontinue, R)eboot ? " );
+      in = toupper( getchar() );
+      switch( in )
+      {
+         case 'B':
+            debug_backtrace();
+            break;
+         case 'E':
+            debug_queue_event( "Event queue" );
+            break;
+         case 'H':
+            debug_heap();
+            break;
+         case 'I':
+            debug_internal_drive();
+            break;
+         case 'S':
+            debug_clocks();
+            break;
+         case 'C':
+            leave = true;
+            break;
+         case 'R':
+            leave = true;
+            system_reboot();
+            break;
+      }
+   }
 
    console_cpu_pause( false );
-   system_reboot();
 
    console_type = CONSOLE_TYPE_65C02;
 

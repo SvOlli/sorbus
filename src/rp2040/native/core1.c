@@ -37,8 +37,6 @@
 #include "../dhara/error.h"
 
 
-// set this to 5000000 to run for 5 million cycles while keeping time
-//#define SPEED_TEST 5000000
 // this is where the write protected area starts
 #define ROM_START (0xE000)
 // this is where the kernel is in raw flash
@@ -156,7 +154,7 @@ static inline void event_estimate_cpufreq( void *data )
    static uint64_t time_last = 0;
    uint64_t time_now = time_us_64();
 
-   if( bus_config.mask_rdy )
+   if( state & bus_config.mask_rdy )
    {
       // only count time when CPU is not halted
       time_per_mcc = time_now - time_last;
@@ -719,26 +717,12 @@ static inline void handle_io()
  ******************************************************************************/
 void bus_run()
 {
-#if SPEED_TEST
-   uint64_t time_start, time_end;
-   double time_exec;
-   uint32_t time_hz;
-   uint32_t cyc;
-
-   bus_init();
-   system_init();
-   system_reboot();
-
-   time_start = time_us_64();
-   for(cyc = 0; cyc < SPEED_TEST; ++cyc)
-#else
    bus_init();
    system_init();
    system_reboot();
 
    // when not running as speed test run main loop forever
    for(;;)
-#endif
    {
       // check if internal events need processing
       queue_event_process();
@@ -796,26 +780,6 @@ void bus_run()
          buslog_states[(_queue_cycle_counter) & 0xff] = gpio_get_all();
       }
    }
-
-#if SPEED_TEST
-   time_end = time_us_64();
-   time_exec = (double)(time_end - time_start) / CLOCKS_PER_SEC / 10000;
-   time_hz = (double)cyc / time_exec;
-
-   debug_backtrace();
-   debug_clocks();
-   debug_heap();
-   debug_internal_drive();
-   //debug_hexdump( rom, sizeof(rom), 0xE000 );
-
-   printf( "\n" );
-   for(;;)
-   {
-      printf( "\rbus has terminated after %d cycles in %.06f seconds: %d.%03dMHz ",
-              cyc, time_exec, time_hz / 1000000, (time_hz % 1000000) / 1000 );
-      sleep_ms( 2000 );
-   }
-#endif
 }
 
 
