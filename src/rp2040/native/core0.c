@@ -94,24 +94,31 @@ void console_rp2040()
       switch( in )
       {
          case 'B':
+            printf( "%c\n", in );
             debug_backtrace();
             break;
          case 'E':
+            printf( "%c\n", in );
             debug_queue_event( "Event queue" );
             break;
          case 'H':
+            printf( "%c\n", in );
             debug_heap();
             break;
          case 'I':
+            printf( "%c\n", in );
             debug_internal_drive();
             break;
          case 'S':
+            printf( "%c\n", in );
             debug_clocks();
             break;
          case 'C':
+            printf( "%c\n", in );
             leave = true;
             break;
          case 'R':
+            printf( "%c\n", in );
             leave = true;
             system_reboot();
             break;

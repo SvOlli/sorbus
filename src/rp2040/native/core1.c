@@ -122,6 +122,12 @@ void set_bank( uint8_t bank )
 
 void system_trap( int type )
 {
+   // when stopped don't create more traps
+   if( !(state & bus_config.mask_rdy) )
+   {
+      return;
+   }
+
    // notify core 0 to take over
    if( queue_try_add( &queue_uart_write, &type ) )
    {
