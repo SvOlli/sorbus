@@ -7,6 +7,7 @@
  * for the Sorbus Computer
  */
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <pico/multicore.h>

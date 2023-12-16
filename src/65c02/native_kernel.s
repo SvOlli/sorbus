@@ -23,10 +23,6 @@ copybios   := TRAMPOLINE
 ; ...best not make use of opcode that are not supported by 65816 CPUs
 .PC02
 
-;-------------------------------------------------------------------------
-; jumptable
-;-------------------------------------------------------------------------
-
 reset:
    cld
    sei
@@ -44,7 +40,7 @@ reset:
    tax
 @printchar:
    lda   @no65c02message,x
-   beq   @printerror ; endless loop reprinting message
+   beq   @printerror ; endless loop rePRINTing message
    jsr   chrout
    inx
    bne   @printchar
@@ -56,6 +52,7 @@ reset:
    .byte 10,"Sorbus Native V", VERSION, ": 0-3)Boot, T)IM, W)ozMon? ", 0
 :
    jsr   chrinuc
+   bcs   :-
    cmp   #'0'
    bcc   :+
    cmp   #'4'
@@ -94,28 +91,27 @@ uirq:
    and   #$10
    bne   ubrk
    lda   ASAVE
-   jsr   print
+   jsr   PRINT
    .byte 10,"IRQ",10,0
    bit   TMICRL
    bmi   sbtimer
    rti
 
 ubrk:
-   ;stz   TRAP
+   stz   TRAP
    lda   ASAVE
-   jsr   print
+   jsr   PRINT
    .byte 10,"BRK",10,0
-   stz   $DF01
    rti
 
 unmi:
    ;stz   TRAP
-   jsr   print
+   jsr   PRINT
    .byte 10,"NMI",10,0
    bit   TMICRL
    bpl   notimer
 sbtimer:
-   jsr   print
+   jsr   PRINT
    .byte "triggered by sorbus timer",10,0
 notimer:
    rti
@@ -235,130 +231,56 @@ uppercase:
 :
    rts
 
-prhex16:          ; output 16 bit value in X,A
+prhex16:                ; output 16 bit value in X,A
    pha
    txa
    jsr   prhex
    pla
    ; fall through
-prhex:            ; output 8 bit value in A
-   pha            ; save A for LSD
-   lsr            ; move MSD down to LSD
+prhex:                  ; output 8 bit value in A
+   pha                  ; save A for LSD
+   lsr                  ; move MSD down to LSD
    lsr
    lsr
    lsr
-   jsr   :+       ; print MSD
-   pla            ; restore A for LSD
-   and   #$0f     ; mask LSD for hex print
+   jsr   :+             ; print MSD
+   pla                  ; restore A for LSD
+   and   #$0f           ; mask LSD for hex PRINT
 :
-   ora   #'0'     ; add ascii "0"
-   cmp   #':'     ; is still decimal
-   bcc   :+       ; yes -> output
-   adc   #$06     ; adjust offset for letters a-f
+   ora   #'0'           ; add ascii "0"
+   cmp   #':'           ; is still decimal
+   bcc   :+             ; yes -> output
+   adc   #$06           ; adjust offset for letters a-f
 :
    jmp   chrout
 
-
-bank1jsr:
-   php
-   pha
-   phx
-   phy
-   tsx
-   lda   $0103,x     ; find address lobyte of payload address
-   sta   TMP16+0     ; save it
-   clc
-   adc   #$02        ; skip two bytes on return address (payload)
-   sta   $0103,x
-   lda   $0104,x     ; find address hibyte of payload address
-   sta   TMP16+1     ; save it
-   bcc   :+
-   inc   $0104,x     ; adjust hibyte of return address, if required
-:
-   ldy   #$01        ; jsr stores return address - 1 on stack, compensate
-   lda   (TMP16),y   ; get lobyte of payload (target address)
-   pha
-   iny
-   lda   (TMP16),y   ; get hibyte of payload (target address)
-   sta   TMP16+1     ; reuse vector for jump address
-   pla
-   sta   TMP16+0
-   ply
-   plx
-   pla
-   plp
-   jmp   (TMP16)
+xirq:
+   lda   PSAVE          ; XIRQDONE needs to be called with A=PSAVE
+   jmp   XIRQDONE
 
 .segment "BIOS"
 BIOS:
-CHRIN:               ; reading character from UART
+CHRIN:                  ; read character from UART
    jmp   chrin
-CHROUT:              ; writing character to UART
+CHROUT:                 ; write character to UART
    jmp   chrout
-CHRCFG:              ; setting parameters for UART
+CHRCFG:                 ; set parameters for UART
    jmp   chrcfg
-PRINT:               ; print a string while keeping all registers
-   jmp   print
-BANK1JSR:            ; from RAM, jump to ROM bank 1 to a subroutine
-   php
-   pha
-   lda   BANK
-   sta   PSAVE
-   lda   #$01
-   sta   BANK
-   pla
-   plp
-   jsr   bank1jsr
-   php
-   pha
-   lda   PSAVE
-   sta   BANK
-   pla
-   plp
-   rts
-
-chrin:
-   lda   UARTRS      ; check for size of input queue
-   bne   :+          ; data available, fetch it
-   sec               ; no input -> return 0 and set carry
-   rts
-:
-   lda   UARTRD      ; get key value
-   clc
-   rts
-
-chrout:
-   bit   UARTWS      ; wait for buffer to accept data
-   bmi   chrout
-   sta   UARTWR      ; write data to output queue
-   rts
-
-chrcfg:
-   bcs   @clear      ; carry on: set bits, off: clear bits
-   ora   UARTCF
-   bra   @store      ; bne would also work here
-@clear:
-   eor   #$ff
-   and   UARTCF
-@store:
-   sta   UARTCF
-   rts
-
-print:
-   sta   ASAVE       ; this routine changes A and P, so save those
+PRINT:                  ; print a string while keeping all registers
+   sta   ASAVE          ; this routine changes A and P, so save those
    php
    pla
    sta   PSAVE
-   pla               ; get address of text from stack
+   pla                  ; get address of text from stack
    sta   TMP16+0
    pla
    sta   TMP16+1
 @loop:
-   inc   TMP16+0     ; since JSR stores return address - 1, start with
-   bne   :+          ; ...incrementing the pointer
+   inc   TMP16+0        ; since JSR stores return address - 1, start with
+   bne   :+             ; ...incrementing the pointer
    inc   TMP16+1
 :
-   lda   (TMP16)     ; C02 opcode
+   lda   (TMP16)        ; C02 opcode
    beq   @out
    jsr   chrout
    bra   @loop
@@ -372,6 +294,46 @@ print:
    lda   ASAVE
    plp
    rts
+
+chrin:
+   lda   UARTRS         ; check for size of input queue
+   bne   :+             ; data available, fetch it
+   sec                  ; no input -> return 0 and set carry
+   rts
+:
+   lda   UARTRD         ; get key value
+   clc
+   rts
+
+chrout:
+   bit   UARTWS         ; wait for buffer to accept data
+   bmi   chrout
+   sta   UARTWR         ; write data to output queue
+   rts
+
+chrcfg:
+   bcs   @clear         ; carry on: set bits, off: clear bits
+   ora   UARTCF
+   bra   @store         ; bne would also work here
+@clear:
+   eor   #$ff
+   and   UARTCF
+@store:
+   sta   UARTCF
+   rts
+
+XIRQ:
+   sta   ASAVE
+   lda   BANK
+   sta   PSAVE
+   lda   #$01
+   sta   BANK
+   jmp   xirq
+XIRQDONE:
+   ; A=bank to return
+   sta   BANK
+   lda   ASAVE
+   rti
 
 RESET:
    lda   #$01

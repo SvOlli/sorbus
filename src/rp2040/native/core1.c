@@ -66,7 +66,9 @@ bool irq_timer_triggered       = false;
 bool cpu_running               = false;
 bool cpu_running_request       = true;
 
-uint32_t buslog_states[256]    = { 0 };
+// number of states should be power of 2
+uint32_t buslog_states[512]    = { 0 };
+uint     buglog_index          = 0;
 uint32_t watchdog_cycles_total = 0;
 
 uint16_t dhara_flash_size = 0;
@@ -120,7 +122,12 @@ void set_bank( uint8_t bank )
 
 void system_trap( int type )
 {
-   queue_try_add( &queue_uart_write, &type );
+   // notify core 0 to take over
+   if( queue_try_add( &queue_uart_write, &type ) )
+   {
+      // stop the CPU as soon as possible
+      gpio_clr_mask( bus_config.mask_rdy );
+   }
 }
 
 
@@ -448,7 +455,7 @@ void debug_backtrace()
    printf( "system trap triggered, last cpu actions:\n" );
    for( int i = 0; i < count_of(buslog_states); ++i )
    {
-      uint32_t _state = buslog_states[(i + _queue_cycle_counter) & 0xFF];
+      uint32_t _state = buslog_states[(i + buglog_index) & (count_of(buslog_states)-1)];
       debug_dump_state( count_of(buslog_states)-i, _state );
    }
    debug_dump_state( 0, gpio_get_all() );
@@ -771,14 +778,15 @@ void bus_run()
          handle_ramrom();
       }
 
-      // done: set clock to low
-      gpio_clr_mask( bus_config.mask_clock );
-
       // log last states
       if( state & bus_config.mask_rdy )
       {
-         buslog_states[(_queue_cycle_counter) & 0xff] = gpio_get_all();
+         // state is not valid on the data when RP2040 is writing
+         buslog_states[buglog_index++ & (count_of(buslog_states)-1)] = gpio_get_all();
       }
+
+      // done: set clock to low
+      gpio_clr_mask( bus_config.mask_clock );
    }
 }
 
