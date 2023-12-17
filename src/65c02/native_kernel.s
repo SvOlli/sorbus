@@ -58,6 +58,10 @@ reset:
    cmp   #'4'
    bcc   @bootblock
 :
+   cmp   #'R'
+   bne   :+
+   jmp   execram
+:
    cmp   #'T'
    bne   :+
    jmp   timstart
@@ -171,7 +175,7 @@ boot:
    ldx   #$04
 :
    lda   SECTOR_BUFFER+3,x
-   cmp   @signature,x
+   cmp   signature,x
    bne   @notfound
    dex
    bpl   :-
@@ -186,6 +190,7 @@ boot:
    bne   :-
    ; leave with Y = 0, as required in @jmpcode
 
+execram:
    ldx   #(@trampolineend-@trampoline-1)
 :
    lda   @trampoline,x
@@ -195,10 +200,6 @@ boot:
    jsr   PRINT
    .byte "Go",10,0
    jmp   TRAMPOLINE+@jmpbank0-@trampoline
-
-@signature:
-   .byte "SBC23"
-@signatureend:
 
 @trampoline:
    inc   BANK              ; this routine will only be called from bank 0 (RAM)
@@ -218,6 +219,10 @@ boot:
    inx
    bne   :-
    rts
+
+signature:
+   .byte "SBC23"
+signatureend:
 
 chrinuc:
    jsr   chrin

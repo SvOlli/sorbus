@@ -111,7 +111,6 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
    }
    else
    {
-      bool insert = false;
       // due to speed constrains, only one event per timestamp is allowed
       if( newevent->timestamp == _queue_next_event->timestamp )
       {
@@ -138,12 +137,10 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
             }
             else if( newevent->timestamp < current->timestamp )
             {
-               insert = true;
                break;
             }
             previous = current;
          }
-         assert( insert );
          previous->next = newevent;
          newevent->next = current;
       }
