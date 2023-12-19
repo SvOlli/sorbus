@@ -230,7 +230,7 @@ chrinuc:
 uppercase:
    cmp   #'a'
    bcc   :+
-   cmp   #'z'
+   cmp   #'z'+1
    bcs   :+
    and   #$df
 :

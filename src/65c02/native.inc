@@ -39,15 +39,15 @@ WDCH   = WDBASE+$3 ; set high counter, stars watchdog, reset when running
 IDBASE = $DF70
 IDLBAL = IDBASE+$0 ; LBA low
 IDLBAH = IDBASE+$1 ; LBA high
+ID_LBA = IDBASE+$0 ; alternative notation: ID_LBA+0/ID_LBA+1
 IDMEML = IDBASE+$2 ; DMA memory low
 IDMEMH = IDBASE+$3 ; DMA memory high
+ID_MEM = IDBASE+$2 ; alternative notation: ID_MEM+0/ID_MEM+1
 IDREAD = IDBASE+$4 ; (S) read sector (adjusts DMA memory and LBA)
                    ; (R) error code from last read ($00=ok)
 IDWRT  = IDBASE+$5 ; (S) write sector (adjusts DMA memory and LBA)
                    ; (R) error code from last write ($00=ok)
 IDTRIM = IDBASE+$7 ; sector discard (strobe)
-ID_LBA = IDBASE+$0 ; alternative notation: ID_LBA+0/ID_LBA+1
-ID_MEM = IDBASE+$2 ; alternative notation: ID_MEM+0/ID_MEM+1 
 
 UVNMI  = $DF7A     ; NMI does JMP (UVNMI)
 UVBRK  = $DF7C     ; if UVIRQ handles BRK, this vector should be used

@@ -16,9 +16,3 @@
 ; this routine saves all CPU registers, including P
 .global  PRINT
 
-; $FF0C: jump from bank 0 (RAM) to a subroutine in bank 1 (Native Kernel)
-; usage:
-; jsr BANK1JSR
-; .word address
-; this routine saves all CPU registers, including P, it is as transparent as jsr
-.global  BANK1JSR
