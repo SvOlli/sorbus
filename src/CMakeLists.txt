@@ -4,6 +4,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
    message(FATAL_ERROR "In-source build detected!")
 endif()
 
+option(CPM65_DIR "directory of CP/M 65 source code")
 # initialize the SDK based on PICO_SDK_PATH and BOARD config
 # note: this must happen before project()
 set(PICO_BOARD_HEADER_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/rp2040")

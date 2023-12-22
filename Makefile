@@ -1,4 +1,9 @@
 
+# Parameters
+CPM65_PATH = ../cpm65
+#EXTRA_CMAKE_ARGS += -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+
 $(info This Makefile is not required and for convenience only)
 ifeq ($(PICO_SDK_PATH),)
 PICO_SDK_PATH=$(shell readlink -f ../pico-sdk)
@@ -6,8 +11,13 @@ $(info Using local pico sdk at: $(PICO_SDK_PATH))
 else
 $(info Using global pico sdk at: $(PICO_SDK_PATH))
 endif
-PICO_SDK_PATH_CMAKE ?= -DPICO_SDK_PATH=$(PICO_SDK_PATH)
-#EXTRA_CMAKE_ARGS += -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+EXTRA_CMAKE_ARGS += -DPICO_SDK_PATH=$(PICO_SDK_PATH)
+
+CMAKE_CPM65_PATH = $(realpath $(CPM65_PATH))
+ifneq ($(CMAKE_CPM65_PATH),)
+EXTRA_CMAKE_ARGS += -DCPM65_PATH=$(CMAKE_CPM65_PATH)
+endif
+
 
 RELEASE_ARCHIVE := SorbusComputerCores.zip
 
