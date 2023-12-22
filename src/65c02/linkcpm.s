@@ -16,6 +16,9 @@
 NMI:
 RESET:
 IRQ:
+   stx   $DF0C
+   sty   $DF0D
+   sta   $DF01          ; TRAP
    rti
 
 .segment "VECTORS"
