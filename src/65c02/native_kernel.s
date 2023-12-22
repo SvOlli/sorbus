@@ -16,6 +16,7 @@ SECTOR_BUFFER := $DF80
 TRAMPOLINE    := $0100
 
 .include "native_kernel.inc"
+.global  cpmtests
 
 copybios   := TRAMPOLINE
 
@@ -57,6 +58,13 @@ reset:
    bcc   :+
    cmp   #'4'
    bcc   @bootblock
+:
+   cmp   #'I'
+   bne   :+
+   lda   #<cpmtests
+   ldx   #>cpmtests
+   jsr   prhex16
+   bne   @iloop
 :
    cmp   #'R'
    bne   :+

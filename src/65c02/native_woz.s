@@ -62,7 +62,7 @@ PROMPT          :=     $5c            ; "\": prompt character
 
 wozstart:
    cli
-   lda   #ESC     ; KBD and DSP control register mask
+   lda   #ESC           ; KBD and DSP control register mask
 
 ; Program falls through to the GETLINE routine to save some program bytes
 ; Please note that Y still holds $7F, which will cause an automatic Escape
@@ -72,28 +72,28 @@ wozstart:
 ;-------------------------------------------------------------------------
 
 notcr:
-   cmp   #DEL        ; check for alternative backspace key
-   beq   backspace   ;   and jump to handling
-   cmp   #BS         ; check for backspace key
-   beq   backspace   ;   and jump to handling
-   cmp   #ESC        ; check for escape key
-   beq   escape      ;   and jump to handling
-   iny               ; advance to next char in buffer
-   bpl   nextchar    ; treat input buffer overflow like escape key
+   cmp   #DEL           ; check for alternative backspace key
+   beq   backspace      ;   and jump to handling
+   cmp   #BS            ; check for backspace key
+   beq   backspace      ;   and jump to handling
+   cmp   #ESC           ; check for escape key
+   beq   escape         ;   and jump to handling
+   iny                  ; advance to next char in buffer
+   bpl   nextchar       ; treat input buffer overflow like escape key
 
 escape:
    lda   #PROMPT
-   jsr   CHROUT   ; print prompt character
+   jsr   CHROUT         ; print prompt character
 
 getline:
    lda   #LF
-   jsr   CHROUT   ; print newline
+   jsr   CHROUT         ; print newline
 
-   ldy   #$01     ; start a new input, 1 compensates next line
+   ldy   #$01           ; start a new input, 1 compensates next line
 
 backspace:
    dey
-   bmi   getline  ; buffer underflow -> restart
+   bmi   getline        ; buffer underflow -> restart
 
 nextchar:
 .if 1
@@ -103,55 +103,55 @@ nextchar:
    bcs   nextchar
    jsr   uppercase
 .endif
-   sta   IN,y     ; add to buffer
-   jsr   CHROUT   ; print character
+   sta   IN,y           ; add to buffer
+   jsr   CHROUT         ; print character
 
    cmp   #CR
-   bne   notcr    ; if it's not return loop
+   bne   notcr          ; if it's not return loop
 
 ; Line received, now let's parse it
 
-   ldy   #$ff     ; reset input index
-   lda   #$00     ; default mode is XAM
+   ldy   #$ff           ; reset input index
+   lda   #$00           ; default mode is XAM
    tax
 
 setstore:
    asl
 
 setmode:
-   sta   MODE     ; set mode flags
+   sta   MODE           ; set mode flags
 
 blskip:
    iny
 
 nextitem:
-   lda   IN,y     ; get character from buffer
-   cmp   #CR      ; CR -> end of line
+   lda   IN,y           ; get character from buffer
+   cmp   #CR            ; CR -> end of line
    beq   getline
    ora   #$80
-   cmp   #$ae     ; check for '.'
-   bcc   blskip   ; skip everything below '.', e.g. space
-   beq   setmode  ; '.' sets block XAM mode
-   cmp   #$ba     ; check for ':'
-   beq   setstore ; set STOR mode $
+   cmp   #$ae           ; check for '.'
+   bcc   blskip         ; skip everything below '.', e.g. space
+   beq   setmode        ; '.' sets block XAM mode
+   cmp   #$ba           ; check for ':'
+   beq   setstore       ; set STOR mode $
    and   #$5f
-   cmp   #'R'     ; check for 'R'
+   cmp   #'R'           ; check for 'R'
    beq   run
    stx   L
    stx   H
    sty   YSAV
 
 nexthex:
-   lda   IN,y     ; get character for hex test
+   lda   IN,y           ; get character for hex test
    cmp   #'0'
    bcc   nohex
-   cmp   #'G'     ; $41-$46
+   cmp   #'G'           ; $41-$46
    bcs   nohex
-   cmp   #':'     ; test for digit
-   bcc   dig      ; it is a digit
-   adc   #$b8     ; adjust for A-F
-   cmp   #$fa     ; test for hex letter
-   bcc   nohex    ; it isn't a hex letter
+   cmp   #':'           ; test for digit
+   bcc   dig            ; it is a digit
+   adc   #$b8           ; adjust for A-F
+   cmp   #$fa           ; test for hex letter
+   bcc   nohex          ; it isn't a hex letter
 
 dig:
    asl
@@ -159,27 +159,27 @@ dig:
    asl
    asl
 
-   ldx   #$04  ; process 4 bits
+   ldx   #$04           ; process 4 bits
 hexshift:
-   asl         ; move most significant bit into carry
-   rol   L     ; rotate carry through 16 bit address lobyte
-   rol   H     ; ...hibyte
+   asl                  ; move most significant bit into carry
+   rol   L              ; rotate carry through 16 bit address lobyte
+   rol   H              ; ...hibyte
    dex
    bne   hexshift
    iny
    bne   nexthex
 
 nohex:
-   cpy   YSAV     ; at least one digit in buffer
-   beq   escape   ; no -> restart
+   cpy   YSAV           ; at least one digit in buffer
+   beq   escape         ; no -> restart
 
-   bit   MODE        ; check top 2 bits of mode
-   bvc   notstore    ; bit 6: 0 is STOR, 1 is XAM or block XAM
+   bit   MODE           ; check top 2 bits of mode
+   bvc   notstore       ; bit 6: 0 is STOR, 1 is XAM or block XAM
 
 ; STOR mode, save LSD of new hex byte
 
-   lda   L           ; LSD of hex data
-   sta   (STL,x)     ; X=0 -> store at address in STL
+   lda   L              ; LSD of hex data
+   sta   (STL,x)        ; X=0 -> store at address in STL
    inc   STL
    bne   nextitem
    inc   STH
@@ -191,49 +191,49 @@ tonextitem:
 ;-------------------------------------------------------------------------
 
 run:
-   jmp (XAML)        ; execute supplied address
+   jmp   (XAML)         ; execute supplied address
 
 ;-------------------------------------------------------------------------
 ;  We're not in Store mode
 ;-------------------------------------------------------------------------
 
 notstore:
-   bmi   xamnext     ; bit 7: 0=XAM, 1=block XAM
+   bmi   xamnext        ; bit 7: 0=XAM, 1=block XAM
 
 ; We're in XAM mode now
-   ldx   #$02        ; copy 2 bytes
+   ldx   #$02           ; copy 2 bytes
 setaddr:
-   lda   L-1,x       ; copy hex data to
-   sta   STL-1,x     ; ..."store index"
-   sta   XAML-1,x    ; ...and "XAM index"
+   lda   L-1,x          ; copy hex data to
+   sta   STL-1,x        ; ..."store index"
+   sta   XAML-1,x       ; ...and "XAM index"
    dex
    bne   setaddr
 
 ; Print address and data from this address, fall through next BNE.
 
 nextprint:
-   bne   prdata      ; no address to print
+   bne   prdata         ; no address to print
    lda   #LF
-   jsr   CHROUT      ; start new line
+   jsr   CHROUT         ; start new line
    lda   XAMH
-   jsr   prhex       ; print hibyte of address
+   jsr   prhex          ; print hibyte of address
    lda   XAML
-   jsr   prhex       ; print lobyte of address
-   lda   #':'        ; ":"
-   jsr   CHROUT      ; print colon
+   jsr   prhex          ; print lobyte of address
+   lda   #':'           ; ":"
+   jsr   CHROUT         ; print colon
 
 prdata:
-   lda   #' '        ; " "
-   jsr   CHROUT      ; print space
-   lda   (XAML,x)    ; get data from address
-   jsr   prhex       ; print byte
+   lda   #' '           ; " "
+   jsr   CHROUT         ; print space
+   lda   (XAML,x)       ; get data from address
+   jsr   prhex          ; print byte
 
 xamnext:
-   stx   MODE        ; set mode to XAM
-   lda   XAML        ; check if
-   cmp   L           ; ...there's
-   lda   XAMH        ; ...more to
-   sbc   H           ; ...print
+   stx   MODE           ; set mode to XAM
+   lda   XAML           ; check if
+   cmp   L              ; ...there's
+   lda   XAMH           ; ...more to
+   sbc   H              ; ...print
    bcs   tonextitem
 
    inc   XAML
@@ -241,10 +241,13 @@ xamnext:
    inc   XAMH
 :
    lda   XAML
-   and   #$07        ; start new line every 8 addresses
-   bpl   nextprint   ; jmp
+   and   #$07           ; start new line every 8 addresses
+   bpl   nextprint      ; jmp
 
 ;-------------------------------------------------------------------------
 ;  WozMon end
 ;-------------------------------------------------------------------------
 
+.out "   =================="
+.out .sprintf( "   WozMon size: $%04x", * - wozstart )
+.out "   =================="

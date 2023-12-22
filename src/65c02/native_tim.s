@@ -749,3 +749,7 @@ timvecs:
    .word timnmint
    .word timnmint       ; default user intrq to nmint
    .word timintrq
+
+.out "   ==============="
+.out .sprintf( "   TIM size: $%04x", * - timstart )
+.out "   ==============="

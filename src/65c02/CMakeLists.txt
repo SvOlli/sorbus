@@ -66,6 +66,7 @@ src2hex(a1hello.hex a1hello 0x0800)
 
 add_executable(native_kernel
    native_kernel.s
+   native_cpmfs.s
    native_tim.s
    native_woz.s
    )
