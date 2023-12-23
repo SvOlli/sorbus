@@ -16,6 +16,8 @@ SECTOR_BUFFER := $DF80
 TRAMPOLINE    := $0100
 
 .include "native_kernel.inc"
+.include "native_cpmfs.inc"
+
 .global  cpmtests
 
 copybios   := TRAMPOLINE
@@ -27,10 +29,10 @@ copybios   := TRAMPOLINE
 reset:
    cld
    sei
-   ldx   #$05
+   ldx   #$07
 :
    lda   @vectab,x
-   sta   UVNMI,x
+   sta   UVBRK,x
    dex
    bpl   :-
    txs
@@ -91,17 +93,15 @@ reset:
    jmp   boot+2
 
 @vectab:
-   .word unmi
-   .word ubrk
-   .word uirq
+   .word brkhnd         ; UVBRK: IRQ handler dispatches BRK
+   .word unmi           ; UVNMI: hardware NMI handler
+   .word uirq           ; UVNBI: IRQ handler dispatches non-BRK
+   .word irqcheck       ; UVIRQ: hardware IRQ handler
 
+hirq:
+   stz   TRAP
 uirq:
    ;stz   TRAP
-   sta   ASAVE
-   pla
-   pha
-   and   #$10
-   bne   ubrk
    lda   ASAVE
    jsr   PRINT
    .byte 10,"IRQ",10,0
@@ -109,12 +109,14 @@ uirq:
    bmi   sbtimer
    rti
 
+.if 0
 ubrk:
    stz   TRAP
    lda   ASAVE
    jsr   PRINT
    .byte 10,"BRK",10,0
    rti
+.endif
 
 unmi:
    ;stz   TRAP
@@ -267,9 +269,51 @@ prhex:                  ; output 8 bit value in A
 :
    jmp   chrout
 
-xirq:
-   lda   PSAVE          ; XIRQDONE needs to be called with A=PSAVE
-   jmp   XIRQDONE
+brkhandler:
+   stx   BRK_SX
+   sty   BRK_SY
+   tsx
+   lda   $0102,x        ; get the return address from stack
+   sta   TMP16+0
+   lda   $0103,x
+   sta   TMP16+1
+
+   lda   TMP16+0        ; decrease it by one to get the BRK operand
+   bne   :+
+   dec   TMP16+1
+:
+   dec   TMP16+0
+   lda   (TMP16)        ; finally get BRK operand!
+
+   asl
+   tax
+   lda   @jumptable+0,x
+   sta   TMP16+0
+   lda   @jumptable+1,x
+   sta   TMP16+1
+   lda   BRK_SA
+   ldx   BRK_SX
+   jsr   @jump          ; jsr (indirect) is missing in opcodes :(
+
+   ldy   BRK_SY
+   ldx   BRK_SX
+   jmp   brkdone
+@jump:
+   jmp   (TMP16)
+
+@jumptable:
+   .word prhex, prhex16
+   .word cpmname, cpmload, cpmsave, cpmerase, cpmdir
+   .word trap
+trap:
+   stx   $DF0C
+   sty   $DF0D
+   sta   $DF01
+   rts
+
+;-------------------------------------------------------------------------
+; BIOS calls $FF00-$FFFF
+;-------------------------------------------------------------------------
 
 .segment "BIOS"
 BIOS:
@@ -335,19 +379,6 @@ chrcfg:
    sta   UARTCF
    rts
 
-XIRQ:
-   sta   ASAVE
-   lda   BANK
-   sta   PSAVE
-   lda   #$01
-   sta   BANK
-   jmp   xirq
-XIRQDONE:
-   ; A=bank to return
-   sta   BANK
-   lda   ASAVE
-   rti
-
 RESET:
    lda   #$01
    sta   BANK
@@ -356,6 +387,36 @@ NMI:
    jmp   (UVNMI)
 IRQ:
    jmp   (UVIRQ)
+
+irqcheck:
+   sta   BRK_SA
+   pla
+   pha
+   and   #$10
+   bne   :+
+   lda   BRK_SA
+   jmp   (UVNBI)
+:
+   lda   BRK_SA
+   jmp   (UVBRK)
+
+brkhnd:
+   lda   BANK
+   sta   BRK_SB
+   lda   #$01
+   sta   BANK
+   jmp   brkhandler
+
+brkdone:
+   lda   BRK_SB
+   sta   BANK
+   lda   BRK_SA
+   rti
+
+
+.out "   ================"
+.out .sprintf( "   BIOS size: $%04x", * - BIOS )
+.out "   ================"
 
 .segment "VECTORS"
    .word NMI

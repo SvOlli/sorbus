@@ -68,10 +68,10 @@ cpm_nblck = cpm_fname + $16 ; byte: number of blocks (end of lblck)
 cpm_cblck = cpm_fname + $17 ; byte: current block (pos in lblck)
 cpm_nsect = cpm_fname + $18 ; word: load,save: number of sectors (save: left)
 cpm_lblck = cpm_fname + $1a ; wordlist: load,save: block list for file
-cpm_blend = cpm_lblck + $40
+cpm_blend = cpm_lblck + $40 ; end of memory used, should be $035a
 
 buffer    = $df80        ; scratchbuffer
-tmp16     = $fe
+tmp16     = $fe          ; also used by jsr PRINT
 
 .define  DEBUG 0
 
@@ -221,6 +221,8 @@ cpmname:
    cpx   #$0c
    bcc   @loop
 @done:
+cpmexiterr:
+   sec
    rts
 
 cpmload:
@@ -230,21 +232,16 @@ cpmload:
    ldx   #<i_getlblks
    jsr   scandir
 
-   bne   :+
-   sec
-   rts
-:
-   jsr   loadfile
-   clc
-   rts
+   beq   cpmexiterr
+   ldx   #$00           ; select read mode
+   jmp   dmafile
 
 cpmsave:
-   jsr   cpmerase     ; in order to replace, delete first
+   jsr   cpmerase       ; in order to replace, delete first
    jsr   setupsave
-   bcc   :+
-   rts
-:
-   jmp   savefile
+   bcs   cpmexiterr
+   ldx   #$01           ; select write mode
+   jmp   dmafile
 
 cpmdir:
    sty   cpm_fname
@@ -259,8 +256,15 @@ cpmdir:
 
    lda   tmp16+1
    beq   :+
-   lda   #$e5
+.if 1
+   lda   #$e5           ; write end of dir marker
    sta   (tmp16)
+.else
+   lda   tmp16+0        ; write end address to cpm_eaddr
+   sta   cpm_eaddr+0
+   lda   tmp16+1
+   sta   cpm_eaddr+1
+.endif
    rts
 :
    lda   #$0a
@@ -315,11 +319,8 @@ scandir:
    ora   cpm_nsect+1    ; Z=1 nothing found
    rts
 
-loadfile:
-   ldx   #$00
-   .byte $2c
-savefile:
-   ldx   #$01
+dmafile:
+   ; DMA transfer the file, X=0: load, X=1: save
    lda   cpm_saddr+0    ; copy start address
    sta   ID_MEM+0       ; to DMA
    lda   cpm_saddr+1
@@ -371,6 +372,7 @@ savefile:
    lda   tmp16+1
    cmp   cpm_nsect+1
    bne   @loop
+   clc                  ; C=0: all okay
    rts
 
 
@@ -449,6 +451,10 @@ setupsave:
    lda   #$ff
 @loopinit:
    sta   freetab,x
+   cpx   #$40
+   bcs   :+
+   sta   cpm_lblck,x    ; also clear out block list
+:
    inx
    bne   @loopinit
    stz   freetab+$00    ; can't save in directory
@@ -527,9 +533,8 @@ setupsave:
    clc
    rts
 
-
 ;-------------------------------------------------------------------------
-; helper
+; helpers
 ;-------------------------------------------------------------------------
 
 ; check if a filename matches the buffer cpm_fname
@@ -615,12 +620,11 @@ dh_erase:
    lda   #$e5
    sta   buffer,x       ; mark as deleted
    sta   cpm_dirty      ; needs to be written back
-
 @done:
    rts
 
 dh_usedblocks:
-   beq   @empty
+   beq   @empty         ; Z=1 empty directory entry
 
    txa
    ora   #$0f           ; dump to start of block table minus one
@@ -659,16 +663,16 @@ dh_usedblocks:
 
 dh_create:
    lda   cpm_cdent
-   cmp   cpm_ndent
-   bcs   @done
+   cmp   cpm_ndent      ; all required entries created?
+   bcs   @done          ; then nothing to do here
 
    lda   buffer,x
-   cmp   #$e5
-   bne   @done
+   cmp   #$e5           ; is it an empty entry?
+   bne   @done          ; no, then nothing to do here
 
    sta   cpm_dirty      ; we're going to modify the sector now
 :
-   lda   cpm_fname,y
+   lda   cpm_fname,y    ; copy entry from cpm_fname to
    sta   buffer,x       ; St F0 F1 F2 F3 F4 F5 F6 F7 E0 E1 E2
    inx
    iny
@@ -730,15 +734,11 @@ dh_getdir:
    cmp   cpm_fname
    bne   @done
 
-   lda   buffer+10,x    ; check if system file
-   bmi   @done
-
    lda   tmp16+1
    beq   @print
 
 @copy:
    lda   buffer,x
-   and   #$7f
    sta   (tmp16),y
    inx
    iny
@@ -755,11 +755,15 @@ dh_getdir:
 
    ; display on screen
 @print:
+.if 0
+   lda   buffer+$0a,x   ; check if system file
+   bmi   @done
+.endif
+
    lda   buffer+$0c,x
    bne   @done          ; not first entry, skip
 
-   lda   #' '
-   jsr   CHROUT
+   jsr   @space
    lda   #'['
    jsr   CHROUT
 @ploop:
@@ -778,10 +782,9 @@ dh_getdir:
 
    lda   #']'
    jsr   CHROUT
+@space:
    lda   #' '
-   jsr   CHROUT
-
-   rts
+   jmp   CHROUT
 
 jmphandler:
    jmp   (cpm_hndlr)

@@ -36,6 +36,12 @@ WDCM   = WDBASE+$2 ; set mid counter, write resets watchdog when running
 WDCH   = WDBASE+$3 ; set high counter, stars watchdog, reset when running
 ; reading WDxxx indicates if watchdog is enabled ($80)
 
+IRQSVB = $DF2C     ; PRELIMINARY!
+BRK_SB = IRQSVB+$0 ; bank
+BRK_SA = IRQSVB+$1 ; accumulator
+BRK_SX = IRQSVB+$2 ; X index
+BRK_SY = IRQSVB+$3 ; Y index
+
 IDBASE = $DF70
 IDLBAL = IDBASE+$0 ; LBA low
 IDLBAH = IDBASE+$1 ; LBA high
@@ -49,6 +55,7 @@ IDWRT  = IDBASE+$5 ; (S) write sector (adjusts DMA memory and LBA)
                    ; (R) error code from last write ($00=ok)
 IDTRIM = IDBASE+$7 ; sector discard (strobe)
 
+UVBRK  = $DF78     ; if UVIRQ handles BRK, vector to BRK routine
 UVNMI  = $DF7A     ; NMI does JMP (UVNMI)
-UVBRK  = $DF7C     ; if UVIRQ handles BRK, this vector should be used
+UVNBI  = $DF7C     ; if UVIRQ handles BRK, vector to non-BRK routine
 UVIRQ  = $DF7E     ; IRQ does JMP (UVIRQ)
