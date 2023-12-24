@@ -3,6 +3,13 @@ project(sorbus_65c02)
 
 include(65c02-toolchain.cmake)
 
+if( CPM65_PATH )
+   message(STATUS "CPM65 detected at '${CPM65_PATH}', adding build command")
+   add_custom_target(cpm ALL
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cpm/build.sh" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/0" "${CMAKE_CURRENT_SOURCE_DIR}/cpm" "${CPM65_PATH}"
+      )
+endif()
+
 function(src2hex hex_file bin_file startaddr)
    add_custom_target(${hex_file}
       COMMAND $<TARGET_FILE:bin2hex> $<TARGET_FILE:${bin_file}> "${startaddr}" "${hex_file}"
