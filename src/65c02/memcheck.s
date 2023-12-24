@@ -3,7 +3,7 @@ VEC    := $08
 BANK   := $df00
 EXIT   := $e000
 CHKOUT := $ff03
-PRINT  := $ff09
+PRINT  := $ff06
 IOSTRT := $d0
 IOEND  := $e0
 

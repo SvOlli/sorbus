@@ -8,9 +8,9 @@
 
 ; zeropage addresses used by this part of ROM
 
-ASAVE := $FC
-PSAVE := $FD
-TMP16 := $FE
+ASAVE := $06
+PSAVE := $05
+TMP16 := $04
 
 SECTOR_BUFFER := $DF80
 TRAMPOLINE    := $0100
@@ -25,6 +25,17 @@ copybios   := TRAMPOLINE
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
 .PC02
+
+; reasons to use 65C02 instead of NMOS:
+; - CPU can be stopped
+; - fixes:
+;   - D flag after interrupt
+;   - jmp ($xxFF)
+;   - BRK and IRQ at the same time
+; - opcodes:
+;   - phx, phy, plx, ply
+;   - lda (zp), ora (zp)
+;   - stz
 
 reset:
    cld                  ; only required for "soft reset"

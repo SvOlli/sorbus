@@ -5,7 +5,7 @@
 ; TODO find a better way to define BIOS calls
 CHRIN  = $FF00
 CHROUT = $FF03
-PRINT  = $FF09
+PRINT  = $FF06
 
 ; this code writes the memory from $2000-$3FFF to the bootblock 1
 ; it is suggested to use bin2hex to transfer the bootblock data to memory
@@ -13,7 +13,7 @@ PRINT  = $FF09
 .segment "CODE"
    jsr   PRINT
    .byte 10
-   .byte "This program writes the RAM area $E000-$FFFF to a bootblock.",10
+   .byte "This program writes the RAM area $E000-$FFFF to a bootblock.", 10
    .byte "Select bootblock to write (1-3): ", 0
 :
    jsr   CHRIN
