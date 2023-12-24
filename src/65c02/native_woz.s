@@ -3,6 +3,7 @@
 ;  WozMon for native core
 ;-------------------------------------------------------------------------
 
+.include "native_bios.inc"
 .include "native_kernel.inc"
 .segment "CODE"
 
@@ -179,7 +180,11 @@ nohex:
 ; STOR mode, save LSD of new hex byte
 
    lda   L              ; LSD of hex data
+.ifpc02
+   sta   (STL)
+.else
    sta   (STL,x)        ; X=0 -> store at address in STL
+.endif
    inc   STL
    bne   nextitem
    inc   STH
@@ -216,17 +221,21 @@ nextprint:
    lda   #LF
    jsr   CHROUT         ; start new line
    lda   XAMH
-   jsr   prhex          ; print hibyte of address
+   jsr   prhex8         ; print hibyte of address
    lda   XAML
-   jsr   prhex          ; print lobyte of address
+   jsr   prhex8         ; print lobyte of address
    lda   #':'           ; ":"
    jsr   CHROUT         ; print colon
 
 prdata:
    lda   #' '           ; " "
    jsr   CHROUT         ; print space
+.ifpc02
+   lda   (XAML)         ; get data from address
+.else
    lda   (XAML,x)       ; get data from address
-   jsr   prhex          ; print byte
+.endif
+   jsr   prhex8         ; print byte
 
 xamnext:
    stx   MODE           ; set mode to XAM

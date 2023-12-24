@@ -1,6 +1,8 @@
 
 ; CP/M filesystem load / save reimplementation
 
+.include "native.inc"
+.include "native_bios.inc"
 .include "native_kernel.inc"
 .include "native_cpmfs.inc"
 
@@ -101,91 +103,6 @@ tmp16     = $fe          ; also used by jsr PRINT
 ; handling. Also, it should be easier to speed things up. Still ROM size
 ; was the main focus and it's still fast enough.
 ;-------------------------------------------------------------------------
-
-;-------------------------------------------------------------------------
-; global dirhandlers
-;-------------------------------------------------------------------------
-
-.global  cpmtests
-cpmtests:
-   jsr   PRINT
-   .byte 10,"load",10,"delete",10,"save",10,0
-:
-   jsr   chrinuc
-   bcs   :-
-   cmp   #'L'
-   beq   load
-   cmp   #'D'
-   beq   delete
-   cmp   #'S'
-   beq   save
-   cmp   #'C'
-   beq   catalog
-   bra   :-
-
-catalog:
-   jsr   PRINT
-   .byte "cat",10,0
-   lda   #$00
-   sta   cpm_saddr+1
-   ldy   #$01
-   jmp   cpmdir
-
-load:
-   jsr   PRINT
-   .byte "loading",10,0
-
-   stz   cpm_saddr+0
-   lda   #$10
-   sta   cpm_saddr+1
-
-   lda   #<@fn
-   ldx   #>@fn
-   ldy   #$01
-   jsr   cpmname
-   jsr   cpmload
-   bcc   :+
-   jsr   PRINT
-   .byte "error",10,0
-:
-   rts
-
-@fn:
-   .byte "SHADOW.BIN",0
-   .byte "CORE1.C",0
-
-delete:
-   jsr   PRINT
-   .byte "del",10,0
-
-   lda   #<@fn
-   ldx   #>@fn
-   ldy   #$01
-   jsr   cpmname
-   jmp   cpmerase
-
-@fn:
-   .byte "SHADOW.BIN",0
-;   .byte "DELETEME.COM",0
-
-save:
-   jsr   PRINT
-   .byte "saving",10,0
-
-   lda   #$e0
-   stz   cpm_saddr+0
-   sta   cpm_saddr+1
-   stz   cpm_eaddr+0
-   stz   cpm_eaddr+1
-   lda   #<@fn
-   ldx   #>@fn
-   ldy   #$01
-   jsr   cpmname
-   jsr   cpmsave
-   rts
-
-@fn:
-   .byte "SHADOW.BIN",0
 
 ;-------------------------------------------------------------------------
 ; API functions

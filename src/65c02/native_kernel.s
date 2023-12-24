@@ -15,10 +15,10 @@ TMP16 := $FE
 SECTOR_BUFFER := $DF80
 TRAMPOLINE    := $0100
 
+.include "native.inc"
+.include "native_bios.inc"
 .include "native_kernel.inc"
 .include "native_cpmfs.inc"
-
-.global  cpmtests
 
 copybios   := TRAMPOLINE
 
@@ -27,23 +27,24 @@ copybios   := TRAMPOLINE
 .PC02
 
 reset:
-   cld
-   sei
+   cld                  ; only required for "soft reset"
+   sei                  ; no IRQs used in kernel
    ldx   #$07
 :
    lda   @vectab,x
-   sta   UVBRK,x
+   sta   UVBRK,x        ; setup user vectors
    dex
    bpl   :-
-   txs
-   lda   #$00
-   dec               ; 65C02 opcode that is a NOP in 6502
-   bne   @iloop      ; no NMOS 6502, continue
+
+   txs                  ; initialize stack to $FF
+   lda   #$00           ; this kernel uses 65C02 opcodes, throw error on NMOS
+   dec                  ; 65C02 opcode that is a NOP in 6502
+   bne   @iloop         ; no NMOS 6502, continue
 @printerror:
    tax
 @printchar:
    lda   @no65c02message,x
-   beq   @printerror ; endless loop rePRINTing message
+   beq   @printerror    ; endless loop reprinting message
    jsr   chrout
    inx
    bne   @printchar
@@ -54,71 +55,55 @@ reset:
    jsr   PRINT
    .byte 10,"Sorbus Native V", VERSION, ": 0-3)Boot, T)IM, W)ozMon? ", 0
 :
-   jsr   chrinuc
+   jsr   chrinuc        ; wait for keypress and make it uppercase
    bcs   :-
-   cmp   #'0'
+   cmp   #'0'           ; is it a boot block number?
    bcc   :+
    cmp   #'4'
    bcc   @bootblock
 :
-   cmp   #'I'
+   cmp   #'R'           ; hidden CP/M debugging feature
    bne   :+
-   lda   #<cpmtests
-   ldx   #>cpmtests
-   jsr   prhex16
-   bne   @iloop
-:
-   cmp   #'R'
-   bne   :+
-   jmp   execram
+   jmp   execram        ; execute RAM bank @ $E000
 :
    cmp   #'T'
    bne   :+
-   jmp   timstart
+   jmp   timstart       ; start 6530-004 (TIM) monitor port
 :
 .if 0
-   ; for speed measurement
+   ; for speed measurement, debug only
    cmp   #'S'
    beq   :-
 .endif
    cmp   #'W'
    bne   @iloop
-   lda   #$0a
+
+   lda   #$0a           ; start WozMon port
    jsr   chrout
 :  ; workaround for WozMon not handling RTS when executing external code
    jsr   wozstart
    bra   :-
 @bootblock:
    and   #$03
-   jmp   boot+2
+   jmp   boota
 
 @vectab:
-   .word brkhnd         ; UVBRK: IRQ handler dispatches BRK
+   .word brktrap        ; UVBRK: IRQ handler dispatches BRK
    .word unmi           ; UVNMI: hardware NMI handler
    .word uirq           ; UVNBI: IRQ handler dispatches non-BRK
    .word irqcheck       ; UVIRQ: hardware IRQ handler
 
-hirq:
-   stz   TRAP
 uirq:
+   ; dummy IRQ handler: prints out IRQ and checks source
    ;stz   TRAP
-   lda   ASAVE
    jsr   PRINT
    .byte 10,"IRQ",10,0
    bit   TMICRL
    bmi   sbtimer
    rti
 
-.if 0
-ubrk:
-   stz   TRAP
-   lda   ASAVE
-   jsr   PRINT
-   .byte 10,"BRK",10,0
-   rti
-.endif
-
 unmi:
+   ; dummy NMI handler: prints out IRQ and checks source
    ;stz   TRAP
    jsr   PRINT
    .byte 10,"NMI",10,0
@@ -130,16 +115,11 @@ sbtimer:
 notimer:
    rti
 
-todo:
-   stz   TRAP
-
-bootx:
-   lda   $0f
-   .byte $2c   ; skip following 2-byte instruction
 boot:
-   lda   #$00
+   lda   #$00           ; load first boot block (not used since user input)
+boota:
    ; boottrack is 32k, memory at $E000 is 8k
-   ; starting at boot+2 can load other 8k offsets from internal drive
+   ; starting at boota can load other 8k offsets from internal drive
    jsr   PRINT ; preserves all registers... spooky.
    .byte 10,"Checking bootblock ",0
    and   #$03
@@ -151,17 +131,16 @@ boot:
    ror
    ror
    ror
-   sta   IDLBAL
-   ldx   #$00
-   stx   IDLBAH
+   sta   ID_LBA+0
+   stz   ID_LBA+1
 .if (<SECTOR_BUFFER <> $00)
    lda   #<SECTOR_BUFFER
-   sta   IDMEML
+   sta   ID_MEM+0
 .else
-   stx   IDMEML
+   stz   ID_MEM+0
 .endif
    lda   #>SECTOR_BUFFER
-   sta   IDMEMH
+   sta   ID_MEM+1
 
    sta   IDREAD
 
@@ -174,36 +153,36 @@ boot:
    jmp   $E000
 
 @checksig:
-   dec   IDLBAL    ; reset LBA for re-reading to $E000
+   dec   ID_LBA+0       ; reset LBA for re-reading to $E000
 .if SECTOR_BUFFER <> $DF80
    ; when SECTOR_BUFFER is $DF80, then it's advanced to $E000 already
-   stx   IDMEML    ; adjust target memory to
-   lda   #$E0      ; $E000 following
-   sta   IDMEMH
+   stz   ID_MEM+0       ; adjust target memory to
+   lda   #$E0           ; $E000 following
+   sta   ID_MEM+1
 .endif
 
    ldx   #$04
 :
    lda   SECTOR_BUFFER+3,x
-   cmp   signature,x
-   bne   @notfound
+   cmp   signature,x    ; verify if signature matches
+   bne   @notfound      ; throw error if not
    dex
    bpl   :-
 
    jsr   PRINT
    .byte ": found.",10,"Loading... ",0
 
-   ldy   #$40        ; banksize ($2000) / sectorsize ($80)
+   ldy   #$40           ; banksize ($2000) / sectorsize ($80)
 :
-   sta   IDREAD
+   sta   IDREAD         ; yep, it's really that easy to load a boot block
    dey
    bne   :-
-   ; leave with Y = 0, as required in @jmpcode
 
 execram:
+   ; execute loaded boot block in RAM at $E000
    ldx   #(@trampolineend-@trampoline-1)
 :
-   lda   @trampoline,x
+   lda   @trampoline,x  ; this requires bankswitching code written to RAM
    sta   TRAMPOLINE,x
    dex
    bpl   :-
@@ -212,16 +191,17 @@ execram:
    jmp   TRAMPOLINE+@jmpbank0-@trampoline
 
 @trampoline:
-   inc   BANK              ; this routine will only be called from bank 0 (RAM)
-   jsr   @copybios
-   stz   BANK              ; set BANK back to $00 (RAM)
+   inc   BANK           ; this routine may only be called from bank 0 (RAM)
+   jsr   @copybios      ; copy $FF00-$FFFF to RAM
+   stz   BANK           ; set BANK back to $00 (RAM)
    rts
 @jmpbank0:
-   stz   BANK      ; Y = 0
+   stz   BANK
    jmp   $E000
 @trampolineend:
 
 @copybios:
+   ; copy the BIOS page to RAM
    ldx   #$00
 :
    lda   BIOS,x
@@ -235,6 +215,7 @@ signature:
 signatureend:
 
 chrinuc:
+   ; wait for character from UART and make it uppercase
    jsr   chrin
    bcs   chrinuc
 uppercase:
@@ -244,15 +225,35 @@ uppercase:
    bcs   :+
    and   #$df
 :
+   sta   BRK_SA         ; when called via BRK, this is required
    rts
 
-prhex16:                ; output 16 bit value in X,A
+chrcfg:
+   ; this function manipulates the configuration bits of CHRIN/CHROUT
+   ; A = bits to set
+   ; X = bits to clear
+   ; return previous value is return in A
+   pha                  ; write bits to set
+   lda   UARTCF         ; get configration value
+   sta   BRK_SA         ; store it for return
+   txa                  ; now get bits to clean
+   eor   #$ff           ; invert them
+   and   UARTCF         ; clear them
+   tsx
+   ora   $0101,x        ; set bits directly from stack
+   sta   UARTCF         ; write configuration register
+   pla                  ; drop value from stack
+   rts
+
+prhex16:
+   ; output 16 bit value in X,A
    pha
    txa
-   jsr   prhex
+   jsr   prhex8
    pla
    ; fall through
-prhex:                  ; output 8 bit value in A
+prhex8:
+   ; output 8 bit value in A
    pha                  ; save A for LSD
    lsr                  ; move MSD down to LSD
    lsr
@@ -265,7 +266,7 @@ prhex:                  ; output 8 bit value in A
    ora   #'0'           ; add ascii "0"
    cmp   #':'           ; is still decimal
    bcc   :+             ; yes -> output
-   adc   #$06           ; adjust offset for letters a-f
+   adc   #$06           ; adjust offset for letters A-F
 :
    jmp   chrout
 
@@ -274,9 +275,9 @@ brkhandler:
    sty   BRK_SY
    tsx
    lda   $0102,x        ; get the return address from stack
-   sta   TMP16+0
-   lda   $0103,x
-   sta   TMP16+1
+   sta   TMP16+0        ; and write it to temp vector
+   lda   $0103,x        ; offset of current stack pointer is 1+2
+   sta   TMP16+1        ; at offset 0 is processor status (got called via BRK)
 
    lda   TMP16+0        ; decrease it by one to get the BRK operand
    bne   :+
@@ -285,31 +286,46 @@ brkhandler:
    dec   TMP16+0
    lda   (TMP16)        ; finally get BRK operand!
 
-   asl
-   tax
-   lda   @jumptable+0,x
-   sta   TMP16+0
-   lda   @jumptable+1,x
-   sta   TMP16+1
-   lda   BRK_SA
-   ldx   BRK_SX
-   jsr   @jump          ; jsr (indirect) is missing in opcodes :(
+   asl                  ; make it word offset
+   cmp   #<(@jumptableend-@jumptable)
+   bcc   :+             ; sanity check: if BRK operand out of scope
+   lda   #$00           ; reset, user BRK can lda (TMP16) to get BRK operand
+:
+   jsr   @jump          ; to call the subroutine selector
 
-   ldy   BRK_SY
-   ldx   BRK_SX
-   jmp   brkdone
+   ldy   BRK_SY         ; get stored Y
+   ldx   BRK_SX         ; get stored X
+   lda   BRK_SB         ; get stored BANK
+   jmp   brkdone        ; switch bank back and return from interrupt
+
 @jump:
-   jmp   (TMP16)
+   tax
+   lda   @jumptable+1,x ; get address from jump table
+   pha
+   lda   @jumptable+0,x
+   pha
+   tsx
+   lda   $0105,x        ; get processor state from stack
+   pha                  ; and save it for later rti
+   ldx   BRK_SX         ; get stored X
+   lda   BRK_SA         ; get stored A
+   rti                  ; jump to handling subroutine
+
+@user:
+   jmp   (UVBRK)
 
 @jumptable:
-   .word prhex, prhex16
+   .word @user, chrinuc, chrcfg, prhex8, prhex16
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir
-   .word trap
-trap:
-   stx   $DF0C
-   sty   $DF0D
-   sta   $DF01
-   rts
+@jumptableend:
+brktrap:
+   ; make some stuff visible for backtrace
+   cmp   (TMP16)        ; read BRK operand
+   stx   UARTRD         ; store X (read-only I/O register $DF0C)
+   sty   UARTRS         ; store Y (read-only I/O register $DF0D)
+   sta   TRAP           ; store A (TRAP strobe register   $DF01)
+   rts                  ; return, if system continues after TRAP
+
 
 ;-------------------------------------------------------------------------
 ; BIOS calls $FF00-$FFFF
@@ -317,39 +333,46 @@ trap:
 
 .segment "BIOS"
 BIOS:
-CHRIN:                  ; read character from UART
+CHRIN:
+   ; read character from UART
    jmp   chrin
-CHROUT:                 ; write character to UART
+CHROUT:
+   ; write character to UART
    jmp   chrout
-CHRCFG:                 ; set parameters for UART
-   jmp   chrcfg
-PRINT:                  ; print a string while keeping all registers
-   sta   ASAVE          ; this routine changes A and P, so save those
-   php
-   pla
-   sta   PSAVE
-   pla                  ; get address of text from stack
-   sta   TMP16+0
-   pla
-   sta   TMP16+1
+PRINT:
+   ; print a string while keeping all registers
+   sta   ASAVE          ; save A, it is used together with
+   php                  ;   processor status register,
+   pla                  ;   which can be only read via stack
+   sta   PSAVE          ; save it
+   pla                  ; get lobyte of address of text from stack and
+   sta   TMP16+0        ;   store it into temporary vector
+   pla                  ; same for hibyte
+   sta   TMP16+1        ;   store
 @loop:
    inc   TMP16+0        ; since JSR stores return address - 1, start with
-   bne   :+             ; ...incrementing the pointer
+   bne   :+             ;   incrementing the pointer
    inc   TMP16+1
 :
-   lda   (TMP16)        ; C02 opcode
-   beq   @out
-   jsr   chrout
-   bra   @loop
+   lda   (TMP16)        ; 65C02 only opcode, 6502 needs X=0 or Y=0
+   beq   @out           ; $00 bytes indicates end of text
+   jsr   chrout         ; output the character
+   bra   @loop          ; get next char (65C02 only opcode, jmp also works)
 @out:
-   lda   TMP16+1
-   pha
-   lda   TMP16+0
-   pha
-   lda   PSAVE
-   pha
-   lda   ASAVE
-   plp
+   lda   TMP16+1        ; get updated vector now pointing to end of text
+   pha                  ; write hibyte to stack
+   lda   TMP16+0        ; (reverse order of fetching)
+   pha                  ; write lobyte to stack
+   lda   PSAVE          ; get saved processor status
+   pha                  ; put it on stack for restoring
+   lda   ASAVE          ; get saved A
+   plp                  ; get processor status from stack into register
+   rts                  ; now return to code after text
+
+chrout:
+   bit   UARTWS         ; wait for buffer to accept data
+   bmi   chrout
+   sta   UARTWR         ; write data to output queue
    rts
 
 chrin:
@@ -362,56 +385,35 @@ chrin:
    clc
    rts
 
-chrout:
-   bit   UARTWS         ; wait for buffer to accept data
-   bmi   chrout
-   sta   UARTWR         ; write data to output queue
-   rts
-
-chrcfg:
-   bcs   @clear         ; carry on: set bits, off: clear bits
-   ora   UARTCF
-   bra   @store         ; bne would also work here
-@clear:
-   eor   #$ff
-   and   UARTCF
-@store:
-   sta   UARTCF
-   rts
-
 RESET:
+   ; reset routine that also works when copied to RAM
    lda   #$01
-   sta   BANK
-   jmp   reset
+   sta   BANK           ; set banking to first ROM bank (kernel)
+   jmp   reset          ; jump to reset routine
 NMI:
-   jmp   (UVNMI)
+   jmp   (UVNMI)        ; user vector for NMI ($DF7A)
 IRQ:
-   jmp   (UVIRQ)
+   jmp   (UVIRQ)        ; user vector for BRK/IRQ ($DF7E) -> irqcheck (default)
 
 irqcheck:
-   sta   BRK_SA
-   pla
-   pha
-   and   #$10
-   bne   :+
-   lda   BRK_SA
-   jmp   (UVNBI)
-:
-   lda   BRK_SA
-   jmp   (UVBRK)
-
-brkhnd:
-   lda   BANK
-   sta   BRK_SB
+   sta   BRK_SA         ; let's figure out the source of the IRQ
+   pla                  ; get processor status from stack
+   pha                  ; and put it back
+   and   #$10           ; check for BRK bit
+   bne   @isbrk
+   lda   BRK_SA         ; restore saved accumulator
+   jmp   (UVNBI)        ; user vector for non-BRK IRQ ($DF7C)
+@isbrk:
+   lda   BANK           ; get current bank
+   sta   BRK_SB         ; save it
    lda   #$01
-   sta   BANK
-   jmp   brkhandler
+   sta   BANK           ; switch to first ROM bank
+   jmp   brkhandler     ; and execute evaluation of BRK instruction
 
-brkdone:
-   lda   BRK_SB
-   sta   BANK
-   lda   BRK_SA
-   rti
+brkdone:                ; brkhandler returns here
+   sta   BANK           ; restore saved bank
+   lda   BRK_SA         ; restore accumulator
+   rti                  ; return to calling code
 
 
 .out "   ================"

@@ -41,6 +41,7 @@ BRK_SB = IRQSVB+$0 ; bank
 BRK_SA = IRQSVB+$1 ; accumulator
 BRK_SX = IRQSVB+$2 ; X index
 BRK_SY = IRQSVB+$3 ; Y index
+; this is just RAM space used by the kernel BRK routine
 
 IDBASE = $DF70
 IDLBAL = IDBASE+$0 ; LBA low
@@ -55,7 +56,7 @@ IDWRT  = IDBASE+$5 ; (S) write sector (adjusts DMA memory and LBA)
                    ; (R) error code from last write ($00=ok)
 IDTRIM = IDBASE+$7 ; sector discard (strobe)
 
-UVBRK  = $DF78     ; if UVIRQ handles BRK, vector to BRK routine
+UVBRK  = $DF78     ; if UVIRQ handles BRK, vector to BRK $00 routine
 UVNMI  = $DF7A     ; NMI does JMP (UVNMI)
 UVNBI  = $DF7C     ; if UVIRQ handles BRK, vector to non-BRK routine
 UVIRQ  = $DF7E     ; IRQ does JMP (UVIRQ)
