@@ -3,7 +3,7 @@
 ;
 ; This ROM for the native mode is in very early development.
 
-.define VERSION "0.1"
+.define VERSION "0.2"
 .segment "CODE"
 
 ; zeropage addresses used by this part of ROM
@@ -86,11 +86,30 @@ reset:
    cmp   #'S'
    beq   :-
 .endif
+
+   cmp   #'I'           ; developer info: print out core info string
+   bne   @noinfo
+
+   lda   #$0a
+   jsr   CHROUT
+
+:
+   lda   TRAP
+   bne   :-
+:
+   lda   TRAP
+   beq   @iloop
+   jsr   prhex8
+   lda   #' '
+   jsr   CHROUT
+   bra   :-
+
+@noinfo:
    cmp   #'W'
    bne   @iloop
 
    lda   #$0a           ; start WozMon port
-   jsr   chrout
+   jsr   CHROUT
 :  ; workaround for WozMon not handling RTS when executing external code
    jsr   wozstart
    bra   :-
@@ -135,8 +154,7 @@ boota:
    .byte 10,"Checking bootblock ",0
    and   #$03
    pha
-   ora   #'0'
-   jsr   CHROUT
+   jsr   prhex4
    pla
    clc
    ror
@@ -270,10 +288,10 @@ prhex8:
    lsr
    lsr
    lsr
-   jsr   :+             ; print MSD
+   jsr   prhex4         ; print MSD
    pla                  ; restore A for LSD
+prhex4:
    and   #$0f           ; mask LSD for hex PRINT
-:
    ora   #'0'           ; add ascii "0"
    cmp   #':'           ; is still decimal
    bcc   :+             ; yes -> output

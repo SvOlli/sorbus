@@ -483,7 +483,7 @@ zendproc
 ; HELPER FUNCTIONS
 
 zproc bin2ascii
-    ; enter with A = value, X = position of hundrets
+    ; enter with A = value, X = position of hundreds
     sta b2a_tmp
     lda #$00
     sta escbuffer+1,x
@@ -549,16 +549,6 @@ zproc isdigit
     zendif
     ; carry set indicates not a digit
     rts
-zproc isdigit
-    cmp #'9'+1
-    zif_cc
-        cmp #'0'
-        rol
-        eor #$01 ; negate carry, keep A
-        ror
-    zendif
-    ; carry set indicates not a digit
-    rts
 zendproc
 
 zproc ascii2bin
@@ -599,7 +589,7 @@ zproc ascii2bin
     ; so, when carry is set, result is invalid
     rts
 a2b_done:
-    ; no hundrets, no overflow
+    ; no hundreds, no overflow
     lda b2a_tmp+0
     clc
     rts

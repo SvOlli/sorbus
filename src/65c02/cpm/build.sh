@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 if [ $# -lt 3 ]; then
    echo >&2 "usage: $0 <bindir> <srcdir> <cpm65dir>"
    exit 1

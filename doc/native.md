@@ -37,7 +37,9 @@ Miscellaneous ($DF00-$DF0F)
 - $DF00: bank select register for $E000-$FFFF
          ROM starts at bank 1 (default), bank 0 is RAM
          more banks can be added, if bank set > max_bank, bank is set to default
-- $DF01: (S) trap: print out debug information and reboot system
+- $DF01: (R) Sorbus Native ID -> contains version information, read until $00
+         starts with ASCII id "SBC23", followed by a $01 and a revision
+- $DF01: (S) trap: stop CPU and jump into debugging console
 - $DF02: (R) random value
 - $DF03-$DF0A: reserved for future use
 - $DF0B: UART config: bit 0=enable crlf conversion

@@ -74,6 +74,11 @@ uint32_t watchdog_cycles_total = 0;
 uint16_t dhara_flash_size = 0;
 #define DHARA_SYNC_DELAY (20000)
 
+// identification
+const uint8_t sorbus_id[] = { 'S', 'B', 'C', '2', '3', 1, 1, 0 };
+const uint8_t *sorbus_id_p;
+
+
 // magic addresses that cannot be addressed otherwise
 #define MEM_ADDR_UART_CONTROL (0xDF0B)
 #define MEM_ADDR_ID_LBA       (0xDF70)
@@ -357,6 +362,8 @@ static inline void system_reset()
    console_set_crlf( true );
    // this needs to be set, as core0 cannot access RAM
    ram[MEM_ADDR_UART_CONTROL] = 0x01;
+   // reset Sorbus ID pointer
+   sorbus_id_p = sorbus_id;
 }
 
 
@@ -634,6 +641,17 @@ static inline void handle_io()
       // I/O read
       switch( address & 0xFF )
       {
+         case 0x01: // Sorbus ID
+            bus_data_write( *sorbus_id_p );
+            if( *sorbus_id_p )
+            {
+               ++sorbus_id_p;
+            }
+            else
+            {
+               sorbus_id_p = sorbus_id;
+            }
+            break;
          case 0x02: // random
             bus_data_write( rand() & 0xFF );
             break;
