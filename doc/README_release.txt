@@ -32,6 +32,13 @@ sorbus-computer-native_cpmfs.uf2:
 The filesystem image containing a CP/M-65 installation for the Native
 system.
 
-sorbus-computer-native_alpha_full.uf2:
+sorbus-computer-native_alpha_picotoool.uf2:
 This image contains all data for the Native system in one file: firmware,
-kernel and filesystem image.
+kernel and filesystem image. Only works when using picotool for loading.
+
+For uploading the native firmware on the Sorbus the following order is
+suggested:
+- sorbus-computer-native_cpmfs.uf2
+- sorbus-computer-native_kernel.uf2
+- sorbus-computer-native_alpha.uf2
+

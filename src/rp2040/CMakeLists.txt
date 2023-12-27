@@ -149,14 +149,14 @@ target_link_libraries(native_alpha
 setup_target(native_alpha)
 # firmware for Native core
 add_custom_target(native_firmware ALL
-   DEPENDS native_alpha_full native_rom
+   DEPENDS native_alpha_picotool native_rom
 )
 bbin2uf2(native_rom 0x103FE000 native_kernel)
 bin2uf2(native_cpmfs 0x10400000 native_cpmfs.dhara)
-uf2join(native_alpha_full
-   native_alpha
+uf2join(native_alpha_picotool
    native_rom
    native_cpmfs
+   native_alpha
 )
 gencpmfs(native_cpmfs.img)
 dharawrite(native_cpmfs.dhara native_cpmfs.img)
