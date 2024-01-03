@@ -12,6 +12,12 @@
 ; this routine saves all CPU registers, including P
 .global  PRINT
 
+; non-API addresses required for using BIOS <-> kernel
+.global  BIOS
+.global  IRQCHECK
+.global  brkjump        ; kernel only, doesn't matter in other banks
+.global  reset          ; kernel only, doesn't matter in other banks
+
 .macro int arg
    .byte $00,arg        ; BRK with operand
 .endmacro

@@ -6,6 +6,11 @@
 ; (W): write-only
 ; (S): strobe, write value does not matter
 
+; used zeropage addresses
+ASAVE  = $07
+PSAVE  = $06
+TMP16  = $04
+
 ; UART and miscellaneous stuff
 BANK   = $DF00     ; ROM bank
 TRAP   = $DF01     ; (S) output debug messages and reboot

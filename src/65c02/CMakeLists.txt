@@ -84,6 +84,7 @@ add_executable(native_kernel
    native_cpmfs.s
    native_tim.s
    native_woz.s
+   native_bios.s
    )
 target_type(native_kernel native_kernel)
 
