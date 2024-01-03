@@ -2,17 +2,16 @@
 
 set -e
 
-if [ $# -lt 3 ]; then
-   echo >&2 "usage: $0 <bindir> <srcdir> <cpm65dir>"
+if [ $# -lt 2 ]; then
+   echo >&2 "usage: $0 <bindir> <cpm65dir>"
    exit 1
 fi
 
 BINDIR="${1}"
 shift
-SRCDIR="${1}"
-shift
 CPM65_DIR="${1}"
 shift
+SRCDIR="$(readlink -f "$(dirname "${0}")")"
 
 PATH="${PATH}:/opt/llvm-mos/bin"
 

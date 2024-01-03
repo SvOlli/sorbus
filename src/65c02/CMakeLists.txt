@@ -6,7 +6,7 @@ include(65c02-toolchain.cmake)
 if( CPM65_PATH )
    message(STATUS "CPM65 detected at '${CPM65_PATH}', adding build command")
    add_custom_target(cpm ALL
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cpm/build.sh" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/0" "${CMAKE_CURRENT_SOURCE_DIR}/cpm" "${CPM65_PATH}"
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cpm/build.sh" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/0" "${CPM65_PATH}"
       )
 endif()
 
@@ -15,7 +15,7 @@ function(runmake out_file in_dir)
    file(GLOB SRC_FILES "${in_dir}/*")
    add_custom_target(${out_file}
       COMMAND make -C "${CMAKE_CURRENT_SOURCE_DIR}/${in_dir}" "OUTDIR=${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/${out_file}"
-      DEPENDS ${SRC_FILES})
+      DEPENDS ${SRC_FILES} native_kernel)
 endfunction()
 
 function(src2hex hex_file bin_file startaddr)
@@ -111,10 +111,3 @@ add_executable(native_memcheck
    )
 target_type_addr(native_memcheck native 0x0100)
 
-add_executable(vt100
-   vt100.s
-   )
-target_type_addr(vt100 native 0x0400)
-src2hex(vt100.hex vt100 0x400)
-
-runmake(osi_bas.bin GrantSearle)

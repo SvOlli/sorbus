@@ -151,7 +151,13 @@ cpmload:
 
    beq   cpmexiterr
    ldx   #$00           ; select read mode
-   jmp   dmafile
+   jsr   dmafile
+
+   lda   ID_MEM+0
+   sta   cpm_eaddr+0
+   lda   ID_MEM+1
+   sta   cpm_eaddr+1
+   rts
 
 cpmsave:
    jsr   cpmerase       ; in order to replace, delete first
@@ -173,7 +179,7 @@ cpmdir:
 
    lda   tmp16+1
    beq   :+
-.if 1
+.if 0
    lda   #$e5           ; write end of dir marker
    sta   (tmp16)
 .else

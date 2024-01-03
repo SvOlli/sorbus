@@ -299,35 +299,12 @@ prhex4:
 :
    jmp   chrout
 
-brkhandler:
-   stx   BRK_SX
-   sty   BRK_SY
-   tsx
-   lda   $0102,x        ; get the return address from stack
-   sta   TMP16+0        ; and write it to temp vector
-   lda   $0103,x        ; offset of current stack pointer is 1+2
-   sta   TMP16+1        ; at offset 0 is processor status (got called via BRK)
-
-   lda   TMP16+0        ; decrease it by one to get the BRK operand
-   bne   :+
-   dec   TMP16+1
-:
-   dec   TMP16+0
-   lda   (TMP16)        ; finally get BRK operand!
-
+brkjump:
    asl                  ; make it word offset
-   cmp   #<(@jumptableend-@jumptable)
+   cmp   #<(@jumptableend - @jumptable)
    bcc   :+             ; sanity check: if BRK operand out of scope
    lda   #$00           ; reset, user BRK can lda (TMP16) to get BRK operand
 :
-   jsr   @jump          ; to call the subroutine selector
-
-   ldy   BRK_SY         ; get stored Y
-   ldx   BRK_SX         ; get stored X
-   lda   BRK_SB         ; get stored BANK
-   jmp   brkdone        ; switch bank back and return from interrupt
-
-@jump:
    tax
    lda   @jumptable+1,x ; get address from jump table
    pha
@@ -347,6 +324,7 @@ brkhandler:
    .word @user, chrinuc, chrcfg, prhex8, prhex16
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir
 @jumptableend:
+
 brktrap:
    ; make some stuff visible for backtrace
    cmp   (TMP16)        ; read BRK operand
@@ -435,13 +413,30 @@ irqcheck:
 @isbrk:
    lda   BANK           ; get current bank
    sta   BRK_SB         ; save it
-   lda   #$01
-   sta   BANK           ; switch to first ROM bank
-   jmp   brkhandler     ; and execute evaluation of BRK instruction
+   stx   BRK_SX
+   sty   BRK_SY
+   tsx
+   lda   $0102,x        ; get the return address from stack
+   sta   TMP16+0        ; and write it to temp vector
+   lda   $0103,x        ; offset of current stack pointer is 1+2
+   sta   TMP16+1        ; at offset 0 is processor status (got called via BRK)
 
-brkdone:                ; brkhandler returns here
+   lda   TMP16+0        ; decrease it by one to get the BRK operand
+   bne   :+
+   dec   TMP16+1
+:
+   dec   TMP16+0
+   lda   (TMP16)        ; finally get BRK operand!
+                        ; needs to be read without bank change
+   ldx   #$01           ; will be restored by brkjump
+   stx   BANK           ; switch to first ROM bank
+   jsr   brkjump        ; to call the subroutine selector
+
+   ldy   BRK_SY         ; get stored Y
+   ldx   BRK_SX         ; get stored X
+   lda   BRK_SB         ; get stored BANK
    sta   BANK           ; restore saved bank
-   lda   BRK_SA         ; restore accumulator
+   lda   BRK_SA         ; get stored accumulator
    rti                  ; return to calling code
 
 

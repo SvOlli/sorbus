@@ -22,6 +22,9 @@ directory that can be used to download these documents.
 * [MOS 6530-004 RRIOT TIM](http://retro.hansotten.nl/uploads/6502files/mostim1976.pdf)
 * [Rockwell R6551 ACIA](https://z3d9b7u8.stackpathcdn.com/pdf-down/R/6/5/R6551_Rockwell.pdf)
 * [Rockwell R65C51 ACIA](https://z3d9b7u8.stackpathcdn.com/pdf-down/R/6/5/R65C51_ETC.pdf)
+* [R6501Q One Chip Microprozessor Rockwell datasheet](http://retro.hansotten.nl/uploads/rockwellforth/R6501Q%20One%20Chip%20Microprozessor%20Rockwell.pdf)
+* [R6501 R6511 datasheet 1987](http://retro.hansotten.nl/uploads/rockwellforth/r6501%20R6511datasheet%201987.pdf)
+* [R65F11 1987 datasheet](http://retro.hansotten.nl/uploads/rockwellforth/R65F11%201987%20datasheet%20.pdf)
 * [TIM MOS folder](http://retro.hansotten.nl/uploads/6502files/tim%20mos%20folder.pdf)
 
 6502 Based SBCs

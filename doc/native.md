@@ -20,11 +20,18 @@ Memory map
 ----------
 - $0000-$0001: graphics port
 - $0002-$0003: for later use
-- $0004-$CFFF: RAM
+- $0004-$000F: zeropage RAM reserved for kernel
+- $0010-$00FF: zeropage RAM for generic use
+- $0100-$01FF: stack
+- $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs)
+- $0400-$CFFF: RAM for generic use
 - $D000-$DEFF: I/O provided by external boards
 - $DF00-$DFFF: I/O provided by main RP2040 board
-- $E000-$FFFF: ROM bank 0 (custom firmware)
-- $E000-$FFFF: ROM bank 1 (CP/M-65 firmware containing BIOS, BDOS and CCP)
+- $E000-$FFFF: bank 0 (RAM, used to load CP/M 65)
+- $E000-$FFFF: bank 1 (ROM, custom firmware)
+- $FF00-$FFFF: bankswitching code, BRK handler, base routines
+               can be copied to RAM using code at $0100 after loading
+               a bootblock
 
 
 Internal I/O ($DF00-$DFFF)
@@ -98,14 +105,38 @@ Each transfer stops CPU until transfer is completed
 RAM Vectors ($DF78-$DF7F)
 -------------------------
 These vectors are RAM to support installing own handlers for interrupts
-- $DF78/$DF79 (reserved)
-- $DF7A/$DF7B NMI
-- $DF7C/$DF7D suggested for BRK (or non-BRK) based IRQ
-- $DF7E/$DF7F IRQ
-Since IRQ and BRK are handled by $FFFE/$FFFF, it is up to the handler
-defined in $DF7E/$DF7F to check for BRK and then jmp ($DF7C)
-TIM uses $DF7C/$DF7D for a non-BRK interrupt
+- $DF78/$DF79 user BRK routine (if BRK operand is $00 or out of scope)
+- $DF7A/$DF7B NMI ($FFFA/B point to jmp ($DF7A))
+- $DF7C/$DF7D user IRQ routine (for handling non-BRK)
+- $DF7E/$DF7F IRQ ($FFFE/F point to jmp ($DF7E))
+Note: TIM overwrites vectors for own debugging purposes, WozMon doesn't.
 
+Interrupt Handling
+------------------
+1) $FFFE/F is triggered by IRQ-line or BRK
+2) jmp ($DF7E) -> default setup to handler in $FF00 area
+3) handler checks if trigger was IRQ or BRK
+4) if IRQ -> jmp ($DF7C)
+5) if BRK get operand after BRK
+6) if operand is known, perform kernel action
+7) if operand is out of scope -> jmp ($DF78)
+Note: as this handling is rather complex it takes about 100 cycles to
+run a software interrupt to call a function. This is the trade-in for
+convenience. Also, all registers get saved/restored during a software
+interrupt.
+
+Kernel Interrupts
+-----------------
+- $00: jmp ($DF78)
+- $01: chrinuc: wait for key and return it uppercase
+- $02: chrcfg: set UART configuration parameters
+- $03: prhex8: output accumulator as 2 digit hex value
+- $04: prhex16: output X and accumulator as 4 digit hex value
+- $05: CP/M-fs set filename: convert filename (pointer in X/A), Y=userid
+- $06: CP/M-fs load: load file to address in ($030c/d)
+- $07: CP/M-fs save: save file from address in ($030c/d) to ($030e/f)
+- $08: CP/M-fs erase: delete file
+- $09: CP/M-fs directory: load directory to address in ($030c/d) or screen
 
 Scratchpad RAM ($DF80-$DFFF)
 ----------------------------
