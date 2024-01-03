@@ -144,7 +144,7 @@ int bin2uf2(FILE *in, long address, FILE *out)
    if( (address < FLASH_START) ||
        (address + in_size) > (FLASH_START + 0x1000000u) ) // 16MB, maximum available range
    {
-      return fail( ERROR_OUT_OF_FLASH_RANGE, "Data no in flash range" );
+      return fail( ERROR_OUT_OF_FLASH_RANGE, "Data not in flash range" );
    }
 
    for( long i = 0; i < in_size; i += PAGE_SIZE )
@@ -230,7 +230,8 @@ int main( int argc, char **argv )
           return ERROR_ARGS;
       }
 
-      rc = bin2uf2(in, address, out);
+      rc = bin2uf2( in, address, out );
+      address += ftell( in );
       fclose( in );
 
       if( rc )
