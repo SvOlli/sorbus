@@ -3,6 +3,16 @@
 ;  WozMon for native core
 ;-------------------------------------------------------------------------
 
+;-------------------------------------------------------------------------
+; This code is mostly written and copyright by
+; Apple Computer Company in 1976
+;-------------------------------------------------------------------------
+; WozMon
+; Code taken from Apple 1 ROMs and heavily modified:
+; - replaced code for I/O with Sorbus kernel calls
+; - adapted some of the code from 6502 to 65C02 assembler
+;-------------------------------------------------------------------------
+
 .include "native_bios.inc"
 .include "native_kernel.inc"
 .segment "CODE"
@@ -13,14 +23,14 @@
 
 .if 1
 ; share registers with TIM (TMP0,TMP2,TMP4,TMP6)
-XAML           :=     $EE            ; Last "opened" location Low
-XAMH           :=     $EF            ; Last "opened" location High
-STL            :=     $F0            ; Store address Low
-STH            :=     $F1            ; Store address High
-L              :=     $F2            ; Hex value parsing Low
-H              :=     $F3            ; Hex value parsing High
-YSAV           :=     $F4            ; Used to see if hex value is given
-MODE           :=     $F5            ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
+XAML           :=     $10            ; Last "opened" location Low
+XAMH           :=     $11            ; Last "opened" location High
+STL            :=     $12            ; Store address Low
+STH            :=     $13            ; Store address High
+L              :=     $14            ; Hex value parsing Low
+H              :=     $15            ; Hex value parsing High
+YSAV           :=     $16            ; Used to see if hex value is given
+MODE           :=     $17            ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
 .else
 ; original WozMon addresses for reference
 XAML           :=     $24            ; Last "opened" location Low
@@ -62,7 +72,7 @@ PROMPT          :=     $5c            ; "\": prompt character
 ;-------------------------------------------------------------------------
 
 wozstart:
-   cli
+   cli                  ; required for testing IRQs
    lda   #ESC           ; KBD and DSP control register mask
 
 ; Program falls through to the GETLINE routine to save some program bytes
@@ -97,13 +107,7 @@ backspace:
    bmi   getline        ; buffer underflow -> restart
 
 nextchar:
-.if 1
-   jsr   chrinuc
-.else
-   jsr   CHRIN
-   bcs   nextchar
-   jsr   uppercase
-.endif
+   int   CHRINUC        ; was: jsr   chrinuc
    sta   IN,y           ; add to buffer
    jsr   CHROUT         ; print character
 
@@ -129,7 +133,7 @@ nextitem:
    lda   IN,y           ; get character from buffer
    cmp   #CR            ; CR -> end of line
    beq   getline
-   ora   #$80
+   ora   #$80           ; simulate Apple 1 behaviour on Sorbus
    cmp   #$ae           ; check for '.'
    bcc   blskip         ; skip everything below '.', e.g. space
    beq   setmode        ; '.' sets block XAM mode

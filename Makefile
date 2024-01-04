@@ -1,7 +1,7 @@
 
 # Parameters
 CPM65_PATH = ../cpm65
-#EXTRA_CMAKE_ARGS += -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+#EXTRA_CMAKE_ARGS += -DCMAKE_VERBOSE_MAKEFILE=ON
 
 
 $(info This Makefile is not required and for convenience only)
@@ -32,9 +32,13 @@ all: $(PICO_SDK_PATH)/README.md
 	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(PICO_SDK_PATH_CMAKE) $(EXTRA_CMAKE_ARGS)
 	make -C $(BUILD_DIR) -j$(JOBS) && echo "\nbuild was successful\n"
 
+log: $(PICO_SDK_PATH)/README.md
+	cmake -S $(SRC_DIR) -B $(BUILD_DIR) -DCMAKE_VERBOSE_MAKEFILE=ON $(PICO_SDK_PATH_CMAKE) $(EXTRA_CMAKE_ARGS) 2>&1 | tee cmake.log
+	make -C $(BUILD_DIR) -j$(JOBS) 2>&1 | tee make.log
+
 clean:
 	make -C $(BUILD_DIR) clean
-	rm -f $(RELEASE_ARCHIVE)
+	rm -f $(RELEASE_ARCHIVE) cmake.log make.log
 
 distclean:
 	rm -rf $(RELEASE_ARCHIVE) $(BUILD_DIR)

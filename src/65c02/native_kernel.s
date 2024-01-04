@@ -17,11 +17,6 @@ TRAMPOLINE    := $0100
 .include "native_kernel.inc"
 .include "native_cpmfs.inc"
 
-.global  BIOS
-.global  IRQCHECK
-.global  brkjump        ; required by BIOS @ $FF00
-.global  reset          ; required by BIOS @ $FF00
-
 copybios   := TRAMPOLINE
 
 ; set to 65c02 code
@@ -212,6 +207,8 @@ boota:
 
 execram:
    ; execute loaded boot block in RAM at $E000
+   ldy   #$00
+execrom:                ; has to be called with Y=bank to switch to
    ldx   #(@trampolineend-@trampoline-1)
 :
    lda   @trampoline,x  ; this requires bankswitching code written to RAM
@@ -228,7 +225,7 @@ execram:
    stz   BANK           ; set BANK back to $00 (RAM)
    rts
 @jmpbank0:
-   stz   BANK
+   sty   BANK
    jmp   $E000
 @trampolineend:
 

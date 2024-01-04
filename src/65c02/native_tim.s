@@ -2,10 +2,17 @@
 ;  TIM for native core
 ;-------------------------------------------------------------------------
 
+;-------------------------------------------------------------------------
+; This code is mostly written and copyright by
+; MOS Technology in 1976
+;-------------------------------------------------------------------------
 ; Terminal Interface Monitor
-; Code take from 6530-004 RRIOT and heavily modified:
-; - removed all bitbanging code to replace with subroutines for UART handling
+; Code taken from 6530-004 RRIOT and heavily modified:
+; - removed all bitbanging code to replace with subroutines for Sorbus
+;     UART handling
 ; - command interpreter changed to be more expandable and relocatable
+; - adapted some of the code from 6502 to 65C02 assembler
+;-------------------------------------------------------------------------
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
