@@ -43,6 +43,8 @@ Firmware
 --------
 * [W652C265S Monitor ROM](https://www.westerndesigncenter.com/wdc/documentation/265monrom.pdf)
 * [W652C134S Monitor ROM](https://www.westerndesigncenter.com/wdc/documentation/134monrom.pdf)
+* [OSI 8K BASIC Manual](https://osiweb.org/manuals/OSI_8K_Basic_in_ROM.pdf)
+* [Book on OSI BASIC](https://osiweb.org/books/OSI_Basic_In_Rom.PDF)
 
 Host Based Hardware
 -------------------

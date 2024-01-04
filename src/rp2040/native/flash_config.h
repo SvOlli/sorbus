@@ -6,7 +6,7 @@
 #include "../rp2040_purple.h"
 
 // addresses as text, will be later reused with proper guards
-#define FLASH_KERNEL_START_TXT  0x103FE000
+#define FLASH_KERNEL_START_TXT  0x103FC000
 #define FLASH_DRIVE_START_TXT   0x10400000
 
 // ratio for garbage collection (look at mkftl.c)

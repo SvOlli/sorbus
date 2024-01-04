@@ -81,6 +81,11 @@ reset:
    bne   :+
    jmp   execram        ; execute RAM bank @ $E000
 :
+   cmp   #'B'           ; hidden CP/M debugging feature
+   bne   :+
+   ldy   #$02
+   jmp   execrom        ; execute RAM bank @ $E000
+:
    cmp   #'T'
    bne   :+
    jmp   timstart       ; start 6530-004 (TIM) monitor port
@@ -205,6 +210,8 @@ boota:
    dey
    bne   :-
 
+   jsr   PRINT
+   .byte "Go",10,0
 execram:
    ; execute loaded boot block in RAM at $E000
    ldy   #$00
@@ -215,8 +222,6 @@ execrom:                ; has to be called with Y=bank to switch to
    sta   TRAMPOLINE,x
    dex
    bpl   :-
-   jsr   PRINT
-   .byte "Go",10,0
    jmp   TRAMPOLINE+@jmpbank0-@trampoline
 
 @trampoline:

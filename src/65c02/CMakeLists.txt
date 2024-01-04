@@ -94,6 +94,14 @@ add_executable(native_cpm_bootblock
    ../bin/cpm/bdos.sys
    )
 target_type(native_cpm_bootblock native_kernel)
+
+add_executable(native_basic
+   native_osi_basic.s
+   native_bios.s
+   native_bios_stub.s
+   )
+target_type(native_basic native_kernel)
+
 # This doesn't work, as the glorious CMake de-duplicates the
 # "--large-alignment" option, which needs to be passed twice.
 # Since it only disables warnings, so be it.

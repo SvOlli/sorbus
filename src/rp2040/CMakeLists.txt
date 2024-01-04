@@ -25,13 +25,6 @@ function(src2h h_file bin_file label)
    )
 endfunction()
 
-function(bbin2uf2 uf2_file start_addr bin_file)
-   add_custom_target(${uf2_file} ALL
-      $<TARGET_FILE:bin2uf2> "${uf2_file}.uf2" "${start_addr}" $<TARGET_FILE:${bin_file}>
-      DEPENDS ${bin_file} ${BIN2UF2}
-   )
-endfunction()
-
 function(bin2uf2 uf2_file start_addr bin_file)
    add_custom_target(${uf2_file} ALL
       $<TARGET_FILE:bin2uf2> "${uf2_file}.uf2" "${start_addr}" "${bin_file}"
@@ -151,7 +144,16 @@ setup_target(native_alpha)
 add_custom_target(native_firmware ALL
    DEPENDS native_alpha_picotool native_rom
 )
-bbin2uf2(native_rom 0x103FE000 native_kernel)
+
+# building firmware .uf2 file containing all ROMs
+add_custom_target(native_rom ALL
+   $<TARGET_FILE:bin2uf2> "native_rom.uf2"
+      0x103FC000
+      $<TARGET_FILE:native_kernel>
+      $<TARGET_FILE:native_basic>
+   DEPENDS native_kernel ${BIN2UF2}
+)
+
 bin2uf2(native_cpmfs 0x10400000 native_cpmfs.dhara)
 uf2join(native_alpha_picotool
    native_rom
