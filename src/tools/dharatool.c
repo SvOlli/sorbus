@@ -266,7 +266,7 @@ int dhara2binary( uint8_t *inbuffer, uint8_t *outbuffer, uint32_t outbuffer_size
          exit( 1 );
       }
    }
-   return lastusedpage;
+   return (lastusedpage + 0x7FF) & 0xFFFFF800; // pad to CP/M sector boundry
 }
 
 

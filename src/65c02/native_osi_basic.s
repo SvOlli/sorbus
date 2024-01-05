@@ -342,6 +342,7 @@ SAVE:
    rts
 
 DIR:
+   stz   $030d
    ldy   #$0b
    int   CPMDIR
    rts

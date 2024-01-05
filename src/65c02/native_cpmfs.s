@@ -451,6 +451,12 @@ setupsave:
    cmp   cpm_nblck      ; got enough free blocks?
    bcc   @loopblocks
 
+:
+   stz   cpm_lblck,x    ; clear out rest of entries
+   inx
+   cpx   #<(cpm_blend-cpm_lblck)
+   bcc   :-
+
    ; create dir entries
    stz   cpm_cdent
    ldx   #<i_create
