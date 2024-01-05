@@ -126,6 +126,8 @@ cpmname:
    lda   (tmp16),y      ; load char of cpm_fname
    beq   @done          ; $00 - end of file
    and   #$7f           ; comparison is on ASCII only
+   jsr   uppercase      ; and also uppercase
+:
    cmp   #'.'
    bne   @nodot
    ldx   #$08

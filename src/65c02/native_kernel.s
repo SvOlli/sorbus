@@ -278,6 +278,10 @@ chrinuc:
    ; wait for character from UART and make it uppercase
    jsr   CHRIN
    bcs   chrinuc
+   jsr   uppercase
+   sta   BRK_SA         ; when called via BRK, this is required
+   rts
+
 uppercase:
    cmp   #'a'
    bcc   :+
@@ -285,7 +289,6 @@ uppercase:
    bcs   :+
    and   #$df
 :
-   sta   BRK_SA         ; when called via BRK, this is required
    rts
 
 chrcfg:

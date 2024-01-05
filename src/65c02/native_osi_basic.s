@@ -1,8 +1,11 @@
 ; changes todo
 ; [X] RAM start set to $0400 (or $0380)
 ; [X] RAM end set to $D000 (hardcoded instead of detection)
-; [ ] Implement SAVE & LOAD via interrupts
-; [/] Implement SYS command
+; [X] Implement SAVE & LOAD via interrupts
+; [X] Implement SYS command
+; [X] Allow BASIC keywords to be entered as lowercase
+; [ ] Allow BASIC variables to be entered as lowercase
+; [ ] Fix VAL$("9E39") error
 ; file taken from http://searle.x10host.com/6502/Simple6502.html
 
 ; Microsoft BASIC for 6502 (OSI VERSION)
@@ -19,9 +22,9 @@
 ; (first revision of this distribution, 20 Oct 2008, Michael Steil www.pagetable.com)
 ;
 ;
-; Name       Release   MS Version    ROM   9digit  INPUTBUFFER   extensions   
+; Name       Release   MS Version    ROM   9digit  INPUTBUFFER   extensions
 ;---------------------------------------------------------------------------------------------------
-; OSI BASIC        1977     1.0 REV 3.2    Y      N     ZP       -   
+; OSI BASIC        1977     1.0 REV 3.2    Y      N     ZP       -
 ;
 ; Credits:
 ; * main work by Michael Steil
@@ -36,9 +39,7 @@
 .setcpu "65c02"
 .macpack longbranch
 
-CHRIN  = $FF00
-CHROUT = $FF03
-;PRINT  = $FF06
+.include "native_bios.inc"
 
 ; zero page
 ZP_START1 = $10
@@ -47,7 +48,7 @@ ZP_START3 = $6B
 ZP_START4 = $75
 
 ;extra ZP variables
-USR        := $000A
+USR        := $001A     ; 3 bytes
 
 ; constants
 STACK_TOP   := $FC
@@ -238,28 +239,122 @@ RNDSEED = <(GENERIC_RNDSEED-GENERIC_CHRGET + CHRGET)
 .segment "CODE"
 BASTART:
    jmp   COLD_START
-   jmp   RESTART
+;   jmp   RESTART
 
 SYS:
    jsr   FRMNUM
    jsr   GETADR
    jmp   (LINNUM)
 
+; TXTTAB should be start of BASIC program
+; VARTAB should be end of BASIC program
+setfn:
+   jsr   FRMEVL
+   bit   VALTYP
+   bpl   @nostring
+
+   jsr   FREFAC
+   cmp   #$0d
+   bcs   @nostring
+
+   tay
+   lda   #$00
+   sta   $031a,y
+   dey
+:
+   lda   (INDEX),y
+   sta   $031a,y
+   dey
+   bpl   :-
+
+   lda   #$1a
+   ldx   #$03
+   ldy   #$0b
+   int   CPMNAME
+
+   dex   ;ldx   #$02
+:
+   lda   @bas,x
+   sta   $0309,x
+   dex
+   bpl   :-
+
+   lda   TXTTAB+0
+   sta   $030c
+   lda   TXTTAB+1
+   sta   $030d
+   lda   VARTAB+0
+   sta   $030e
+   lda   VARTAB+1
+   sta   $030f
+
+.if 0
+   ; for later: specify addresses
+   jsr   CHRGOT
+   cmp   #','
+   bne   :+
+   jsr   CHRGET
+
+   jsr   FRMNUM
+   jsr   GETADR
+
+   lda   LINNUM+0
+   sta   $030c
+   lda   LINNUM+1
+   sta   $030d
+
+:
+.endif
+   rts
+
+@bas:
+   .byte "BAS"
+
+@nostring:
+   pla
+   pla
+   jmp   IQERR ;SYNERR
+
 LOAD:
-   RTS
-   
+   jsr   setfn
+   int   CPMLOAD
+
+   lda   TXTTAB
+   sta   VARTAB
+   lda   TXTTAB+1
+   sta   VARTAB+1
+:
+   ldy   #$01
+   lda   (VARTAB),y
+   beq   :+
+   tay
+   lda   (VARTAB)
+   sta   VARTAB
+   sty   VARTAB+1
+   bra   :-
+:
+   jsr   CLEARC
+   jmp   RESTART
+
 SAVE:
-   RTS
+   jsr   setfn
+   int   CPMSAVE
+   rts
+
+DIR:
+   ldy   #$0b
+   int   CPMDIR
+   rts
 
 MONISCNTC:
-   JSR   CHRIN    ; returns $00 on empty queue
-   CMP   #$03
-   BNE   NotCTRLC ; if CTRL-C not pressed then exit
-   SEC   ; Carry set if control C pressed
-   RTS
-NotCTRLC:
-   CLC   ; Carry clear if control C not pressed
-   RTS
+   jsr   CHRIN          ; returns $00 on empty queue
+   cmp   #$03
+   bne   :+             ; if ctrl-c not pressed then exit
+   sec                  ; carry set if control c pressed
+   rts
+:
+   clc                  ; carry clear if control c not pressed
+   rts
 
 TOKEN_ADDRESS_TABLE:
    .word END-1
@@ -289,11 +384,12 @@ TOKEN_REM=$80+(*-TOKEN_ADDRESS_TABLE)/2
    .word DEF-1
    .word POKE-1
 TOKEN_PRINT=$80+(*-TOKEN_ADDRESS_TABLE)/2
-   .word PRINT-1
+   .word BPRINT-1
    .word CONT-1
    .word LIST-1
    .word CLEAR-1
    .word NEW-1
+   .word DIR-1
    .word SYS-1
 TOKEN_TAB=$00+$80+(*-TOKEN_ADDRESS_TABLE)/2
 TOKEN_TO=$01+$80+(*-TOKEN_ADDRESS_TABLE)/2
@@ -386,6 +482,7 @@ TOKEN_NAME_TABLE:
    .byte "LIS", $80+'T'
    .byte "CLEA", $80+'R'
    .byte "NE", $80+'W'
+   .byte "DI", $80+'R'
    .byte "SY", $80+'S'
    .byte "TAB", $80+'('
    .byte "T", $80+'O'
@@ -428,7 +525,7 @@ TOKEN_NAME_TABLE:
    .byte "RIGHT", $80+'$'
    .byte "MID", $80+'$'
    .byte   0
-   
+
 ERROR_MESSAGES:
 ERR_NOFOR := <(*-ERROR_MESSAGES)
    .byte "NF"
@@ -464,7 +561,7 @@ ERR_CANTCONT := <(*-ERROR_MESSAGES)
    .byte "CN"
 ERR_UNDEFFN := <(*-ERROR_MESSAGES)
    .byte "UF"
-   
+
 ; global messages: "error", "in", "ready", "break"
 QT_ERROR:
    .byte   " ERROR"
@@ -478,7 +575,7 @@ QT_OK:
 QT_BREAK:
    .byte CR,LF,"BREAK"
    .byte   0
-   
+
 ; generic stack and memory management code
 ; this code is identical across all versions of
 ; BASIC
@@ -910,6 +1007,14 @@ L2498:
    lda     INPUTBUFFERX,x
    cmp     #$20
    beq     L2497
+; SvOlli: allow lowercase
+   cmp     #'a'
+   bcc     :+
+   cmp     #'z'+1
+   bcs     :+
+   and     #$df
+:
+;
    sec
    sbc     TOKEN_NAME_TABLE,y
    beq     L2496
@@ -1718,7 +1823,7 @@ L297E:
 ; ----------------------------------------------------------------------------
 ; "PRINT" STATEMENT
 ; ----------------------------------------------------------------------------
-PRINT:
+BPRINT:
    beq     CRDO
 PRINT2:
    beq     L29DD
@@ -3874,8 +3979,12 @@ GETSTR:
 ASC:
    jsr     GETSTR
    beq     GOIQ
+.ifpc02
+   lda     (INDEX)
+.else
    ldy     #$00
    lda     (INDEX),y
+.endif
    tay
    jmp     SNGFLT1
 ; ----------------------------------------------------------------------------
@@ -5642,12 +5751,6 @@ GENERIC_RNDSEED:
    .byte   $80,$4F,$C7,$52
 GENERIC_CHRGET_END:
 ; ----------------------------------------------------------------------------
-.if 0
-PR_WRITTEN_BY:
-   lda     #<QT_WRITTEN_BY
-   ldy     #>QT_WRITTEN_BY
-   jsr     STROUT
-.endif
 COLD_START:
    ldx     #$FF
    stx     CURLIN+1
@@ -5699,55 +5802,9 @@ L4098:
    jsr     CRDO
    ldx     #TEMPST
    stx     TEMPPT
-.if 1
-   lda     #<QT_WRITTEN_BY
-   ldy     #>QT_WRITTEN_BY
-   jsr     STROUT
+   ; dynamic end of RAM detection removed, Sorbus knows end of RAM
    lda     #<RAMEND2
    ldy     #>RAMEND2
-.else
-   lda     #<QT_MEMORY_SIZE
-   ldy     #>QT_MEMORY_SIZE
-   jsr     STROUT
-   jsr     NXIN
-   stx     TXTPTR
-   sty     TXTPTR+1
-   jsr     CHRGET
-   cmp     #$41
-   beq     PR_WRITTEN_BY
-   tay
-   bne     L40EE
-; end of RAM detection
-   lda     #<RAMSTART2
-   ldy     #>RAMSTART2
-   sta     LINNUM
-   sty     LINNUM+1
-   ldy     #$00
-L40D7:
-   inc     LINNUM
-   bne     L40DD
-   inc     LINNUM+1
-L40DD:
-   lda     #$92 ; 10010010 / 00100100
-   sta     (LINNUM),y
-   cmp     (LINNUM),y
-   bne     L40FA
-   asl     a
-   sta     (LINNUM),y
-   cmp     (LINNUM),y
-   beq     L40D7; old: faster
-   bne     L40FA
-L40EE:
-   jsr     CHRGOT
-   jsr     LINGET
-   tay
-   beq     L40FA
-   jmp     SYNERR
-L40FA:
-; set end of RAM vectors
-   lda     LINNUM
-   ldy     LINNUM+1
-.endif
    sta     MEMSIZ
    sty     MEMSIZ+1
    sta     FRETOP
@@ -5789,6 +5846,10 @@ L4136:
    bne     L4192
    inc     TXTTAB+1
 L4192:
+   lda     #<QT_MESSAGE
+   ldy     #>QT_MESSAGE
+   jsr     STROUT
+
    lda     TXTTAB
    ldy     TXTTAB+1
    jsr     REASON
@@ -5813,29 +5874,19 @@ L4192:
    sta     GORESTART+1
    sty     GORESTART+2
    jmp     (GORESTART+1)
-; OSI is compiled for ROM, but includes
-; this unused string
-;   .byte   "WANT SIN-COS-TAN-ATN"
-;   .byte   0
-QT_WRITTEN_BY:
-   .byte   CR,LF,$0C ; FORM FEED
-   .byte   "WRITTEN BY RICHARD W. WEILAND."
-   .byte   CR,LF,0
-.if 0
-QT_MEMORY_SIZE:
-   .byte   "MEMORY SIZE"
-   .byte   0
-.endif
+
 QT_TERMINAL_WIDTH:
    .byte   "TERMINAL WIDTH"
    .byte   0
 QT_BYTES_FREE:
-   .byte   " BYTES FREE"
-   .byte   CR,LF,CR,LF
+   .byte   " BYTES FREE",0
+QT_MESSAGE:
+   .byte   CR,LF
    .byte   "OSI 6502 BASIC VERSION 1.0 REV 3.2"
    .byte   CR,LF
-   .byte   "COPYRIGHT 1977 BY MICROSOFT CO."
-   .byte   CR,LF,0
+   .byte   "WRITTEN BY RICHARD W. WEILAND."
+   .byte   CR,LF
+   .byte   "COPYRIGHT 1977 BY MICROSOFT CO.",0
 
 
 .out "   ================="
