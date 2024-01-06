@@ -68,7 +68,7 @@ reset:
 
 @iloop:
    jsr   PRINT
-   .byte 10,"Sorbus Native V", VERSION, ": 0-3)Boot, T)IM, W)ozMon? ", 0
+   .byte 10,"Sorbus Native V", VERSION, ": 0-3)Boot, B)ASIC, T)IM, W)ozMon? ", 0
 :
    jsr   chrinuc        ; wait for keypress and make it uppercase
    bcs   :-
@@ -81,10 +81,10 @@ reset:
    bne   :+
    jmp   execram        ; execute RAM bank @ $E000
 :
-   cmp   #'B'           ; hidden CP/M debugging feature
+   cmp   #'B'
    bne   :+
    ldy   #$02
-   jmp   execrom        ; execute RAM bank @ $E000
+   jmp   execrom        ; execute 2nd ROM bank @ $E000
 :
    cmp   #'T'
    bne   :+
@@ -268,6 +268,7 @@ brkjump:
 @jumptable:
    .word @user, chrinuc, chrcfg, prhex8, prhex16
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir
+   .word vt100
 @jumptableend:
 
 signature:

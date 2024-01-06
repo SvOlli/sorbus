@@ -55,3 +55,8 @@ Documentation Of Old Hardware
 -----------------------------
 * [Apple 1 Basic](https://archive.org/download/apple1_basic_manual/apple1_basic_manual_text.pdf)
 * [Apple 1 KRUSADER](https://raw.githubusercontent.com/st3fan/krusader/master/krusader13.pdf)
+
+VT100 Escape Sequences
+----------------------
+* [VT100](https://www2.ccs.neu.edu/research/gpc/VonaUtils/vona/terminal/vtansi.htm)
+* [VT100](https://github.com/0x5c/VT100-Examples/raw/master/vt_seq.md)

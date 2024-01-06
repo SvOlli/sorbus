@@ -7,3 +7,6 @@
 .global  copybios
 .global  uppercase
 .global  chrinuc
+.global  vt100
+.global  bin2ascii
+.global  ascii2bin

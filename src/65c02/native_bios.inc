@@ -104,3 +104,18 @@
 ; $030d: load address hi
 ; if load address hi = $00 display on screen using CHROUT
 .define CPMDIR    $09
+
+; render VT100 escape sequences
+; Y: sequence id
+;   $00: set cursor pos (in: X=col, A=row, 0 based)
+;   $01: set scroll area (in A=start, X=end)
+;   $02: set text attributes (colors) (30..37 bgcol, 40..47 fgcol, DECIMAL)
+;   $03: get cursor pos (out: X=col, A=row, 1 based)
+;   $04: clear screen
+;   $05: clear to end of line
+;   $06: reset scroll area
+;   $07: scroll down
+;   $08: scroll up
+;   $09: save cursor pos
+;   $0A: restore cursor pos
+.define VT100     $0A

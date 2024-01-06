@@ -4,8 +4,7 @@
 ; [X] Implement SAVE & LOAD via interrupts
 ; [X] Implement SYS command
 ; [X] Allow BASIC keywords to be entered as lowercase
-; [ ] Allow BASIC variables to be entered as lowercase
-; [ ] Fix VAL$("9E39") error
+; [X] Allow BASIC variables to be entered as lowercase
 ; file taken from http://searle.x10host.com/6502/Simple6502.html
 
 ; Microsoft BASIC for 6502 (OSI VERSION)
@@ -2822,9 +2821,15 @@ L2F29:
 ;   = 0 IF NOT
 ; ----------------------------------------------------------------------------
 ISLETC:
-   cmp     #$41
+   cmp     #'a'         ; crude hack to allow lowercase as well for varnames
+   bcc     :+
+   cmp     #'z'+1
+   bcs     :+
+   and     #$df
+:
+   cmp     #'A'
    bcc     L2F3C
-   sbc     #$5B
+   sbc     #'Z'+1
    sec
    sbc     #$A5
 L2F3C:
@@ -5810,22 +5815,13 @@ L4098:
    sty     MEMSIZ+1
    sta     FRETOP
    sty     FRETOP+1
-L4106:
-   lda     #<QT_TERMINAL_WIDTH
-   ldy     #>QT_TERMINAL_WIDTH
-   jsr     STROUT
-   jsr     NXIN
-   stx     TXTPTR
-   sty     TXTPTR+1
-   jsr     CHRGET
-   tay
-   beq     L4136
-   jsr     LINGET
-   lda     LINNUM+1
-   bne     L4106
-   lda     LINNUM
-   cmp     #$10
-   bcc     L4106
+   lda     #$fe
+   tax
+   ldy     #$00         ; set cursor position
+   int     VT100        ; vt100 interrupt
+   ldy     #$03         ; get cursor position (size)
+   int     VT100        ; vt100 interrupt
+   txa                  ; X contains columns
    sta     Z17
 L4129:
    sbc     #$0E
@@ -5876,11 +5872,6 @@ L4192:
    sty     GORESTART+2
    jmp     (GORESTART+1)
 
-QT_TERMINAL_WIDTH:
-   .byte   "TERMINAL WIDTH"
-   .byte   0
-QT_BYTES_FREE:
-   .byte   " BYTES FREE",0
 QT_MESSAGE:
    .byte   CR,LF
    .byte   "OSI 6502 BASIC VERSION 1.0 REV 3.2"
@@ -5888,6 +5879,8 @@ QT_MESSAGE:
    .byte   "WRITTEN BY RICHARD W. WEILAND."
    .byte   CR,LF
    .byte   "COPYRIGHT 1977 BY MICROSOFT CO.",0
+QT_BYTES_FREE:
+   .byte   " BYTES FREE",0
 
 
 .out "   ================="

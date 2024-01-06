@@ -72,8 +72,8 @@ cpm_nsect = cpm_fname + $18 ; word: load,save: number of sectors (save: left)
 cpm_lblck = cpm_fname + $1a ; wordlist: load,save: block list for file
 cpm_blend = cpm_lblck + $40 ; end of memory used, should be $035a
 
-buffer    = $df80        ; scratchbuffer
-tmp16     = $fe          ; also used by jsr PRINT
+buffer    = $df80       ; scratchbuffer
+tmp16     = TMP16       ; also used by jsr PRINT
 
 .define  DEBUG 0
 
@@ -127,7 +127,6 @@ cpmname:
    beq   @done          ; $00 - end of file
    and   #$7f           ; comparison is on ASCII only
    jsr   uppercase      ; and also uppercase
-:
    cmp   #'.'
    bne   @nodot
    ldx   #$08
