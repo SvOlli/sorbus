@@ -34,16 +34,8 @@ endfunction()
 
 function(dharawrite out_file in_file)
    add_custom_target(${out_file} ALL
-      $<TARGET_FILE:dharatool> dharawrite "${in_file}" "${out_file}"
+      $<TARGET_FILE:dharatool> dharawrite "../65c02/${in_file}" "${out_file}"
       DEPENDS ${in_file} ${dharatool}
-   )
-endfunction()
-
-function(gencpmfs out_file)
-   file(GLOB CPM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/*/*")
-   add_custom_command(OUTPUT ${out_file}
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh" "${out_file}" $<TARGET_FILE:native_cpm_bootblock> "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
-      DEPENDS ${native_cpm_bootblock} ${CPM_FILES}
    )
 endfunction()
 
@@ -160,5 +152,4 @@ uf2join(native_alpha_picotool
    native_cpmfs
    native_alpha
 )
-gencpmfs(native_cpmfs.img)
 dharawrite(native_cpmfs.dhara native_cpmfs.img)

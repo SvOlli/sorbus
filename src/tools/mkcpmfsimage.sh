@@ -2,13 +2,17 @@
 
 set -e
 
-if [ ${#} -ne 3 ]; then
+if [ ${#} -lt 3 ]; then
    cat <<EOF
-usage: $0 <output_image> <path_to_cpm_bootblock> <path_to_cpm_data>
+usage: $0 <output_image> <path_to_cpm_bootblock> <path_to_cpm_data> (<extra_files>...)
 
 <path_to_cpm_data> will be scanned for directories with the numbers
 "0" to "15". The files in that directory will be copied to the
 corresponding "user partition".
+
+<extra_files> are in the format "<user>.<filename>.<ext>".
+
+got: ${0} ${@}
 EOF
    exit 1
 fi
@@ -47,11 +51,26 @@ fi
 
 rm -f "${OUTPUT}"
 mkfs.cpm -f "${FORMAT}" -b "${BOOTBLOCK}" "${OUTPUT}"
-for i in [0-9]*/*;do
+for i in [0-9]*/* $@;do
    # skip directories
    [ -d "${i}" ] && continue
-   user="${i%/*}"
-   cpmcp -f "${FORMAT}" "${OUTPUT}" "${i}" ${user}:
+   case "${i}" in
+   /*) # argument
+      basename="${i##*/}"
+      user="${basename%%.*}"
+      outfile="${basename#*.}"
+   ;;
+   */*) # src/bin/cpm/...
+      user="${i%/*}"
+      outfile="" # keep original filename
+   ;;
+   *)
+      echo "don't know how to handle '${i}'"
+      exit 20
+   ;;
+   esac
+   echo cpmcp -f "${FORMAT}" "${OUTPUT}" "${i}" "${user}:${outfile}"
+   cpmcp -f "${FORMAT}" "${OUTPUT}" "${i}" "${user}:${outfile}"
 done
 cpmchattr -f "${FORMAT}" "${OUTPUT}" sr 0:ccp.sys
 set +x

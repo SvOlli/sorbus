@@ -10,12 +10,28 @@ if( CPM65_PATH )
       )
 endif()
 
-function(runmake out_file in_dir)
+function(runmake target in_dir)
    message(STATUS "running Makefile in ${in_dir}")
    file(GLOB SRC_FILES "${in_dir}/*")
-   add_custom_target(${out_file}
-      COMMAND make -C "${CMAKE_CURRENT_SOURCE_DIR}/${in_dir}" "OUTDIR=${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/${out_file}"
+   add_custom_target(${target} ALL
+      COMMAND make -C "${CMAKE_CURRENT_SOURCE_DIR}/${in_dir}" "OUTDIR=${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/${target}.bin"
       DEPENDS ${SRC_FILES} native_kernel)
+endfunction()
+
+function(gencpmfs target)
+   set(extra_files)
+   foreach(file ${CPMFS_EXTRA_TARGETS})
+      set(extra_files ${extra_files} $<TARGET_FILE:${file}>)
+   endforeach()
+   file(GLOB CPM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/*/*")
+   add_custom_target(${target} ALL
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh"
+         "${target}"
+         $<TARGET_FILE:native_cpm_bootblock>
+         "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
+         ${extra_files}
+      DEPENDS ${native_cpm_bootblock} ${CPM_FILES} ${CPMFS_EXTRA_TARGETS}
+   )
 endfunction()
 
 function(src2hex hex_file bin_file startaddr)
@@ -33,9 +49,19 @@ function(target_type target system)
       target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/native_kernel.ld")
    elseif( "${system}" STREQUAL "native" )
       target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/rawram.ld")
+   elseif( "${system}" STREQUAL "sx4" )
+      target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/native_sx4.ld")
+      set(CPMFS_EXTRA_TARGETS ${target} ${CPMFS_EXTRA_TARGETS} PARENT_SCOPE)
+      set_target_properties(${target} PROPERTIES PREFIX "10.")
+      set_target_properties(${target} PROPERTIES SUFFIX ".sx4")
    else()
       message(FATAL_ERROR "unknown target_type: ${system}")
    endif()
+endfunction()
+
+function(target_type_sx4 target)
+   target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/native_sx4.ld")
+   set(SX4_FILES ${SX4_FILES} "${CMAKE_CURRENT_BINARY_DIR}/${target}.bin")
 endfunction()
 
 function(target_type_addr target system startaddr)
@@ -92,8 +118,8 @@ target_type(native_kernel native_kernel)
 
 add_executable(native_cpm_bootblock
    linkcpm.s
-   ../bin/cpm/sorbus.bin
-   ../bin/cpm/bdos.sys
+   ../bin/cpm/CPM
+   ../bin/cpm/BDOS
    )
 target_type(native_cpm_bootblock native_kernel)
 
@@ -117,8 +143,9 @@ add_executable(native_writeboot
    )
 target_type_addr(native_writeboot native 0x1000)
 
-add_executable(native_memcheck
+add_executable(memcheck
    memcheck.s
    )
-target_type_addr(native_memcheck native 0x0100)
+target_type(memcheck sx4)
 
+gencpmfs(native_cpmfs.img)

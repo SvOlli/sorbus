@@ -14,7 +14,7 @@ IOEND  := $e0
    ldx   #$01
    stx   BANK
    ldy   #$00
-   inx                  ; start ram write at $0200
+   ldx   #$05           ; start ram write at $0500
    sty   VEC+0
 @writeloopx:
    stx   VEC+1
@@ -38,7 +38,7 @@ IOEND  := $e0
    jsr   PRINT
    .byte "reading",10,0
    stx   BANK
-   ldx   #$02           ; start ram read at $0200
+   ldx   #$05           ; start ram read at $0500
 @readloopx:
    stx   VEC+1
 @readloop:
