@@ -22,7 +22,7 @@
 ;-------------------------------------------------------------------------
 
 .if 1
-; share registers with TIM (TMP0,TMP2,TMP4,TMP6)
+.define  USE16COLS   1
 XAML           :=     $10            ; Last "opened" location Low
 XAMH           :=     $11            ; Last "opened" location High
 STL            :=     $12            ; Store address Low
@@ -33,6 +33,7 @@ YSAV           :=     $16            ; Used to see if hex value is given
 MODE           :=     $17            ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
 .else
 ; original WozMon addresses for reference
+.define  USE16COLS   0
 XAML           :=     $24            ; Last "opened" location Low
 XAMH           :=     $25            ; Last "opened" location High
 STL            :=     $26            ; Store address Low
@@ -232,6 +233,13 @@ nextprint:
    jsr   CHROUT         ; print colon
 
 prdata:
+.if USE16COLS
+   cmp   #$08           ; print extra space on 8th column
+   bne   :+
+   lda   #' '           ; " "
+   jsr   CHROUT         ; print space
+:
+.endif
    lda   #' '           ; " "
    jsr   CHROUT         ; print space
 .ifpc02
@@ -254,7 +262,11 @@ xamnext:
    inc   XAMH
 :
    lda   XAML
+.if USE16COLS
+   and   #$0f           ; start new line every 16 addresses
+.else
    and   #$07           ; start new line every 8 addresses
+.endif
    bpl   nextprint      ; jmp
 
 ;-------------------------------------------------------------------------

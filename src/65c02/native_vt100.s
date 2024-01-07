@@ -1,9 +1,9 @@
 
-.segment "CODE"
-
 .include "native.inc"
 .include "native_bios.inc"
 .include "native_kernel.inc"
+
+.segment "CODE"
 
 escbuffer = $0200       ; longest sequence: $1b,"[000;000m",0
                         ;                       01234567890 = 11 bytes

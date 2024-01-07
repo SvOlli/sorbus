@@ -68,7 +68,8 @@ reset:
 
 @iloop:
    jsr   PRINT
-   .byte 10,"Sorbus Native V", VERSION, ": 0-3)Boot, B)ASIC, T)IM, W)ozMon? ", 0
+   .byte 10,"Sorbus Native V", VERSION
+   .byte ": 0-3)Boot, L)oader, B)ASIC, T)IM, W)ozMon? ", 0
 :
    jsr   chrinuc        ; wait for keypress and make it uppercase
    bcs   :-
@@ -76,6 +77,10 @@ reset:
    bcc   :+
    cmp   #'4'
    bcc   @bootblock
+:
+   cmp   #'L'
+   bne   :+
+   jmp   loader
 :
    cmp   #'R'           ; hidden CP/M debugging feature
    bne   :+
@@ -97,23 +102,8 @@ reset:
 .endif
 
    cmp   #'I'           ; developer info: print out core info string
-   bne   @noinfo
+   beq   @info
 
-   lda   #$0a
-   jsr   CHROUT
-
-:
-   lda   TRAP
-   bne   :-
-:
-   lda   TRAP
-   beq   @iloop
-   jsr   prhex8
-   lda   #' '
-   jsr   CHROUT
-   bra   :-
-
-@noinfo:
    cmp   #'W'
    bne   @iloop
 
@@ -125,6 +115,23 @@ reset:
 @bootblock:
    and   #$03
    jmp   boota
+
+@info:
+   lda   #$0a
+   jsr   CHROUT
+
+:
+   lda   TRAP
+   bne   :-
+:
+   lda   TRAP
+   bne   @out
+   jmp   @iloop
+@out:
+   jsr   prhex8
+   lda   #' '
+   jsr   CHROUT
+   bra   :-
 
 uirq:
    ; dummy IRQ handler: prints out IRQ and checks source

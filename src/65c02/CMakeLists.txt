@@ -85,6 +85,7 @@ add_executable(native_kernel
    native_tim.s
    native_woz.s
    native_vt100.s
+   native_loader.s
    native_bios.s
    )
 target_type(native_kernel native_kernel)

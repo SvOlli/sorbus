@@ -10,3 +10,4 @@
 .global  vt100
 .global  bin2ascii
 .global  ascii2bin
+.global  loader
