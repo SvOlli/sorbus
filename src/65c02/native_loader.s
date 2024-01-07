@@ -16,10 +16,14 @@ USER        := $0a      ; SX4 files are on user 10
 DIRSTART    := $0400    ; must be on page boundry
 
 loader:
-   lda   #>DIRSTART
+   ldx   #$00
+:
+   stz   readp,x
+   inx
+   bpl   :-
+
    stz   $030c
-   stz   readp+0
-   stz   endp+0
+   lda   #>DIRSTART
    sta   $030d
    sta   readp+1
    sta   endp+1
@@ -214,7 +218,8 @@ loader:
 @left:
    ldx   readp+1
    dex
-   bmi   :+
+   cpx   #>DIRSTART
+   bcc   :+
    stx   readp+1
 :
    bra   @prpage2

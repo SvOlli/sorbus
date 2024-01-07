@@ -148,4 +148,9 @@ add_executable(memcheck
    )
 target_type(memcheck sx4)
 
+add_executable(1sthello
+   native_hello.s
+   )
+target_type(1sthello sx4)
+
 gencpmfs(native_cpmfs.img)
