@@ -1,6 +1,6 @@
 
 # Parameters
-CPM65_PATH = ../cpm65
+#CPM65_PATH = ../cpm65
 #EXTRA_CMAKE_ARGS += -DCMAKE_VERBOSE_MAKEFILE=ON
 
 
@@ -11,11 +11,15 @@ $(info Using local pico sdk at: $(PICO_SDK_PATH))
 else
 $(info Using global pico sdk at: $(PICO_SDK_PATH))
 endif
-EXTRA_CMAKE_ARGS += -DPICO_SDK_PATH=$(PICO_SDK_PATH)
+EXTRA_CMAKE_ARGS += -DPICO_SDK_PATH="$(PICO_SDK_PATH)"
 
 CMAKE_CPM65_PATH = $(realpath $(CPM65_PATH))
 ifneq ($(CMAKE_CPM65_PATH),)
 EXTRA_CMAKE_ARGS += -DCPM65_PATH=$(CMAKE_CPM65_PATH)
+else
+  ifneq ($(wildcard external-build/cpm65/.*),)
+  EXTRA_CMAKE_ARGS += -DCPM65_PATH="$(realpath external-build/cpm65)"
+  endif
 endif
 
 
