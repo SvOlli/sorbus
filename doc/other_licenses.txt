@@ -1,0 +1,17 @@
+This project uses software that was developed under non=free licenses.
+
+src/65c02/native_osi_basic.s:
+This is OSI BASIC V1.0 REV 3.2
+Copyright 1977 Microsoft Co.
+It has been used with computers manufactured by Ohio Scientific Inc.
+
+src/65c02/native_tim.s:
+This is the Terminal Interface Monitor (TIM) of the MOS 6530-004.
+Copyright 1976 MOS Technology
+
+src/65c02/native_woz.s:
+This is WozMon of the Apple 1 Computer.
+Copyright 1976 Apple Computer Company
+
+However, all of this code has been modified to some degree to fit this
+project, the Sorbus Computer.

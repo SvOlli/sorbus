@@ -17,8 +17,6 @@ TRAMPOLINE    := $0100
 .include "native_kernel.inc"
 .include "native_cpmfs.inc"
 
-copybios   := TRAMPOLINE
-
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
 .PC02
@@ -233,7 +231,7 @@ execrom:                ; has to be called with Y=bank to switch to
 
 @trampoline:
    inc   BANK           ; this routine may only be called from bank 0 (RAM)
-   jsr   @copybios      ; copy $FF00-$FFFF to RAM
+   jsr   copybios       ; copy $FF00-$FFFF to RAM
    stz   BANK           ; set BANK back to $00 (RAM)
    rts
 @jmpbank0:
@@ -241,7 +239,7 @@ execrom:                ; has to be called with Y=bank to switch to
    jmp   $E000
 @trampolineend:
 
-@copybios:
+copybios:
    ; copy the BIOS page to RAM
    ldx   #$00
 :
@@ -275,7 +273,7 @@ brkjump:
 @jumptable:
    .word @user, chrinuc, chrcfg, prhex8, prhex16
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir
-   .word vt100
+   .word vt100, copybios
 @jumptableend:
 
 signature:

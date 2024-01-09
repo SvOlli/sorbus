@@ -1,4 +1,4 @@
-
+; labels used between different parts of the kernel
 .global  timstart
 .global  wozstart
 .global  print
@@ -11,3 +11,4 @@
 .global  bin2ascii
 .global  ascii2bin
 .global  loader
+.global  copybios

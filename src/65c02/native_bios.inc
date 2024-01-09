@@ -9,10 +9,11 @@
 ; usage:
 ; jsr PRINT
 ; .byte "text", 0
-; this routine saves all CPU registers, including P
+; this routine saves all CPU registers, including P, so it can be used for
+; debugging messages
 .global  PRINT
 
-; non-API addresses required for using BIOS <-> kernel
+; non-API addresses required for BIOS <-> kernel calls
 .global  BIOS
 .global  IRQCHECK
 .global  brkjump        ; kernel only, doesn't matter in other banks
@@ -106,30 +107,24 @@
 .define CPMDIR    $09
 
 ; render VT100 escape sequences
-; Y: sequence id
-;   $00: set cursor pos (in: X=col, A=row, 1 based)
-;   $01: set scroll area (in A=start, X=end)
-;   $02: set text attributes (colors) (30..37 bgcol, 40..47 fgcol, DECIMAL)
-;   $03: get cursor pos (out: X=col, A=row, 1 based)
-;   $04: clear screen
-;   $05: clear to end of line
-;   $06: reset scroll area
-;   $07: scroll down
-;   $08: scroll up
-;   $09: save cursor pos
-;   $0A: restore cursor pos
+; Y: sequence id (see below)
 .define VT100     $0A
 
-.define VT100_CPOS_SET $00
-.define VT100_CPOS_GET $03
-.define VT100_CPOS_SAV $09
-.define VT100_CPOS_RST $0A
+.define VT100_CPOS_SET $00 ; set cursor pos (in: X=col, A=row, 1 based)
+.define VT100_CPOS_GET $03 ; get cursor pos (out: X=col, A=row, 1 based)
+.define VT100_CPOS_SAV $09 ; save cursor pos
+.define VT100_CPOS_RST $0A ; restore cursor pos
 
-.define VT100_SCRL_LIN $01
-.define VT100_SCRL_RES $06
-.define VT100_SCRL_DWN $07
-.define VT100_SCRL_UP  $08
+.define VT100_SCRL_LIN $01 ; set scroll area in lines (in A=start, X=end)
+.define VT100_SCRL_RES $06 ; reset scroll area
+.define VT100_SCRL_DWN $07 ; scroll down
+.define VT100_SCRL_UP  $08 ; scroll up
 
-.define VT100_COLORS   $02
-.define VT100_SCRN_CLR $04
-.define VT100_EOLN_CLR $05
+.define VT100_COLORS   $02 ; set text attributes (colors)
+                           ; (30..37 bgcol, 40..47 fgcol, DECIMAL)
+.define VT100_SCRN_CLR $04 ; clear screen
+.define VT100_EOLN_CLR $05 ; clear to end of line
+
+; copy the BIOS ($FF00-$FFFF) from ROM to RAM, so $E000-$FFFF can be banked
+; to RAM without losing the functionality of the kernel
+.define COPYBIOS  $0B

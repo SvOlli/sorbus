@@ -42,10 +42,12 @@
 .include "native_bios.inc"
 
 ; zero page
-ZP_START1 = $10
-ZP_START2 = $1D
-ZP_START3 = $6B
-ZP_START4 = $75
+ZP_START  = $10
+
+;ZP_START1 = $10
+;ZP_START2 = $1D
+;ZP_START3 = $6B
+;ZP_START4 = $75
 
 ;extra ZP variables
 USR      := $001A   ; 3 bytes
@@ -80,163 +82,165 @@ CRLF_2 := LF
 
 .feature org_per_seg
 .zeropage
-.org $0000
-.org ZP_START1
-GORESTART:
+;.org $0000
+.org ZP_START
+;.org ZP_START1
+GORESTART:  ; $0010
    .res 3
-GOSTROUT:
+GOSTROUT:   ; $0013
    .res 3
-GOAYINT:
+GOAYINT:    ; $0016
    .res 2
-GOGIVEAYF:
+GOGIVEAYF:  ; $0018
    .res 2
 
-.org ZP_START2
-Z15:
+;.org ZP_START2
+Z15:        ; $001A
    .res 1
-POSX:
+POSX:       ; $001B
    .res 1
-Z17:
+Z17:        ; $001C
    .res 1
-Z18:
+Z18:        ; $001D
    .res 1
 LINNUM:
-TXPSV:
+TXPSV:      ; $001E
    .res 2
 .if 1
 INPUTBUFFER:
+   .res $47
 .else
 INPUTBUFFER = $0360
 .endif
 
-.org ZP_START3
-CHARAC:
+;.org ZP_START3
+CHARAC:     ; $0020
    .res 1
-ENDCHR:
+ENDCHR:     ; $0021
    .res 1
-EOLPNTR:
+EOLPNTR:    ; $0022
    .res 1
-DIMFLG:
+DIMFLG:     ; $0023
    .res 1
-VALTYP:
+VALTYP:     ; $0024
    .res 1
-DATAFLG:
+DATAFLG:    ; $0025
    .res 1
-SUBFLG:
+SUBFLG:     ; $0026
    .res 1
-INPUTFLG:
+INPUTFLG:   ; $0027
    .res 1
-CPRMASK:
+CPRMASK:    ; $0028
    .res 1
-Z14:
+Z14:        ; $0029
    .res 1
 
-.org ZP_START4
-TEMPPT:
+;.org ZP_START4
+TEMPPT:     ; $002A
    .res 1
-LASTPT:
+LASTPT:     ; $002B
    .res 2
-TEMPST:
+TEMPST:     ; $003D
    .res 9
-INDEX:
+INDEX:      ; $0036
    .res 2
-DEST:
+DEST:       ; $0038
    .res 2
-RESULT:
+RESULT:     ; $003A
    .res BYTES_FP
 RESULT_LAST = RESULT + BYTES_FP-1
-TXTTAB:
+TXTTAB:     ; $003E
    .res 2
-VARTAB:
+VARTAB:     ; $0040
    .res 2
-ARYTAB:
+ARYTAB:     ; $0042
    .res 2
-STREND:
+STREND:     ; $0044
    .res 2
-FRETOP:
+FRETOP:     ; $0046
    .res 2
-FRESPC:
+FRESPC:     ; $0048
    .res 2
-MEMSIZ:
+MEMSIZ:     ; $004A
    .res 2
-CURLIN:
+CURLIN:     ; $004C
    .res 2
-OLDLIN:
+OLDLIN:     ; $004E
    .res 2
-OLDTEXT:
+OLDTEXT:    ; $0050
    .res 2
-Z8C:
+Z8C:        ; $0052
    .res 2
-DATPTR:
+DATPTR:     ; $0054
    .res 2
-INPTR:
+INPTR:      ; $0056
    .res 2
-VARNAM:
+VARNAM:     ; $0058
    .res 2
-VARPNT:
+VARPNT:     ; $005A
    .res 2
-FORPNT:
+FORPNT:     ; $005C
    .res 2
-LASTOP:
+LASTOP:     ; $005E
    .res 2
-CPRTYP:
+CPRTYP:     ; $0060
    .res 1
 FNCNAM:
-TEMP3:
+TEMP3:      ; $0061
    .res 2
-DSCPTR:
+DSCPTR:     ; $0063
    .res 2
-DSCLEN:
+DSCLEN:     ; $0065
    .res 2
 JMPADRS   := DSCLEN + 1
 
-Z52:
+Z52:        ; $0067
    .res 1
 ARGEXTENSION:
-TEMP1:
+TEMP1:      ; $0068
    .res 1
-HIGHDS:
+HIGHDS:     ; $0069
    .res 2
-HIGHTR:
+HIGHTR:     ; $006B
    .res 2
 INDX:
 TMPEXP:
-TEMP2:
+TEMP2:      ; $006D
    .res 1
-EXPON:
+EXPON:      ; $006E
    .res 1
 LOWTR:
-LOWTRX:
+LOWTRX:     ; $006F
    .res 1
-EXPSGN:
+EXPSGN:     ; $0070
    .res 1
-FAC:
+FAC:        ; $0071
    .res BYTES_FP
 FAC_LAST = FAC + BYTES_FP-1
-FACSIGN:
+FACSIGN:    ; $0075
    .res 1
-SERLEN:
+SERLEN:     ; $0076
    .res 1
-SHIFTSIGNEXT:
+SHIFTSIGNEXT: ; $0077
    .res 1
-ARG:
+ARG:        ; $0078
    .res BYTES_FP
 ARG_LAST = ARG + BYTES_FP-1
-ARGSIGN:
+ARGSIGN:    ; $007C
    .res 1
-STRNG1:
+STRNG1:     ; $007D
    .res 2
 SGNCPR = STRNG1
 FACEXTENSION = STRNG1+1
-STRNG2:
+STRNG2:     ; $007F
    .res 2
-CHRGET:
+CHRGET:     ; $0081
 TXTPTR = <(GENERIC_TXTPTR-GENERIC_CHRGET + CHRGET)
 CHRGOT = <(GENERIC_CHRGOT-GENERIC_CHRGET + CHRGET)
 CHRGOT2 = <(GENERIC_CHRGOT2-GENERIC_CHRGET + CHRGET)
 RNDSEED = <(GENERIC_RNDSEED-GENERIC_CHRGET + CHRGET)
 
-ZPEND:
+ZPEND = CHRGET + GENERIC_CHRGET_END - GENERIC_CHRGET
 
 .segment "CODE"
 BASTART:
@@ -1033,20 +1037,21 @@ INLIN:
    ldx   #$00
 INLIN2:
    jsr   GETLN
-   cmp   #$07
+   cmp   #$07           ; CTRL-G
    beq   L2443
-   cmp   #$0D
+   cmp   #$0D           ; RETURN
    beq   L2453
-   cmp   #$08 ; BACKSPACE
+   cmp   #$08           ; BACKSPACE
    beq   L2420
-   cmp   #$7F ; DEL
+   cmp   #$7F           ; DEL
    beq   L2420
+   bcs   INLIN2
    cmp   #$20
    bcc   INLIN2
-   cmp   #$7D
-   bcs   INLIN2
-   cmp   #$40 ; @
+.if 0
+   cmp   #$40           ; @
    beq   L2423
+.endif
 L2443:
    cpx   #$47
    bcs   L244C
@@ -1054,7 +1059,7 @@ L2443:
    inx
    .byte $2C
 L244C:
-   lda   #$07 ; BEL
+   lda   #$07           ; BEL
    jsr   OUTDO
    bne   INLIN2
 L2453:
@@ -5868,6 +5873,7 @@ GENERIC_CHRGET_END:
 
 .out "   ================="
 .out .sprintf( "   BASIC size: $%04x", * - BASTART )
-.out .sprintf( "   ZP end:   $%04x", ZPEND + GENERIC_CHRGET_END - GENERIC_CHRGET )
+.out .sprintf( "   CHRGET:     $%04x", CHRGET )
+.out .sprintf( "   ZP end:     $%04x", ZPEND + GENERIC_CHRGET_END - GENERIC_CHRGET )
 .out .sprintf( "   number tokens: %d", NUM_TOKENS )
 .out "   ================="
