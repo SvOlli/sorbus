@@ -3,7 +3,7 @@
 ;
 ; This ROM for the native mode is in very early development.
 
-.define VERSION "0.2"
+.define VERSION "0.3"
 .segment "CODE"
 
 ; zeropage addresses used by this part of ROM
@@ -251,10 +251,12 @@ copybios:
 
 brkjump:
    asl                  ; make it word offset
+   bcs   @overflow      ; sanity check: BRK operand >= $80
    cmp   #<(@jumptableend - @jumptable)
-   bcc   :+             ; sanity check: if BRK operand out of scope
+   bcc   @okay          ; sanity check: if BRK operand out of scope
+@overflow:
    lda   #$00           ; reset, user BRK can lda (TMP16) to get BRK operand
-:
+@okay:
    tax
    lda   @jumptable+1,x ; get address from jump table
    pha

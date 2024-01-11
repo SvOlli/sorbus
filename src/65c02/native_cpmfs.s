@@ -56,7 +56,6 @@
 ; exomized files
 
 
-.global  cpm_fname
 freetab   = $0200
 cpm_fname = $0300       ; format: St F0 F1 F2 F3 F4 F5 F6 F7 E0 E1 E2
 cpm_saddr = cpm_fname + $0c ; word: load,save: start address

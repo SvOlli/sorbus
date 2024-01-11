@@ -176,7 +176,7 @@ ascii2bin:
    lda   a2b_10,y
    adc   convtmp
    sta   convtmp
-    
+
    ; finally got for 100s
    lda   escbuffer-2,x
    jsr   isdigit

@@ -1,6 +1,7 @@
 
 .include "native.inc"
 .include "native_bios.inc"
+.include "native_cpmfs.inc"
 .include "native_kernel.inc"
 
 .segment "CODE"
@@ -22,9 +23,11 @@ loader:
    inx
    bpl   :-
 
-   stz   $030c
+   stz   cpm_saddr+0
+   stz   readp+0
+   stz   endp+0
    lda   #>DIRSTART
-   sta   $030d
+   sta   cpm_saddr+1
    sta   readp+1
    sta   endp+1
 
@@ -66,16 +69,16 @@ loader:
    inc   readp+1
 :
    lda   readp+0
-   cmp   $030e
+   cmp   cpm_eaddr+0
    bne   @loop
    lda   readp+1
-   cmp   $030f
+   cmp   cpm_eaddr+1
    bne   @loop
 
    lda   #$00
    sec
    sbc   endp+0
-   
+
    tay
 :
    beq   @clrdone
@@ -102,7 +105,7 @@ loader:
 
    ldy   #VT100_SCRN_CLR
    int   VT100
-   
+
    lda   #$01
    jsr   @setline
    int   VT100
@@ -203,7 +206,7 @@ loader:
    beq   @leave
    cmp   #'['
    bne   @inputloop+2
-   
+
    int   CHRINUC
    cmp   #'A'
    beq   @up
