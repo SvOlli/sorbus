@@ -68,7 +68,7 @@ bool cpu_running_request       = true;
 
 // number of states should be power of 2
 uint32_t buslog_states[512]    = { 0 };
-uint     buglog_index          = 0;
+uint     buslog_index          = 0;
 uint32_t watchdog_cycles_total = 0;
 
 uint16_t dhara_flash_size = 0;
@@ -468,7 +468,7 @@ void debug_backtrace()
    printf( "system trap triggered, last cpu actions:\n" );
    for( int i = 0; i < count_of(buslog_states); ++i )
    {
-      uint32_t _state = buslog_states[(i + buglog_index) & (count_of(buslog_states)-1)];
+      uint32_t _state = buslog_states[(i + buslog_index) & (count_of(buslog_states)-1)];
       debug_dump_state( count_of(buslog_states)-i, _state );
    }
    debug_dump_state( 0, gpio_get_all() );
@@ -806,7 +806,7 @@ void bus_run()
       if( state & bus_config.mask_rdy )
       {
          // state is not valid on the data when RP2040 is writing
-         buslog_states[buglog_index++ & (count_of(buslog_states)-1)] = gpio_get_all();
+         buslog_states[buslog_index++ & (count_of(buslog_states)-1)] = gpio_get_all();
       }
 
       // done: set clock to low

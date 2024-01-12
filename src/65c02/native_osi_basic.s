@@ -6,6 +6,7 @@
 ; [X] Allow BASIC keywords to be entered as lowercase
 ; [X] Allow BASIC variables to be entered as lowercase
 ; [ ] Change hardcoded $03xx addresses for CP/M filename to variable names
+; [X] Reuse "No For" as "Not Found" error
 ; file taken from http://searle.x10host.com/6502/Simple6502.html
 
 ; Microsoft BASIC for 6502 (OSI VERSION)
@@ -436,6 +437,10 @@ setfn:
 LOAD:
    jsr   setfn
    int   CPMLOAD
+   bcc   :+
+
+   ldx   #ERR_NOFOR
+   jmp   ERROR
 
    lda   TXTTAB
    sta   VARTAB

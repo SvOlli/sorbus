@@ -123,7 +123,7 @@ cpmname:
    ldx   #$01           ; cpm_fname stored with offset 1
 @loop:
    lda   (tmp16),y      ; load char of cpm_fname
-   beq   @done          ; $00 - end of file
+   beq   cpmexitok      ; $00 - end of file
    and   #$7f           ; comparison is on ASCII only
    jsr   uppercase      ; and also uppercase
    cmp   #'.'
@@ -151,13 +151,7 @@ cpmload:
 
    beq   cpmexiterr
    ldx   #$00           ; select read mode
-   jsr   dmafile
-
-   lda   ID_MEM+0
-   sta   cpm_eaddr+0
-   lda   ID_MEM+1
-   sta   cpm_eaddr+1
-   rts
+   jmp   dmafile
 
 cpmsave:
    jsr   cpmerase       ; in order to replace, delete first
@@ -179,15 +173,12 @@ cpmdir:
 
    lda   tmp16+1
    beq   :+
-.if 0
-   lda   #$e5           ; write end of dir marker
-   sta   (tmp16)
-.else
    lda   tmp16+0        ; write end address to cpm_eaddr
    sta   cpm_eaddr+0
    lda   tmp16+1
    sta   cpm_eaddr+1
-.endif
+cpmexitok:
+   clc
    rts
 :
    lda   #$0a
@@ -295,6 +286,12 @@ dmafile:
    lda   tmp16+1
    cmp   cpm_nsect+1
    bne   @loop
+
+   lda   ID_MEM+0
+   sta   cpm_eaddr+0
+   lda   ID_MEM+1
+   sta   cpm_eaddr+1
+
    clc                  ; C=0: all okay
    rts
 

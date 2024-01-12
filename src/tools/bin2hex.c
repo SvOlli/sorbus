@@ -52,7 +52,7 @@ int main( int argc, char *argv[] )
       fprintf( stderr, "file has zero size\n" );
       return 13;
    }
-   if( (addr + filesize) >= 0x10000 )
+   if( (addr + filesize) > 0x10000 )
    {
       fprintf( stderr, "out of address space\n" );
       return 8;
@@ -96,12 +96,13 @@ int main( int argc, char *argv[] )
          fprintf( f, "%04x:", addr );
       }
       fprintf( f, " %02x", buffer[i] );
+      usleep( 150 );
       if( (addr & 0x07) == 0x07 )
       {
          if( f == stdout )
          {
             fprintf( f, "\r\n" );
-            usleep( 10000 );
+            usleep( 15000 );
          }
          else
          {

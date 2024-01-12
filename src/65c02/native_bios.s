@@ -101,10 +101,16 @@ IRQCHECK:
    stx   BANK           ; switch to first ROM bank
    jsr   brkjump        ; to call the subroutine selector
 
+   php
    ldy   BRK_SY         ; get stored Y
+   pla
+   sta   BRK_SY         ; use stored Y for now storing P
    ldx   BRK_SX         ; get stored X
    lda   BRK_SB         ; get stored BANK
    sta   BANK           ; restore saved bank
+   pla                  ; drop P from stack
+   lda   BRK_SY         ; get P from store
+   php                  ; put it on the stack, so flags can be returned
    lda   BRK_SA         ; get stored accumulator
    rti                  ; return to calling code
 
