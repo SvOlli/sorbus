@@ -13,7 +13,7 @@ set -e
 rm -rf "${WORKDIR}"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
-git clone --depth 1 "${URL}" .
+git clone --depth 1 "${URL}" "${PWD}"
 make "${BUILDTARGET}"
 cp -v "${BUILDTARGET}" "${TARGETDIR}/tali4th2.sx4"
 

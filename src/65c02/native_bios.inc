@@ -1,9 +1,9 @@
 
 ; $FF00: read a character from UART in A, returns C=1 when no queue is empty
-.global  CHRIN
+.define CHRIN  $FF00
 
 ; $FF03: write a character from A to UART
-.global  CHROUT
+.define CHROUT $FF03
 
 ; $FF06: print a string
 ; usage:
@@ -11,7 +11,7 @@
 ; .byte "text", 0
 ; this routine saves all CPU registers, including P, so it can be used for
 ; debugging messages
-.global  PRINT
+.define PRINT  $FF06
 
 ; non-API addresses required for BIOS <-> kernel calls
 .global  BIOS
@@ -57,6 +57,14 @@
 ; out
 ; -
 .define PRHEX16   $04
+
+; used by CPM filesystem routines
+.define CPM_FNAME $0300
+.define CPM_SADDR CPM_FNAME+$0c
+.define CPM_EADDR CPM_FNAME+$0e
+; full memory block starts at $0300-$35a
+; (more if a file is loaded that is larger than 64k)
+; during save, the memory $0200-$02ff is used for available blocks map
 
 ; convert a filename from "NAME.EXT" to format required for load/save/delete
 ; in:

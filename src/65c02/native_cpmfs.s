@@ -131,6 +131,21 @@ cpmname:
    ldx   #$08
    bne   @skip
 @nodot:
+   phx
+   cmp   #' '+1         ; filter out control codes + space
+   bcc   @bad
+   ldx   #badfnchars_size-1
+@chkchars:
+   cmp   badfnchars,x   ; check for bad ascii characters
+   beq   @bad
+   dex
+   bpl   @chkchars
+   ;bra   @ok
+   .byte $2c            ; skip next two bytes
+@bad:
+   lda   #'_'           ; replace bad character with '_'
+@ok:
+   plx
    sta   cpm_fname,x
 @skip:
    iny
@@ -734,6 +749,10 @@ setmask:
 testmask:
    ; index bits normal (bit 2-0)
    .byte $80,$40,$20,$10,$08,$04,$02,$01 ; bit7 = block0
+
+badfnchars:
+   .byte "*/:<=>?[]"
+badfnchars_size = * - badfnchars
 
 .out "   ==================="
 .out .sprintf( "   CP/M fs size: $%04x", * - cpmname )

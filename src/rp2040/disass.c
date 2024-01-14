@@ -3,17 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*
- * 0x12345678
- * 1: bytes
- * 2: cycles
- * 3: penalties
- * 4: 0
- * 56: opcode
- * 7: bit0=numeric suffix 0-7
- * 8: addr_mode
- */
-
 typedef void (*addr_type_t)( char *s, uint16_t a, uint8_t ol, uint8_t oh );
 
 void addr_none( char *s, uint16_t a, uint8_t ol, uint8_t oh )
@@ -437,7 +426,7 @@ const uint32_t opcodes[0x100] =
 };
 
 const char *dis65c02( uint16_t addr, uint8_t opcode,
-                      uint8_t operand, uint8_t operand2 )
+                      uint8_t operand, uint8_t operand2, uint32_t *info )
 {
    static char buffer[16];
    uint32_t opcode_info = opcodes[opcode];
@@ -447,5 +436,11 @@ const char *dis65c02( uint16_t addr, uint8_t opcode,
             );
    
    addr_modes[opcode_info & 0xF]( &buffer[5], 0x1000, operand, operand2 );
+
+   if( info )
+   {
+      *info = opcode_info;
+   }
+
    return &buffer[0];
 }

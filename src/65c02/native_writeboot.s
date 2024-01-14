@@ -2,11 +2,6 @@
 .include "native.inc"
 .include "native_bios.inc"
 
-; TODO find a better way to define BIOS calls
-CHRIN  = $FF00
-CHROUT = $FF03
-PRINT  = $FF06
-
 ; this code writes the memory from $2000-$3FFF to the bootblock 1
 ; it is suggested to use bin2hex to transfer the bootblock data to memory
 

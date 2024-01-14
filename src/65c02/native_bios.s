@@ -8,13 +8,13 @@
 
 .segment "BIOS"
 BIOS:
-CHRIN:
+_chrin:
    ; read character from UART
    jmp   chrin
-CHROUT:
+_chrout:
    ; write character to UART
    jmp   chrout
-PRINT:
+_print:
    ; print a string while keeping all registers
    sta   ASAVE          ; save A, it is used together with
    php                  ;   processor status register,
@@ -114,6 +114,9 @@ IRQCHECK:
    lda   BRK_SA         ; get stored accumulator
    rti                  ; return to calling code
 
+.assert  CHRIN = _chrin, error, "CHRIN at wrong address"
+.assert  CHROUT = _chrout, error, "CHROUT at wrong address"
+.assert  PRINT = _print, error, "PRINT at wrong address"
 
 .out "   ================"
 .out .sprintf( "   BIOS size: $%04x", * - BIOS )

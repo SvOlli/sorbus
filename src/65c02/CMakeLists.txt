@@ -129,6 +129,13 @@ add_executable(native_basic
    native_bios_stub.s
    )
 target_type(native_basic native_kernel)
+add_executable(native_browser
+   native_browser.s
+   native_bios.s
+   native_bios_stub.s
+   )
+target_type(native_browser native_kernel)
+#target_type_addr(native_browser native 0xB000)
 
 # This doesn't work, as the glorious CMake de-duplicates the
 # "--large-alignment" option, which needs to be passed twice.
@@ -141,7 +148,7 @@ target_type(native_basic native_kernel)
 add_executable(native_writeboot
    native_writeboot.s
    )
-target_type_addr(native_writeboot native 0x1000)
+target_type_addr(native_writeboot native 0xC000)
 
 add_executable(memcheck
    memcheck.s
@@ -152,5 +159,10 @@ add_executable(1sthello
    native_hello.s
    )
 target_type(1sthello sx4)
+
+add_executable(sx4speed
+   native_sx4speed.s
+   )
+target_type(sx4speed sx4)
 
 gencpmfs(native_cpmfs.img)

@@ -108,7 +108,6 @@ loader:
 
    lda   #$01
    jsr   @setline
-   int   VT100
 
    jsr   PRINT
    .byte "Sorbus Program Loader",0
