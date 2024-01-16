@@ -7,6 +7,7 @@
 ; [X] Allow BASIC variables to be entered as lowercase
 ; [ ] Change hardcoded $03xx addresses for CP/M filename to variable names
 ; [X] Reuse "No For" as "Not Found" error
+; [ ] Fix bug: load file, then save it saves wrong filesize
 ; file taken from http://searle.x10host.com/6502/Simple6502.html
 
 ; Microsoft BASIC for 6502 (OSI VERSION)

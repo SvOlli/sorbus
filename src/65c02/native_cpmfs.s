@@ -630,7 +630,11 @@ dh_create:
    tay                  ; = offset in blocklist
 
    inx
-   stz   buffer,x       ; X=$0d: Bc
+   sec
+   lda   cpm_eaddr+0
+   sbc   cpm_saddr+0
+   and   #$7f
+   sta   buffer,x       ; X=$0d: Bc: bytes used in last sector
    inx
    stz   buffer,x       ; X=$0e: Xh
    inx

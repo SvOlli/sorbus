@@ -232,22 +232,21 @@ init:
 :
    ldx   #$00
 :
-   stz   readp,x
+   stz   readp,x        ; clear out used zero page memory
    inx
    bpl   :-
 
-   lda   #$0a
+   lda   #$0a           ; use application partition to start
    sta   user
 
-   ldy   #VT100_SCRN_CLR
-   int   VT100
-
-   lda   #$fe
+   lda   #$fe           ; set cursor to max bottom right
    tax
    ldy   #VT100_CPOS_SET
    int   VT100
    ldy   #VT100_CPOS_GET
-   int   VT100
+   int   VT100          ; now get cursor position to get screen size
+                        ; -> X: columns of screen
+                        ; -> A: rows of screen
 
    cmp   #$14
    bcc   @toosmall
@@ -260,35 +259,40 @@ init:
    jmp   ($fffc)
 
 :
-
    lda   #$01
    jsr   setline
    
+   ldy   #VT100_SCRN_CLR
+   int   VT100
+
    jsr   PRINT
    .byte "Sorbus Browser V0.1   User:    HW-Rev:",0
 
+   ; TRAP contains hardware information. Format:
+   ; ASCII of "SBC23" (only hardware code so far), followed by a byte < $20
+   ; then a binary sub-versioning ending with $00
 :
    lda   TRAP
-   bne   :-
+   bne   :-             ; read until $00
 
 :
    lda   TRAP
-   cmp   #' '
+   cmp   #' '           ; check for end of ASCII part
    bcc   :+
-   jsr   CHROUT
+   jsr   CHROUT         ; print out ASCII part
    bra   :-
 :
    pha
    lda   #' '
    jsr   CHROUT
    pla
-   int   PRHEX8
+   int   PRHEX8         ; print the rest as space separated hexdump
    lda   TRAP
    bne   :-
-   
+
    lda   #$14
    jsr   setline
-   
+
    jsr   PRINT
    .byte "<- ->: switch pages"
    .byte " | 0-9 A-F: user"
@@ -299,11 +303,10 @@ init:
 
 reload:
    jsr   loaddir
-   
    jmp   browsedir
 
 loaddir:
-   lda   #>DIRSTART
+   lda   #>DIRSTART     ; setup memory start address of $0400
    stz   CPM_SADDR+0
    sta   CPM_SADDR+1
    stz   readp+0
@@ -312,16 +315,16 @@ loaddir:
    sta   endp+1
 
    ldy   user
-   int   CPMDIR
+   int   CPMDIR         ; use interrupt to load directory into RAM
 
-   lda   CPM_SADDR+0
+   lda   CPM_SADDR+0    ; check if any entry was loaded
    cmp   CPM_EADDR+0
    bne   @loop
    lda   CPM_SADDR+1
    cmp   CPM_EADDR+1
    bne   @loop
-   
-   ldy   #$0f
+
+   ldy   #$0f           ; no entry, create a dummy stating "NO FILES"
 :
    lda   @dummyentry,y
    sta   (readp),y
@@ -331,55 +334,58 @@ loaddir:
    lda   #$10
    sta   endp+0
    jmp   @endpage
-   
+
 @dummyentry:
-   .byte $FF,"NO FILES   ",0,0,0,0
+   .byte $FF,"NO FILES   ",0,0,1,1
 
-@loop:
+@loop:                  ; loop through all of the entries
    ldy   #$0c
-   lda   (readp),y
-   beq   @noextent
+   lda   (readp),y      ; check it it's an additional entry of file
+   beq   @noextent      ; it's not, skip some calculation
 
-   stz   findp+0
+   stz   findp+0        ; reset pointer for finding original entry
    lda   #>DIRSTART
    sta   findp+1
 
 @checkfile:
    ldy   #$0b
 @checkname:
-   lda   (findp),y
+   lda   (findp),y      ; check if it's the same file
    cmp   (readp),y
-   bne   @notfound
+   bne   @notfound      ; it's not, skip to next entry
    dey
    bpl   @checkname
 
-   ldy   #$0f
+   ldy   #$0f           ; it is, so add
    clc
-   lda   (readp),y
+   lda   (readp),y      ; add up used sectors lo
    adc   (findp),y
    sta   (findp),y
    dey
-   lda   (readp),y
+   lda   (readp),y      ; add up used sectors hi
    adc   (findp),y
+   sta   (findp),y
+   dey
+   lda   (readp),y      ; copy number of bytes in final sector
    sta   (findp),y
    bra   @next
 
 @notfound:
-   clc
+   clc                  ; move secondary pointer to next entry
    lda   findp+0
    adc   #$10
    sta   findp+0
    bcc   :+
    inc   findp+1
 :
-   lda   findp+0
-   cmp   CPM_EADDR+0
+   ;lda   findp+0        ; obsolete
+   cmp   CPM_EADDR+0    ; check if secondary pointer has reached end
    bne   @checkfile
    lda   findp+1
    cmp   CPM_EADDR+1
    bne   @checkfile
 
-   bra   @next
+   bra   @next          ; just process next entry
 
 @noextent:
    ldy   #$0f           ; no file extent, copy filename
@@ -420,6 +426,8 @@ loaddir:
    iny
    bne   :-
 
+.if 0
+   ; this code is obsoleted by the "NO ENTRY" handling at beginning
    lda   endp+1
    cmp   #>DIRSTART
    bne   :+
@@ -428,12 +436,14 @@ loaddir:
    jmp   ($fffc)
 
 :
-   ldx   endp+1
+.endif
+
+   ldx   endp+1         ; figure of the page of the last entry + 1
    lda   endp+0
    beq   :+
    inx
 :
-   stx   stoppg
+   stx   stoppg         ; store it for user interface
 
    rts
 
@@ -443,36 +453,34 @@ browsedir:
    ldx   #$1c
    ldy   #VT100_CPOS_SET
    int   VT100
-   lda   user
-   ora   #'0'
+   lda   user           ; load user partition
+   ora   #'0'           ; convert it to hex
    cmp   #'9'+1
    bcc   :+
    adc   #$06
 :
-   jsr   CHROUT
+   jsr   CHROUT         ; and write it on screen
 
-   lda   #>DIRSTART
+   lda   #>DIRSTART     ; set to start of page
    stz   readp+0
    sta   readp+1
 
 @prpage:
-   lda   #$10
+   lda   #$10           ; up to 16 entries per page can be displayed
    sta   lastidx
-   stz   index
+   stz   index          ; set arrow to first entry
 
 @prent:
-   lda   readp+0
+   lda   readp+0        ; use the address
    lsr
    lsr
    lsr
-   lsr
+   lsr                  ; shift it to calculate the line on the display
    adc   #FIRSTLINE
-   ldx   #$02
-   ldy   #VT100_CPOS_SET
-   int   VT100
+   jsr   setline
 
    jsr   PRINT
-   .byte "   ",0
+   .byte "    ",0       ; clear out any previous arrow
 
    ldy   #$01
 @prname:
@@ -481,36 +489,88 @@ browsedir:
    cmp   #$e5
    beq   @noent
    and   #$7f
-   jsr   CHROUT
-   cpy   #$08
+   jsr   CHROUT         ; print out filename
+   cpy   #$08           ; after the 8th character
    bne   :+
    lda   #'.'
-   jsr   CHROUT
+   jsr   CHROUT         ; print out the dot to separate extension
 :
    iny
    cpy   #$0c
    bcc   @prname
 
-   lda   #' '
-   jsr   CHROUT
-   jsr   CHROUT
-   ldy   #$0e
-   lda   (readp),y
-   tax
-   iny
-   lda   (readp),y
-   int   PRHEX16
+   jsr   PRINT
+   .byte "    ",0
 
+   ; size calculation need some explanation
+.if 1
+   ldy   #$0d           ; offset $0d contains bytes in final sector
+   lda   #$80           ; calculate how many bytes to strip off
+   sec
+   sbc   (readp),y
+   bpl   :+
+   lda   #$00           ; $00 (calculated as $80) means nothing to strip off
+:
+   sta   size           ; store for later use
+   iny                  ; offset $0e contains hi of number of sectors
+   lda   (readp),y
+   lsr                  ; move 9th bit to carry
+   bne   @toolarge      ; if still something is left, filesize > $ffff
+   iny                  ; offset $0f contains lo of number of sectors
+   lda   (readp),y
+   ror                  ; multiply by 128 by dividing by 2 and use lo as hi
+   tax
+   lda   #$00
+   ror                  ; shift in bit7
+   sec
+   sbc   size           ; now scrape off bytes of final sector
+   bcs   :+
+   dex
+:
+
+.else
+   ldy   #$0d           ; offset $0d contains bytes in final sector
+   lda   (readp),y
+   bne   :+
+   lda   #$80           ; $00 means $80 bytes, so adjust that
+:
+   sta   size           ; store for later use
+   iny                  ; offset $0e contains hi of number of sectors
+   lda   (readp),y
+   lsr                  ; move 9th bit to carry
+   bne   @toolarge      ; if still something is left, filesize > $ffff
+   iny                  ; offset $0f contains lo of number of sectors
+   lda   (readp),y
+   beq   :+             ; $100 will get decremented to $0ff
+   clc
+:
+   dec                  ; number of sectors is one too high for calculation
+   ror                  ; now multiply by 128 by dividing by 2 and use lo as hi
+   tax
+   lda   #$00           ; clear out lo
+   ror                  ; shift in carry
+   adc   size           ; add bytes used in final sector
+   bcc   :+
+   inx                  ; add carry
+:
+.endif
+   int   PRHEX16
+   ; Due to logic involved a filesize of extactly 64k is calculated as $0000
+   ; since a zero byte file is not possible, let's keep it in and call it a
+   ; feature.
+
+   bra   @nextent
+
+@toolarge:
+   jsr   PRINT
+   .byte "****",0
    bra   @nextent
 
 @noent:
    dec   lastidx
-   lda   #' '
-:
-   jsr   CHROUT
-   iny
-   cpy   #$13
-   bcc   :-
+
+   ldy   #VT100_EOLN_CLR
+   int   VT100
 
 @nextent:
    lda   readp+0
