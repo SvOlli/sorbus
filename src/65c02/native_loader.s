@@ -172,7 +172,7 @@ loader:
    jsr   PRINT
    .byte "   ",10," =>",10,"   ",0
 
-   lda   #FIRSTLINE+$11
+   lda   #FIRSTLINE+$10
    jsr   @setline
 
 @inputloop:

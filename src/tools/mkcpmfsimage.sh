@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -21,7 +21,13 @@ readonly FORMAT='sorbus'
 touch "${1}"
 readonly OUTPUT="$(readlink -f "${1}")"
 shift # strip off first argument: output image
-readonly BOOTBLOCK="$(readlink -f "${1}")"
+readonly BOOTBLOCK="$(dirname "${OUTPUT}")/cpmbootblock.tmp"
+rm -f "${BOOTBLOCK}"
+for i in ${1//:/\ }; do
+   [ -n "${i}" ] || continue
+   echo "adding '$(readlink -f "${i}")' to bootblocks"
+   cat >>"${BOOTBLOCK}" "$(readlink -f "${i}")"
+done
 shift
 readonly CPM_DIR="${1}"
 shift # strip off second argument: bootblock
@@ -50,7 +56,9 @@ if [ ${cpmtools_missing} -ne 0 ]; then
 fi
 
 rm -f "${OUTPUT}"
+echo mkfs.cpm -f "${FORMAT}" -b "${BOOTBLOCK}" "${OUTPUT}"
 mkfs.cpm -f "${FORMAT}" -b "${BOOTBLOCK}" "${OUTPUT}"
+rm -f "${BOOTBLOCK}"
 for i in [0-9]*/* $@;do
    # skip directories
    [ -d "${i}" ] && continue

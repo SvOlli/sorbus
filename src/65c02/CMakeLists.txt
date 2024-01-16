@@ -27,10 +27,10 @@ function(gencpmfs target)
    add_custom_target(${target} ALL
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh"
          "${target}"
-         $<TARGET_FILE:native_cpm_bootblock>
+         $<TARGET_FILE:native_cpm_bootblock>:$<TARGET_FILE:native_browser>
          "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
          ${extra_files}
-      DEPENDS ${native_cpm_bootblock} ${CPM_FILES} ${CPMFS_EXTRA_TARGETS}
+      DEPENDS ${native_cpm_bootblock} ${native_browser} ${CPM_FILES} ${CPMFS_EXTRA_TARGETS}
    )
 endfunction()
 

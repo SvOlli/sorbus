@@ -225,8 +225,11 @@ fnedit:
    jmp   loaddir
 
 init:
-;   jsr   $0100
-
+   lda   $0100
+   cmp   #$EE           ; check for INC
+   bne   :+
+   jsr   $0100          ; assume the code to copy BIOS is there...
+:
    ldx   #$00
 :
    stz   readp,x
@@ -262,7 +265,26 @@ init:
    jsr   setline
    
    jsr   PRINT
-   .byte "Sorbus Browser V0.1   User:",0
+   .byte "Sorbus Browser V0.1   User:    HW-Rev:",0
+
+:
+   lda   TRAP
+   bne   :-
+
+:
+   lda   TRAP
+   cmp   #' '
+   bcc   :+
+   jsr   CHROUT
+   bra   :-
+:
+   pha
+   lda   #' '
+   jsr   CHROUT
+   pla
+   int   PRHEX8
+   lda   TRAP
+   bne   :-
    
    lda   #$14
    jsr   setline

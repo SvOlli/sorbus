@@ -3,8 +3,8 @@
 #CPM65_PATH = ../cpm65
 #EXTRA_CMAKE_ARGS += -DCMAKE_VERBOSE_MAKEFILE=ON
 
-
 $(info This Makefile is not required and for convenience only)
+
 ifeq ($(PICO_SDK_PATH),)
 PICO_SDK_PATH=$(shell readlink -f ../pico-sdk)
 $(info Using local pico sdk at: $(PICO_SDK_PATH))
@@ -33,11 +33,11 @@ JOBS ?= 4
 .PHONY: all clean distclean release setup-apt
 
 all: $(PICO_SDK_PATH)/README.md
-	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(PICO_SDK_PATH_CMAKE) $(EXTRA_CMAKE_ARGS)
+	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(EXTRA_CMAKE_ARGS)
 	make -C $(BUILD_DIR) -j$(JOBS) && echo "\nbuild was successful\n"
 
 log: $(PICO_SDK_PATH)/README.md
-	cmake -S $(SRC_DIR) -B $(BUILD_DIR) -DCMAKE_VERBOSE_MAKEFILE=ON $(PICO_SDK_PATH_CMAKE) $(EXTRA_CMAKE_ARGS) 2>&1 | tee cmake.log
+	cmake -S $(SRC_DIR) -B $(BUILD_DIR) -DCMAKE_VERBOSE_MAKEFILE=ON $(EXTRA_CMAKE_ARGS) 2>&1 | tee cmake.log
 	make -C $(BUILD_DIR) -j$(JOBS) 2>&1 | tee make.log
 
 clean:
