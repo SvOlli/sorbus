@@ -62,7 +62,7 @@ cpm_saddr = cpm_fname + $0c ; word: load,save: start address
 cpm_eaddr = cpm_fname + $0e ; word: save: end address
 cpm_hndlr = cpm_fname + $10 ; word: handler function pointer for scandir
 cpm_dirty = cpm_fname + $12 ; byte: save,delete: current dirbuffer needs to be saved
-cpm_spare = cpm_fname + $13 ; byte: nothing
+cpm_spare = cpm_fname + $13 ; byte: load: number of used bytes in final sector
 cpm_ndent = cpm_fname + $14 ; byte: save: number of dirents to create
 cpm_cdent = cpm_fname + $15 ; byte: save: number of dirents created
 cpm_nblck = cpm_fname + $16 ; byte: number of blocks (end of lblck)
@@ -166,7 +166,20 @@ cpmload:
 
    beq   cpmexiterr
    ldx   #$00           ; select read mode
-   jmp   dmafile
+   jsr   dmafile
+   bcs   cpmexiterr
+   lda   cpm_spare
+   beq   :+
+   ora   #$80
+   ;clc
+   adc   cpm_eaddr+0
+   sta   cpm_eaddr+0
+   bcs   :+
+   dec   cpm_eaddr+1
+:
+cpmexitok:
+   clc
+   rts
 
 cpmsave:
    jsr   cpmerase       ; in order to replace, delete first
@@ -192,7 +205,6 @@ cpmdir:
    sta   cpm_eaddr+0
    lda   tmp16+1
    sta   cpm_eaddr+1
-cpmexitok:
    clc
    rts
 :
@@ -532,7 +544,9 @@ dh_getlblks:
    asl
    tay                  ; Y = offset in saved block list
 
-   inx                  ; Bc ($d, ignored)
+   inx
+   lda   buffer,x       ; Bc ($d): bytes used in final sector ($00=all $80)
+   sta   cpm_spare
    inx                  ; Xh ($e, skipped)
    inx                  ; Rc ($f)
    lda   buffer,x

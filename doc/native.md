@@ -199,6 +199,16 @@ Kernel Interrupts
 - $09: CP/M-fs directory: load directory to address in ($030c/d) or screen
 - $0A: VT100: several screen functions: Y=specify function (see below)
 
+CP/M-fs load and save:
+----------------------
+The load and save are done using DMA transfers. Those can only copy a full
+sector of 128 bytes per DMA. So if the last sector of a save is only partially
+used, still the whole 128 bytes are written to storage, even though the
+directory entry contains the correct size of the file. The load routine does
+the same: it loads a full 128 bytes sector overwriting memory with an usused
+part of the file. The end address of the file in address ($030e/f) does state
+the correct end, but up to 127 bytes after that address might be corrupted!
+
 VT100 Calls
 -----------
 VT100 calls are identified by the function number passed via the Y register.

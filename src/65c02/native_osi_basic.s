@@ -379,34 +379,34 @@ setfn:
 
    tay
    lda   #$00
-   sta   $031a,y
+   sta   CPM_FNAME+$1a,y
    dey
 :
    lda   (INDEX),y
-   sta   $031a,y
+   sta   CPM_FNAME+$1a,y
    dey
    bpl   :-
 
-   lda   #$1a
-   ldx   #$03
+   lda   #<(CPM_FNAME+$1a)
+   ldx   #>(CPM_FNAME+$1a)
    ldy   #$0b
    int   CPMNAME
 
    dex   ;ldx   #$02
 :
-   lda   @bas,x
-   sta   $0309,x
+   lda   @bas,x         ; replace extension with "BAS", always
+   sta   CPM_FNAME+$09,x
    dex
    bpl   :-
 
    lda   TXTTAB+0
-   sta   $030c
+   sta   CPM_SADDR+0
    lda   TXTTAB+1
-   sta   $030d
+   sta   CPM_SADDR+1
    lda   VARTAB+0
-   sta   $030e
+   sta   CPM_EADDR+0
    lda   VARTAB+1
-   sta   $030f
+   sta   CPM_EADDR+1
 
 .if 0
    ; for later: specify addresses
@@ -419,9 +419,9 @@ setfn:
    jsr   GETADR
 
    lda   LINNUM+0
-   sta   $030c
+   sta   CPM_SADDR+0
    lda   LINNUM+1
-   sta   $030d
+   sta   CPM_SADDR+1
 
 :
 .endif
@@ -438,27 +438,26 @@ setfn:
 LOAD:
    jsr   setfn
    int   CPMLOAD
-   bcc   :+
+   bcc   @loadok
 
-   ldx   #ERR_NOFOR
+   ldx   #ERR_NOFOR       ; reuse "NOFOR" as "NOT FOUND"
    jmp   ERROR
 
-   lda   TXTTAB
-   sta   VARTAB
-   lda   TXTTAB+1
+@loadok:
+   lda   CPM_EADDR+0
+   sta   VARTAB+0
+   lda   CPM_EADDR+1
    sta   VARTAB+1
-:
-   ldy   #$01
-   lda   (VARTAB),y
-   beq   :+
-   tay
-   lda   (VARTAB)
-   sta   VARTAB
-   sty   VARTAB+1
-   bra   :-
-:
-   jsr   CLEARC
-   jmp   RESTART
+
+.if 1
+   jsr   PRINT
+   .byte 10,"LOADED",10,"OK",10,0
+.else
+   lda   #<QT_OK
+   ldy   #>QT_OK
+   jsr   GOSTROUT
+.endif
+   jmp   FIX_LINKS
 
 SAVE:
    jsr   setfn
@@ -466,7 +465,7 @@ SAVE:
    rts
 
 DIR:
-   stz   $030d
+   stz   CPM_SADDR+1
    ldy   #$0b
    int   CPMDIR
    rts

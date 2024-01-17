@@ -78,7 +78,7 @@
 #define PICO_FLASH_SIZE_BYTES (16 * 1024 * 1024)
 #endif
 
-// boards seen so far use B2, so ruling tou B0 should be safe
+// boards seen so far use B2, so ruling out B0 should be safe
 #ifndef PICO_RP2040_B0_SUPPORTED
 #define PICO_RP2040_B0_SUPPORTED 0
 #endif
