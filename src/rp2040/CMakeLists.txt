@@ -140,9 +140,10 @@ add_custom_target(native_firmware ALL
 # building firmware .uf2 file containing all ROMs
 add_custom_target(native_rom ALL
    $<TARGET_FILE:bin2uf2> "native_rom.uf2"
-      0x103FC000
+      0x103FA000
       $<TARGET_FILE:native_kernel>
       $<TARGET_FILE:native_basic>
+      $<TARGET_FILE:native_tools>
    DEPENDS native_kernel ${BIN2UF2}
 )
 

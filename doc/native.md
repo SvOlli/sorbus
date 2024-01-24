@@ -29,7 +29,9 @@ additional opcodes of the 65C02.
 
 This is a simple file loader. It loads files with the extension ".SX4" from
 the user-partition 10. SX4 stands for Sorbus eXecutable $0400, so it's just
-a binary blob loaded to $0400 at memory and started at the load address.
+a binary blob loaded to $0400 at memory and started at the load address,
+after the bank has been switched to $00 (RAM @ $E000) with the BIOS copied
+to RAM.
 
 - CP/M 65
 
@@ -80,6 +82,9 @@ Memory map
 - $0000-$0001: graphics port
 - $0002-$0003: for later use
 - $0004-$000F: zeropage RAM reserved for kernel
+               - $04/5: temporary vector used for PRINT and CP/M fs
+               - $06: save processor status for PRINT
+               - $07: save accumulator for PRINT
 - $0010-$00FF: zeropage RAM for generic use
 - $0100-$01FF: stack
 - $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs)

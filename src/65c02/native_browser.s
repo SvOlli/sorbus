@@ -33,8 +33,10 @@ IOBUFFER    := $DF80
 ; - type
 ; - hexdump
 
-   jmp   init           ; start
-   .byte "SBC23"        ; boot block id
+   jmp   (@jmptab,x)
+
+@jmptab:
+   .word init
 
 setline:
    ldx   #$01
@@ -86,20 +88,70 @@ readbuffer:
    stz   cpm_dirty      ; now the buffer has to be clean
    rts
 
-; expects the new filename at CPM_FNAME, and the old filename at OLDFILE
-changeentry:
+idx2fname:
+   lda   index
+   asl
+   asl
+   asl
+   asl
+   sta   readp
+
+   ldy   #$0b
+@eraloop:
+   lda   (readp),y
+   sta   CPM_FNAME,y
+   dey
+   bpl   @eraloop
+   rts
+
+checkentry:
    lda   #$01
    stz   ID_LBA+0
    sta   ID_LBA+1
-   stz   cpm_dirty
 
 @dirloop:
    jsr   readbuffer
 
-   lda   #$80
+   lda   #<IOBUFFER
    sta   findp+0
-   lda   #$DF
+   lda   #>IOBUFFER
    sta   findp+1
+
+@checkfile:
+   ldy   #$0b
+:
+   lda   (findp),y
+   cmp   CPM_FNAME,y
+   bne   @nextfile
+   dey
+   bpl   :-
+   clc
+   rts
+
+@nextfile:
+   lda   findp+0
+   clc
+   adc   #$10
+   sta   findp+0
+
+   bmi   @checkfile
+
+   lda   ID_LBA+0
+   bne   @dirloop
+
+   sec
+   rts
+
+; expects the new filename at CPM_FNAME, and the old filename at OLDFILE
+changeentry:
+   jsr   checkentry     ; check if target entry exists
+   bcs   :+
+   rts                  ; entry exists, do nothing
+:
+   lda   #$01
+   stz   ID_LBA+0
+   sta   ID_LBA+1
+   stz   cpm_dirty
 
 @checkfile:
    ldy   #$0b
@@ -109,6 +161,14 @@ changeentry:
    bne   @nextfile
    dey
    bpl   :-
+
+@dirloop:
+   jsr   readbuffer
+
+   lda   #<IOBUFFER
+   sta   findp+0
+   lda   #>IOBUFFER
+   sta   findp+1
 
 ; match: replace file info
    ldy   #$0b
@@ -142,7 +202,7 @@ fnedit:
    ldx   #$00
    ldy   #$01
 
-@loop:
+@fnloop:
    lda   (readp),y
    cmp   #' '+1
    bcc   :+
@@ -157,7 +217,7 @@ fnedit:
    inx
 :
    cpy   #$0c
-   bcc   @loop
+   bcc   @fnloop
 
    stz   FNBUFFER,x
    stz   readp
@@ -172,6 +232,8 @@ fnedit:
 
 @inloop:
    int   CHRINUC
+   cmp   #$03           ; CTRL+C
+   beq   @cancel
    cmp   #$0d           ; RETURN
    beq   @done
    cmp   #$08           ; BS
@@ -221,15 +283,12 @@ fnedit:
    stz   FNBUFFER,x
 :
    bra   @inloop
+@cancel:
+   stz   FNBUFFER
 @done:
-   jmp   loaddir
+   rts
 
 init:
-   lda   $0100
-   cmp   #$EE           ; check for INC
-   bne   :+
-   jsr   $0100          ; assume the code to copy BIOS is there...
-:
    ldx   #$00
 :
    stz   readp,x        ; clear out used zero page memory
@@ -248,14 +307,14 @@ init:
                         ; -> X: columns of screen
                         ; -> A: rows of screen
 
-   cmp   #$14
+   cmp   #$16
    bcc   @toosmall
-   cpx   #$46
+   cpx   #$48
    bcs   :+
 
 @toosmall:
    jsr   PRINT
-   .byte " Screen needs to be at least 70x20",0
+   .byte " Screen needs to be at least 72x22",0
    jmp   ($fffc)
 
 :
@@ -296,6 +355,8 @@ init:
    jsr   PRINT
    .byte "<- ->: switch pages"
    .byte " | 0-9 A-F: user"
+   .byte " | L)oad",10
+   .byte ".: Delete"
    ;.byte " | K)opy"
    .byte " | N)ame"
    .byte " | U)ser"
@@ -336,7 +397,7 @@ loaddir:
    jmp   @endpage
 
 @dummyentry:
-   .byte $FF,"NO FILES   ",0,0,1,1
+   .byte $FF,"NO FILES!!!",0,0,2,0
 
 @loop:                  ; loop through all of the entries
    ldy   #$0c
@@ -608,6 +669,10 @@ browsedir:
    beq   @esc
    ldx   DIRSTART       ; check for dummy entry
    bmi   @inputloop
+   cmp   #'L'
+   bne   :+
+   jmp   load
+:
    cmp   #'N'
    bne   :+
    jmp   rename
@@ -615,6 +680,12 @@ browsedir:
    cmp   #'U'
    bne   :+
    jmp   chuser
+:
+   cmp   #'.'
+   bne   :+
+   jsr   idx2fname
+   int   CPMERASE
+   jmp   reload
 :
    bra   @inputloop
 
@@ -738,6 +809,42 @@ rename:
 @skip:
    jmp   reload
 
+load:
+   lda   index
+   asl
+   asl
+   asl
+   asl
+   inc
+   ldx   readp+1
+
+   ldy   user
+   int   CPMNAME
+
+   ldy   #$02
+@loadloop:
+   lda   CPM_FNAME+$09,y
+   cmp   @fileext,y
+   beq   :+
+   jmp   reload
+:
+   lda   @bankcode,y
+   sta   $0400-3,y
+   dey
+   bpl   @loadloop
+
+   int   CPMLOAD
+   int   COPYBIOS
+
+   ldy   #VT100_SCRN_CLR
+   int   VT100
+
+   jmp   $0400-3
+
+@bankcode:
+   stz   BANK
+@fileext:
+   .byte "SX4"
 
 badfnchars:
    .byte "*/:<=>?[]"

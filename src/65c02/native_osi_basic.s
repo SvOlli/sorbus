@@ -7,7 +7,9 @@
 ; [X] Allow BASIC variables to be entered as lowercase
 ; [ ] Change hardcoded $03xx addresses for CP/M filename to variable names
 ; [X] Reuse "No For" as "Not Found" error
-; [ ] Fix bug: load file, then save it saves wrong filesize
+; [X] Fix bug: load file, then save it saves wrong filesize
+; [ ] Change input buffer from zeropage to ~$0360
+; [ ] Remove useless NULL instruction
 ; file taken from http://searle.x10host.com/6502/Simple6502.html
 
 ; Microsoft BASIC for 6502 (OSI VERSION)
@@ -36,6 +38,8 @@
 ; * Thanks to Joe Zbicak for help with Intellision Keyboard BASIC
 ; * This work is dedicated to the memory of my dear hacking pal Michael "acidity" Kollmann.
 
+.define USE_NULL 1
+
 .debuginfo +
 
 .setcpu "65c02"
@@ -52,14 +56,14 @@ ZP_START  = $10
 ;ZP_START4 = $75
 
 ;extra ZP variables
-USR      := $001A   ; 3 bytes
+USR      := $000D   ; 3 bytes
 
 ; constants
 STACK_TOP   := $FC
 SPACE_FOR_GOSUB := $33
+.if USE_NULL
 NULL_MAX   := $0A
-WIDTH    := 72
-WIDTH2    := 56
+.endif
 
 ; memory layout
 RAMSTART2            := $0400
@@ -73,8 +77,6 @@ FOR_STACK1           := 2*BYTES_FP+5
 FOR_STACK2           := BYTES_FP+4
 MAX_EXPON            = 10
 STACK                := $0100
-
-INPUTBUFFERX = INPUTBUFFER & $FF00
 
 CR=13
 LF=10
@@ -97,22 +99,26 @@ GOGIVEAYF:  ; $0018
    .res 2
 
 ;.org ZP_START2
-Z15:        ; $001A
+NULLS:      ; $001A
    .res 1
-POSX:       ; $001B
+POSX:       ; $001B     ; INPUTBUFFER-5
    .res 1
-Z17:        ; $001C
+Z17:        ; $001C     ; INPUTBUFFER-4
    .res 1
-Z18:        ; $001D
+Z18:        ; $001D     ; INPUTBUFFER-3
    .res 1
 LINNUM:
-TXPSV:      ; $001E
+TXPSV:      ; $001E     ; INPUTBUFFER-2
    .res 2
+
 .if 1
+; must follow LINNUM
 INPUTBUFFER:
-   .res $47
+.define INPUTSIZE $47
+   .res INPUTSIZE
 .else
-INPUTBUFFER = $0360
+.define INPUTSIZE $50
+INPUTBUFFER = $0360     ; INPUTBUFFER-5 used in code (cpmfs_entry end: $035a)
 .endif
 
 ;.org ZP_START3
@@ -236,6 +242,7 @@ SGNCPR = STRNG1
 FACEXTENSION = STRNG1+1
 STRNG2:     ; $007F
    .res 2
+
 CHRGET:     ; $0081
 TXTPTR = <(GENERIC_TXTPTR-GENERIC_CHRGET + CHRGET)
 CHRGOT = <(GENERIC_CHRGOT-GENERIC_CHRGET + CHRGET)
@@ -244,11 +251,19 @@ RNDSEED = <(GENERIC_RNDSEED-GENERIC_CHRGET + CHRGET)
 
 ZPEND = CHRGET + GENERIC_CHRGET_END - GENERIC_CHRGET
 
+.if INPUTBUFFER >= $0100
+CONFIG_NO_INPUTBUFFER_ZP := 1
+.endif
+INPUTBUFFERX = INPUTBUFFER & $FF00
+
 .segment "CODE"
 BASTART:
 COLD_START:
    ldx   #$FF
    stx   CURLIN+1
+.ifdef CONFIG_NO_INPUTBUFFER_ZP
+   ldx   #$FB
+.endif
    txs
    lda   #<COLD_START
    ldy   #>COLD_START
@@ -273,20 +288,25 @@ COLD_START:
    ldy   #>IQERR
    sta   USR+1
    sty   USR+2
+.if 0
+   ; get overwritten by detection
    lda   #WIDTH
    sta   Z17
    lda   #WIDTH2
    sta   Z18
+.endif
    ldx   #GENERIC_CHRGET_END-GENERIC_CHRGET
 L4098:
    lda   GENERIC_CHRGET-1,x
    sta   CHRGET-1,x
    dex
    bne   L4098
-   txa
+   txa ;lda #$00
    sta   SHIFTSIGNEXT
    sta   LASTPT+1
-   sta   Z15
+.if USE_NULL
+   sta   NULLS
+.endif
    sta   POSX
    pha
    sta   Z14
@@ -339,7 +359,12 @@ L4192:
    lda   TXTTAB
    ldy   TXTTAB+1
    jsr   REASON
+.if USE_NULL
    jsr   PRINTNULLS ;CRDO
+.else
+   lda   #$00
+   sta   POSX
+.endif
    lda   MEMSIZ
    sec
    sbc   TXTTAB
@@ -389,7 +414,7 @@ setfn:
 
    lda   #<(CPM_FNAME+$1a)
    ldx   #>(CPM_FNAME+$1a)
-   ldy   #$0b
+   ldy   #$0b           ; user id for BASIC is 11 (decimal)
    int   CPMNAME
 
    dex   ;ldx   #$02
@@ -466,18 +491,16 @@ SAVE:
 
 DIR:
    stz   CPM_SADDR+1
-   ldy   #$0b
+   ldy   #$0b           ; user id for BASIC is 11 (decimal)
    int   CPMDIR
    rts
 
 MONISCNTC:
-   jsr   CHRIN      ; returns $00 on empty queue
+   jsr   CHRIN          ; returns $00 on empty queue
    cmp   #$03
-   bne   :+         ; if ctrl-c not pressed then exit
-   sec            ; carry set if control c pressed
-   rts
+   beq   :+             ; if ctrl-c set carry
+   clc                  ; carry clear if control c not pressed
 :
-   clc            ; carry clear if control c not pressed
    rts
 
 TOKEN_ADDRESS_TABLE:
@@ -694,7 +717,7 @@ QT_IN:
    .byte " IN "
    .byte $00
 QT_OK:
-   .byte CR,LF,"OK",CR,LF
+   .byte LF,"OK",CR,LF
    .byte 0
 QT_BREAK:
    .byte CR,LF,"BREAK"
@@ -981,6 +1004,12 @@ PUT_NEW_LINE:
 L23D6:
    sty   HIGHDS+1
    jsr   BLTU
+.ifdef CONFIG_NO_INPUTBUFFER_ZP
+   lda   LINNUM
+   ldy   LINNUM+1
+   sta   INPUTBUFFER-2
+   sty   INPUTBUFFER-1
+.endif
    lda   STREND
    ldy   STREND+1
    sta   VARTAB
@@ -1029,12 +1058,14 @@ L2405:
    bcc   L23FA   ; always
 ; ----------------------------------------------------------------------------
 L2420:
+.ifndef CONFIG_NO_INPUTBUFFER_ZP
    jsr   OUTDO
    dex
    bpl   INLIN2
 L2423:
    jsr   OUTDO
    jsr   CRDO
+.endif
 ; ----------------------------------------------------------------------------
 ; READ A LINE, AND STRIP OFF SIGN BITS
 ; ----------------------------------------------------------------------------
@@ -1058,7 +1089,7 @@ INLIN2:
    beq   L2423
 .endif
 L2443:
-   cpx   #$47
+   cpx   #INPUTSIZE
    bcs   L244C
    sta   INPUTBUFFER,x
    inx
@@ -1194,6 +1225,9 @@ L24DB:
 ; ---END OF LINE------------------
 L24EA:
    sta   INPUTBUFFER-3,y
+.ifdef CONFIG_NO_INPUTBUFFER_ZP
+   dec   TXTPTR+1
+.endif
    lda   #<INPUTBUFFER-1
    sta   TXTPTR
    rts
@@ -1482,9 +1516,17 @@ NEWSTT:
    jsr   ISCNTC
    lda   TXTPTR
    ldy   TXTPTR+1
+.if .def(CONFIG_NO_INPUTBUFFER_ZP) ; && .def(CONFIG_2)
+   cpy   #>INPUTBUFFER
+   beq   LC6D4
+.else
+   ; BUG on AppleSoft I,
+   ; fixed differently on AppleSoft II (ldx/inx)
    beq   L2683
+.endif
    sta   OLDTEXT
    sty   OLDTEXT+1
+LC6D4:
    ldy   #$00
 L2683:
    lda   (TXTPTR),y
@@ -1571,6 +1613,13 @@ END2:
    bne   RET1
    lda   TXTPTR
    ldy   TXTPTR+1
+.if .def(CONFIG_NO_INPUTBUFFER_ZP) ; && .def(CONFIG_2)
+   ; BUG on AppleSoft I
+   ; fix exists on AppleSoft II
+   ; TXTPTR+1 will always be > 0
+   ldx   CURLIN+1
+   inx
+.endif
    beq   END4
    sta   OLDTEXT
    sty   OLDTEXT+1
@@ -1611,15 +1660,17 @@ L271C:
 RET1:
    rts
 NULL:
+.if USE_NULL
    jsr   GETBYT
    bne   RET1
    inx
    cpx   #NULL_MAX
    bcs   L2739
    dex
-   stx   Z15
+   stx   NULLS
    rts
 L2739:
+.endif
    jmp   IQERR
 CLEAR:
    bne   RET1
@@ -1971,15 +2022,22 @@ L29B1:
    jsr   OUTSP
    bne   L297E ; branch always
 L29B9:
-   ldy   #$00
+.ifdef CONFIG_NO_INPUTBUFFER_ZP
+   stz   INPUTBUFFER,x
+   ldx   #<INPUTBUFFER-1
+   ldy   #>INPUTBUFFER-1
+.else
+   ldy   #$00           ; required: without no parsing
    sty   INPUTBUFFER,x
    ldx   #LINNUM+1
+.endif
 CRDO:
    lda   #CRLF_1
    sta   POSX
    jsr   OUTDO
    lda   #CRLF_2
    jsr   OUTDO
+.if USE_NULL
 PRINTNULLS:
 .ifpc02
    phx
@@ -1987,7 +2045,7 @@ PRINTNULLS:
    txa
    pha
 .endif
-   ldx   Z15
+   ldx   NULLS
    beq   L29D9
    lda   #$00
 L29D3:
@@ -2001,6 +2059,7 @@ L29D9:
 .else
    pla
    tax
+.endif
 .endif
 L29DD:
    rts
@@ -2060,8 +2119,14 @@ L2A22:
    iny
    cmp   #$0D
    bne   L2A22
+.if USE_NULL
    jsr   PRINTNULLS
    jmp   L2A22
+.else
+   lda   #$00
+   sta   POSX
+   beq   L2A22
+.endif
 ; ----------------------------------------------------------------------------
 OUTSP:
    lda   #$20
@@ -2122,7 +2187,7 @@ RESPERR:
 ; ----------------------------------------------------------------------------
 ; "GET" STATEMENT
 ; ----------------------------------------------------------------------------
-GET:
+;GET:
 ; ----------------------------------------------------------------------------
 ; "INPUT#" STATEMENT
 ; ----------------------------------------------------------------------------
@@ -3582,7 +3647,12 @@ L32AA:
 L32B6:
    stx   STRNG2+1
    lda   STRNG1+1
+.ifdef CONFIG_NO_INPUTBUFFER_ZP
+   beq   LD399
+   cmp   #>INPUTBUFFER
+.endif
    bne   PUTNEW
+LD399:
    tya
    jsr   STRINI
    ldx   STRNG1
@@ -5857,7 +5927,7 @@ GENERIC_CHRGET:
    inc   TXTPTR+1
 GENERIC_CHRGOT:
 GENERIC_TXTPTR = GENERIC_CHRGOT + 1
-   lda   $EA60
+   lda   $FFFF
    cmp   #$3A
    bcs   L4058
 GENERIC_CHRGOT2:

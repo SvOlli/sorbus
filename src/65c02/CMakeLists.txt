@@ -27,7 +27,7 @@ function(gencpmfs target)
    add_custom_target(${target} ALL
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh"
          "${target}"
-         $<TARGET_FILE:native_cpm_bootblock>:$<TARGET_FILE:native_browser>
+         $<TARGET_FILE:native_cpm_bootblock>
          "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
          ${extra_files}
       DEPENDS ${native_cpm_bootblock} ${native_browser} ${CPM_FILES} ${CPMFS_EXTRA_TARGETS}
@@ -111,17 +111,9 @@ add_executable(native_kernel
    native_tim.s
    native_woz.s
    native_vt100.s
-   native_loader.s
    native_bios.s
    )
 target_type(native_kernel native_kernel)
-
-add_executable(native_cpm_bootblock
-   linkcpm.s
-   ../bin/cpm/CPM
-   ../bin/cpm/BDOS
-   )
-target_type(native_cpm_bootblock native_kernel)
 
 add_executable(native_basic
    native_osi_basic.s
@@ -129,14 +121,19 @@ add_executable(native_basic
    native_bios_stub.s
    )
 target_type(native_basic native_kernel)
-add_executable(native_browser
+
+add_executable(native_tools
    native_browser.s
    native_bios.s
    native_bios_stub.s
    )
-target_type(native_browser native_kernel)
-#target_type_addr(native_browser native 0xB000)
+target_type(native_tools native_kernel)
 
+add_executable(native_cpm_bootblock
+   linkcpm.s
+   ../bin/cpm/CPM
+   ../bin/cpm/BDOS
+   )
 # This doesn't work, as the glorious CMake de-duplicates the
 # "--large-alignment" option, which needs to be passed twice.
 # Since it only disables warnings, so be it.
@@ -144,6 +141,7 @@ target_type(native_browser native_kernel)
 #   --asm-args --large-alignment
 #   --ld-args --large-alignment
 #   )
+target_type(native_cpm_bootblock native_kernel)
 
 add_executable(native_writeboot
    native_writeboot.s

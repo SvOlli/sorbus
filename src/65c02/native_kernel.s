@@ -46,14 +46,17 @@ reset:
    lda   #$00           ; this kernel uses 65C02 opcodes, throw error on NMOS
    dec                  ; 65C02 opcode that is a NOP in 6502
    bne   @iloop         ; no NMOS 6502, continue
-@printerror:
+@no65c02loop:
    tax
-@printchar:
+@no65c02char:
    lda   @no65c02message,x
-   beq   @printerror    ; endless loop reprinting message
+   beq   @no65c02loop   ; endless loop reprinting message
    jsr   CHROUT
    inx
-   bne   @printchar
+   jmp   @no65c02char
+
+@no65c02message:
+   .byte "65C02 required", 13, 0
 
 @vectab:
    .word brktrap        ; UVBRK: IRQ handler dispatches BRK
@@ -61,13 +64,10 @@ reset:
    .word uirq           ; UVNBI: IRQ handler dispatches non-BRK
    .word IRQCHECK       ; UVIRQ: hardware IRQ handler
 
-@no65c02message:
-   .byte "65C02 required", 13, 0
-
 @iloop:
    jsr   PRINT
    .byte 10,"Sorbus Native V", VERSION
-   .byte ": 0-3)Boot, L)oader, B)ASIC, T)IM, W)ozMon? ", 0
+   .byte ": 0-3)Boot, F)ilebrowser, B)ASIC, T)IM, W)ozMon? ", 0
 :
    jsr   chrinuc        ; wait for keypress and make it uppercase
    bcs   :-
@@ -76,18 +76,21 @@ reset:
    cmp   #'4'
    bcc   @bootblock
 :
-   cmp   #'L'
-   bne   :+
-   jmp   loader
-:
    cmp   #'R'           ; hidden CP/M debugging feature
    bne   :+
    jmp   execram        ; execute RAM bank @ $E000
 :
    cmp   #'B'
    bne   :+
-   ldy   #$02
+   ldy   #$03
+@execrom2:
    jmp   execrom        ; execute 2nd ROM bank @ $E000
+:
+   cmp   #'F'
+   bne   :+
+   ldy   #$02
+   ldx   #$00           ; jmp vector 0: file browser
+   bra   @execrom2      ; execute 2nd ROM bank @ $E000
 :
    cmp   #'T'
    bne   :+
@@ -103,7 +106,7 @@ reset:
    beq   @info
 
    cmp   #'W'
-   bne   @iloop
+   bne   @iloop2
 
    lda   #$0a           ; start WozMon port
    jsr   CHROUT
@@ -124,6 +127,7 @@ reset:
 :
    lda   TRAP
    bne   @out
+@iloop2:
    jmp   @iloop
 @out:
    jsr   prhex8
@@ -221,12 +225,14 @@ execram:
    ; execute loaded boot block in RAM at $E000
    ldy   #$00
 execrom:                ; has to be called with Y=bank to switch to
-   ldx   #(@trampolineend-@trampoline-1)
+   phy
+   ldy   #(@trampolineend-@trampoline-1)
 :
-   lda   @trampoline,x  ; this requires bankswitching code written to RAM
-   sta   TRAMPOLINE,x
-   dex
+   lda   @trampoline,y  ; this requires bankswitching code written to RAM
+   sta   TRAMPOLINE,y
+   dey
    bpl   :-
+   ply
    jmp   TRAMPOLINE+@jmpbank0-@trampoline
 
 @trampoline:

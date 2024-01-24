@@ -451,11 +451,12 @@ static inline void handle_flash_dma()
 
 void debug_dump_state( int lineno, uint32_t _state )
 {
-      printf( "%3d:%04x %c %02x %c%c%c%c\n",
+      printf( "%3d:%04x %c %02x %c%c%c%c%c\n",
          lineno,
          (_state & bus_config.mask_address) >> (bus_config.shift_address),
          (_state & bus_config.mask_rw) ? 'r' : 'w',
          (_state & bus_config.mask_data) >> (bus_config.shift_data),
+         (_state & 0x80000000) ? '*' : ' ',
          (_state & bus_config.mask_reset) ? ' ' : 'R',
          (_state & bus_config.mask_nmi) ? ' ' : 'N',
          (_state & bus_config.mask_irq) ? ' ' : 'I',
@@ -463,12 +464,45 @@ void debug_dump_state( int lineno, uint32_t _state )
 }
 
 
+static inline uint32_t getaddr( uint32_t _state )
+{
+   return (_state & bus_config.mask_address) >> (bus_config.shift_address);
+}
+
+
+static inline uint32_t getdata( uint32_t _state )
+{
+   return (_state & bus_config.mask_data) >> (bus_config.shift_data);
+}
+
+
+uint32_t debug_getbus( int i )
+{
+   uint32_t state = buslog_states[(i + buslog_index) & (count_of(buslog_states)-1)];
+   uint32_t prev2 = buslog_states[(i + buslog_index - 2) & (count_of(buslog_states)-1)];
+   uint32_t prev  = buslog_states[(i + buslog_index - 1) & (count_of(buslog_states)-1)];
+   uint32_t next  = buslog_states[(i + buslog_index + 1) & (count_of(buslog_states)-1)];
+
+   bool has_follow = ((getaddr( state ) + 1) == getaddr( next ));
+   bool is_read = (state & bus_config.mask_rw) && (next & bus_config.mask_rw);
+   bool is_follow = ((getaddr( prev ) + 1) == getaddr( state ));
+   bool is_rts_stack = (getdata( prev2 ) == 0x60 );
+   if( is_read && has_follow && !is_follow && !is_rts_stack )
+   {
+      state |= 0x80000000;
+   }
+   return state;
+}
+
+
+
 void debug_backtrace()
 {
    printf( "system trap triggered, last cpu actions:\n" );
    for( int i = 0; i < count_of(buslog_states); ++i )
    {
-      uint32_t _state = buslog_states[(i + buslog_index) & (count_of(buslog_states)-1)];
+      //uint32_t _state = buslog_states[(i + buslog_index) & (count_of(buslog_states)-1)];
+      uint32_t _state = debug_getbus( i );
       debug_dump_state( count_of(buslog_states)-i, _state );
    }
    debug_dump_state( 0, gpio_get_all() );
