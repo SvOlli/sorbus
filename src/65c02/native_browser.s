@@ -325,7 +325,7 @@ init:
    int   VT100
 
    jsr   PRINT
-   .byte "Sorbus Browser V0.1   User:    HW-Rev:",0
+   .byte "Sorbus Filebrowser V0.1   User:    HW-Rev:",0
 
    ; TRAP contains hardware information. Format:
    ; ASCII of "SBC23" (only hardware code so far), followed by a byte < $20
@@ -355,8 +355,8 @@ init:
    jsr   PRINT
    .byte "<- ->: switch pages"
    .byte " | 0-9 A-F: user"
-   .byte " | L)oad",10
-   .byte ".: Delete"
+   .byte " | .: Delete",10
+   .byte "L)oad"
    ;.byte " | K)opy"
    .byte " | N)ame"
    .byte " | U)ser"
@@ -511,7 +511,7 @@ loaddir:
 
 browsedir:
    lda   #$01
-   ldx   #$1c
+   ldx   #$20
    ldy   #VT100_CPOS_SET
    int   VT100
    lda   user           ; load user partition
@@ -690,6 +690,8 @@ browsedir:
    bra   @inputloop
 
 @leave:
+   ldy   #VT100_SCRN_CLR
+   int   VT100
    jmp   ($fffc)
 
 @esc:

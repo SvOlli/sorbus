@@ -142,9 +142,9 @@ add_custom_target(native_rom ALL
    $<TARGET_FILE:bin2uf2> "native_rom.uf2"
       0x103FA000
       $<TARGET_FILE:native_kernel>
-      $<TARGET_FILE:native_basic>
       $<TARGET_FILE:native_tools>
-   DEPENDS native_kernel ${BIN2UF2}
+      $<TARGET_FILE:native_basic>
+   DEPENDS native_kernel native_tools native_basic ${BIN2UF2}
 )
 
 bin2uf2(native_cpmfs 0x10400000 native_cpmfs.dhara)

@@ -3,6 +3,7 @@
 ; [X] RAM end set to $D000 (hardcoded instead of detection)
 ; [X] Implement SAVE & LOAD via interrupts
 ; [X] Implement SYS command
+; [ ] Implement shadows to A,X,Y in SYS command
 ; [X] Allow BASIC keywords to be entered as lowercase
 ; [X] Allow BASIC variables to be entered as lowercase
 ; [ ] Change hardcoded $03xx addresses for CP/M filename to variable names
@@ -59,10 +60,10 @@ ZP_START  = $10
 USR      := $000D   ; 3 bytes
 
 ; constants
-STACK_TOP   := $FC
+STACK_TOP       := $FC
 SPACE_FOR_GOSUB := $33
 .if USE_NULL
-NULL_MAX   := $0A
+NULL_MAX        := $0A
 .endif
 
 ; memory layout
@@ -389,6 +390,17 @@ L4192:
 SYS:
    jsr   FRMNUM
    jsr   GETADR
+.if 0
+   lda   SHADOW_A
+   ldx   SHADOW_X
+   ldy   SHADOW_Y
+   jsr   @linnum
+   sta   SHADOW_A
+   stx   SHADOW_X
+   sty   SHADOW_Y
+   rts
+@linnum:
+.endif
    jmp   (LINNUM)
 
 ; TXTTAB should be start of BASIC program
