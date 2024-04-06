@@ -158,15 +158,22 @@ Internal Drive ($DF70-$DF77)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 System provides 32768 blocks of 128 bytes = 4MB Data stored in flash @
-0x10400000 (12MB, ~<6MB payload with wear leveling) LBA: block index,
-allowed $0000-$7FFF (4MB for OS) Additional blocks not used by OS DMA
-memory: allowed $0004-$CF80, $DF80-$FF80 for start address - base
-address: $DF70 - base address + $0: LBA low - base address + $1: LBA
-high - base address + $2: DMA memory low - base address + $3: DMA memory
-high - base address + $4: (S) read sector (strobe, adjusts DMA memory
-and LBA) - base address + $5: (S) write sector (strobe, also adjusts) -
-base address + $6: (unused) - base address + $7: (S) flash discard Each
-transfer stops CPU until transfer is completed
+0x10400000 (12MB, ~<6MB payload with wear leveling)
+LBA: block index, allowed $0000-$7FFF
+     (4MB for OS, additional blocks not used by OS)
+DMA memory: allowed $0004-$CF80, $DF80-$FF80 for start address
+
+- base address: $DF70
+- base address + $0: LBA low
+- base address + $1: LBA high
+- base address + $2: DMA memory low
+- base address + $3: DMA memory high
+- base address + $4: (S) read sector (strobe, adjusts DMA memory and LBA)
+- base address + $5: (S) write sector (strobe, also adjusts)
+- base address + $6: (unused)
+- base address + $7: (S) flash discard
+
+Each transfer stops CPU until transfer is completed
 
 RAM Vectors ($DF78-$DF7F)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -224,6 +231,11 @@ Kernel Interrupts
 
 For an own interrupt handler invoked via $DF78/9, it is recommended to
 use interrupt arguments starting with $80.
+
+Also note that registers are not stored on the stack, but in memory.
+This results in running an interrupt within an interrupt will corrupt
+registers.
+
 
 CP/M-fs Load And Save
 ---------------------

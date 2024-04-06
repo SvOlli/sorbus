@@ -55,6 +55,7 @@ Documentation Of Old Hardware
 -----------------------------
 * [Apple 1 Basic](https://archive.org/download/apple1_basic_manual/apple1_basic_manual_text.pdf)
 * [Apple 1 KRUSADER](https://raw.githubusercontent.com/st3fan/krusader/master/krusader13.pdf)
+* [CF/IDE Interface on 8-Bit](https://www.waveguide.se/?article=8-bit-compact-flash-interface)
 
 VT100 Escape Sequences
 ----------------------
