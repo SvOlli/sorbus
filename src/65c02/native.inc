@@ -1,3 +1,7 @@
+;
+; Copyright 2023-2024 Sven Oliver ("SvOlli") Moll
+; Distributed unter the terms: GPL-3.0-or-later
+;
 
 ; Registers of Native Core I/O
 ;

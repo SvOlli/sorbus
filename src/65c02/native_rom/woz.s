@@ -13,8 +13,8 @@
 ; - adapted some of the code from 6502 to 65C02 assembler
 ;-------------------------------------------------------------------------
 
-.include "native_bios.inc"
-.include "native_kernel.inc"
+.include "../native_bios.inc"
+.include "../native_kernel.inc"
 .segment "CODE"
 
 ;-------------------------------------------------------------------------

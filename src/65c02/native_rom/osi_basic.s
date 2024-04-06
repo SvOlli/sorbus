@@ -46,7 +46,7 @@
 .setcpu "65c02"
 .macpack longbranch
 
-.include "native_bios.inc"
+.include "../native_bios.inc"
 
 ; zero page
 ZP_START  = $10

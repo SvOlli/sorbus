@@ -1,16 +1,9 @@
 
-.include "native.inc"
-.include "native_bios.inc"
-.include "native_cpmfs.inc"
+.include "../native.inc"
+.include "../native_bios.inc"
+.include "../native_cpmfs.inc"
 
 .segment "CODE"
-
-; this software is in early development
-; use bin2hex to generate hex files of this and "writeboot"
-; run WozMon
-; copy both files into input
-; enter "C000R"
-; select a partition to write to, "2" is recommended
 
 readp    = $20
 endp     = $22
@@ -23,7 +16,9 @@ size     = $2a
 cpm_dirty= $2a          ; can be shared
 
 FIRSTLINE   := $03      ; start at 3rd line on screen with filenames
+INPUTLINE   := $13
 DIRSTART    := $0400    ; must be on page boundry
+SX4START    := $0400
 FNBUFFER    := $0380
 OLDFILE     := FNBUFFER+$10
 IOBUFFER    := $DF80
@@ -38,11 +33,47 @@ IOBUFFER    := $DF80
 @jmptab:
    .word init
 
+; list of chars not allowed in a filename
+; (space is used for padding at the end)
+badfnchars:
+   .byte " */:<=>?[]"
+badfnchars_size = * - badfnchars
+
+
 setline:
    ldx   #$01
    ldy   #VT100_CPOS_SET
    int   VT100
    rts
+
+clrline:
+   jsr   setline
+   ldy   #VT100_EOLN_CLR
+   int   VT100
+   rts
+
+rstclr:
+   ldy   #VT100_CPOS_RST
+   int   VT100
+
+   ldy   #VT100_EOLN_CLR
+   int   VT100
+
+   rts
+
+
+hexin:
+   int   CHRINUC
+   cmp   #$03
+   bne   :+
+
+   ;sec
+   rts
+:
+   jsr   ishex
+   bcs   hexin
+   rts
+
 
 ishex:
    cmp   #'0'
@@ -61,6 +92,7 @@ ishex:
 @not:
    sec
    rts
+
 
 ; load next directory sector
 ; and if the current one was modified, save it first
@@ -88,6 +120,7 @@ readbuffer:
    stz   cpm_dirty      ; now the buffer has to be clean
    rts
 
+
 idx2fname:
    lda   index
    asl
@@ -99,10 +132,12 @@ idx2fname:
    ldy   #$0b
 @eraloop:
    lda   (readp),y
+   sta   OLDFILE,y
    sta   CPM_FNAME,y
    dey
    bpl   @eraloop
    rts
+
 
 checkentry:
    lda   #$01
@@ -142,6 +177,7 @@ checkentry:
    sec
    rts
 
+
 ; expects the new filename at CPM_FNAME, and the old filename at OLDFILE
 changeentry:
    jsr   checkentry     ; check if target entry exists
@@ -153,6 +189,14 @@ changeentry:
    sta   ID_LBA+1
    stz   cpm_dirty
 
+@dirloop:
+   jsr   readbuffer
+
+   lda   #<IOBUFFER
+   sta   findp+0
+   lda   #>IOBUFFER
+   sta   findp+1
+
 @checkfile:
    ldy   #$0b
 :
@@ -161,14 +205,6 @@ changeentry:
    bne   @nextfile
    dey
    bpl   :-
-
-@dirloop:
-   jsr   readbuffer
-
-   lda   #<IOBUFFER
-   sta   findp+0
-   lda   #>IOBUFFER
-   sta   findp+1
 
 ; match: replace file info
    ldy   #$0b
@@ -192,101 +228,6 @@ changeentry:
 
    jmp   readbuffer
 
-fnedit:
-   lda   index
-   asl
-   asl
-   asl
-   asl
-   sta   readp
-   ldx   #$00
-   ldy   #$01
-
-@fnloop:
-   lda   (readp),y
-   cmp   #' '+1
-   bcc   :+
-   sta   FNBUFFER,x
-   inx
-:
-   iny
-   cpy   #$09
-   bne   :+
-   lda   #'.'
-   sta   FNBUFFER,x
-   inx
-:
-   cpy   #$0c
-   bcc   @fnloop
-
-   stz   FNBUFFER,x
-   stz   readp
-
-   ldx   #$00
-@prloop:
-   lda   FNBUFFER,x
-   beq   @inloop
-   jsr   CHROUT
-   inx
-   bra   @prloop
-
-@inloop:
-   int   CHRINUC
-   cmp   #$03           ; CTRL+C
-   beq   @cancel
-   cmp   #$0d           ; RETURN
-   beq   @done
-   cmp   #$08           ; BS
-   beq   @del
-   cmp   #$7f
-   beq   @del
-   cmp   #' '+1
-   bcc   @inloop
-   ldy   #badfnchars_size-1
-:
-   cmp   badfnchars,y
-   beq   @inloop
-   dey
-   bpl   :-
-
-   cmp   #'.'
-   bne   @nodot
-
-   ldy   #$00
-@finddot:
-   lda   FNBUFFER,y
-   beq   @dodot
-   cmp   #'.'
-   beq   @inloop
-   iny
-   bra   @finddot
-@dodot:
-   tya
-   beq   @inloop
-   lda   #'.'
-@nodot:
-
-   cpx   #$0d
-   bcs   @inloop
-   sta   FNBUFFER,x
-   inx
-   stz   FNBUFFER,x
-   jsr   CHROUT
-   bra   @inloop
-
-@del:
-   cpx   #$00
-   beq   :+
-   dex
-   lda   #$7f
-   jsr   CHROUT
-   stz   FNBUFFER,x
-:
-   bra   @inloop
-@cancel:
-   stz   FNBUFFER
-@done:
-   rts
 
 init:
    ldx   #$00
@@ -349,18 +290,16 @@ init:
    lda   TRAP
    bne   :-
 
-   lda   #$14
-   jsr   setline
+   lda   #INPUTLINE
+   jsr   clrline
 
    jsr   PRINT
+   .byte 10
    .byte "<- ->: switch pages"
    .byte " | 0-9 A-F: user"
-   .byte " | .: Delete",10
-   .byte "L)oad"
-   ;.byte " | K)opy"
-   .byte " | N)ame"
-   .byte " | U)ser"
-   .byte 0
+   .byte " | L: Load"
+   .byte 10
+   .byte ">: Delete | K: Copy | M: Move | T: Transfer", 0
 
 reload:
    jsr   loaddir
@@ -487,18 +426,6 @@ loaddir:
    iny
    bne   :-
 
-.if 0
-   ; this code is obsoleted by the "NO ENTRY" handling at beginning
-   lda   endp+1
-   cmp   #>DIRSTART
-   bne   :+
-   lda   endp+0
-   bne   :+
-   jmp   ($fffc)
-
-:
-.endif
-
    ldx   endp+1         ; figure of the page of the last entry + 1
    lda   endp+0
    beq   :+
@@ -538,7 +465,7 @@ browsedir:
    lsr
    lsr                  ; shift it to calculate the line on the display
    adc   #FIRSTLINE
-   jsr   setline
+   jsr   clrline
 
    jsr   PRINT
    .byte "    ",0       ; clear out any previous arrow
@@ -648,8 +575,8 @@ browsedir:
    jsr   PRINT
    .byte "   ",10," =>",10,"   ",0
 
-   lda   #FIRSTLINE+$10
-   jsr   setline
+   lda   #INPUTLINE
+   jsr   clrline
 
    ldy   #VT100_EOLN_CLR
    int   VT100
@@ -669,19 +596,20 @@ browsedir:
    beq   @esc
    ldx   DIRSTART       ; check for dummy entry
    bmi   @inputloop
+
    cmp   #'L'
    bne   :+
    jmp   load
 :
-   cmp   #'N'
+   cmp   #'K'
    bne   :+
-   jmp   rename
+   jmp   copy
 :
-   cmp   #'U'
+   cmp   #'M'
    bne   :+
-   jmp   chuser
+   jmp   move
 :
-   cmp   #'.'
+   cmp   #'>'
    bne   :+
    jsr   idx2fname
    int   CPMERASE
@@ -744,59 +672,15 @@ browsedir:
 @setarrow2:
    jmp   @setarrow
 
-chuser:
-   jsr   PRINT
-   .byte "User: ",0
 
-   int   CHRINUC
-   jsr   ishex
+
+move:
+   jsr   idx2fname
+
+   jsr   edituserorname
    bcs   @skip
 
-   pha
-   lda   index
-   asl
-   asl
-   asl
-   asl
-   sta   readp
-
-   ldy   #$0b
-:
-   lda   (readp),y
-   sta   OLDFILE,y
-   sta   CPM_FNAME,y
-   dey
-   bpl   :-
-
-   pla
-   sta   CPM_FNAME
    stz   readp
-
-   jsr   changeentry
-
-@skip:
-   jmp   reload
-
-rename:
-   jsr   PRINT
-   .byte "Rename: ",0
-
-   lda   index
-   asl
-   asl
-   asl
-   asl
-   sta   readp
-
-   ldy   #$0b
-:
-   lda   (readp),y
-   sta   OLDFILE,y
-   dey
-   bpl   :-
-
-   jsr   fnedit
-   ;stz   readp          ; will be done by fnedit
 
    lda   FNBUFFER
    beq   @skip
@@ -811,6 +695,39 @@ rename:
 @skip:
    jmp   reload
 
+
+copy:
+   ; TODO
+   jsr   idx2fname
+
+   lda   OLDFILE+$E     ; check hibyte of #sectors
+   beq   @fits
+   cmp   #$02
+   bcs   @toolarge
+   ; A=$01 at this point
+
+   lda   OLDFILE+$F     ; check lobyte of #sectors
+   cmp   #$99           ; $0198: maximum #sectors fit in RAM
+   bcc   @fits
+
+@fits:
+   int   CPMLOAD
+
+   jsr   edituserorname
+
+   int   CPMNAME
+   int   CPMSAVE
+   bra   @reload
+
+@toolarge:
+   jsr   PRINT
+   .byte "file too large to be copied",0
+   int   CHRINUC
+
+@reload:
+   jmp   reload
+
+
 load:
    lda   index
    asl
@@ -823,6 +740,9 @@ load:
    ldy   user
    int   CPMNAME
 
+   ; do two things in one loop:
+   ; 1) check if the filename ends in SX4
+   ; 2) copy code for setting bank to $00 before running file
    ldy   #$02
 @loadloop:
    lda   CPM_FNAME+$09,y
@@ -831,7 +751,7 @@ load:
    jmp   reload
 :
    lda   @bankcode,y
-   sta   $0400-3,y
+   sta   SX4START-3,y
    dey
    bpl   @loadloop
 
@@ -841,13 +761,201 @@ load:
    ldy   #VT100_SCRN_CLR
    int   VT100
 
-   jmp   $0400-3
+   jmp   SX4START-3
 
 @bankcode:
    stz   BANK
 @fileext:
    .byte "SX4"
 
-badfnchars:
-   .byte "*/:<=>?[]"
-badfnchars_size = * - badfnchars
+
+editname:
+   ; start with saving cursor position
+   ldy   #VT100_CPOS_SAV
+   int   VT100
+
+   ; copy filename to edit buffer
+   ldx   #$00
+   ldy   #$00
+@copyloop:
+   lda   CPM_FNAME+1,y
+@copy2:
+   sta   FNBUFFER,x
+   inx
+   cpx   #$08
+   bne   :+
+   lda   #'.'
+   bra   @copy2
+:
+   iny
+   cpy   #$0b
+   bcc   @copyloop
+
+   jsr   @findendfn
+   
+@printfn:
+   ; print current filename (without user)
+   tya
+   ldy   #VT100_CPOS_RST
+   int   VT100
+   tay
+
+   ldx   #$00
+:
+   lda   FNBUFFER,x
+   jsr   CHROUT
+   inx
+   cpx   #$0c
+   bcc   :-
+
+   ; for loop edit iteration, set cursor to saved position
+   tya                  ; save current editing position
+   ldy   #VT100_CPOS_RST
+   int   VT100
+   tay                  ; restore current editing position
+   tax                  ; set up counter for moving right
+   beq   @keyloop
+
+:
+   jsr   PRINT
+   .byte $1b,$5b,$43    ; ESC-"[C" --> cursor right
+   .byte $00
+   dex
+   bne   :-
+
+@keyloop:
+   int   CHRINUC
+   cmp   #$03           ; CTRL-C --> cancel
+   bne   :+
+   ;sec                 ; implied, cause cmp equal always set carry
+   rts
+:
+
+   cmp   #$0d           ; RETURN --> done
+   bne   :+
+   clc
+   rts
+:
+
+   cmp   #$0c           ; CTRL-L --> redraw
+   beq   @printfn
+
+   cmp   #$08           ; backspace
+   beq   @del
+   cmp   #$7f           ; del
+   bne   @nodel
+@del:
+   cpy   #$00
+   beq   @keyloop       ; nothing to erase
+   cpy   #$09
+   beq   @gofn          ; nothing to erase
+   dey                  ; get back to previous character
+   lda   #' '
+   sta   FNBUFFER,y     ; and set to space
+   lda   #$7f           ; erase the character on screen and backstep
+   jsr   CHROUT
+   bra   @keyloop
+@nodel:
+
+   cmp   #'.'
+   bne   @nodot
+
+   ; toggle between name and extension
+   cpy   #$09
+   bcc   :+
+@gofn:
+   jsr   @findendfn
+   bra   @printfn
+:
+   jsr   @findendfe
+   bra   @printfn
+@nodot:
+
+   cpy   #$08
+   beq   @keyloop
+   cpy   #$0c
+   bcs   @keyloop
+
+   ldx   #badfnchars_size-1
+:
+   cmp   badfnchars,x
+   beq   @keyloop       ; illegal char --> return to input
+   dex
+   bpl   :-
+
+   sta   FNBUFFER,y
+   iny
+   jsr   CHROUT
+   bra   @keyloop
+
+@findendfn:
+   ldy   #$00           ; end of filename
+   lda   #$08
+   bra   @findend
+@findendfe:
+   ldy   #$09
+   lda   #$0c
+@findend:
+   sta   $ff
+   lda   #' '           ; space to check for
+:
+   cmp   FNBUFFER,y
+   beq   :+             ; space -> done
+   iny                  ; next letter
+   cpy   $ff            ; check for end
+   bcc   :-             ; not -> repeat
+:
+   ; Y now contains position
+   rts
+
+
+edituserorname:
+   ldy   #VT100_CPOS_SAV
+   int   VT100
+
+   jsr   PRINT
+   .byte "Name or User? ",0
+
+@keyloop:
+   int   CHRINUC
+   cmp   #$03
+   beq   @cancel
+
+:
+   cmp   #'N'
+   bne   :+
+
+   jsr   rstclr
+   jsr   PRINT
+   .byte "Name: ",0
+   
+   jsr   editname
+   bcs   @cancel
+
+   lda   #<FNBUFFER
+   ldx   #>FNBUFFER
+   ldy   CPM_FNAME
+   int   CPMNAME
+
+   bra   @done
+
+:
+   cmp   #'U'
+   bne   @keyloop
+
+   jsr   rstclr
+   jsr   PRINT
+   .byte "User: ",0
+
+   jsr   hexin
+   bcs   @cancel
+
+   sta   CPM_FNAME
+
+@done:
+   clc
+   rts
+
+@cancel:
+   sec
+   rts

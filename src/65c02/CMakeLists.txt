@@ -106,26 +106,27 @@ target_type_addr(a1hello apple1 0x0800)
 src2hex(a1hello.hex a1hello 0x0800)
 
 add_executable(native_kernel
-   native_kernel.s
-   native_cpmfs.s
-   native_tim.s
-   native_woz.s
-   native_vt100.s
-   native_bios.s
+   native_rom/kernel.s
+   native_rom/cpmfs.s
+   native_rom/tim.s
+   native_rom/woz.s
+   native_rom/vt100.s
+   native_rom/functions.s
+   native_rom/bios.s
    )
 target_type(native_kernel native_kernel)
 
 add_executable(native_basic
-   native_osi_basic.s
-   native_bios.s
-   native_bios_stub.s
+   native_rom/osi_basic.s
+   native_rom/bios.s
+   native_rom/bios_stub.s
    )
 target_type(native_basic native_kernel)
 
 add_executable(native_tools
-   native_browser.s
-   native_bios.s
-   native_bios_stub.s
+   native_rom/browser.s
+   native_rom/bios.s
+   native_rom/bios_stub.s
    )
 target_type(native_tools native_kernel)
 

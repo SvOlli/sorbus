@@ -1,3 +1,7 @@
+;
+; Copyright 2023-2024 Sven Oliver ("SvOlli") Moll
+; Distributed unter the terms: GPL-3.0-or-later
+;
 
 ; $FF00: read a character from UART in A, returns C=1 when no queue is empty
 .define CHRIN  $FF00
@@ -136,3 +140,14 @@
 ; copy the BIOS ($FF00-$FFFF) from ROM to RAM, so $E000-$FFFF can be banked
 ; to RAM without losing the functionality of the kernel
 .define COPYBIOS  $0B
+
+; input text using a line
+; A/X: vector to buffer, if first byte is not $00, edit the content
+; Y: maximum length of input
+; returns:
+; C=1: Ctrl-C
+; C=0: Return
+.define LINEINPUT $0C
+
+.define GENSINE   $0D
+

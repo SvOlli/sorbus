@@ -12,10 +12,10 @@
 SECTOR_BUFFER := $DF80
 TRAMPOLINE    := $0100
 
-.include "native.inc"
-.include "native_bios.inc"
-.include "native_kernel.inc"
-.include "native_cpmfs.inc"
+.include "../native.inc"
+.include "../native_bios.inc"
+.include "../native_kernel.inc"
+.include "../native_cpmfs.inc"
 
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
@@ -281,7 +281,7 @@ brkjump:
 @jumptable:
    .word @user, chrinuc, chrcfg, prhex8, prhex16
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir
-   .word vt100, copybios
+   .word vt100, copybios, inputline, gensine
 @jumptableend:
 
 signature:

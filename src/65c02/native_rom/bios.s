@@ -1,6 +1,6 @@
 
-.include "native.inc"
-.include "native_bios.inc"
+.include "../native.inc"
+.include "../native_bios.inc"
 
 ;-------------------------------------------------------------------------
 ; BIOS calls $FF00-$FFFF
@@ -110,7 +110,7 @@ IRQCHECK:
    sta   BANK           ; restore saved bank
    pla                  ; drop P from stack
    lda   BRK_SY         ; get P from store
-   php                  ; put it on the stack, so flags can be returned
+   pha                  ; put it on the stack, so flags can be returned
    lda   BRK_SA         ; get stored accumulator
    rti                  ; return to calling code
 

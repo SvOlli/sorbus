@@ -1,7 +1,7 @@
 
-.include "native.inc"
-.include "native_bios.inc"
-.include "native_kernel.inc"
+.include "../native.inc"
+.include "../native_bios.inc"
+.include "../native_kernel.inc"
 
 .segment "CODE"
 

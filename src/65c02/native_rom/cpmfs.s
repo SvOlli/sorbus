@@ -1,10 +1,10 @@
 
 ; CP/M filesystem load / save reimplementation
 
-.include "native.inc"
-.include "native_bios.inc"
-.include "native_kernel.inc"
-.include "native_cpmfs.inc"
+.include "../native.inc"
+.include "../native_bios.inc"
+.include "../native_kernel.inc"
+.include "../native_cpmfs.inc"
 
 ; cpmfs configuration on Sorbus
 ; 32768 total sectors
@@ -94,8 +94,11 @@ tmp16     = TMP16       ; also used by jsr PRINT
 ; TODO: directory function
 ; directory function requires load address to be set (data can be 16kB max)
 ; if load address is set to <$0100, it will be printed to screen
-; format in RAM: St F0 F1 F2 F3 F4 F5 F6 F7 E0 E1 E2 Xl Bc Xh Rc
-; format on screen: F0 F1 F2 F3 F4 F5 F6 F7 (dot) E0 E1 E2 (four spaces)
+; format in RAM: St F0 F1 F2 F3 F4 F5 F6 F7 E0 E1 E2 $00 Bc Sh Sl
+; format on screen: F0 F1 F2 F3 F4 F5 F6 F7 (dot) E0 E1 E2
+; Bc: same as above, taken of last extend
+; Sl: lobyte of number of sectors (added up Rc of all extends)
+; Sh: hibyte of number of sectors (note: big endian, using Xh "slot")
 ;-------------------------------------------------------------------------
 ; NOTE: these functions were implemented trying to use a minimum of ROM
 ; space. Therefore there will be only a minimum of error checking and
