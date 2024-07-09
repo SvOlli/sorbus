@@ -45,15 +45,23 @@ clean:
 	rm -f $(RELEASE_ARCHIVE) cmake.log make.log
 
 distclean:
-	rm -rf $(RELEASE_ARCHIVE) $(BUILD_DIR)
+	rm -rf $(RELEASE_ARCHIVE) $(BUILD_DIR) make.log cmake.log
 
 $(PICO_SDK_PATH)/README.md:
 	mkdir -p $(PICO_SDK_PATH)
 	git clone --depth 1 --recurse-submodules --shallow-submodules $(PICO_SDK_URL) $(PICO_SDK_PATH)
 
+# these packages are required to create the release package
 setup-apt:
 	sudo apt update
-	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full cpmtools
+	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full cpmtools build-essential
+
+# this is additionally required on a development host
+setup-dev: setup-apt
+	sudo apt install pkgconf libusb-1.0-0-dev microcom
+	sudo gpasswd -a $(USER) dialout
+	sudo gpasswd -a $(USER) plugdev
+	sudo cp doc/99-picotool.rules /etc/udev/rules.d/
 
 $(RELEASE_ARCHIVE): all
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done

@@ -9,6 +9,7 @@ pico_sdk_init()
 #string(REPLACE "-O3" "-O6" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wunused-variable")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto")
 set(FIRMWARE_BASE "${CMAKE_CURRENT_BINARY_DIR}/native_firmware")
 
 function(bin2h h_file bin_file label)

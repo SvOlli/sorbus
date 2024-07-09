@@ -134,6 +134,8 @@ add_executable(native_cpm_bootblock
    linkcpm.s
    ../bin/cpm/CPM
    ../bin/cpm/BDOS
+   native_rom/bios.s
+   native_rom/bios_stub.s
    )
 # This doesn't work, as the glorious CMake de-duplicates the
 # "--large-alignment" option, which needs to be passed twice.

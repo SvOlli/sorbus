@@ -367,6 +367,35 @@ static inline void system_reset()
 }
 
 
+static inline void handle_scratch_mem( uint8_t flags )
+{
+   // not accessable RAM is used as scratch memory:
+   // $D000-$D3FF 1k of scratch RAM, can be copied from/to $0000-$03FF
+   // $DE00-$DEFF 256 bytes temporary storage required to swap banks
+   int i;
+   for( i = 0; i < 4; ++i )
+   {
+      if( flags & (1 << i) )
+      {
+         switch( flags & 0xC0 )
+         {
+            case 0x40:
+               memcpy( &ram[0xD000+i*0x100], &ram[i*0x100], 0x100 );
+               break;
+            case 0x80:
+               memcpy( &ram[i*0x100], &ram[0xD000+i*0x100], 0x100 );
+               break;
+            case 0xC0:
+               memcpy( &ram[0xDE00], &ram[i*0x100], 0x100 );
+               memcpy( &ram[i*0x100], &ram[0xD000+i*0x100], 0x100 );
+               memcpy( &ram[0xD000+i*0x100], &ram[0xDE00], 0x100 );
+               break;
+         }
+      }
+   }
+}
+
+
 static inline void event_flash_sync( void *data )
 {
    // event handler for flushing dhara journal
@@ -659,9 +688,16 @@ void debug_internal_drive()
    printf("dhara gc ratio         %08x (%d)\n", dhara_info.gc_ratio, dhara_info.gc_ratio );
    printf("dhara read status:     %d\n", dhara_info.read_status );
    printf("dhara read error:      %s\n", dhara_strerror( dhara_info.read_errcode ) );
+#if 0
    printf("dhara read sector $%04x:\n", dhara_sector );
 
    debug_hexdump( dhara_buffer, SECTOR_SIZE, 0 );
+#else
+   uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
+   uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
+   printf("dhara last used sector: $%04x\n", *lba );
+   debug_hexdump( &ram[(*mem)-0x80], SECTOR_SIZE, (*mem)-0x80 );
+#endif
 }
 
 
@@ -739,6 +775,9 @@ static inline void handle_io()
             break;
          case 0x01: // DEBUG only!
             system_trap( SYSTEM_TRAP );
+            break;
+         case 0x03: // scratch-1k
+            handle_scratch_mem( data );
             break;
          case 0x0B: // UART read: enable crlf conversion
             console_set_crlf( data & 1 );

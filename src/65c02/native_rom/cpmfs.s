@@ -135,8 +135,11 @@ cpmname:
    bne   @skip
 @nodot:
    phx
-   cmp   #' '+1         ; filter out control codes + space
+   cmp   #' '           ; filter out control codes
    bcc   @bad
+   ; note that space needs a different handling
+   ; as spaces are valid at the end, but not in between
+   ; however, for now let's rely on the software
    ldx   #badfnchars_size-1
 @chkchars:
    cmp   badfnchars,x   ; check for bad ascii characters

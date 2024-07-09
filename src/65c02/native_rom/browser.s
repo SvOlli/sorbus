@@ -296,10 +296,14 @@ init:
    jsr   PRINT
    .byte 10
    .byte "<- ->: switch pages"
-   .byte " | 0-9 A-F: user"
+   .byte " | 0-9 A-F: User"
    .byte " | L: Load"
    .byte 10
-   .byte ">: Delete | K: Copy | M: Move | T: Transfer", 0
+   .byte ">: Delete | K: Copy | M: Move"
+.if 0
+   .byte " | T: Transfer"
+.endif
+   .byte 0
 
 reload:
    jsr   loaddir
@@ -682,14 +686,6 @@ move:
 
    stz   readp
 
-   lda   FNBUFFER
-   beq   @skip
-
-   lda   #<FNBUFFER
-   ldx   #>FNBUFFER
-   ldy   user
-   int   CPMNAME
-
    jsr   changeentry
 
 @skip:
@@ -715,7 +711,8 @@ copy:
 
    jsr   edituserorname
 
-   int   CPMNAME
+   bcs   @reload
+
    int   CPMSAVE
    bra   @reload
 
@@ -921,7 +918,6 @@ edituserorname:
    cmp   #$03
    beq   @cancel
 
-:
    cmp   #'N'
    bne   :+
 

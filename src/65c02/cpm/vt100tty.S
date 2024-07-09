@@ -539,7 +539,7 @@ crlf:
     .byte 13,10,0
 zendproc
 
-zproc isdigit
+zproc is_digit
     cmp #'9'+1
     zif_cc
         cmp #'0'
@@ -563,7 +563,7 @@ zproc ascii2bin
 
     ; now go for tens
     lda escbuffer-1,x
-    jsr isdigit
+    jsr is_digit
     bcs a2b_done
 
     and #$0f
@@ -574,7 +574,7 @@ zproc ascii2bin
     
     ; finally got for 100s
     lda escbuffer-2,x
-    jsr isdigit
+    jsr is_digit
     bcs a2b_done
 
     and #$0f

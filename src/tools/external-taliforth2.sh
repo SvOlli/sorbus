@@ -10,6 +10,9 @@ readonly TARGETDIR="${BASEDIR}/src/bin/cpm/10"
 
 set -e
 
+echo "check if the required assembler is available"
+type 64tass
+
 rm -rf "${WORKDIR}"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"

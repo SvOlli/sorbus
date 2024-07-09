@@ -13,7 +13,7 @@ the core in flash, using the following commands:
 -  picotool load -o 0x103FA000 -t bin <kernel>
 -  picotool load -o 0x10400000 -t bin <filesystem>
 
-(This is a subject to change, because it’s now possible to create a UF2
+(This is a subject to change, because it's now possible to create a UF2
 file with everything firmware.)
 
 Available Boot Options
@@ -79,7 +79,7 @@ BASIC.
 SX4 File Format For Executables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-SX4 stands for Sorbus eXecutable $0400, so it’s just a binary blob
+SX4 stands for Sorbus eXecutable $0400, so it's just a binary blob
 loaded to $0400 at memory and started at the load address, after the
 bank has been switched to $00 (RAM @ $E000) with the BIOS copied to RAM.
 
@@ -96,13 +96,16 @@ Memory map
 
 -  $0010-$00FF: zeropage RAM for generic use
 -  $0100-$01FF: stack
--  $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs)
+-  $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs)
 -  $0400-$CFFF: RAM for generic use
 -  $D000-$DEFF: I/O provided by external boards
+-  $D000-$D3FF: scratch RAM that can by exchanged with $0000-$03FF
+   by writing to $DF03 (not accessable directly from 65C02)
+-  $DE00-$DEFF: internal temporary buffer (not accessable from 65C02)
 -  $DF00-$DFFF: I/O provided by main RP2040 board
 -  $E000-$FFFF: bank 0 (RAM, used to load CP/M 65)
 -  $E000-$FFFF: bank 1 (ROM, custom firmware)
--  $E000-$FFFF: bank 2 (ROM, tools e.g. filebrowser)
+-  $E000-$FFFF: bank 2 (ROM, tools e.g. filebrowser)
 -  $E000-$FFFF: bank 3 (ROM, OSI BASIC)
 -  $FF00-$FFFF: bankswitching code, BRK handler, I/O routines can be
    copied to RAM using code at $0100 after loading a bootblock
@@ -118,6 +121,8 @@ Miscellaneous ($DF00-$DF0F)
    revision
 -  $DF01: (S) trap: stop CPU and jump into debugging console
 -  $DF02: (R) random value
+-  $DF03: (W) swap out pages $00-$03: lower four bits contain banks,
+   upper two bits mode: $40 -> store, $80 -> read, $c0 -> swap
 -  $DF03-$DF0A: reserved for future use
 -  $DF0B: UART config: bit 0=enable crlf conversion
 -  $DF0C: (R) UART in queue read
@@ -185,15 +190,15 @@ These vectors are RAM to support installing own handlers for interrupts
 -  $DF7C/$DF7D user IRQ routine (for handling non-BRK)
 -  $DF7E/$DF7F IRQ ($FFFE/F point to jmp ($DF7E))
 
-Note: TIM overwrites vectors for own debugging purposes, WozMon doesn’t.
+Note: TIM overwrites vectors for own debugging purposes, WozMon doesn't.
 
 Scratchpad RAM ($DF80-$DFFF)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 128 bytes of RAM intended to be used to store a sector from internal
-drive, e.g. directory data.
+drive, e.g. directory data.
 
-Unused addresses in $DF00-$DF7F behave like RAM, except that they can’t
+Unused addresses in $DF00-$DF7F behave like RAM, except that they can't
 be used with internal drive DMA.
 
 Interrupt Handling

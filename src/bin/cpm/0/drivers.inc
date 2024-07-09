@@ -35,4 +35,3 @@ SCREEN_CLEARTOEOL = 11
 SCREEN_SETSTYLE   = 12
 \ vim: filetype=asm sw=4 ts=4 et
 
-

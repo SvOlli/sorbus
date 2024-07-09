@@ -12,6 +12,7 @@
 ; like CHRIN, CHROUT, etc.
 
 ; however, a small stub if the copy of $FF00 isn't used
+.if 0
 .segment "BIOS"
 NMI:
 RESET:
@@ -23,3 +24,5 @@ IRQ:
 
 .segment "VECTORS"
    .word NMI, RESET, IRQ
+.endif
+

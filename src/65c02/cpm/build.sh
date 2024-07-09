@@ -23,8 +23,8 @@ if [ -d "${CPM65_DIR}/cpm65" ]; then
    CPM65_DIR="${CPM65_DIR}/cpm65"
 fi
 
-CPMEMU="${CPM65_DIR}/.obj/tools/cpmemu+cpmemu/cpmemu+cpmemu"
-CPMASM="${CPM65_DIR}/.obj/apps+asm/apps+asm"
+CPMEMU="${CPM65_DIR}/.obj/tools/cpmemu/+cpmemu/+cpmemu"
+CPMASM="${CPM65_DIR}/.obj/apps/+asm/+asm"
 
 readonly BINDIR SRCDIR CPM65_DIR
 
@@ -50,7 +50,7 @@ for i in "${SRCDIR}"/*.S; do
    [ -f "${i}" ] || continue
    file="${i##*/}"
    file="${file%.S}"
-   mos-cpm65-clang -c -I"${CPM65_DIR}/.obj/include+include" \
+   mos-cpm65-clang -c -I"${CPM65_DIR}/include" \
       -o "${file}.o" "${SRCDIR}/${file}.S"
    mos-cpm65-clang -o "${BINDIR}/${file}.com" "${file}.o"
    rm -f "${BINDIR}/${file}.com.elf"
@@ -60,9 +60,9 @@ for i in "${SRCDIR}"/*.c; do
    [ -f "${i}" ] || continue
    file="${i##*/}"
    file="${file%.c}"
-   mos-cpm65-clang -c -I"${CPM65_DIR}/.obj/lib+cpm65_hdrs" \
+   mos-cpm65-clang -c -I"${CPM65_DIR}/.obj/lib/+cpm65_hdrs" \
       -Os -g -Wno-main-return-type -o "${file}.o" "${SRCDIR}/${file}.c"
    mos-cpm65-clang -o "${BINDIR}/${file}.com" "${file}.o" \
-      "${CPM65_DIR}/.obj/lib+cpm65/lib+cpm65.a"
+      "${CPM65_DIR}/.obj/lib/+cpm65/+cpm65.a"
    rm -f "${BINDIR}/${file}.com.elf"
 done
