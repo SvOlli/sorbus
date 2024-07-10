@@ -15,6 +15,7 @@ The project is fully open source, licensend under GPL v3:
   - the PCB design is in the folder pcb
     - the Raspberry Pi Pico clone is found under the term "Purple PR2040"
       on AliExpress and other sites
+    - the clone is used because all GPIOs of the RP2040 are required
   - the 65C02 source code to run on the target is at src/65c02
     - compiling requires the [cc65](https://cc65.github.io/), which
       needs to be preinstalled.
@@ -30,19 +31,59 @@ The project is fully open source, licensend under GPL v3:
 about the ideas of the system, as well as some usecases.
 
 To access the RP2040 without super user rights, make sure that your user is
-in the groups "plugdev" and "dialout". You also need to add a udev rule.
+in the groups "plugdev" and "dialout". You also need to add a udev rule. Copy
+the file [doc/99-picotool.rules](doc/99-picotool.rules) to
+`/etc/udev/rules.d/` .
 
-/etc/udev/rules.d/99-picotool.rules:
-```
-SUBSYSTEM=="usb", \
-    ATTRS{idVendor}=="2e8a", \
-    ATTRS{idProduct}=="0003", \
-    MODE="660", \
-    GROUP="plugdev"
-SUBSYSTEM=="usb", \
-    ATTRS{idVendor}=="2e8a", \
-    ATTRS{idProduct}=="000a", \
-    MODE="660", \
-    GROUP="plugdev"
-```
+Build Targets
+-------------
+
+The toplevel `Makefile` is added as a convenience layer to build things more
+easily. It wraps the call of `cmake` and `make` to configure the Raspberry Pi
+Pico project, as well as some other useful things. The following make targets
+are available:
+
+  - make all
+    - checks for availablilty of the Pico SDK and downloads it, if required
+    - creates a new build directory
+    - wraps the call to `cmake` and `make` to build the project
+  - make log
+    - same as "all"
+    - creates a file `make.log`
+    - more verbose compilation, e.g. compiler calls with parameters
+  - make clean
+    - runs a `make clean` on build directory
+  - make distclean
+    - removes build directory entirely to force restart from scratch
+  - make setup-apt
+    - installs packages on Debian required to build the project
+    - used by git actions to prepare building of a release
+  - make setup-dev
+    - runs "setup-apt", as well as doing modifications to make sure
+      that terminal and picotool work
+  - make picotool
+    - checks out and builds picotool
+  - make setup-external
+    - sets up tools required to build external code, like
+      - [CP/M 65](https://github.com/davidgiven/cpm65.git) (requires
+        [llvm-mos-sdk](https://github.com/llvm-mos/llvm-mos-sdk))
+      - [TaliForth2](https://github.com/SamCoVT/TaliForth2.git)
+        (requires [64tass](https://tass64.sourceforge.net/))
+  - make release
+    - used by git action to build a release
+
+There are also some build scripts available for special cases:
+
+  - src/tools/upload.sh
+    - script used to build and transfer software using picotool
+      (needs rewrite)
+    - defaults to uploading the native core
+  - src/tools/external-taliforth2.sh
+    - script to checkout, build and install the TaliForth2
+      binary ready for building the filesystem image
+    - only required for native core
+  - src/tools/external-cpm65.sh
+    - script to checkout, build and install the files required
+      to include CP/M 65 into the filesystem image
+    - only required for native core
 

@@ -20,6 +20,7 @@ if [ -z "${LLVM_PATH}" ]; then
    exit 1
 fi
 readonly LLVM_PATH
+echo "Using llvm-mos-sdk at ${LLVM_PATH}"
 
 set -e
 

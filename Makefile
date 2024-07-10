@@ -1,7 +1,14 @@
 
 # Parameters
 #CPM65_PATH = ../cpm65
+LLVM_MOS_SDK_VERSION = v18.0.0
 #EXTRA_CMAKE_ARGS += -DCMAKE_VERBOSE_MAKEFILE=ON
+
+# Commands
+MKDIR = mkdir -p
+RM = rm -rf
+LS = ls -l
+GIT_CHECKOUT = git clone --depth 1 --recurse-submodules --shallow-submodules
 
 $(info This Makefile is not required and for convenience only)
 
@@ -13,6 +20,14 @@ $(info Using global pico sdk at: $(PICO_SDK_PATH))
 endif
 EXTRA_CMAKE_ARGS += -DPICO_SDK_PATH="$(PICO_SDK_PATH)"
 
+ifeq ($(PICO_EXTRAS_PATH),)
+PICO_EXTRAS_PATH=$(shell readlink -f ../pico-extras)
+$(info Using local pico extras at: $(PICO_EXTRAS_PATH))
+else
+$(info Using global pico extras at: $(PICO_EXTRAS_PATH))
+endif
+EXTRA_CMAKE_ARGS += -DPICO_EXTRAS_PATH="$(PICO_EXTRAS_PATH)"
+
 CMAKE_CPM65_PATH = $(realpath $(CPM65_PATH))
 ifneq ($(CMAKE_CPM65_PATH),)
 EXTRA_CMAKE_ARGS += -DCPM65_PATH=$(CMAKE_CPM65_PATH)
@@ -22,10 +37,13 @@ else
   endif
 endif
 
+PICOTOOL_PATH ?= $(realpath ../picotool)
 
 RELEASE_ARCHIVE := SorbusComputerCores.zip
 
 PICO_SDK_URL ?= https://github.com/raspberrypi/pico-sdk.git
+PICO_EXTRAS_URL ?= https://github.com/raspberrypi/pico-extras.git
+PICOTOOL_URL ?= https://github.com/raspberrypi/picotool.git
 BUILD_DIR ?= $(CURDIR)/build
 SRC_DIR := $(CURDIR)/src
 JOBS ?= 4
@@ -42,14 +60,28 @@ log: $(PICO_SDK_PATH)/README.md
 
 clean:
 	make -C $(BUILD_DIR) clean
-	rm -f $(RELEASE_ARCHIVE) cmake.log make.log
+	$(RM) $(RELEASE_ARCHIVE) cmake.log make.log
 
 distclean:
-	rm -rf $(RELEASE_ARCHIVE) $(BUILD_DIR) make.log cmake.log
+	$(RM) $(RELEASE_ARCHIVE) $(BUILD_DIR) make.log cmake.log
 
 $(PICO_SDK_PATH)/README.md:
-	mkdir -p $(PICO_SDK_PATH)
-	git clone --depth 1 --recurse-submodules --shallow-submodules $(PICO_SDK_URL) $(PICO_SDK_PATH)
+	$(MKDIR) $(PICO_SDK_PATH)
+	$(GIT_CHECKOUT) $(PICO_SDK_URL) $(PICO_SDK_PATH)
+
+$(PICO_EXTRAS_PATH)/README.md:
+	$(MKDIR) $(PICO_EXTRAS_PATH)
+	$(GIT_CHECKOUT) $(PICO_EXTRAS_URL) $(PICO_EXTRAS_PATH)
+
+$(PICOTOOL_PATH)/README.md:
+	$(MKDIR) $(PICOTOOL_PATH)
+	$(GIT_CHECKOUT) $(PICO_EXTRAS_URL) $(PICOTOOL_PATH)
+
+picotool: $(PICOTOOL_PATH)/README.md $(PICO_SDK_PATH)/README.md
+	$(RM) $(PICOTOOL_PATH)-build ; $(MKDIR) $(PICOTOOL_PATH)-build
+	cd $(PICOTOOL_PATH)-build && cmake $(PICOTOOL_PATH) -DPICO_SDK_PATH=$(PICO_SDK_PATH)
+	cd $(PICOTOOL_PATH)-build && make
+	$(LS) "$(shell readlink -f "$(PICOTOOL_PATH)-build/picotool")"
 
 # these packages are required to create the release package
 setup-apt:
@@ -63,10 +95,15 @@ setup-dev: setup-apt
 	sudo gpasswd -a $(USER) plugdev
 	sudo cp doc/99-picotool.rules /etc/udev/rules.d/
 
+setup-external:
+	sudo apt-get install 64tass
+	wget https://github.com/llvm-mos/llvm-mos-sdk/releases/download/$(LLVM_MOS_SDK_VERSION)/llvm-mos-linux.tar.xz -O - \
+	   | xz -d | tar -xf - -C ..
+
 $(RELEASE_ARCHIVE): all
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done
 	cp doc/README_release.txt README.txt
-	rm -f $@
+	$(RM) $@
 	7z a -mx=9 -bd -sdel $@ README.txt *.uf2
 
 release: $(RELEASE_ARCHIVE)
