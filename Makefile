@@ -26,7 +26,7 @@ $(info Using local pico extras at: $(PICO_EXTRAS_PATH))
 else
 $(info Using global pico extras at: $(PICO_EXTRAS_PATH))
 endif
-EXTRA_CMAKE_ARGS += -DPICO_EXTRAS_PATH="$(PICO_EXTRAS_PATH)"
+#EXTRA_CMAKE_ARGS += -DPICO_EXTRAS_PATH="$(PICO_EXTRAS_PATH)"
 
 CMAKE_CPM65_PATH = $(realpath $(CPM65_PATH))
 ifneq ($(CMAKE_CPM65_PATH),)
@@ -37,13 +37,13 @@ else
   endif
 endif
 
-PICOTOOL_PATH ?= $(realpath ../picotool)
+# workaround to suppress annoying warning
+export PICOTOOL_FETCH_FROM_GIT_PATH ?= $(realpath ../picotool)
 
 RELEASE_ARCHIVE := SorbusComputerCores.zip
 
 PICO_SDK_URL ?= https://github.com/raspberrypi/pico-sdk.git
 PICO_EXTRAS_URL ?= https://github.com/raspberrypi/pico-extras.git
-PICOTOOL_URL ?= https://github.com/raspberrypi/picotool.git
 BUILD_DIR ?= $(CURDIR)/build
 SRC_DIR := $(CURDIR)/src
 JOBS ?= 4
@@ -73,15 +73,8 @@ $(PICO_EXTRAS_PATH)/README.md:
 	$(MKDIR) $(PICO_EXTRAS_PATH)
 	$(GIT_CHECKOUT) $(PICO_EXTRAS_URL) $(PICO_EXTRAS_PATH)
 
-$(PICOTOOL_PATH)/README.md:
-	$(MKDIR) $(PICOTOOL_PATH)
-	$(GIT_CHECKOUT) $(PICO_EXTRAS_URL) $(PICOTOOL_PATH)
-
-picotool: $(PICOTOOL_PATH)/README.md $(PICO_SDK_PATH)/README.md
-	$(RM) $(PICOTOOL_PATH)-build ; $(MKDIR) $(PICOTOOL_PATH)-build
-	cd $(PICOTOOL_PATH)-build && cmake $(PICOTOOL_PATH) -DPICO_SDK_PATH=$(PICO_SDK_PATH)
-	cd $(PICOTOOL_PATH)-build && make
-	$(LS) "$(shell readlink -f "$(PICOTOOL_PATH)-build/picotool")"
+picotool: $(PICO_SDK_PATH)/README.md
+	src/tools/external-picotool.sh
 
 # these packages are required to create the release package
 setup-apt:
@@ -96,9 +89,7 @@ setup-dev: setup-apt
 	sudo cp doc/99-picotool.rules /etc/udev/rules.d/
 
 setup-external:
-	sudo apt-get install 64tass
-	wget https://github.com/llvm-mos/llvm-mos-sdk/releases/download/$(LLVM_MOS_SDK_VERSION)/llvm-mos-linux.tar.xz -O - \
-	   | xz -d | tar -xf - -C ..
+	sudo apt-get install 64tass libreadline-dev libfmt-dev moreutils fp-compiler ninja-build zip unzip
 
 $(RELEASE_ARCHIVE): all
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done

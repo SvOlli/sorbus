@@ -18,6 +18,7 @@
 #include <pico/multicore.h>
 #include <pico/platform.h>
 #include <pico/binary_info.h>
+#include <hardware/clocks.h>
 
 #include "native/common.h"
 #include "native/event_queue.h"

@@ -19,6 +19,9 @@ TMP16  = $04
 BANK   = $DF00     ; ROM bank
 TRAP   = $DF01     ; (S) output debug messages and reboot
 RANDOM = $DF02     ; (R) get a random value
+XRAMSW = $DF03     ; (W) save/restore/swap pages $00-$03
+                   ; bits 0-3 -> pages 0-3 affected
+                   ; $40 RAM -> buffer, $80 RAM <- buffer, $c0 RAM <-> buffer
 
 UARTCF = $DF0B     ; config: bit 0: turn on/off crlf conversion
 UARTRD = $DF0C     ; (R) read from serial input queue (read only)

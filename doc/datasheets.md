@@ -26,6 +26,8 @@ directory that can be used to download these documents.
 * [R6501 R6511 datasheet 1987](http://retro.hansotten.nl/uploads/rockwellforth/r6501%20R6511datasheet%201987.pdf)
 * [R65F11 1987 datasheet](http://retro.hansotten.nl/uploads/rockwellforth/R65F11%201987%20datasheet%20.pdf)
 * [TIM MOS folder](http://retro.hansotten.nl/uploads/6502files/tim%20mos%20folder.pdf)
+* [MOS 6502 User's Manual](https://archive.org/download/6502um/6502UsersManual.pdf)
+* [MOS 6500 Preliminary](http://www.6502.org/documents/datasheets/mos/mos_6500_mpu_preliminary_may_1976.pdf)
 
 6502 Based SBCs
 ---------------
@@ -49,7 +51,9 @@ Firmware
 Host Based Hardware
 -------------------
 * [Raspberry Pi RP2040 MCU](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)
+* [Raspberry Pi RP2350 MCU](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf)
 * [Hardware design with RP2040](https://datasheets.raspberrypi.com/rp2040/hardware-design-with-rp2040.pdf)
+* [Hardware design with RP2350](https://datasheets.raspberrypi.com/rp2350/hardware-design-with-rp2350.pdf)
 
 Documentation Of Old Hardware
 -----------------------------

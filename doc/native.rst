@@ -88,13 +88,13 @@ Memory map
 
 -  $0000-$0001: graphics port
 -  $0002-$0003: for later use
--  $0004-$000F: zeropage RAM reserved for kernel
+-  $0004-$0007: zeropage RAM reserved for kernel
 
    -  $04/5: temporary vector used for PRINT and CP/M fs
    -  $06: save processor status for PRINT
    -  $07: save accumulator for PRINT
 
--  $0010-$00FF: zeropage RAM for generic use
+-  $0008-$00FF: zeropage RAM for generic use
 -  $0100-$01FF: stack
 -  $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs)
 -  $0400-$CFFF: RAM for generic use

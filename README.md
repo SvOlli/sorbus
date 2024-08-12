@@ -6,6 +6,7 @@ Raspberry Pi Pico clone for the rest of the functionality.
 
 ![Sorbus assembled](doc/images/SorbusAssembled.jpg)
 ![Sorbus parts](doc/images/SorbusParts.jpg)
+![Sorbus Junior](doc/images/SorbusJunior.jpg)
 
 The Project is capabile to run as an [Apple Computer 1](doc/apple1.md)
 as well as an own monitor command prompt (mcp) to learn about the 65C02
@@ -48,9 +49,9 @@ are available:
     - creates a new build directory
     - wraps the call to `cmake` and `make` to build the project
   - make log
-    - same as "all"
-    - creates a file `make.log`
+    - almost same as "all"
     - more verbose compilation, e.g. compiler calls with parameters
+    - creates a file `make.log`
   - make clean
     - runs a `make clean` on build directory
   - make distclean
@@ -65,9 +66,9 @@ are available:
     - checks out and builds picotool
   - make setup-external
     - sets up tools required to build external code, like
-      - [CP/M 65](https://github.com/davidgiven/cpm65.git) (requires
+      - [CP/M 65](https://github.com/davidgiven/cpm65) (requires
         [llvm-mos-sdk](https://github.com/llvm-mos/llvm-mos-sdk))
-      - [TaliForth2](https://github.com/SamCoVT/TaliForth2.git)
+      - [TaliForth2](https://github.com/SamCoVT/TaliForth2)
         (requires [64tass](https://tass64.sourceforge.net/))
   - make release
     - used by git action to build a release

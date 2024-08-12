@@ -26,7 +26,7 @@ add_executable(bin2uf2
    bin2uf2.cpp
    )
 target_include_directories(bin2uf2 PRIVATE
-   ${PICO_SDK_PATH}/src/common/boot_uf2/include
+   ${PICO_SDK_PATH}/src/common/boot_uf2_headers/include
    )
 
 # tool to concatinate binary data
