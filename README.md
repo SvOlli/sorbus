@@ -32,9 +32,8 @@ The project is fully open source, licensend under GPL v3:
 about the ideas of the system, as well as some usecases.
 
 To access the RP2040 without super user rights, make sure that your user is
-in the groups "plugdev" and "dialout". You also need to add a udev rule. Copy
-the file [doc/99-picotool.rules](doc/99-picotool.rules) to
-`/etc/udev/rules.d/` .
+in the groups "plugdev" and "dialout". You also need to add a udev rule. This
+is available as part of picotool in the `udev` folder.
 
 Build Targets
 -------------

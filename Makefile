@@ -75,6 +75,7 @@ $(PICO_EXTRAS_PATH)/README.md:
 
 picotool: $(PICO_SDK_PATH)/README.md
 	src/tools/external-picotool.sh
+	sudo cp $(PICOTOOL_FETCH_FROM_GIT_PATH)/udev/99-picotool.rules /etc/udev/rules.d/
 
 # these packages are required to create the release package
 setup-apt:
@@ -86,7 +87,6 @@ setup-dev: setup-apt
 	sudo apt install pkgconf libusb-1.0-0-dev microcom
 	sudo gpasswd -a $(USER) dialout
 	sudo gpasswd -a $(USER) plugdev
-	sudo cp doc/99-picotool.rules /etc/udev/rules.d/
 
 setup-external:
 	sudo apt-get install 64tass libreadline-dev libfmt-dev moreutils fp-compiler ninja-build zip unzip

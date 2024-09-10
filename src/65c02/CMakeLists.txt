@@ -156,6 +156,11 @@ add_executable(memcheck
    )
 target_type(memcheck sx4)
 
+add_executable(bcdcheck
+   bcdcheck.s
+   )
+target_type(bcdcheck sx4)
+
 add_executable(1sthello
    native_hello.s
    )

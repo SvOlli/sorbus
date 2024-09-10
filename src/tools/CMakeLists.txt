@@ -33,3 +33,8 @@ target_include_directories(bin2uf2 PRIVATE
 add_executable(binjoin
    binjoin.c
    )
+
+# tool to convert binary data to header file for including in source code
+add_executable(wozcat
+   wozcat.c
+   )
