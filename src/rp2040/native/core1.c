@@ -48,9 +48,9 @@ bi_decl(bi_program_feature(FLASH_DRIVE_INFO))
 #define FLASH_KERNEL_INFO "kernel   at " __XSTRING(FLASH_KERNEL_START_TXT)
 bi_decl(bi_program_feature(FLASH_KERNEL_INFO))
 
-uint8_t ram[0x10000];   // 64k of RAM and I/O
+uint8_t ram[0x10000] = { 0 }; // 64k of RAM and I/O
 uint8_t rom[FLASH_DRIVE_START_TXT-FLASH_KERNEL_START_TXT]; // buffer for roms
-const uint8_t *romvec;  // pointer into current ROM/RAM bank at $E000
+const uint8_t *romvec;        // pointer into current ROM/RAM bank at $E000
 uint32_t state;
 uint32_t address;
 
@@ -701,8 +701,24 @@ void debug_internal_drive()
 }
 
 
+#if 0
+void debug_sysconfig()
+{
+   printf( "UVBRK:%04X  ", *((uint16_t*)&ram[0xDF78]) );
+   printf( "UVNMI:%04X  ", *((uint16_t*)&ram[0xDF7A]) );
+   printf( "UVNBK:%04X  ", *((uint16_t*)&ram[0xDF7C]) );
+   printf( "UVIRQ:%04X\n", *((uint16_t*)&ram[0xDF7E]) );
+}
+#endif
+
+
 static inline void handle_io()
 {
+   static union {
+      uint32_t value;
+      uint8_t  reg[4];
+   } shadow_cycle_count;
+
    uint8_t data = state >> bus_config.shift_data;
    bool success;
 
@@ -756,6 +772,14 @@ static inline void handle_io()
          case 0x22:
          case 0x23: // fall throughs are intended
             bus_data_write( watchdog_cycles_total ? 0x80 : 0x00 );
+            break;
+         case 0x24: // for some reason doesn't work with 0x2C (?)
+            shadow_cycle_count.value = (uint32_t)_queue_cycle_counter;
+            // fall through
+         case 0x25:
+         case 0x26:
+         case 0x27:
+            bus_data_write( shadow_cycle_count.reg[address & 3] );
             break;
          default:
             // everything else is handled like RAM by design

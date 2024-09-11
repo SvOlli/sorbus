@@ -35,6 +35,10 @@ TRAMPOLINE    := $0100
 reset:
    cld                  ; only required for "soft reset"
    sei                  ; no IRQs used in kernel
+   lda   #$00
+   .byte $4b            ; 65CE02: taz -> make sure, sta (zp),z works like sta (zp)
+                        ; 65C02: nop
+                        ; 65816: phk (push program bank) -> almost nop
    ldx   #$07
 :
    lda   @vectab,x

@@ -59,7 +59,7 @@ rm -f "${OUTPUT}"
 echo mkfs.cpm -f "${FORMAT}" -b "${BOOTBLOCK}" "${OUTPUT}"
 mkfs.cpm -f "${FORMAT}" -b "${BOOTBLOCK}" "${OUTPUT}"
 rm -f "${BOOTBLOCK}"
-for i in [0-9]*/* $@;do
+ls -1d [0-9]*/* $@ | sort | while read i;do
    # skip directories
    [ -d "${i}" ] && continue
    case "${i}" in

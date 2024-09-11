@@ -159,6 +159,15 @@ Watchdog ($DF20-$DF23)
 -  triggered watchdog handled similar to trap ($DF01)
 -  todo(?): can be triggered by number of nmis or irqs
 
+Cyclecount ($DF24-$DF27)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  read only 32 bit register
+-  reading at $DF24 copies actual counter to a shadow register
+-  other addresses will return timestamp as when $DF24 was accessed
+-  intended to be used for measuring speed of code
+-  address still subject to change
+
 Internal Drive ($DF70-$DF77)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
