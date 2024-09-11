@@ -57,6 +57,8 @@ main:
    sta   sign
 
    jsr   PRINT
+   .byte 10,"This program test all 40000 combinations of BCD addition and subtraction."
+   .byte 10,"Both operands are counted from 0 to 99, carry flag set and cleared.",10
    .byte 10,"ADC test, carry clear",10,10,0
 
    ldx   #$00
@@ -162,7 +164,7 @@ sbcsloop:
    bcc   sbcsloop
 
    jsr   PRINT
-   .byte 10,"with carry clear",10,10,0
+   .byte 10,"SBC test, carry clear",10,10,0
 
    ldx   #$00
    ldy   #$00

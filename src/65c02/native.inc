@@ -48,6 +48,9 @@ WDCM   = WDBASE+$2 ; set mid counter, write resets watchdog when running
 WDCH   = WDBASE+$3 ; set high counter, stars watchdog, reset when running
 ; reading WDxxx indicates if watchdog is enabled ($80)
 
+CYCNTR = $DF24     ; PRELIMINARY!
+; read only 32 bit value little endian up to $DF27
+
 IRQSVB = $DF2C     ; PRELIMINARY!
 BRK_SB = IRQSVB+$0 ; bank
 BRK_SA = IRQSVB+$1 ; accumulator

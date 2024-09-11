@@ -17,6 +17,6 @@ if [ -z "${file}" ]; then
 fi
 picotool info "${file}" -a || :
 picotool load "${file}" -f
-picotool reboot -f
+picotool reboot -f || :
 while [ ! -c "${device}" ]; do sleep 0.33; done
 exec microcom -p "${device}"

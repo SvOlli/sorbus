@@ -168,6 +168,16 @@ Cyclecount ($DF24-$DF27)
 -  intended to be used for measuring speed of code
 -  address still subject to change
 
+Variables Used By Kernel ($DF2C-$DF2F)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  $DF2C: bank
+-  $DF2D: accumulator
+-  $DF2E: X index
+-  $DF2F: Y index
+
+This are just variables used during handling an interrupt service call
+
 Internal Drive ($DF70-$DF77)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -244,7 +254,8 @@ Kernel Interrupts
 -  $0A: VT100: several screen functions: Y=specify function (see below)
 
 For an own interrupt handler invoked via $DF78/9, it is recommended to
-use interrupt arguments starting with $80.
+use interrupt arguments starting with $80, as those won't be used by the
+kernel.
 
 Also note that registers are not stored on the stack, but in memory.
 This results in running an interrupt within an interrupt will corrupt
