@@ -36,6 +36,7 @@
 #include "dhara_flash.h"
 #include "../dhara/error.h"
 
+#include "../disassemble.h"
 
 // this is where the write protected area starts
 #define ROM_START (0xE000)
@@ -478,18 +479,26 @@ static inline void handle_flash_dma()
 }
 
 
-void debug_dump_state( int lineno, uint32_t _state )
+void debug_dump_state( int lineno, uint32_t _state, uint32_t _state1, uint32_t _state2 )
 {
-      printf( "%3d:%04x %c %02x %c%c%c%c%c\n",
-         lineno,
-         (_state & bus_config.mask_address) >> (bus_config.shift_address),
-         (_state & bus_config.mask_rw) ? 'r' : 'w',
-         (_state & bus_config.mask_data) >> (bus_config.shift_data),
-         (_state & 0x80000000) ? '*' : ' ',
-         (_state & bus_config.mask_reset) ? ' ' : 'R',
-         (_state & bus_config.mask_nmi) ? ' ' : 'N',
-         (_state & bus_config.mask_irq) ? ' ' : 'I',
-         (_state & bus_config.mask_rdy) ? ' ' : 'S' );
+   uint32_t addr =
+      (_state & bus_config.mask_address) >> (bus_config.shift_address);
+   uint8_t data = 
+      (_state & bus_config.mask_data) >> (bus_config.shift_data);
+   uint8_t data1 = 
+      (_state1 & bus_config.mask_data) >> (bus_config.shift_data);
+   uint8_t data2 = 
+      (_state2 & bus_config.mask_data) >> (bus_config.shift_data);
+   printf( "%3d:%04x %c %02x %c%c%c%c%c %s\n",
+      lineno, addr,
+      (_state & bus_config.mask_rw) ? 'r' : 'w',
+      data,
+      (_state & 0x80000000) ? '*' : ' ',
+      (_state & bus_config.mask_reset) ? ' ' : 'R',
+      (_state & bus_config.mask_nmi) ? ' ' : 'N',
+      (_state & bus_config.mask_irq) ? ' ' : 'I',
+      (_state & bus_config.mask_rdy) ? ' ' : 'S',
+      disass( addr, data, data1, data2, 0 ) );
 }
 
 
@@ -527,14 +536,25 @@ uint32_t debug_getbus( int i )
 
 void debug_backtrace()
 {
+   static const int numstates = count_of(buslog_states);
    printf( "system trap triggered, last cpu actions:\n" );
-   for( int i = 0; i < count_of(buslog_states); ++i )
+   uint32_t _state, _state1, _state2;
+   for( int i = 0; i < numstates; ++i )
    {
       //uint32_t _state = buslog_states[(i + buslog_index) & (count_of(buslog_states)-1)];
-      uint32_t _state = debug_getbus( i );
-      debug_dump_state( count_of(buslog_states)-i, _state );
+      _state = debug_getbus( i );
+      _state1 = debug_getbus( (i+1) & (numstates-1) );
+      if( (_state & bus_config.mask_data) >> (bus_config.shift_data) == 0x20 )
+      {
+         _state2 = debug_getbus( (i+5) & (numstates-1) );
+      }
+      else
+      {
+         _state2 = debug_getbus( (i+2) & (numstates-1) );
+      }
+      debug_dump_state( count_of(buslog_states)-i, _state, _state1, _state2 );
    }
-   debug_dump_state( 0, gpio_get_all() );
+   debug_dump_state( 0, gpio_get_all(), 0, 0 );
 }
 
 
@@ -918,6 +938,7 @@ void system_init()
    memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof(rom) );
    srand( get_rand_32() );
    dhara_flash_size = dhara_flash_init();
+   disass_cpu( CPU65C02 );
 }
 
 

@@ -126,6 +126,7 @@ add_executable(native_alpha
    native/core1.c
    native/dhara_flash.c
    native/event_queue.c
+   disassemble.c
    )
 target_link_libraries(native_alpha
    pico_stdlib

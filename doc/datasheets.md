@@ -14,6 +14,7 @@ directory that can be used to download these documents.
 * [WDC W65C21 PIA](https://www.westerndesigncenter.com/wdc/documentation/w65c21.pdf)
 * [WDC W65C22 VIA](https://www.westerndesigncenter.com/wdc/documentation/w65c22.pdf)
 * [WDC W65C51N ACIA](https://www.westerndesigncenter.com/wdc/documentation/w65c51n.pdf)
+* [MOS 6526 CIA](https://archive.org/download/mos_6526_cia_recreated/mos_6526_cia_recreated.pdf)
 * [MOS 6530 RRIOT preliminary](http://www.6502.org/documents/datasheets/mos/mos_6530_rriot_preliminary_aug_1975.pdf)
 * [MOS 6530 RRIOT](http://www.6502.org/documents/datasheets/mos/mos_6530_rriot.pdf)
 * [MOS 6532 RIOT preliminary](http://www.6502.org/documents/datasheets/mos/mos_6532_riot_preliminary_feb_1977.pdf)
@@ -66,3 +67,7 @@ VT100 Escape Sequences
 ----------------------
 * [VT100](https://www2.ccs.neu.edu/research/gpc/VonaUtils/vona/terminal/vtansi.htm)
 * [VT100](https://github.com/0x5c/VT100-Examples/raw/master/vt_seq.md)
+
+Opcode Tables
+-------------
+* [65CE02](http://www.pastraiser.com/cpu/65CE02/65CE02_opcodes.html)
