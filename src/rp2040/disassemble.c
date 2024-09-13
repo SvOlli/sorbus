@@ -6,6 +6,18 @@
 
 #define OPCODE(name,am) { name, (uint32_t)am }
 
+static uint8_t mx_flag_816 = 0;
+static bool show_addr = false;
+
+void disass_mx816( bool m, bool x )
+{
+   mx_flag_816 = (m ? 1 : 0) | (x ? 2 : 0);
+}
+void disass_show_address( bool enable )
+{
+   show_addr = enable;
+}
+
 typedef struct {
    const char *name;
    uint32_t variant;
@@ -29,7 +41,7 @@ typedef enum {
    IMM2,  // OPC #$01,#$02
    IMML,  // OPC #$1234
    REL,   // OPC LABEL
-   REL2,  // OPC LABEL
+   RELL,  // OPC LABEL
    ZP,    // OPC $12
    ZPI,   // OPC ($12)
    ZPIL,  // OPC [$12]
@@ -56,7 +68,6 @@ typedef enum {
  * 4: clock cycles used
  * 1: extra clock cycle on branch taken
  * 1: extra clock cycle on page crossing
- * 1: suffix on instruction for bit
  * 
  */
 
@@ -65,6 +76,17 @@ opcode_t opcodes65c02[] = {
 };
 
 static opcode_t *disass_opcodes = 0;
+
+int disass_debug_info( uint32_t id )
+{
+   switch(id)
+   {
+      case 0:
+         return (int)ADDREND;
+      default:
+         return 0;
+   }
+}
 
 void disass_cpu( cputype_t cpu )
 {
@@ -121,7 +143,7 @@ uint8_t disass_bytes( uint8_t p0 )
       case AIX:   // OPC ($1234,X)
       case IMM2:  // OPC #$01,#$02
       case IMML:  // OPC #$1234
-      case REL2:  // OPC LABEL
+      case RELL:  // OPC LABEL
       case ZPNR:  // OPC# $12,LABEL
          retval = 3;
          break;
@@ -133,18 +155,28 @@ uint8_t disass_bytes( uint8_t p0 )
       default:
          break;
    }
+   return retval;
 }
 
-char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
+const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
 {
    static char buffer[32] = { 0 };
+   char *b = buffer;
+   size_t bsize = sizeof(buffer)-1;
    opcode_t *o = 0;
 
    if( !disass_opcodes )
    {
       buffer[0] = 0;
-      strcpy( buffer, "CPU not set" );
-      return buffer;
+      strncpy( b, "CPU not set", bsize );
+      return b;
+   }
+
+   if( show_addr )
+   {
+      int p = snprintf( b, bsize, "$%04X: ", addr );
+      b += p;
+      bsize -= p;
    }
    
    o = disass_opcodes + p0;
@@ -152,96 +184,97 @@ char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
    switch( o->variant )
    {
       case ABS:   // OPC $1234
-         snprintf( buffer, sizeof(buffer)-1, "%s $%04X",         o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "%s  $%04X",         o->name, p1 | (p2 << 8) );
          break;
       case ABSIL: // OPC [$1234]
-         snprintf( buffer, sizeof(buffer)-1, "%s [$%04X]",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "%s  [$%04X]",       o->name, p1 | (p2 << 8) );
          break;
       case ABSL:  // OPC $123456
-         snprintf( buffer, sizeof(buffer)-1, "%s $%06X",         o->name, p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "%s  $%06X",         o->name, p1 | (p2 << 8) | (p3 << 16) );
          break;
       case ABSLX: // OPC $123456,X
-         snprintf( buffer, sizeof(buffer)-1, "%s $%06X,X",       o->name, p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "%s  $%06X,X",       o->name, p1 | (p2 << 8) | (p3 << 16) );
          break;
       case ABSLY: // OPC $123456,Y
-         snprintf( buffer, sizeof(buffer)-1, "%s $%06X,Y",       o->name, p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "%s  $%06X,Y",       o->name, p1 | (p2 << 8) | (p3 << 16) );
          break;
       case ABSX:  // OPC $1234,X
-         snprintf( buffer, sizeof(buffer)-1, "%s $%04X,X",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "%s  $%04X,X",       o->name, p1 | (p2 << 8) );
          break;
       case ABSY:  // OPC $1234,Y
-         snprintf( buffer, sizeof(buffer)-1, "%s $%04X,Y",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "%s  $%04X,Y",       o->name, p1 | (p2 << 8) );
          break;
       case ABSZ:  // OPC $1234,Z
-         snprintf( buffer, sizeof(buffer)-1, "%s $%04X,Z",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "%s  $%04X,Z",       o->name, p1 | (p2 << 8) );
          break;
       case AI:    // OPC ($1234)
-         snprintf( buffer, sizeof(buffer)-1, "%s ($%04X)",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "%s  ($%04X)",       o->name, p1 | (p2 << 8) );
          break;
       case AIL:   // OPC ($123456)
-         snprintf( buffer, sizeof(buffer)-1, "%s ($%06X)",       o->name, p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "%s  ($%06X)",       o->name, p1 | (p2 << 8) | (p3 << 16) );
          break;
       case AIX:   // OPC ($1234,X)
-         snprintf( buffer, sizeof(buffer)-1, "%s ($%04X,X)",     o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "%s  ($%04X,X)",     o->name, p1 | (p2 << 8) );
          break;
       case IMP:   // OPC
-         snprintf( buffer, sizeof(buffer)-1, "%s",               o->name );
+         snprintf( b, bsize, "%s",                o->name );
          break;
       case IMM:   // OPC #$01
-         snprintf( buffer, sizeof(buffer)-1, "%s #$%02X",        o->name, p1 );
+         snprintf( b, bsize, "%s  #$%02X",        o->name, p1 );
          break;
       case IMM2:  // OPC #$01,#$02
-         snprintf( buffer, sizeof(buffer)-1, "%s #$%02X,#$%02X", o->name, p1, p2 );
+         snprintf( b, bsize, "%s  #$%02X,#$%02X", o->name, p1, p2 );
          break;
       case IMML:  // OPC #$1234
-         snprintf( buffer, sizeof(buffer)-1, "%s #$%04X",        o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "%s  #$%04X",        o->name, p1 | (p2 << 8) );
          break;
       case REL:   // OPC LABEL
-         snprintf( buffer, sizeof(buffer)-1, "%s $%04X",         o->name, (addr+2) + (int8_t)p1 );
+         snprintf( b, bsize, "%s  $%04X",         o->name, (addr+2) + (int8_t)p1 );
          break;
-      case REL2:  // OPC LABEL
-         snprintf( buffer, sizeof(buffer)-1, "%s $%04X",         o->name, (addr+3) + (int16_t)(p1 | (p2 << 8)) );
+      case RELL:  // OPC LABEL
+         snprintf( b, bsize, "%s  $%04X",         o->name, (addr+3) + (int16_t)(p1 | (p2 << 8)) );
          break;
       case ZP:    // OPC $12
-         snprintf( buffer, sizeof(buffer)-1, "%s $%02X",         o->name, p1 );
+         snprintf( b, bsize, "%s  $%02X",         o->name, p1 );
          break;
       case ZPN:   // OPC# $12
-         snprintf( buffer, sizeof(buffer)-1, "%s%d $%02X",       o->name, p0 & 7, p1 );
+         snprintf( b, bsize, "%s%d $%02X",        o->name, p0 & 7, p1 );
          break;
       case ZPI:   // OPC ($12)
-         snprintf( buffer, sizeof(buffer)-1, "%s ($%02X)",       o->name, p1 );
+         snprintf( b, bsize, "%s  ($%02X)",       o->name, p1 );
          break;
       case ZPIX:  // OPC ($12,X)
-         snprintf( buffer, sizeof(buffer)-1, "%s ($%02X,X)",     o->name, p1 );
+         snprintf( b, bsize, "%s  ($%02X,X)",     o->name, p1 );
          break;
       case ZPIY:  // OPC ($12),Y
-         snprintf( buffer, sizeof(buffer)-1, "%s ($%02X),Y",     o->name, p1 );
+         snprintf( b, bsize, "%s  ($%02X),Y",     o->name, p1 );
          break;
       case ZPIZ:  // OPC ($12),Z
-         snprintf( buffer, sizeof(buffer)-1, "%s ($%02X),Z",     o->name, p1 );
+         snprintf( b, bsize, "%s  ($%02X),Z",     o->name, p1 );
          break;
       case ZPIL:  // OPC [$12]
-         snprintf( buffer, sizeof(buffer)-1, "%s [$%02X]",       o->name, p1 );
+         snprintf( b, bsize, "%s  [$%02X]",       o->name, p1 );
          break;
       case ZPILY: // OPC [$12],Y
-         snprintf( buffer, sizeof(buffer)-1, "%s [$%02X],Y",     o->name, p1 );
+         snprintf( b, bsize, "%s  [$%02X],Y",     o->name, p1 );
          break;
       case ZPISY: // OPC ($12,S),Y
-         snprintf( buffer, sizeof(buffer)-1, "%s ($%02X,S),Y",   o->name, p1 );
+         snprintf( b, bsize, "%s  ($%02X,S),Y",   o->name, p1 );
          break;
       case ZPNR:  // OPC# $12,LABEL
-         snprintf( buffer, sizeof(buffer)-1, "%s%d $%02X,$%04X", o->name, p0 & 7, p1, (addr+3) + (int8_t)p2 );
+         snprintf( b, bsize, "%s%d $%02X,$%04X",  o->name, p0 & 7, p1, (addr+3) + (int8_t)p2 );
          break;
       case ZPS:   // OPC $12,S
-         snprintf( buffer, sizeof(buffer)-1, "%s $%02X,S",       o->name, p1 );
+         snprintf( b, bsize, "%s  $%02X,S",       o->name, p1 );
          break;
       case ZPX:   // OPC $12,X
-         snprintf( buffer, sizeof(buffer)-1, "%s $%02X,X",       o->name, p1 );
+         snprintf( b, bsize, "%s  $%02X,X",       o->name, p1 );
          break;
       case ZPY:   // OPC $12,Y
-         snprintf( buffer, sizeof(buffer)-1, "%s $%02X,Y",       o->name, p1 );
+         snprintf( b, bsize, "%s  $%02X,Y",       o->name, p1 );
          break;
       default:
+         break;
    }
 
    return buffer;

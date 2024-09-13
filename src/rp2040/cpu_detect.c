@@ -33,16 +33,31 @@ uint8_t cpu_detect_raw()
 cputype_t cpu_detect()
 {
    uint32_t cycles_left_reset = 8;
-   uint32_t cycles_left_run = 100000;
-   uint8_t memory[0x10];
+   uint32_t cycles_left_run = 256;
+   uint8_t memory[0x20];
    memcpy( &memory[0], &cpudetect_mcp[0], sizeof(memory) );
+
+#if DEBUG_CPU_DETECT
+   for( int i = 0; i < sizeof(memory); ++i )
+   {
+      if( (i & 0xF) == 0 )
+      {
+         printf( "%04X:", i );
+      }
+      printf( " %02X", memory[i] );
+      if( (i & 0xF) == 0xF )
+      {
+         printf( "\n" );
+      }
+   }
+#endif
 
    // set lines to required state
    gpio_set_mask( bus_config.mask_rdy | bus_config.mask_irq | bus_config.mask_nmi );
 #if DEBUG_CPU_DETECT
    printf( "cpu_detect start\n" );
 #endif
-   while( (0xFF == memory[0xF]) && (--cycles_left_run > 0) )
+   while( (0xFF == memory[sizeof(memory)-1]) && (--cycles_left_run > 0) )
    {
       if( cycles_left_reset )
       {
@@ -76,7 +91,7 @@ cputype_t cpu_detect()
       }
 
       address = ((state & bus_config.mask_address) >> bus_config.shift_address);
-      address &= 0xF; // we only use 16 bytes of memory
+      address &= sizeof(memory)-1; // we only use 32 bytes of memory
 
       if( state & bus_config.mask_rw )
       {
@@ -97,20 +112,20 @@ cputype_t cpu_detect()
       gpio_clr_mask( bus_config.mask_clock );
    }
 
+   cpu_detect_result = memory[sizeof(memory)-1];
+
 #if DEBUG_CPU_DETECT
    printf( "cpu_detect done\n" );
+   printf( "cpu_detect: %s\n", cputype_name(cpu_detect_result) );
 #endif
-
-   cpu_detect_result = memory[0xF];
    // run complete, evaluate detected code
    switch( cpu_detect_result )
    {
-      case 0x00:
-         return CPU_6502;
       case 0x01:
-         return CPU_65816;
-      case 0xEA:
-         return CPU_65C02;
+      case 0x02:
+      case 0x03:
+      case 0x04:
+         return (cputype_t)cpu_detect_result;
       default:
          return CPU_UNDEF;
    }
@@ -129,6 +144,9 @@ const char *cputype_name( cputype_t cputype )
          break;
       case CPU_65816:
          return "65816";
+         break;
+      case CPU_65CE02:
+         return "65CE02";
          break;
       default:
          break;

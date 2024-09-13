@@ -18,21 +18,21 @@ mklines()
       case "${mode}" in
       "ABS") emode="ABS";;
       "[ABS]") emode="ABSIL";;
-      "?") emode="ABSL";;
-      "?") emode="ABSLX";;
-      "?") emode="ABSLY";;
+      "ABSL") emode="ABSL";;
+      "ABSL,X") emode="ABSLX";;
+      "ABSL,Y") emode="ABSLY";;
       "ABS,X") emode="ABSX";;
       "ABS,Y") emode="ABSY";;
       "ABS,Z") emode="ABSZ";;
       "(ABS)") emode="AI";;
-      "?") emode="AIL";;
+      "[ABS]") emode="AIL";;
       "(ABS,X)") emode="AIX";;
       "") emode="IMP";;
       "#IM") emode="IMM";;
       "#IM,#IM") emode="IMM2";;
       "#IML") emode="IMML";;
       "REL") emode="REL";;
-      "?") emode="REL2";;
+      "RELL") emode="RELL";;
       "ZP") if [ "${bitsuffix}" -eq 0 ]; then
                emode="ZP"
             else

@@ -1,14 +1,31 @@
 
 .segment "CODE"
-   ; should start at $0000
-   ; whole memory is just $10 (=16) bytes
-start:
-   lda #$01
-   .byte $eb,$ea ; 6502: sbc #$ea, 65C02: nop:nop, 65816: xba:nop
-   sec
-   lda   #$ea
-   .byte $eb,$ea ; 6502: sbc #$ea, 65C02: nop:nop, 65816: xba:nop
-   sta   $ff     ; 6502: A=$00,    65C02: A=$ea,   65816: A=$01
-   jmp   start   ; this also includes the reset vector
-   .byte $00,$ff ; irq vector used to store data
 
+   ; should start at $0000
+   ; whole memory is just $20 (=32) bytes
+start:
+   cld
+   clc
+   .byte $5c
+   .word is816
+   sec
+   bcc   isce02
+   lda   #$ea
+   .byte $eb
+   nop
+   bne   isc02
+is02:
+   lda   #$01
+   .byte $2c
+isc02:
+   lda   #$02
+   .byte $2c
+is816:
+   lda   #$03
+   .byte $2c
+isce02:
+   lda   #$04
+   sta   $ff
+
+   jmp   start
+   .byte $00,$ff
