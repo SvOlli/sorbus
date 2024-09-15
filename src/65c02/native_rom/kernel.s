@@ -31,42 +31,60 @@ TRAMPOLINE    := $0100
 ;   - phx, phy, plx, ply
 ;   - lda (zp), ora (zp)
 ;   - stz
+; however, 6502 still should be capable of running WozMon
+
+; NMOS 6502 compatible code start
 
 reset:
    cld                  ; only required for "soft reset"
    sei                  ; no IRQs used in kernel
-   lda   #$00
-   .byte $4b            ; 65CE02: taz -> make sure, sta (zp),z works like sta (zp)
-                        ; 65C02: nop
-                        ; 65816: phk (push program bank) -> almost nop
+
    ldx   #$07
 :
-   lda   @vectab,x
+   lda   vectab,x
    sta   UVBRK,x        ; setup user vectors
    dex
    bpl   :-
 
    txs                  ; initialize stack to $FF
-   lda   #$00           ; this kernel uses 65C02 opcodes, throw error on NMOS
-   dec                  ; 65C02 opcode that is a NOP in 6502
+
+   lda   #$00
+   ; multi purpose routine
+   ; - set Z=$00 on 65CE02 in soft reset
+   ; - detect 6502 from CMOS variants
+   .byte $4b            ; 65CE02: taz -> make sure, sta (zp),z works like sta (zp)
+                        ; 65C02: nop
+                        ; 65816: phk (push program bank) -> almost nop
+                        ; 6502: ALR #im
+
+   dec                  ; 65C02 opcode that on 6502 is an argument of $4b/ALR
    bne   @iloop         ; no NMOS 6502, continue
 @no65c02loop:
    tax
 @no65c02char:
    lda   @no65c02message,x
-   beq   @no65c02loop   ; endless loop reprinting message
+   bne   :+
+
+   jsr   CHRIN
+   bcs   @no65c02loop
+   bcc   @woz
+:
    jsr   CHROUT
    inx
-   jmp   @no65c02char
+   bne   @no65c02char
 
 @no65c02message:
-   .byte "65C02 required", 13, 0
+   .byte "NMOS 6502 not supported, dropping to WozMon", 13, 0
 
-@vectab:
-   .word brktrap        ; UVBRK: IRQ handler dispatches BRK
-   .word unmi           ; UVNMI: hardware NMI handler
-   .word uirq           ; UVNBI: IRQ handler dispatches non-BRK
-   .word IRQCHECK       ; UVIRQ: hardware IRQ handler
+@woz:
+   lda   #$0a           ; start WozMon port
+   jsr   CHROUT
+:  ; workaround for WozMon not handling RTS when executing external code
+   jsr   wozstart
+   ; will be reached if own code run within WozMon exits using rts
+   jmp   :-             ; no bra here: 6502 fallback mode
+
+; NMOS 6502 compatible code end
 
 @iloop:
    jsr   PRINT
@@ -75,10 +93,18 @@ reset:
 :
    jsr   chrinuc        ; wait for keypress and make it uppercase
    bcs   :-
+
+   cmp   #'W'
+   beq   @woz
+
    cmp   #'0'           ; is it a boot block number?
    bcc   :+
    cmp   #'4'
-   bcc   @bootblock
+   bcs   :+
+
+   and   #$03
+   jmp   boota
+
 :
    cmp   #'R'           ; hidden CP/M debugging feature
    bne   :+
@@ -107,19 +133,7 @@ reset:
 .endif
 
    cmp   #'I'           ; developer info: print out core info string
-   beq   @info
-
-   cmp   #'W'
    bne   @iloop2
-
-   lda   #$0a           ; start WozMon port
-   jsr   CHROUT
-:  ; workaround for WozMon not handling RTS when executing external code
-   jsr   wozstart
-   bra   :-
-@bootblock:
-   and   #$03
-   jmp   boota
 
 @info:
    lda   #$0a
@@ -358,3 +372,9 @@ brktrap:
    sty   UARTRS         ; store Y (read-only I/O register $DF0D)
    sta   TRAP           ; store A (TRAP strobe register   $DF01)
    rts                  ; return, if system continues after TRAP
+
+vectab:
+   .word brktrap        ; UVBRK: IRQ handler dispatches BRK
+   .word unmi           ; UVNMI: hardware NMI handler
+   .word uirq           ; UVNBI: IRQ handler dispatches non-BRK
+   .word IRQCHECK       ; UVIRQ: hardware IRQ handler

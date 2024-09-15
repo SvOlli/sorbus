@@ -278,7 +278,6 @@ void cmd_irq( const char *input )
 
 void cmd_sys( const char *input )
 {
-   char cputype_text[16] = { 0 };
    uint f_pll_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_SYS_CLKSRC_PRIMARY);
    uint f_pll_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_USB_CLKSRC_PRIMARY);
    uint f_rosc     = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_ROSC_CLKSRC);
@@ -288,15 +287,7 @@ void cmd_sys( const char *input )
    uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
    uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
 
-   if( cputype == CPU_UNDEF )
-   {
-      snprintf( cputype_text, sizeof(cputype_text)-1, "unknown (%02x)", cpu_detect_raw() );
-   }
-   else
-   {
-      strncpy( &cputype_text[0], cputype_name(cputype), sizeof(cputype_text)-1 );
-   }
-   printf("CPU instruction set: %s\n", &cputype_text[0] );
+   printf("CPU instruction set: %s\n", cputype_name( cputype ) );
    printf("RP2040 flash size:   %dMB\n", flash_size_detect() / (1 << 20) );
 
    printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );

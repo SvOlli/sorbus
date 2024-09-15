@@ -23,6 +23,7 @@
 
 .if 1
 .define  USE16COLS   1
+.define  USE65C02    0
 XAML           :=     $10            ; Last "opened" location Low
 XAMH           :=     $11            ; Last "opened" location High
 STL            :=     $12            ; Store address Low
@@ -34,6 +35,7 @@ MODE           :=     $17            ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
 .else
 ; original WozMon addresses for reference
 .define  USE16COLS   0
+.define  USE65C02    0
 XAML           :=     $24            ; Last "opened" location Low
 XAMH           :=     $25            ; Last "opened" location High
 STL            :=     $26            ; Store address Low
@@ -108,7 +110,7 @@ backspace:
    bmi   getline        ; buffer underflow -> restart
 
 nextchar:
-   int   CHRINUC        ; was: jsr   chrinuc
+   jsr   chrinuc        ; was: int   CHRINUC
    sta   IN,y           ; add to buffer
    jsr   CHROUT         ; print character
 
@@ -185,7 +187,7 @@ nohex:
 ; STOR mode, save LSD of new hex byte
 
    lda   L              ; LSD of hex data
-.ifpc02
+.if USE65C02
    sta   (STL)
 .else
    sta   (STL,x)        ; X=0 -> store at address in STL
@@ -242,7 +244,7 @@ prdata:
 .endif
    lda   #' '           ; " "
    jsr   CHROUT         ; print space
-.ifpc02
+.if USE65C02
    lda   (XAML)         ; get data from address
 .else
    lda   (XAML,x)       ; get data from address

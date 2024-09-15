@@ -121,10 +121,10 @@ cputype_t cpu_detect()
    // run complete, evaluate detected code
    switch( cpu_detect_result )
    {
-      case 0x01:
-      case 0x02:
-      case 0x03:
-      case 0x04:
+      case 0x01: // CPU_6502
+      case 0x02: // CPU_65C02
+      case 0x03: // CPU_65816
+      case 0x04: // CPU_65CE02
          return (cputype_t)cpu_detect_result;
       default:
          return CPU_UNDEF;
