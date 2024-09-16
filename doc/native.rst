@@ -113,9 +113,9 @@ Memory map
 Miscellaneous ($DF00-$DF0F)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  $DF00: bank select register for $E000-$FFFF ROM starts at bank 1
-   (default), bank 0 is RAM more banks can be added, if bank set >
-   max_bank, bank is set to default
+-  $DF00: (R/W) bank select register for $E000-$FFFF ROM starts at
+   bank 1 (default), bank 0 is RAM; more banks can be added, if
+   bank set > max_bank, bank is set to default
 -  $DF01: (R) Sorbus Native ID -> contains version information, read
    until $00 starts with ASCII id “SBC23”, followed by a $01 and a
    revision

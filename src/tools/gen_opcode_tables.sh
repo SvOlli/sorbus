@@ -9,7 +9,7 @@ mklines()
    local ifs="${IFS}"
    local line=0
    IFS=';'
-   while read byte name mode res bytes cycles rest; do
+   while read byte name mode reserved bytes cycles extra mx rest; do
       bitsuffix="0"
       case "${name}" in
       *[0-7]) name="${name%?}"; bitsuffix="1";;
@@ -33,6 +33,7 @@ mklines()
       "#IML") emode="IMML";;
       "REL") emode="REL";;
       "RELL") emode="RELL";;
+      "(REL,S),Y") emode="RELSY";;
       "ZP") if [ "${bitsuffix}" -eq 0 ]; then
                emode="ZP"
             else
@@ -51,7 +52,12 @@ mklines()
       "ZP,Y") emode="ZPY";;
       *) echo >&2 "unknown mode: '${mode}'"; false;;
       esac
-      echo -n "   /* ${byte} */ OPCODE( \"${name}\", ${emode} )"
+      reserved=$((reserved+0)) # make sure that it's a number
+      bytes=$((bytes+0))
+      cycles=$((cycles+0))
+      extra=$((extra+0))
+      mx=$((mx+0))
+      echo -n "   /* ${byte} */ OPCODE( \"${name}\", ${emode}, ${reserved}, ${bytes}, ${cycles}, ${extra}, ${mx} )"
       if [ "${line}" -lt 255 ]; then
          echo ","
       else
@@ -73,6 +79,6 @@ mkheader()
    grep '^\$' "${infile}" | sort | mklines >> "${outfile}" 
 }
 
-for i in 65c02;do
+for i in 6502 65c02 65ce02;do
    mkheader ${i} doc/opcodes${i}.csv src/rp2040/opcodes${i}.tab
 done

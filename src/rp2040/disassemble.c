@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define OPCODE(name,am) { name, (uint32_t)am }
-
 static uint8_t mx_flag_816 = 0;
 static bool show_addr = false;
 
@@ -42,6 +40,7 @@ typedef enum {
    IMML,  // OPC #$1234
    REL,   // OPC LABEL
    RELL,  // OPC LABEL
+   RELSY, // OPC (LABEL,S),Y
    ZP,    // OPC $12
    ZPI,   // OPC ($12)
    ZPIL,  // OPC [$12]
@@ -58,21 +57,30 @@ typedef enum {
    ADDREND
 } addrmode_t;
 
-/*
- * bits used:
- * 5: addressmode (enum addrmode)
- * 1: reserved / undefined
- * 3: bytes used
- * 1: extra byte used when 16 bit A
- * 1: extra byte used when 16 bit X,Y
- * 4: clock cycles used
- * 1: extra clock cycle on branch taken
- * 1: extra clock cycle on page crossing
- * 
+/* at bit:
+ *  |  bits used:                             expected values
+ *  0: 6: addressmode (enum addrmode)         0-(ADDREND-1)
+ *  6: 1: reserved / undefined                0-1
+ *  7: 3: bytes used                          0-7 (redundant, should be included in addressmode)
+ * 10: 4: clock cycles used                   0-15
+ * 14: 2: extra clock cycle                   0-2 (1=pagecross 2=branchtaken+pagecross)
+ * 16: 2: extra byte used when 16 bit A,X,Y   0-2 (65816 only, 1=A 2=X,Y)
+ * 18:    unused
  */
+
+#define OPCODE(name, am, reserved, bytes, cycles, extra, mx) \
+   { name, (uint32_t)am | reserved << 6 | bytes << 7 | cycles << 10 | extra << 14 | mx << 18 }
+
+opcode_t opcodes6502[] = {
+#include "opcodes6502.tab"
+};
 
 opcode_t opcodes65c02[] = {
 #include "opcodes65c02.tab"
+};
+
+opcode_t opcodes65ce02[] = {
+#include "opcodes65ce02.tab"
 };
 
 static opcode_t *disass_opcodes = 0;
@@ -92,8 +100,14 @@ void disass_cpu( cputype_t cpu )
 {
    switch( cpu )
    {
+      case CPU6502:
+         disass_opcodes = &opcodes6502[0];
+         break;
       case CPU65C02:
          disass_opcodes = &opcodes65c02[0];
+         break;
+      case CPU65CE02:
+         disass_opcodes = &opcodes65ce02[0];
          break;
       default:
          disass_opcodes = 0;
@@ -112,7 +126,7 @@ uint8_t disass_bytes( uint8_t p0 )
    
    o = disass_opcodes + p0;
    
-   switch( o->variant )
+   switch( (o->variant) & 0x3F )
    {
       case IMP:   // OPC
          retval = 1;
