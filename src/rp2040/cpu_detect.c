@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2023 SvOlli
+ * Copyright (c) 2023-2024 SvOlli
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -16,12 +16,23 @@
 #include <stdio.h>
 #endif
 
-static uint32_t state;
-static uint32_t address;
+#ifndef count_of
+#define count_of(a) (sizeof(a)/sizeof(a[0]))
+#endif
 
 #include "cpudetect_mcp.h"
 
-static uint8_t cpu_detect_result = 0xFF;
+static char* cputype_names[] =
+{
+   "ERROR",
+   "6502",
+   "65C02",
+   "65816",
+   "65CE02",
+   "65SC02"
+};
+
+static uint8_t cpu_detect_result = 0x00;
 
 
 uint8_t cpu_detect_raw()
@@ -32,7 +43,9 @@ uint8_t cpu_detect_raw()
 
 cputype_t cpu_detect()
 {
-   uint32_t cycles_left_reset = 8;
+   uint32_t state;
+   uint32_t address;
+   uint32_t cycles_left_reset = 16;
    uint32_t cycles_left_run = 256;
    uint8_t memory[0x20];
    memcpy( &memory[0], &cpudetect_mcp[0], sizeof(memory) );
@@ -57,7 +70,7 @@ cputype_t cpu_detect()
 #if DEBUG_CPU_DETECT
    printf( "cpu_detect start\n" );
 #endif
-   while( (0xFF == memory[sizeof(memory)-1]) && (--cycles_left_run > 0) )
+   while( (0x00 == memory[sizeof(memory)-1]) && (--cycles_left_run > 0) )
    {
       if( cycles_left_reset )
       {
@@ -73,7 +86,7 @@ cputype_t cpu_detect()
       sleep_us( 10 );
       gpio_set_mask( bus_config.mask_clock );
       // another delay before reading the bus, without it worked _most_ of the times
-      sleep_us( 1 );
+      sleep_us( 2 );
 
       // bus should be still valid from clock low
       state = gpio_get_all();
@@ -105,7 +118,7 @@ cputype_t cpu_detect()
       }
 
       // done: wait for things to settle and set clock to low
-      sleep_us( 9 );
+      sleep_us( 7 );
 #if DEBUG_CPU_DETECT
       printf( "%08x\n", gpio_get_all() );
 #endif
@@ -119,37 +132,19 @@ cputype_t cpu_detect()
    printf( "cpu_detect: %s\n", cputype_name(cpu_detect_result) );
 #endif
    // run complete, evaluate detected code
-   switch( cpu_detect_result )
+   if( cpu_detect_result < CPU_UNDEF )
    {
-      case 0x01: // CPU_6502
-      case 0x02: // CPU_65C02
-      case 0x03: // CPU_65816
-      case 0x04: // CPU_65CE02
-         return (cputype_t)cpu_detect_result;
-      default:
-         return CPU_UNDEF;
+      return (cputype_t)cpu_detect_result;
    }
+   return CPU_ERROR;
 }
 
 
 const char *cputype_name( cputype_t cputype )
 {
-   switch( cputype )
+   if( cputype >= count_of(cputype_names) )
    {
-      case CPU_6502:
-         return "6502";
-         break;
-      case CPU_65C02:
-         return "65C02";
-         break;
-      case CPU_65816:
-         return "65816";
-         break;
-      case CPU_65CE02:
-         return "65CE02";
-         break;
-      default:
-         break;
+      cputype = CPU_ERROR;
    }
-   return "unknown";
+   return cputype_names[cputype];
 }
