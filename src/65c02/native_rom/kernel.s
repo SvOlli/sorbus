@@ -39,7 +39,7 @@ reset:
    cld                  ; only required for "soft reset"
    sei                  ; no IRQs used in kernel
 
-   ldx   #$07
+   ldx   #$07           ; move to BIOS code?
 :
    lda   vectab,x
    sta   UVBRK,x        ; setup user vectors
@@ -54,11 +54,11 @@ reset:
    ; - detect 6502 from CMOS variants
    .byte $4b            ; 65CE02: taz -> make sure, sta (zp),z works like sta (zp)
                         ; 65C02: nop
-                        ; 65816: phk (push program bank) -> almost nop
+                        ; 65816: phk (push program bank) -> like nop, but destroys byte on stack
                         ; 6502: ALR #im
 
    dec                  ; 65C02 opcode that on 6502 is an argument of $4b/ALR
-   bne   @iloop         ; no NMOS 6502, continue
+   bne   @cmos6502      ; no NMOS 6502, continue
 @no65c02loop:
    tax
 @no65c02char:
@@ -86,6 +86,8 @@ reset:
 
 ; NMOS 6502 compatible code end
 
+@cmos6502:
+   txs                  ; fix for 65816's phk
 @iloop:
    jsr   PRINT
    .byte 10,"Sorbus Native V", VERSION
@@ -114,7 +116,7 @@ reset:
    bne   :+
    ldy   #$03
 @execrom2:
-   jmp   execrom        ; execute 2nd ROM bank @ $E000
+   jmp   execrom        ; execute 3rd ROM bank @ $E000
 :
    cmp   #'F'
    bne   :+

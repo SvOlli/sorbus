@@ -45,7 +45,6 @@ is6502:
    inx            ; X=$01
    stx   $ff      ; will stop CPU
 
-nmi:
    .byte $ea,$ea,$ea,$ea,$ea,$ea,$ea,$4c ; unused
 reset:
    .word irq      ; reset vector, start of ram

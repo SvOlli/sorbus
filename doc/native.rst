@@ -40,7 +40,7 @@ There are still three other bootblocks available for other use.
 Bootblocks are always 8k in size, they will be loaded at $E000 at the
 RAM bank 0 “under” the kernel area. The first three bytes should include
 a JMP instruction followed by the sequence of the ASCII characters
-“SBC23” (without the quotes). Upon startup, a routine will be installed
+"SBC23" (without the quotes). Upon startup, a routine will be installed
 at $0100, that copies the last page of memory ($FF00-$FFFF) from kernel
 to RAM. This will enable the loaded code to utilize the software
 interrupt handler and other features of the kernel. This part is called
@@ -117,7 +117,7 @@ Miscellaneous ($DF00-$DF0F)
    bank 1 (default), bank 0 is RAM; more banks can be added, if
    bank set > max_bank, bank is set to default
 -  $DF01: (R) Sorbus Native ID -> contains version information, read
-   until $00 starts with ASCII id “SBC23”, followed by a $01 and a
+   until $00 starts with ASCII id "SBC23", followed by a $01 and a
    revision
 -  $DF01: (S) trap: stop CPU and jump into debugging console
 -  $DF02: (R) random value
