@@ -100,13 +100,13 @@ void disass_cpu( cputype_t cpu )
 {
    switch( cpu )
    {
-      case CPU6502:
+      case CPU_6502:
          disass_opcodes = &opcodes6502[0];
          break;
-      case CPU65C02:
+      case CPU_65C02:
          disass_opcodes = &opcodes65c02[0];
          break;
-      case CPU65CE02:
+      case CPU_65CE02:
          disass_opcodes = &opcodes65ce02[0];
          break;
       default:

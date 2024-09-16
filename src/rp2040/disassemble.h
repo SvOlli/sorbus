@@ -5,9 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum {
-   UNKNOWN = 0, CPU6502, CPU65C02, CPU65816, CPU65CE02
-} cputype_t;
+#include "cpu_detect.h" // for cputype_t
 
 void disass_cpu( cputype_t cpu );
 void disass_mx816( bool m, bool x );

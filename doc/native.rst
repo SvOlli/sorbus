@@ -123,7 +123,9 @@ Miscellaneous ($DF00-$DF0F)
 -  $DF02: (R) random value
 -  $DF03: (W) swap out pages $00-$03: lower four bits contain banks,
    upper two bits mode: $40 -> store, $80 -> read, $c0 -> swap
--  $DF03-$DF0A: reserved for future use
+-  $DF04: (R) CPU: $01=6502, $06=65C02, $12=65816, $0e=65CE02, $02=65SC02
+   (bit set indicate CPU features:NMOS,CMOS,BIT (RE)SET,Z reg,16 bit)
+-  $DF05-$DF0A: reserved for future use
 -  $DF0B: UART config: bit 0=enable crlf conversion
 -  $DF0C: (R) UART in queue read
 -  $DF0D: (R) serial in queue size (up to 240, 255: error)

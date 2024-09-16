@@ -36,6 +36,7 @@
 #include "dhara_flash.h"
 #include "../dhara/error.h"
 
+#include "../cpu_detect.h"
 #include "../disassemble.h"
 
 // this is where the write protected area starts
@@ -78,7 +79,17 @@ uint16_t dhara_flash_size = 0;
 // identification
 const uint8_t sorbus_id[] = { 'S', 'B', 'C', '2', '3', 1, 1, 0 };
 const uint8_t *sorbus_id_p;
-
+cputype_t cputype = CPU_UNDEF;
+const static uint8_t cpufeatures[] =
+{
+   0x00, // CPU_ERROR
+   0x01, // CPU_6502:   NMOS
+   0x06, // CPU_65C02:  CMOS | bit set/reset/branch
+   0x12, // CPU_65816:  CMOS | 16 bit
+   0x0e, // CPU_65CE02: CMOS | bit set/reset/branch | z-register
+   0x02, // CPU_65SC02: CMOS
+   0x00  // CPU_UNDEF
+};
 
 // magic addresses that cannot be addressed otherwise
 #define MEM_ADDR_UART_CONTROL (0xDF0B)
@@ -761,6 +772,9 @@ static inline void handle_io()
          case 0x02: // random
             bus_data_write( rand() & 0xFF );
             break;
+         case 0x04: // CPU features
+            bus_data_write( cpufeatures[cputype] );
+            break;
          case 0x0C: // console UART read
             success = queue_try_remove( &queue_uart_read, &data );
             bus_data_write( success ? data : 0x00 );
@@ -934,11 +948,12 @@ void bus_run()
 
 void system_init()
 {
+   cputype = cpu_detect();
    memset( &ram[0x0000], 0x00, sizeof(ram) );
    memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof(rom) );
    srand( get_rand_32() );
    dhara_flash_size = dhara_flash_init();
-   disass_cpu( CPU65C02 );
+   disass_cpu( cputype );
 }
 
 
