@@ -490,7 +490,7 @@ static inline void handle_flash_dma()
 }
 
 
-void debug_dump_state( int lineno, uint32_t _state, uint32_t _state1, uint32_t _state2 )
+void debug_dump_state( int lineno, uint32_t _state, uint32_t _state1, uint32_t _state2, uint32_t _state3 )
 {
    uint32_t addr =
       (_state & bus_config.mask_address) >> (bus_config.shift_address);
@@ -500,6 +500,8 @@ void debug_dump_state( int lineno, uint32_t _state, uint32_t _state1, uint32_t _
       (_state1 & bus_config.mask_data) >> (bus_config.shift_data);
    uint8_t data2 = 
       (_state2 & bus_config.mask_data) >> (bus_config.shift_data);
+   uint8_t data3 =
+      (_state3 & bus_config.mask_data) >> (bus_config.shift_data);
    printf( "%3d:%04x %c %02x %c%c%c%c%c %s\n",
       lineno, addr,
       (_state & bus_config.mask_rw) ? 'r' : 'w',
@@ -509,7 +511,7 @@ void debug_dump_state( int lineno, uint32_t _state, uint32_t _state1, uint32_t _
       (_state & bus_config.mask_nmi) ? ' ' : 'N',
       (_state & bus_config.mask_irq) ? ' ' : 'I',
       (_state & bus_config.mask_rdy) ? ' ' : 'S',
-      disass( addr, data, data1, data2, 0 ) );
+      disass( addr, data, data1, data2, data3 ) );
 }
 
 
@@ -549,7 +551,7 @@ void debug_backtrace()
 {
    static const int numstates = count_of(buslog_states);
    printf( "system trap triggered, last cpu actions:\n" );
-   uint32_t _state, _state1, _state2;
+   uint32_t _state, _state1, _state2, _state3;
    for( int i = 0; i < numstates; ++i )
    {
       //uint32_t _state = buslog_states[(i + buslog_index) & (count_of(buslog_states)-1)];
@@ -557,15 +559,23 @@ void debug_backtrace()
       _state1 = debug_getbus( (i+1) & (numstates-1) );
       if( (_state & bus_config.mask_data) >> (bus_config.shift_data) == 0x20 )
       {
-         _state2 = debug_getbus( (i+5) & (numstates-1) );
+         if( cputype == CPU_65CE02 )
+         {
+            _state2 = debug_getbus( (i+4) & (numstates-1) );
+         }
+         else
+         {
+            _state2 = debug_getbus( (i+5) & (numstates-1) );
+         }
       }
       else
       {
          _state2 = debug_getbus( (i+2) & (numstates-1) );
       }
-      debug_dump_state( count_of(buslog_states)-i, _state, _state1, _state2 );
+      _state3 = debug_getbus( (i+3) & (numstates-1) );
+      debug_dump_state( count_of(buslog_states)-i, _state, _state1, _state2, _state3 );
    }
-   debug_dump_state( 0, gpio_get_all(), 0, 0 );
+   debug_dump_state( 0, gpio_get_all(), 0, 0, 0 );
 }
 
 
@@ -636,7 +646,7 @@ void debug_clocks()
    printf("CLK_USB:             %3d.%03dMHz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
    printf("CLK_ADC:             %3d.%03dMHz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
    printf("CLK_RTC:             %3d.%03dMHz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
-   printf("65C02 CLK:           %3d.%06dMHz\n", time_hz / 1000000, time_hz % 1000000 );
+   printf("%6s CLK:          %3d.%06dMHz\n", cputype_name(cputype), time_hz / 1000000, time_hz % 1000000 );
 }
 
 
@@ -948,7 +958,13 @@ void bus_run()
 
 void system_init()
 {
+retry:
    cputype = cpu_detect();
+   if( cputype == CPU_ERROR )
+   {
+      printf("\rcpu could not be detected, retrying");
+      goto retry;
+   }
    memset( &ram[0x0000], 0x00, sizeof(ram) );
    memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof(rom) );
    srand( get_rand_32() );

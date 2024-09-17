@@ -96,6 +96,18 @@ int disass_debug_info( uint32_t id )
    }
 }
 
+uint8_t disass_jsr_offset( uint8_t opcode )
+{
+   opcode_t *o = &disass_opcodes[opcode];
+   switch( opcode )
+   {
+      case 0x20:
+         return ((o->variant >> 10) & 0xF) -1;
+      default:
+         return 0;
+   }
+}
+
 void disass_cpu( cputype_t cpu )
 {
    switch( cpu )
@@ -133,6 +145,7 @@ uint8_t disass_bytes( uint8_t p0 )
          break;
       case IMM:   // OPC #$01
       case REL:   // OPC LABEL
+      case RELSY: // OPC LABEL
       case ZP:    // OPC $12
       case ZPN:   // OPC# $12
       case ZPI:   // OPC ($12)
@@ -195,7 +208,7 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
    
    o = disass_opcodes + p0;
    
-   switch( o->variant )
+   switch( (o->variant) & 0x3F )
    {
       case ABS:   // OPC $1234
          snprintf( b, bsize, "%s  $%04X",         o->name, p1 | (p2 << 8) );
@@ -248,6 +261,9 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
       case RELL:  // OPC LABEL
          snprintf( b, bsize, "%s  $%04X",         o->name, (addr+3) + (int16_t)(p1 | (p2 << 8)) );
          break;
+      case RELSY:   // OPC #$01
+         snprintf( b, bsize, "%s  (#$%02X,S),Y",  o->name, p1 );
+         break;
       case ZP:    // OPC $12
          snprintf( b, bsize, "%s  $%02X",         o->name, p1 );
          break;
@@ -288,6 +304,7 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
          snprintf( b, bsize, "%s  $%02X,Y",       o->name, p1 );
          break;
       default:
+         strncpy( b, "internal error", bsize );
          break;
    }
 

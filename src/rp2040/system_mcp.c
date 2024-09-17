@@ -426,7 +426,13 @@ void cmd_cold( const char *input )
       return;
    }
 
+retry:
    cputype = cpu_detect();
+   if( cputype == CPU_ERROR )
+   {
+      printf( "\rCPU could not be detected" );
+      goto retry;
+   }
    cycles_left_reset = 5;
 }
 
