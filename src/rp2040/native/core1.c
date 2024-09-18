@@ -627,6 +627,7 @@ void debug_queue_event( const char *text )
 
 void debug_clocks()
 {
+   char cpu_clk[] = "                     ";
    uint f_pll_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_SYS_CLKSRC_PRIMARY);
    uint f_pll_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_USB_CLKSRC_PRIMARY);
    uint f_rosc     = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_ROSC_CLKSRC);
@@ -637,6 +638,7 @@ void debug_clocks()
    uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
    uint time_hz = (double)1000000.0 / ((double)(time_per_mcc) / CLOCKS_PER_SEC / 10000);
 
+   cpu_clk[snprintf( &cpu_clk[0], sizeof(cpu_clk)-1, "%s CLK:", cputype_name( cputype ) )] = ' ';
    printf("\n");
    printf("PLL_SYS:             %3d.%03dMHz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
    printf("PLL_USB:             %3d.%03dMHz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
@@ -646,7 +648,7 @@ void debug_clocks()
    printf("CLK_USB:             %3d.%03dMHz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
    printf("CLK_ADC:             %3d.%03dMHz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
    printf("CLK_RTC:             %3d.%03dMHz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
-   printf("%6s CLK:          %3d.%06dMHz\n", cputype_name(cputype), time_hz / 1000000, time_hz % 1000000 );
+   printf("%s%3d.%06dMHz\n", cpu_clk, time_hz / 1000000, time_hz % 1000000 );
 }
 
 

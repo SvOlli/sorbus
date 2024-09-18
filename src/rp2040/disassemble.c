@@ -70,6 +70,12 @@ typedef enum {
 
 #define OPCODE(name, am, reserved, bytes, cycles, extra, mx) \
    { name, (uint32_t)am | reserved << 6 | bytes << 7 | cycles << 10 | extra << 14 | mx << 18 }
+#define PICK_OPCODE(o)   ( o->variant        & 0x3F)
+#define PICK_RESERVED(o) ((o->variant >> 6)  & 0x01)
+#define PICK_BYTES(o)    ((o->variant >> 7)  & 0x07)
+#define PICK_CYCLES(o)   ((o->variant >> 10) & 0x0F)
+#define PICK_EXTRA(o)    ((o->variant >> 14) & 0x03)
+#define PICK_MX(o)       ((o->variant >> 16) & 0x03)
 
 opcode_t opcodes6502[] = {
 #include "opcodes6502.tab"
@@ -77,6 +83,10 @@ opcode_t opcodes6502[] = {
 
 opcode_t opcodes65c02[] = {
 #include "opcodes65c02.tab"
+};
+
+opcode_t opcodes65816[] = {
+#include "opcodes65816.tab"
 };
 
 opcode_t opcodes65ce02[] = {
@@ -116,7 +126,11 @@ void disass_cpu( cputype_t cpu )
          disass_opcodes = &opcodes6502[0];
          break;
       case CPU_65C02:
+      case CPU_65SC02:
          disass_opcodes = &opcodes65c02[0];
+         break;
+      case CPU_65816:
+         disass_opcodes = &opcodes65816[0];
          break;
       case CPU_65CE02:
          disass_opcodes = &opcodes65ce02[0];
@@ -138,7 +152,7 @@ uint8_t disass_bytes( uint8_t p0 )
    
    o = disass_opcodes + p0;
    
-   switch( (o->variant) & 0x3F )
+   switch( PICK_OPCODE(o) )
    {
       case IMP:   // OPC
          retval = 1;
@@ -208,7 +222,7 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
    
    o = disass_opcodes + p0;
    
-   switch( (o->variant) & 0x3F )
+   switch( PICK_OPCODE(o) )
    {
       case ABS:   // OPC $1234
          snprintf( b, bsize, "%s  $%04X",         o->name, p1 | (p2 << 8) );

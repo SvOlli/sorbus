@@ -199,7 +199,9 @@ DMA memory: allowed $0004-$CF80, $DF80-$FF80 for start address
 - base address + $6: (unused)
 - base address + $7: (S) flash discard
 
-Each transfer stops CPU until transfer is completed
+Each transfer stops CPU until transfer is completed. Reading from strobe
+registers return result of last access. (Bit 7 set indicates error.)
+
 
 RAM Vectors ($DF78-$DF7F)
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -8,6 +8,7 @@ mklines()
 {
    local ifs="${IFS}"
    local line=0
+   echo "   /* OPCODE( name, mode, reserved, bytes, cycles, extra, mx ) */"
    IFS=';'
    while read byte name mode reserved bytes cycles extra mx rest; do
       bitsuffix="0"
@@ -16,40 +17,40 @@ mklines()
       "") name="___";
       esac
       case "${mode}" in
-      "ABS") emode="ABS";;
-      "[ABS]") emode="ABSIL";;
-      "ABSL") emode="ABSL";;
-      "ABSL,X") emode="ABSLX";;
-      "ABSL,Y") emode="ABSLY";;
-      "ABS,X") emode="ABSX";;
-      "ABS,Y") emode="ABSY";;
-      "ABS,Z") emode="ABSZ";;
-      "(ABS)") emode="AI";;
-      "[ABS]") emode="AIL";;
-      "(ABS,X)") emode="AIX";;
-      "") emode="IMP";;
-      "#IM") emode="IMM";;
-      "#IM,#IM") emode="IMM2";;
-      "#IML") emode="IMML";;
-      "REL") emode="REL";;
-      "RELL") emode="RELL";;
+      "ABS")      emode="ABS";;
+      "[ABS]")    emode="ABSIL";;
+      "ABSL")     emode="ABSL";;
+      "ABSL,X")   emode="ABSLX";;
+      "ABSL,Y")   emode="ABSLY";;
+      "ABS,X")    emode="ABSX";;
+      "ABS,Y")    emode="ABSY";;
+      "ABS,Z")    emode="ABSZ";;
+      "(ABS)")    emode="AI";;
+      "[ABS]")    emode="AIL";;
+      "(ABS,X)")  emode="AIX";;
+      "")         emode="IMP";;
+      "#IM")      emode="IMM";;
+      "#IM,#IM")  emode="IMM2";;
+      "#IML")     emode="IMML";;
+      "REL")      emode="REL";;
+      "RELL")     emode="RELL";;
       "(REL,S),Y") emode="RELSY";;
       "ZP") if [ "${bitsuffix}" -eq 0 ]; then
-               emode="ZP"
+                  emode="ZP"
             else
-               emode="ZPN"
+                  emode="ZPN"
             fi;;
-      "(ZP)") emode="ZPI";;
-      "(ZP,X)") emode="ZPIX";;
-      "(ZP),Y") emode="ZPIY";;
-      "(ZP),Z") emode="ZPIZ";;
-      "[ZP]") emode="ZPIL";;
-      "[ZP],Y") emode="ZPILY";;
+      "(ZP)")     emode="ZPI";;
+      "(ZP,X)")   emode="ZPIX";;
+      "(ZP),Y")   emode="ZPIY";;
+      "(ZP),Z")   emode="ZPIZ";;
+      "[ZP]")     emode="ZPIL";;
+      "[ZP],Y")   emode="ZPILY";;
       "(ZP,S),Y") emode="ZPISY";;
-      "ZP,REL") emode="ZPNR";;
-      "ZP,S") emode="ZPS";;
-      "ZP,X") emode="ZPX";;
-      "ZP,Y") emode="ZPY";;
+      "ZP,REL")   emode="ZPNR";;
+      "ZP,S")     emode="ZPS";;
+      "ZP,X")     emode="ZPX";;
+      "ZP,Y")     emode="ZPY";;
       *) echo >&2 "unknown mode: '${mode}'"; false;;
       esac
       reserved=$((reserved+0)) # make sure that it's a number
@@ -75,10 +76,10 @@ mkheader()
    local outfile="${3}"
    
    rm -f "${outfile}"
-   echo "/* automatically generated using $(basename "${0}") on ${infile} */" > "${outfile}"
+   echo "   /* automatically generated using $(basename "${0}") on ${infile} */" > "${outfile}"
    grep '^\$' "${infile}" | sort | mklines >> "${outfile}" 
 }
 
-for i in 6502 65c02 65ce02;do
+for i in 6502 65c02 65816 65ce02;do
    mkheader ${i} doc/opcodes${i}.csv src/rp2040/opcodes${i}.tab
 done
