@@ -20,7 +20,7 @@
 #define count_of(a) (sizeof(a)/sizeof(a[0]))
 #endif
 
-#include "cpudetect_mcp.h"
+#include "cpudetect.h"
 
 static char* cputype_names[] =
 {
@@ -48,7 +48,7 @@ cputype_t cpu_detect()
    uint32_t cycles_left_reset = 16;
    uint32_t cycles_left_run = 256;
    uint8_t memory[0x20];
-   memcpy( &memory[0], &cpudetect_mcp[0], sizeof(memory) );
+   memcpy( &memory[0], &cpudetect[0], sizeof(memory) );
 
 #if DEBUG_CPU_DETECT
    for( int i = 0; i < sizeof(memory); ++i )

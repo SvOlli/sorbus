@@ -7,6 +7,12 @@
 
 #include "cpu_detect.h" // for cputype_t
 
+typedef enum {
+   DISASS_SHOW_NOTHING = 0,
+   DISASS_SHOW_ADDRESS = 1 << 0,
+   DISASS_SHOW_HEXDUMP = 1 << 1
+} disass_show_t;
+
 /* set cpu instruction set to disassemble */
 void disass_cpu( cputype_t cpu );
 
@@ -18,7 +24,7 @@ void disass_mx816( bool m, bool x );
 uint8_t disass_jsr_offset( uint8_t opcode );
 
 /* should disassembler show current address */
-void disass_show_address( bool enable );
+void disass_show( disass_show_t show );
 
 const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 );
 

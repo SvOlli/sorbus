@@ -154,11 +154,29 @@ void system_trap( int type )
 }
 
 
+static inline uint8_t get_memory( uint16_t addr )
+{
+   if( addr < ROM_START )
+   {
+      return ram[addr];
+   }
+   else
+   {
+      return romvec[addr & 0x1FFF];
+   }
+}
+
+
 static inline void handle_ramrom()
 {
    if( state & bus_config.mask_rw )
    {
       // read from memory and write to bus
+#if 0
+      // this is nicer
+      bus_data_write( get_memory( address ) );
+#else
+      // this is faster
       if( address < ROM_START )
       {
          bus_data_write( ram[address] );
@@ -167,6 +185,7 @@ static inline void handle_ramrom()
       {
          bus_data_write( romvec[address & 0x1FFF] );
       }
+#endif
    }
    else
    {
@@ -502,6 +521,7 @@ void debug_dump_state( int lineno, uint32_t _state, uint32_t _state1, uint32_t _
       (_state2 & bus_config.mask_data) >> (bus_config.shift_data);
    uint8_t data3 =
       (_state3 & bus_config.mask_data) >> (bus_config.shift_data);
+   disass_show( DISASS_SHOW_NOTHING );
    printf( "%3d:%04x %c %02x %c%c%c%c%c %s\n",
       lineno, addr,
       (_state & bus_config.mask_rw) ? 'r' : 'w',
@@ -576,6 +596,92 @@ void debug_backtrace()
       debug_dump_state( count_of(buslog_states)-i, _state, _state1, _state2, _state3 );
    }
    debug_dump_state( 0, gpio_get_all(), 0, 0, 0 );
+}
+
+
+void debug_disassembler()
+{
+   static uint16_t lastaddr = 0x0400;
+   uint16_t addr = 0;
+   int count = 0;
+   bool quit = false;
+   bool inputdone = false;
+
+   while( !quit )
+   {
+      printf( "%s disass ($%04X): ", cputype_name( cputype ), lastaddr );
+      count = 0;
+      addr = 0;
+      inputdone = false;
+      while( !inputdone )
+      {
+         int c = getchar();
+         if( (c >= '0') && (c <= '9') )
+         {
+            putchar( c );
+            addr = (addr << 4) | (c & 0x0f);
+            if( ++count >= 4 )
+            {
+               inputdone = true;
+            }
+         }
+         else if( ((c >= 'a') && (c <= 'f')) || ((c >= 'A') && (c <= 'F')) )
+         {
+            putchar( toupper(c) );
+            c = toupper(c) - 'A' + 10;
+            addr = (addr << 4) | (c & 0x0f);
+            if( ++count >= 4 )
+            {
+               inputdone = true;
+            }
+         }
+         else switch( c )
+         {
+            case 'q':
+            case 0x1b:
+               puts( "quit" );
+               return;
+            case ' ':
+               while( count > 0 )
+               {
+                  printf( "\b \b" );
+                  --count;
+               }
+               // slip through
+            case 0x0d:
+               if( !count )
+               {
+                  addr = lastaddr;
+                  printf( "%04X", addr );
+               }
+               inputdone = true;
+               break;
+            case 0x08:
+            case 0x7f:
+               if( count >= 0 )
+               {
+                  printf( "\b \b" );
+                  addr >>= 4;
+                  --count;
+               }
+               break;
+            default:
+               break;
+         }
+      }
+      printf( "\n" );
+
+      for( count = 0; count < 10; ++count )
+      {
+         disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
+         puts( disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ) );
+         //printf( "%s ; %d\n",
+         //   disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ),
+         //   disass_bytes( get_memory(addr) );
+         addr += disass_bytes( get_memory(addr) );
+      }
+      lastaddr = addr;
+   }
 }
 
 

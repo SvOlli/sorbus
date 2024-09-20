@@ -27,6 +27,7 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
 #include "bus.h"
 #include "cpu_detect.h"
+#include "disassemble.h"
 #include "payload_mcp.h"
 #include "getaline.h"
 
@@ -43,8 +44,9 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 /* 65(C)02 does not have bank address, can only access bank 0 */
 uint8_t  memory[0x20000];
 #define  ADDR_DIGITS (4)
-uint32_t bank_selected;
-bool     bank_enabled;
+uint32_t bank_selected     = 0;
+bool     bank_enabled      = false;
+bool     disass_enabled    = false;
 
 uint32_t cycles_left_reset = 6;
 uint32_t cycles_left_nmi   = 0;
@@ -434,6 +436,21 @@ retry:
       goto retry;
    }
    cycles_left_reset = 5;
+   disass_cpu( cputype );
+   disass_show( DISASS_SHOW_NOTHING );
+}
+
+
+void cmd_dis( const char *input )
+{
+   if( !strcasecmp( input, "on" ) )
+   {
+      disass_enabled = true;
+   }
+   else if( !strcasecmp( input, "off" ) )
+   {
+      disass_enabled = false;
+   }
 }
 
 
@@ -467,6 +484,7 @@ cmd_t cmds[] = {
    { cmd_cold,   4, "cold",   "fully reinitialize system" },
    { cmd_sys,    3, "sys",    "show system information (CPU, flash)" },
    { cmd_clock,  4, "freq",   "set frequency (dec)" },
+   { cmd_dis,    3, "dis",    "enable (on)/disable (off) automated disassembly" },
    { cmd_bank,   4, "bank",   "enable (on)/disable (off) 65816 banks, select bank(dec)" },
    { cmd_reset,  5, "reset",  "trigger reset (dec)" },
    { cmd_irq,    3, "irq",    "trigger maskable interrupt (dec)" },
@@ -582,22 +600,43 @@ void run_bus()
 
       if( state & bus_config.mask_rdy )
       {
-         char buffer[32];
+         char buffer[64] = { 0 };
          char bankhex[3] = { 0 };
          if( bank_enabled )
          {
             snprintf( &bankhex[0], sizeof(bankhex), "%02x", bank & 0xFF, 3 );
             bankhex[sizeof(bankhex)-1] = '\0';
          }
-         snprintf( &buffer[0], sizeof(buffer), "%3d:%s%04x %c %02x %c%c%c>",
-            cycles_left_run > 999 ? 999 : cycles_left_run,
-            bankhex,
-            (state & bus_config.mask_address) >> (bus_config.shift_address),
-            (state & bus_config.mask_rw) ? 'r' : 'w',
-            (state & bus_config.mask_data) >> (bus_config.shift_data),
-            (state & bus_config.mask_reset) ? ' ' : 'R',
-            (state & bus_config.mask_nmi) ? ' ' : 'N',
-            (state & bus_config.mask_irq) ? ' ' : 'I' );
+         if( disass_enabled )
+         {
+            address = ((state & bus_config.mask_address) >> bus_config.shift_address);
+            snprintf( &buffer[0], sizeof(buffer), "%3d:%s%04x %c %02x %c%c%c %-15s>",
+               cycles_left_run > 999 ? 999 : cycles_left_run,
+               bankhex,
+               (state & bus_config.mask_address) >> (bus_config.shift_address),
+               (state & bus_config.mask_rw) ? 'r' : 'w',
+               (state & bus_config.mask_data) >> (bus_config.shift_data),
+               (state & bus_config.mask_reset) ? ' ' : 'R',
+               (state & bus_config.mask_nmi) ? ' ' : 'N',
+               (state & bus_config.mask_irq) ? ' ' : 'I',
+               disass( address, 
+                       memory[(address + 0) & 0xFFFF],
+                       memory[(address + 1) & 0xFFFF],
+                       memory[(address + 2) & 0xFFFF],
+                       memory[(address + 3) & 0xFFFF] ) );
+         }
+         else
+         {
+            snprintf( &buffer[0], sizeof(buffer), "%3d:%s%04x %c %02x %c%c%c>",
+               cycles_left_run > 999 ? 999 : cycles_left_run,
+               bankhex,
+               (state & bus_config.mask_address) >> (bus_config.shift_address),
+               (state & bus_config.mask_rw) ? 'r' : 'w',
+               (state & bus_config.mask_data) >> (bus_config.shift_data),
+               (state & bus_config.mask_reset) ? ' ' : 'R',
+               (state & bus_config.mask_nmi) ? ' ' : 'N',
+               (state & bus_config.mask_irq) ? ' ' : 'I' );
+         }
          buffer[sizeof(buffer)-1] = '\0';
          getaline_prompt( buffer );
       }
@@ -653,7 +692,7 @@ int main()
 
    bus_init();
    getaline_init();
-   cputype = cpu_detect();
+   cmd_cold( "" );
 
    multicore_launch_core1( run_bus );
    run_console();

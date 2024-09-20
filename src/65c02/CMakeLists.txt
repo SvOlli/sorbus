@@ -71,10 +71,10 @@ function(target_type_addr target system startaddr)
    endif()
 endfunction()
 
-add_executable(cpudetect_mcp
-   cpudetect_mcp.s
+add_executable(cpudetect
+   cpudetect.s
    )
-target_type_addr(cpudetect_mcp mcp 0x0000)
+target_type_addr(cpudetect mcp 0x0000)
 
 add_executable(cpudetect_apple1
    cpudetect_apple1.s

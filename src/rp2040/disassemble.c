@@ -5,15 +5,16 @@
 #include <string.h>
 
 static uint8_t mx_flag_816 = 0;
-static bool show_addr = false;
+static disass_show_t show_flags = DISASS_SHOW_NOTHING;
 
 void disass_mx816( bool m, bool x )
 {
    mx_flag_816 = (m ? 1 : 0) | (x ? 2 : 0);
 }
-void disass_show_address( bool enable )
+
+void disass_show( disass_show_t show )
 {
-   show_addr = enable;
+   show_flags = show;
 }
 
 typedef struct {
@@ -201,7 +202,7 @@ uint8_t disass_bytes( uint8_t p0 )
 
 const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
 {
-   static char buffer[32] = { 0 };
+   static char buffer[64] = { 0 };
    char *b = buffer;
    size_t bsize = sizeof(buffer)-1;
    opcode_t *o = 0;
@@ -213,11 +214,29 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
       return b;
    }
 
-   if( show_addr )
+   if( show_flags & DISASS_SHOW_ADDRESS )
    {
       int p = snprintf( b, bsize, "$%04X: ", addr );
       b += p;
       bsize -= p;
+   }
+   if( show_flags & DISASS_SHOW_HEXDUMP )
+   {
+      int i, s = disass_bytes( p0 );
+      uint8_t bytes[] = { p0, p1, p2, p3 };
+      for( i = 0; i < (sizeof(bytes)/sizeof(bytes[0])); ++i )
+      {
+         if( i < s )
+         {
+            snprintf( b, bsize, "%02X ", bytes[i] );
+         }
+         else
+         {
+            snprintf( b, bsize, "   " );
+         }
+         b += 3;
+         bsize -= 3;
+      }
    }
    
    o = disass_opcodes + p0;

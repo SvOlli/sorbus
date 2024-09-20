@@ -45,7 +45,7 @@ typedef enum {
 
 void getaline_init()
 {
-   queue_init( &prompt_queue, 32, 16 );
+   queue_init( &prompt_queue, 64, 16 );
 }
 
 
@@ -186,7 +186,7 @@ const char *getaline()
 {
    char key;
    vt_key_t ktype;
-   static char prompt[32] = { 0 };
+   static char prompt[64] = { 0 };
    static char input[HISTORY_SIZE][INPUT_SIZE] = { 0 };
    static char swapped[INPUT_SIZE] = { 0 };
    int hist = 0;
