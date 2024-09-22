@@ -14,6 +14,7 @@ Columns
 - Cycles: cycles taken (without extra for e.g. page crossing)
 - ExtraCycles: extra cycles taken when crossing a page(1) and/or taking a branch(2)
 - MX: will this instruction add an extra byte for 16 bit A(1) or X,Y(2)?
+- Jump: no jump(0), will jump(1), might jump(2)
 
 Those columns will be mapped onto a 32 bit config bit array, see
 `src/rp2040/disassemble.c` for details.

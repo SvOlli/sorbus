@@ -8,9 +8,9 @@ mklines()
 {
    local ifs="${IFS}"
    local line=0
-   echo "   /* OPCODE( name, mode, reserved, bytes, cycles, extra, mx ) */"
+   echo "   /* OPCODE( name, mode, reserved, bytes, cycles, extra, mx, jump ) */"
    IFS=';'
-   while read byte name mode reserved bytes cycles extra mx rest; do
+   while read byte name mode reserved bytes cycles extra mx jump rest; do
       bitsuffix="0"
       case "${name}" in
       *[0-7]) name="${name%?}"; bitsuffix="1";;
@@ -58,7 +58,8 @@ mklines()
       cycles=$((cycles+0))
       extra=$((extra+0))
       mx=$((mx+0))
-      echo -n "   /* ${byte} */ OPCODE( \"${name}\", ${emode}, ${reserved}, ${bytes}, ${cycles}, ${extra}, ${mx} )"
+      jump=$((jump+0))
+      echo -n "   /* ${byte} */ OPCODE( \"${name}\", ${emode}, ${reserved}, ${bytes}, ${cycles}, ${extra}, ${mx}, ${jump} )"
       if [ "${line}" -lt 255 ]; then
          echo ","
       else

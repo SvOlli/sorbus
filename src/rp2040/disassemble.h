@@ -26,7 +26,11 @@ uint8_t disass_jsr_offset( uint8_t opcode );
 /* should disassembler show current address */
 void disass_show( disass_show_t show );
 
+/* run disassembler for bytes of continuous memory */
 const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 );
+
+/* hexdump some data */
+void disass_hexdump( uint8_t *memory, uint16_t address, uint32_t size );
 
 /* for debugging purposes only */
 uint8_t disass_bytes( uint8_t opcode );
@@ -35,5 +39,17 @@ int disass_debug_info( uint32_t id );
 /* return expected next address to be disassembled */
 /* 24 bit value + upper 8 bits as maximum clock cycles */
 uint32_t disass_expected();
+
+#if 0
+/* basic idea is to have two different algorithmic disassemblers
+ * historian looks at a decides on a tracelog what was executed
+ * clairvoyant look at memory and guesses what will be executed and what
+ * the next instruction will be */
+
+/* tries to guess if a new instruction is executed */
+/* needs to be fed every cycle of bus activity */
+/* on 65816, disass_mx816() needs to be run beforehand (not implemented) */
+bool clairvoyant( const uint8_t *memory, uint16_t address, uint8_t data );
+#endif
 
 #endif

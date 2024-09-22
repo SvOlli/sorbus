@@ -18,6 +18,8 @@
 #ifndef _BOARDS_RP2040_PURPLE_H
 #define _BOARDS_RP2040_PURPLE_H
 
+// pico_cmake_set PICO_PLATFORM=rp2040
+
 // For board detection, sadly no closer match
 #define RASPBERRYPI_PICO
 

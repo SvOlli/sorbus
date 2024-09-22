@@ -772,50 +772,6 @@ void debug_heap()
 }
 
 
-void debug_hexdump( uint8_t *memory, uint32_t size, uint16_t address )
-{
-   for( uint32_t i = 0; i < size; i += 0x10 )
-   {
-      printf( "%04x:", address + i );
-
-      for( uint8_t j = 0; j < 0x10; ++j )
-      {
-         uint16_t a = address + i + j;
-         if( (i + j) > size )
-         {
-            while( j < 0x10 )
-            {
-               printf( "   " );
-               ++j;
-            }
-            break;
-         }
-         printf( " %02x", memory[a] );
-      }
-      printf( "  " );
-      for( uint8_t j = 0; j < 0x10; ++j )
-      {
-         uint16_t a = address + i + j;
-         if( (i + j) > size )
-         {
-            break;
-         }
-         uint8_t v = memory[a];
-         if( (v >= 32) && (v <= 127) )
-         {
-            printf( "%c", v );
-         }
-         else
-         {
-            printf( "." );
-         }
-      }
-
-      printf( "\n" );
-   }
-}
-
-
 void debug_internal_drive()
 {
    dhara_flash_info_t dhara_info;
@@ -840,12 +796,12 @@ void debug_internal_drive()
 #if 0
    printf("dhara read sector $%04x:\n", dhara_sector );
 
-   debug_hexdump( dhara_buffer, SECTOR_SIZE, 0 );
+   disass_hexdump( dhara_buffer, 0, SECTOR_SIZE );
 #else
    uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
    uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
    printf("dhara last used sector: $%04x\n", *lba );
-   debug_hexdump( &ram[(*mem)-0x80], SECTOR_SIZE, (*mem)-0x80 );
+   disass_hexdump( &ram[(*mem)-0x80], (*mem)-0x80, SECTOR_SIZE );
 #endif
 }
 
@@ -1066,11 +1022,19 @@ void bus_run()
 
 void system_init()
 {
+   cputype = cpu_detect( false );
 retry:
-   cputype = cpu_detect();
    if( cputype == CPU_ERROR )
    {
-      printf("\rcpu could not be detected, retrying");
+      bool success;
+      uint8_t data;
+      printf("  cpu could not be detected, retrying (SPACE for debug)\r");
+      success = queue_try_remove( &queue_uart_read, &data );
+      if( !success )
+      {
+         data = 0;
+      }
+      cputype = cpu_detect( data == ' ' );
       goto retry;
    }
    memset( &ram[0x0000], 0x00, sizeof(ram) );

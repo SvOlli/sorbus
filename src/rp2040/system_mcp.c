@@ -429,10 +429,16 @@ void cmd_cold( const char *input )
    }
 
 retry:
-   cputype = cpu_detect();
+   cputype = cpu_detect( false );
    if( cputype == CPU_ERROR )
    {
+      static int count = 0;
       printf( "\rCPU could not be detected" );
+      if( ++count > 1000 )
+      {
+         cputype = cpu_detect( true );
+         count = 0;
+      }
       goto retry;
    }
    cycles_left_reset = 5;

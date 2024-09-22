@@ -7,14 +7,7 @@
 #include "cpu_detect.h"
 #include "bus.h"
 #include <string.h>
-
-#ifndef DEBUG_CPU_DETECT
-#define DEBUG_CPU_DETECT (0)
-#endif
-
-#if DEBUG_CPU_DETECT
 #include <stdio.h>
-#endif
 
 #ifndef count_of
 #define count_of(a) (sizeof(a)/sizeof(a[0]))
@@ -24,7 +17,7 @@
 
 static char* cputype_names[] =
 {
-   "ERROR",
+   "NONE",
    "6502",
    "65C02",
    "65816",
@@ -32,44 +25,27 @@ static char* cputype_names[] =
    "65SC02"
 };
 
-static uint8_t cpu_detect_result = 0x00;
+
+/* defined in disassemble.c */
+void disass_hexdump( uint8_t *memory, uint16_t address, uint32_t size );
 
 
-uint8_t cpu_detect_raw()
-{
-   return cpu_detect_result;
-}
-
-
-cputype_t cpu_detect()
+cputype_t cpu_detect( bool debug )
 {
    uint32_t state;
    uint32_t address;
    uint32_t cycles_left_reset = 16;
    uint32_t cycles_left_run = 256;
-   uint8_t memory[0x20];
+   uint8_t memory[0x20] = { 0 };
    memcpy( &memory[0], &cpudetect[0], sizeof(memory) );
 
-#if DEBUG_CPU_DETECT
-   for( int i = 0; i < sizeof(memory); ++i )
+   if( debug )
    {
-      if( (i & 0xF) == 0 )
-      {
-         printf( "%04X:", i );
-      }
-      printf( " %02X", memory[i] );
-      if( (i & 0xF) == 0xF )
-      {
-         printf( "\n" );
-      }
+      disass_hexdump( &memory[0], 0, sizeof(memory) );
    }
-#endif
 
    // set lines to required state
    gpio_set_mask( bus_config.mask_rdy | bus_config.mask_irq | bus_config.mask_nmi );
-#if DEBUG_CPU_DETECT
-   printf( "cpu_detect start\n" );
-#endif
    while( (0x00 == memory[sizeof(memory)-1]) && (--cycles_left_run > 0) )
    {
       if( cycles_left_reset )
@@ -119,24 +95,20 @@ cputype_t cpu_detect()
 
       // done: wait for things to settle and set clock to low
       sleep_us( 7 );
-#if DEBUG_CPU_DETECT
-      printf( "%08x\n", gpio_get_all() );
-#endif
+      if( debug )
+      {
+         printf( "%08x\n", gpio_get_all() );
+      }
       gpio_clr_mask( bus_config.mask_clock );
    }
 
-   cpu_detect_result = memory[sizeof(memory)-1];
-
-#if DEBUG_CPU_DETECT
-   printf( "cpu_detect done\n" );
-   printf( "cpu_detect: %s\n", cputype_name(cpu_detect_result) );
-#endif
-   // run complete, evaluate detected code
-   if( cpu_detect_result < CPU_UNDEF )
+   if( debug )
    {
-      return (cputype_t)cpu_detect_result;
+      disass_hexdump( &memory[0], 0, sizeof(memory) );
    }
-   return CPU_ERROR;
+
+   // run complete, evaluate detected code
+   return memory[sizeof(memory)-1] < CPU_UNDEF ? memory[sizeof(memory)-1] : CPU_ERROR;
 }
 
 

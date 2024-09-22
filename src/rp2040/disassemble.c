@@ -6,7 +6,6 @@
 
 static uint8_t mx_flag_816 = 0;
 static disass_show_t show_flags = DISASS_SHOW_NOTHING;
-
 void disass_mx816( bool m, bool x )
 {
    mx_flag_816 = (m ? 1 : 0) | (x ? 2 : 0);
@@ -66,17 +65,19 @@ typedef enum {
  * 10: 4: clock cycles used                   0-15
  * 14: 2: extra clock cycle                   0-2 (1=pagecross 2=branchtaken+pagecross)
  * 16: 2: extra byte used when 16 bit A,X,Y   0-2 (65816 only, 1=A 2=X,Y)
- * 18:    unused
+ * 18: 2: jump                                0-2 (for clairvoyant, 1=jump, 2=conditional)
+ * 20:    unused
  */
 
-#define OPCODE(name, am, reserved, bytes, cycles, extra, mx) \
-   { name, (uint32_t)am | reserved << 6 | bytes << 7 | cycles << 10 | extra << 14 | mx << 18 }
+#define OPCODE(name, am, reserved, bytes, cycles, extra, mx, jump) \
+   { name, (uint32_t)am | reserved << 6 | bytes << 7 | cycles << 10 | extra << 14 | mx << 16 | jump << 18 }
 #define PICK_OPCODE(o)   ( o->variant        & 0x3F)
 #define PICK_RESERVED(o) ((o->variant >> 6)  & 0x01)
 #define PICK_BYTES(o)    ((o->variant >> 7)  & 0x07)
 #define PICK_CYCLES(o)   ((o->variant >> 10) & 0x0F)
 #define PICK_EXTRA(o)    ((o->variant >> 14) & 0x03)
 #define PICK_MX(o)       ((o->variant >> 16) & 0x03)
+#define PICK_JUMP(o)     ((o->variant >> 18) & 0x03)
 
 opcode_t opcodes6502[] = {
 #include "opcodes6502.tab"
@@ -343,3 +344,113 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
 
    return buffer;
 }
+
+
+void disass_hexdump( uint8_t *memory, uint16_t address, uint32_t size )
+{
+   for( uint32_t i = 0; i < size; i += 0x10 )
+   {
+      printf( "%04x:", address + i );
+
+      for( uint8_t j = 0; j < 0x10; ++j )
+      {
+         uint16_t a = address + i + j;
+         if( (i + j) > size )
+         {
+            while( j < 0x10 )
+            {
+               printf( "   " );
+               ++j;
+            }
+            break;
+         }
+         printf( " %02x", memory[a] );
+      }
+      printf( "  " );
+      for( uint8_t j = 0; j < 0x10; ++j )
+      {
+         uint16_t a = address + i + j;
+         if( (i + j) > size )
+         {
+            break;
+         }
+         uint8_t v = memory[a];
+         if( (v >= 32) && (v <= 127) )
+         {
+            printf( "%c", v );
+         }
+         else
+         {
+            printf( "." );
+         }
+      }
+
+      printf( "\n" );
+   }
+}
+
+
+#if 0
+
+#ifndef count_of
+#define count_of(a) (sizeof(a)/sizeof(a[0]))
+#endif
+
+typedef enum predict_variant{
+   PREDICT_NONE         = 0,
+   PREDICT_ADDRESS      = 1 << 0,
+   PREDICT_CYCLES       = 1 << 1,
+   PREDICT_CORRECTION   = 1 << 2
+} predict_variant_t;
+
+typedef struct {
+   predict_variant_t variant;
+   uint16_t          address;
+   uint8_t           cycles;
+   uint8_t           extra_cycles;
+} predict_t;
+
+static struct {
+   uint16_t address;
+   uint8_t  data;
+} clairvoyant_history[0x10] = { 0 }; // size needs to be power of 2;
+static int clairvoyant_index = 0;
+
+
+void clairvoyant_history_add( uint16_t address, uint8_t data )
+{
+   clairvoyant_history[clairvoyant_index].address = address;
+   clairvoyant_history[clairvoyant_index].data    = data;
+
+   ++clairvoyant_index;
+   clairvoyant_index &= count_of(clairvoyant_history) - 1;
+}
+
+
+bool clairvoyant( const uint8_t *memory, uint16_t address, uint8_t data )
+{
+   bool retval = false;
+   static predict_t correction = { 0 };
+   static predict_t prediction = { 0 };
+
+   /* see if we need to make a correction due to a branch taken */
+   if( correction.variant != PREDICT_NONE )
+   {
+      if( correction.address == address )
+      {
+         /* yes, we need to make corrections */
+
+         /* we are done */
+         correction.extra_cycles = 0;
+      }
+      else
+      {
+         --correction.extra_cycles;
+      }
+      if( correction.extra_cycles == 0 )
+      {
+         correction.variant = PREDICT_NONE;
+      }
+   }
+}
+#endif

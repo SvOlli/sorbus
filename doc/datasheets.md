@@ -57,6 +57,7 @@ Host Based Hardware
 * [Hardware design with RP2040](https://datasheets.raspberrypi.com/rp2040/hardware-design-with-rp2040.pdf)
 * [Hardware design with RP2350](https://datasheets.raspberrypi.com/rp2350/hardware-design-with-rp2350.pdf)
 * [PGA2350 pinout](https://cdn.shopify.com/s/files/1/0174/1800/files/pga2350_pinout_diagram.png)
+* [C/C++ SDK](https://datasheets.raspberrypi.com/pico/raspberry-pi-pico-c-sdk.pdf)
 
 Documentation Of Old Hardware
 -----------------------------
