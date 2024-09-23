@@ -1,5 +1,5 @@
 
-.include "native_bios.inc"
+.include "../native_bios.inc"
 
 vector := $10
 sign   := $12
@@ -48,7 +48,6 @@ printbad:
    lda   #$0a
    jmp   CHROUT
 
-
 main:
    ldx   #$ff
    txs
@@ -77,7 +76,7 @@ adccloop:
 
    cmp   (vector),y
    beq   @okay
-   
+
    clc
    jsr   printbad
 
@@ -91,7 +90,7 @@ adccloop:
    inx
    cpx   #$64
    bcc   adccloop
-   
+
    jsr   PRINT
    .byte 10,"ADC test, carry set",10,10,0
 
@@ -111,7 +110,7 @@ adcsloop:
 
    cmp   (vector),y
    beq   @okay
-   
+
    sec
    jsr   printbad
 
@@ -138,7 +137,7 @@ adcsloop:
    sta   vector+0
    lda   #>(inctab+$64)
    sta   vector+1
-   
+
 sbcsloop:
    sed
    sec
@@ -148,7 +147,7 @@ sbcsloop:
 
    cmp   (vector),y
    beq   @okay
-   
+
    clc
    jsr   printbad
 
@@ -182,7 +181,7 @@ sbccloop:
 
    cmp   (vector),y
    beq   @okay
-   
+
    sec
    jsr   printbad
 

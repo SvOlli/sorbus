@@ -894,6 +894,7 @@ static inline void handle_io()
             handle_ramrom();
             break;
       }
+      ram[address] = bus_data_read(); /* untested: get data back from bus */
    }
    else
    {
@@ -1028,13 +1029,14 @@ retry:
    {
       bool success;
       uint8_t data;
-      printf("  cpu could not be detected, retrying (SPACE for debug)\r");
+      printf( "  cpu could not be detected, retrying (SPACE for debug)\r" );
       success = queue_try_remove( &queue_uart_read, &data );
-      if( !success )
+      if( success && (data == ' ') )
       {
-         data = 0;
+         cputype = cpu_detect( true );
+         printf( "power jumper set?\n" );
       }
-      cputype = cpu_detect( data == ' ' );
+
       goto retry;
    }
    memset( &ram[0x0000], 0x00, sizeof(ram) );

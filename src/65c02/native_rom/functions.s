@@ -174,8 +174,18 @@ inputline:
 
 @cancel:
    sec
-   rts
+   .byte $24
 @okay:
    clc
+   php
+   lda   #$00
+@clrloop:
+   cpy   ASAVE
+   bcs   @clrdone
+   sta   (TMP16),y
+   iny
+   bne   @clrloop
+@clrdone:
+   plp
    rts
 

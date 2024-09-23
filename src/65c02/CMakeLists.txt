@@ -77,7 +77,7 @@ add_executable(cpudetect
 target_type_addr(cpudetect mcp 0x0000)
 
 add_executable(cpudetect_apple1
-   cpudetect_apple1.s
+   apple1/cpudetect.s
    )
 target_type_addr(cpudetect_apple1 apple1 0x0280)
 
@@ -87,7 +87,7 @@ add_executable(cpustate
 target_type_addr(cpustate mcp 0x0000)
 
 add_executable(wozmon
-   wozmon.s
+   apple1/wozmon.s
    )
 target_type_addr(wozmon apple1 0xFF00)
 
@@ -97,7 +97,7 @@ add_executable(payload_mcp
 target_type_addr(payload_mcp mcp 0x0400)
 
 add_executable(a1hello
-   a1hello.s
+   apple1/a1hello.s
    )
 target_compile_options(a1hello
    PUBLIC -t none --cpu 65c02
@@ -152,22 +152,27 @@ add_executable(native_writeboot
 target_type_addr(native_writeboot native 0xC000)
 
 add_executable(memcheck
-   memcheck.s
+   native_sx4/memcheck.s
    )
 target_type(memcheck sx4)
 
 add_executable(bcdcheck
-   bcdcheck.s
+   native_sx4/bcdcheck.s
    )
 target_type(bcdcheck sx4)
 
+add_executable(int-test
+   native_sx4/int-test.s
+   )
+target_type(int-test sx4)
+
 add_executable(1sthello
-   native_hello.s
+   native_sx4/a1hello.s
    )
 target_type(1sthello sx4)
 
 add_executable(sx4speed
-   native_sx4speed.s
+   native_sx4/speed.s
    )
 target_type(sx4speed sx4)
 

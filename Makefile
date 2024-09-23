@@ -1,4 +1,7 @@
 
+# This Makefile is not required and for convenience only
+# you can use the CMake/Pico-SDK project in the src/ folder
+
 # Parameters
 #CPM65_PATH = ../cpm65
 LLVM_MOS_SDK_VERSION = v18.0.0
@@ -10,21 +13,21 @@ RM = rm -rf
 LS = ls -l
 GIT_CHECKOUT = git clone --depth 1 --recurse-submodules --shallow-submodules
 
-$(info This Makefile is not required and for convenience only)
+$(info # This Makefile is not required and for convenience only)
 
 ifeq ($(PICO_SDK_PATH),)
 PICO_SDK_PATH=$(shell readlink -f ../pico-sdk)
-$(info Using local pico sdk at: $(PICO_SDK_PATH))
+$(info # Using local pico sdk at: $(PICO_SDK_PATH))
 else
-$(info Using global pico sdk at: $(PICO_SDK_PATH))
+$(info # Using global pico sdk at: $(PICO_SDK_PATH))
 endif
 EXTRA_CMAKE_ARGS += -DPICO_SDK_PATH="$(PICO_SDK_PATH)"
 
 ifeq ($(PICO_EXTRAS_PATH),)
 PICO_EXTRAS_PATH=$(shell readlink -f ../pico-extras)
-$(info Using local pico extras at: $(PICO_EXTRAS_PATH))
+$(info # Using local pico extras at: $(PICO_EXTRAS_PATH))
 else
-$(info Using global pico extras at: $(PICO_EXTRAS_PATH))
+$(info # Using global pico extras at: $(PICO_EXTRAS_PATH))
 endif
 #EXTRA_CMAKE_ARGS += -DPICO_EXTRAS_PATH="$(PICO_EXTRAS_PATH)"
 
@@ -76,6 +79,11 @@ $(PICO_EXTRAS_PATH)/README.md:
 picotool: $(PICO_SDK_PATH)/README.md
 	src/tools/external-picotool.sh
 	sudo cp $(PICOTOOL_FETCH_FROM_GIT_PATH)/udev/99-picotool.rules /etc/udev/rules.d/
+
+paths:
+	@echo 'PICO_SDK_PATH="$(PICO_SDK_PATH)"'
+	@echo 'PICO_EXTRAS_PATH="$(PICO_EXTRAS_PATH)"'
+	@echo 'PICOTOOL_FETCH_FROM_GIT_PATH="$(PICOTOOL_FETCH_FROM_GIT_PATH)"'
 
 # these packages are required to create the release package
 setup-apt:
