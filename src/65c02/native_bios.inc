@@ -143,10 +143,12 @@
 
 ; input text using a line
 ; A/X: vector to buffer, if first byte is not $00, edit the content
-; Y: maximum length of input
+; Y: bits 0-6: maximum length of input, bit 7: convert to uppercase
 ; returns:
 ; C=1: Ctrl-C
 ; C=0: Return
+; Y: input length
+; unused end of buffer will be padded with $00 bytes
 .define LINEINPUT $0C
 
 .define GENSINE   $0D

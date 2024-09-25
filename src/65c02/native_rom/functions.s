@@ -16,10 +16,13 @@ index3 := $0d
 ovec   := TMP16
 max    := PSAVE
 
+; ===========================================================================
+
 gensine:
 ; A: page for table
 ; X: size ($01-$10)
 ; Y: variant
+
    sta   ovec+1
    tya
    ror
@@ -113,20 +116,27 @@ gensine:
    sta   (ovec),y
    rts
 
+; ===========================================================================
+
 printtmp16:
+   ; TODO: decide if this is reusable
+
    ldy   #$00
 :
    lda   (TMP16),y
    beq   :+
    jsr   CHROUT
    iny
-   bra   :-
+   bne   :-
 :
    rts
 
+; ===========================================================================
+
 inputline:
 ; A/X: buffer
-; Y: maxlength
+; Y: maxlength (up to 127 bytes) (bit 7: convert to uppercase)
+
    sta   TMP16+0
    stx   TMP16+1
    tya
@@ -153,11 +163,11 @@ inputline:
    cmp   #$0d
    beq   @okay
 
-   cmp   #' '
-   bcc   @getloop
-
    cpy   ASAVE
    bcs   @getloop
+
+   cmp   #' '
+   bcc   @getloop
 
    sta   (TMP16),y
    jsr   CHROUT
@@ -178,6 +188,7 @@ inputline:
 @okay:
    clc
    php
+   sty   BRK_SY
    lda   #$00
 @clrloop:
    cpy   ASAVE

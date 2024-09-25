@@ -1,6 +1,8 @@
 
 .include "../native_bios.inc"
 
+TMPVEC = $fe
+
 .segment "CODE"
 start:
    ldy   #VT100_SCRN_CLR
@@ -44,6 +46,12 @@ jmptab:
 
 dir:
    jsr   PRINT
+   .byte "displaying directory on screen",10,0
+   stz   CPM_SADDR+1
+   ldy   #$0a
+   int   CPMDIR
+
+   jsr   PRINT
    .byte "loading directory to $9000",10,0
    stz   CPM_SADDR+0
    lda   #$90
@@ -51,12 +59,9 @@ dir:
    ldy   #$0a
    int   CPMDIR
 
-   jsr   PRINT
-   .byte "displaying directory on screen",10,0
-   stz   CPM_SADDR+1
-   ldy   #$0a
-   int   CPMDIR
-   
+   lda   #$90
+   jsr   hexdumppage
+
    jmp   done
 
 lineinput:
@@ -73,3 +78,50 @@ lineinput:
 
 quit:
    jmp   ($FFFC)
+
+hexdumppage:
+   stz   TMPVEC+0
+   sta   TMPVEC+1
+
+   ldy   #$00
+@addrloop:
+   lda   #$0a
+   jsr   CHROUT
+
+   tya
+   clc
+   adc   TMPVEC+0
+
+   ldx   TMPVEC+1
+   bcc   :+
+   inx
+:
+   int   PRHEX16
+
+   lda   #':'
+   jsr   CHROUT
+
+@dataloop:
+   lda   #' '
+   jsr   CHROUT
+
+   lda   (TMPVEC),y
+   int   PRHEX8
+
+   iny
+   beq   @done
+   tya
+   and   #$0f
+   beq   @addrloop
+   cmp   #$08
+   bne   @nospc
+   lda   #' '
+   jsr   CHROUT
+@nospc:
+   bra   @dataloop
+
+@done:
+   lda   #$0a
+   jsr   CHROUT
+
+   rts
