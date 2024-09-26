@@ -87,3 +87,7 @@ There are also some build scripts available for special cases:
       to include CP/M 65 into the filesystem image
     - only required for native core
 
+It is also possible to build C programs using cc65 for this computer. This
+is rather a proof of concept that a full featured implementation, but it
+does work rather stable. More details are in it's own
+[README](src/65c02/cc65/README.md).

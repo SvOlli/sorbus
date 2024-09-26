@@ -1023,6 +1023,7 @@ void bus_run()
 
 void system_init()
 {
+   int retries = 10;
    cputype = cpu_detect( false );
 retry:
    if( cputype == CPU_ERROR )
@@ -1038,6 +1039,14 @@ retry:
       }
 
       goto retry;
+   }
+   if( cputype == CPU_6502 )
+   {
+      /* for some reason, 65SC02 sometimes get detected as 6502 */
+      if( --retries > 0 )
+      {
+         goto retry;
+      }
    }
    memset( &ram[0x0000], 0x00, sizeof(ram) );
    memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof(rom) );

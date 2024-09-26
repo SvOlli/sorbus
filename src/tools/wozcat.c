@@ -12,6 +12,7 @@
 
 int main( int argc, char *argv[] )
 {
+   unsigned long runaddr = 0x10000;
    unsigned long addr;
    char *rest;
    int c;
@@ -23,6 +24,11 @@ int main( int argc, char *argv[] )
    }
 
    addr = strtoul( argv[1], &rest, 0 );
+   if( (argc > 2) && toupper(*argv[2]) == 'R' )
+   {
+      runaddr = addr;
+   }
+
    if( (rest && *rest) || (addr > 0xFFFF) )
    {
       fprintf( stderr, "bad start address\n" );
@@ -33,7 +39,7 @@ int main( int argc, char *argv[] )
    /* if we are already in WozMon this does nothing, due to ESC */
    putchar( 'w' );
    fflush( stdout );
-   usleep( 100000 );
+   usleep( 50000 );
 
    /* make sure we're at a defined point */
    putchar( 0x1b ); /* $1b = ESC */
@@ -60,13 +66,18 @@ int main( int argc, char *argv[] )
       if( (addr & 7) == 7 )
       {
          /* give WozMon some time to prozess line */
-         usleep( 50000 );
+         usleep( 10000 );
       }
       ++addr;
    }
 
    /* make sure that last line is entered */
    putchar( '\r' );
+
+   if( runaddr < 0x10000 )
+   {
+      printf( "%04XR\r", runaddr );
+   }
 
    return 0;
 }

@@ -130,7 +130,7 @@ timstart:
    ldx   #$05
 :
    lda   timvecs,x      ; initalize int vectors
-   sta   UVNMI,x
+   sta   UVBRK,x
    dex
    bpl   :-
 
@@ -140,7 +140,8 @@ timstart:
    stx   HSPTR          ; clear hsptr flags
    stx   HSROP
    cli                  ; enable ints
-   brk                  ; enter tim by brk -> timintrq
+   int   $00            ; TIM repurposes Sorbus user interrupt vector
+   jmp   ($FFFC)        ; continue with reset
 
 timnmint:
    sta   ACC
@@ -148,12 +149,13 @@ timnmint:
    bne   bintcom        ; jmp to interrupt common code
 timintrq:
    sta   ACC            ; save acc
-   pla                  ; flags to a
-   pha                  ; restore stack status
-   and   #$10           ; test brk flag
-   beq   buirq          ; user interrupT
-
-   asl                  ; set A=space (10 X 2 = 20)
+   lda   #'%'           ; set A=% to indicate nmirq entry
+   bne   bintcom        ; jmp to interrupt common code
+timbrk:
+   sta   ACC            ; save acc
+   pla                  ; pull jsr return address saved on stack by BRK routine
+   pla                  ; pull jsr return address saved on stack by BRK routine
+   lda   #' '           ; space shows brk
 bintcom:
    sta   TMPC           ; save int type flag
    cld                  ; clear decimal mode
@@ -165,25 +167,25 @@ bintcom:
    pla
    sta   FLGS           ; save flags
    pla
-   adc   #$FF           ; cy set to pc-1 for brk
+   ;adc   #$FF           ; cy set to pc-1 for brk (Sorbus uses BRK as 2-byte opcode)
    sta   PCL
    pla
-   adc   #$FF
+   ;adc   #$FF
    sta   PCH
    tsx
    stx   SP             ; save orig sp
 
-   jsr   CRLF
+   jsr   PRINT
+   .byte $0d,$0a,"    ADDR P  A  X  Y  S",$0d,$0a,$00
+   ;jsr   CRLF
+
    ldx   TMPC
 
    lda   #'*'
    jsr   WRTWO
+
    lda   #'R'           ; set for r display to permit
    bne   S0             ;   immediate alter following breakpoint.
-
-buirq:
-   lda   ACC
-   jmp   (UVBRK)        ; control to user intrq service routine
 
 start:
    lda   #$00           ; next command from user
@@ -191,7 +193,7 @@ start:
    sta   WRAP           ; clear address wrap-around flag
    jsr   CRLF
    lda   #'.'           ; type prompting '.'
-   jsr   WROC
+   jsr   CHROUT
    jsr   RDOC           ; read cmd, char returned in A
 
 S0:
@@ -220,7 +222,7 @@ S2:
 
 ERROPR:
    lda   #'?'           ; operator err, type '?', restart
-   jsr   WROC
+   jsr   CHROUT
 .ifpc02
    bra   start
 .else
@@ -430,7 +432,7 @@ WH0:
    jsr   ZTMP
 
    lda   #';'
-   jsr   WROC           ; wr bcd mark
+   jsr   CHROUT         ; wr bcd mark
 
    jsr   DCMP           ; ea-sa (TMP0+2-TMP0) diff in LOC DIFF,+1
    tya                  ; ms byte of diff
@@ -496,11 +498,11 @@ WBF1:
    lda   #'N'
 
 WBF2:
-   jsr   WROC           ; write n or r
+   jsr   CHROUT         ; write n or r
    dec   TMPC
    bne   WBF1           ; loop
    lda   #'F'
-   jsr   WROC           ; write f
+   jsr   CHROUT         ; write f
 
    jsr   INCTMP
 
@@ -525,8 +527,7 @@ CADD:
 CRLF:
    ldx   #$0D
    lda   #$0A
-   jsr   WRTWO
-   rts
+   jmp   WRTWO
 
 ;  write adr from TMP0 stores
 
@@ -559,6 +560,7 @@ WROB:
    lsr
    jsr   ASCII          ; convert to ascii
    tax
+
    pla
    and   #$0F
    jsr   ASCII
@@ -568,10 +570,8 @@ WROB:
 WRTWO:
    pha
    txa
-   jsr   WRT
+   jsr   CHROUT
    pla
-WRT:
-WROC:
    jmp   CHROUT
 RDT:
 RDOC:
@@ -609,6 +609,11 @@ ASCX:
 spac2:
    jsr   space
 space:
+.if 1
+   lda   #' '
+   jmp   CHROUT
+.else
+   ; Sorbus print char does not change A,X,Y
 .ifpc02
    pha                  ; save A,X,Y
    phx
@@ -633,6 +638,7 @@ space:
    pla
 .endif
    rts
+.endif
 
 T2T2:
    ldx   #$02
@@ -755,9 +761,9 @@ hex09:
    rts
 
 timvecs:
-   .word timnmint
-   .word timnmint       ; default user intrq to nmint
-   .word timintrq
+   .word timbrk         ; UVBRK
+   .word timnmint       ; UVNMI
+   .word timintrq       ; UVNBI
 
 .out "   ==============="
 .out .sprintf( "   TIM size: $%04x", * - timstart )
