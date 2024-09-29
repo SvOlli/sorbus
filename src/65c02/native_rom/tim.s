@@ -10,6 +10,10 @@
 ; Code taken from 6530-004 RRIOT and heavily modified:
 ; - removed all bitbanging code to replace with subroutines for Sorbus
 ;     UART handling
+; - processing of BRK, IRQ and NMI adapted to Sorbus vectors and handling
+;     this also means that TIM in invoked using BRK #$00, instead of just
+;     a single-byte BRK instruction (you can use "int $00", other
+;     interrupts are handled by the kernel)
 ; - command interpreter changed to be more expandable and relocatable
 ; - adapted some of the code from 6502 to 65C02 assembler
 ;-------------------------------------------------------------------------
