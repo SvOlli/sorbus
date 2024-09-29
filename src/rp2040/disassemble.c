@@ -69,6 +69,18 @@ typedef enum {
  * 20:    unused
  */
 
+/*
+ * jump types
+ *  0: none
+ *  1: branch
+ *  2: long branch
+ *  3: absolute
+ *  4: long absolute
+ *  5: indirect
+ *  6: indirect,x
+ *  7: stack (rts,rti)
+ */
+
 #define OPCODE(name, am, reserved, bytes, cycles, extra, mx, jump) \
    { name, (uint32_t)am | reserved << 6 | bytes << 7 | cycles << 10 | extra << 14 | mx << 16 | jump << 18 }
 #define PICK_OPCODE(o)   ( o->variant        & 0x3F)
@@ -93,6 +105,10 @@ opcode_t opcodes65816[] = {
 
 opcode_t opcodes65ce02[] = {
 #include "opcodes65ce02.tab"
+};
+
+opcode_t opcodes65sc02[] = {
+#include "opcodes65sc02.tab"
 };
 
 static opcode_t *disass_opcodes = 0;
@@ -128,7 +144,6 @@ void disass_cpu( cputype_t cpu )
          disass_opcodes = &opcodes6502[0];
          break;
       case CPU_65C02:
-      case CPU_65SC02:
          disass_opcodes = &opcodes65c02[0];
          break;
       case CPU_65816:
@@ -136,6 +151,9 @@ void disass_cpu( cputype_t cpu )
          break;
       case CPU_65CE02:
          disass_opcodes = &opcodes65ce02[0];
+         break;
+      case CPU_65SC02:
+         disass_opcodes = &opcodes65sc02[0];
          break;
       default:
          disass_opcodes = 0;
@@ -290,10 +308,10 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
          snprintf( b, bsize, "%s  #$%04X",        o->name, p1 | (p2 << 8) );
          break;
       case REL:   // OPC LABEL
-         snprintf( b, bsize, "%s  $%04X",         o->name, (addr+2) + (int8_t)p1 );
+         snprintf( b, bsize, "%s  $%04X",         o->name, ((addr+2) + (int8_t)p1) & 0xFFFF );
          break;
       case RELL:  // OPC LABEL
-         snprintf( b, bsize, "%s  $%04X",         o->name, (addr+3) + (int16_t)(p1 | (p2 << 8)) );
+         snprintf( b, bsize, "%s  $%04X",         o->name, ((addr+3) + (int16_t)(p1 | (p2 << 8))) & 0xFFFF );
          break;
       case RELSY:   // OPC #$01
          snprintf( b, bsize, "%s  (#$%02X,S),Y",  o->name, p1 );
@@ -302,7 +320,7 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
          snprintf( b, bsize, "%s  $%02X",         o->name, p1 );
          break;
       case ZPN:   // OPC# $12
-         snprintf( b, bsize, "%s%d $%02X",        o->name, p0 & 7, p1 );
+         snprintf( b, bsize, "%s%d $%02X",        o->name, (p0 >> 4) & 7, p1 );
          break;
       case ZPI:   // OPC ($12)
          snprintf( b, bsize, "%s  ($%02X)",       o->name, p1 );
@@ -326,7 +344,7 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
          snprintf( b, bsize, "%s  ($%02X,S),Y",   o->name, p1 );
          break;
       case ZPNR:  // OPC# $12,LABEL
-         snprintf( b, bsize, "%s%d $%02X,$%04X",  o->name, p0 & 7, p1, (addr+3) + (int8_t)p2 );
+         snprintf( b, bsize, "%s%d $%02X,$%04X",  o->name, (p0 >> 4) & 7, p1, (addr+3) + (int8_t)p2 );
          break;
       case ZPS:   // OPC $12,S
          snprintf( b, bsize, "%s  $%02X,S",       o->name, p1 );
@@ -346,55 +364,7 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
 }
 
 
-void disass_hexdump( uint8_t *memory, uint16_t address, uint32_t size )
-{
-   for( uint32_t i = 0; i < size; i += 0x10 )
-   {
-      printf( "%04x:", address + i );
-
-      for( uint8_t j = 0; j < 0x10; ++j )
-      {
-         uint16_t a = address + i + j;
-         if( (i + j) > size )
-         {
-            while( j < 0x10 )
-            {
-               printf( "   " );
-               ++j;
-            }
-            break;
-         }
-         printf( " %02x", memory[a] );
-      }
-      printf( "  " );
-      for( uint8_t j = 0; j < 0x10; ++j )
-      {
-         uint16_t a = address + i + j;
-         if( (i + j) > size )
-         {
-            break;
-         }
-         uint8_t v = memory[a];
-         if( (v >= 32) && (v <= 127) )
-         {
-            printf( "%c", v );
-         }
-         else
-         {
-            printf( "." );
-         }
-      }
-
-      printf( "\n" );
-   }
-}
-
-
 #if 0
-
-#ifndef count_of
-#define count_of(a) (sizeof(a)/sizeof(a[0]))
-#endif
 
 typedef enum predict_variant{
    PREDICT_NONE         = 0,
@@ -427,30 +397,80 @@ void clairvoyant_history_add( uint16_t address, uint8_t data )
 }
 
 
-bool clairvoyant( const uint8_t *memory, uint16_t address, uint8_t data )
+bool clairvoyant( uint32_t address, uint32_t flags, disass_peek_t peek )
 {
    bool retval = false;
    static predict_t correction = { 0 };
    static predict_t prediction = { 0 };
 
-   /* see if we need to make a correction due to a branch taken */
-   if( correction.variant != PREDICT_NONE )
-   {
-      if( correction.address == address )
-      {
-         /* yes, we need to make corrections */
+   /*
+    * 0: next address without branch
+    * 1: branch target
+    * 2: interrupts
+    */
+   static uint32_t next      = 0xffffffff;
+   static uint32_t jump      = 0xffffffff;
+   static uint32_t interrupt = 0xffffffff;
 
-         /* we are done */
-         correction.extra_cycles = 0;
-      }
-      else
+   if( next == 0xffffffff )
+   {
+      /* first call: initialize */
+      next = address )
+   }
+
+   if( interrupt == address )
+   {
+      /* branch was taken, correct output */
+      next = address;
+      interrupt = 0xffffffff;
+   }
+   else if( branch == address )
+   {
+      /* interrupt, reset, etc */
+      next = address;
+      interrupt = 0xffffffff;
+   }
+
+   if( next == address )
+   {
+      uint8_t opcode = peek(address+0);
+      uint8_t byte1  = peek(address+1);
+      uint8_t byte2  = peek(address+2);
+      uint8_t byte3  = peek(address+3);
+
+      disass( address, opcode, byte1, byte2, byte3 );
+      switch( PICK_JUMP(opcode) )
       {
-         --correction.extra_cycles;
-      }
-      if( correction.extra_cycles == 0 )
-      {
-         correction.variant = PREDICT_NONE;
+         case  1: // branch
+            next = address + 2;
+            jump = address + 2 + (int8_t)byte1;
+            break;
+         case  2: // long branch
+            next = address + 3;
+            jump = address + 3 + (int16_t)(byte1 | (byte2 << 8));
+            break;
+         case  3: // absolute
+            next = (uint32_t)(byte1 | (byte2 << 8));
+            jump = next;
+            break;
+         case  4: // long absolute
+            next = (uint32_t)(byte1 | (byte2 << 8) | (byte3 << 16) );
+            jump = next;
+            break;
+         case  5: // indirect
+            next = (uint32_t)(byte1 | (byte2 << 8));
+            jump = (uint32_t)(peek(next+0) | (peek(next+1) << 8));
+            next = jump;
+            break;
+         case  6: // indirect,x
+            break;
+         case  7: // stack (rts,rti)
+            break;
+         default:
+            next = address + PICK_BYTES(opcode);
+            break;
       }
    }
 }
+
 #endif

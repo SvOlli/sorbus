@@ -423,27 +423,31 @@ void cmd_steps( const char *input )
 
 void cmd_cold( const char *input )
 {
+   int count = 0x100;
    if( strlen( input ) )
    {
-      return;
+      if( !strcmp( input, "debug" ) )
+      {
+         count = 1;
+      }
+      else
+      {
+         return;
+      }
    }
 
-retry:
-   cputype = cpu_detect( false );
-   if( cputype == CPU_ERROR )
+   for( int i = count; i > 0; --i )
    {
-      static int count = 0;
-      printf( "\rCPU could not be detected" );
-      if( ++count > 1000 )
+      cputype = cpu_detect( i == 1 );
+      if( cputype != CPU_ERROR )
       {
-         cputype = cpu_detect( true );
-         count = 0;
+         break;
       }
-      goto retry;
    }
    cycles_left_reset = 5;
    disass_cpu( cputype );
    disass_show( DISASS_SHOW_NOTHING );
+   printf( "CPU detected as %s\n", cputype_name( cputype ) );
 }
 
 
@@ -487,7 +491,7 @@ void cmd_help( const char *input );
 
 cmd_t cmds[] = {
    { cmd_help,   4, "help",   "display help" },
-   { cmd_cold,   4, "cold",   "fully reinitialize system" },
+   { cmd_cold,   4, "cold",   "fully reinitialize system (\"debug\")" },
    { cmd_sys,    3, "sys",    "show system information (CPU, flash)" },
    { cmd_clock,  4, "freq",   "set frequency (dec)" },
    { cmd_dis,    3, "dis",    "enable (on)/disable (off) automated disassembly" },

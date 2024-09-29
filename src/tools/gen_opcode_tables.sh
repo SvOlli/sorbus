@@ -81,6 +81,6 @@ mkheader()
    grep '^\$' "${infile}" | sort | mklines >> "${outfile}" 
 }
 
-for i in 6502 65c02 65816 65ce02;do
+for i in 6502 65c02 65816 65ce02 65sc02;do
    mkheader ${i} doc/opcodes${i}.csv src/rp2040/opcodes${i}.tab
 done

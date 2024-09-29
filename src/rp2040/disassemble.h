@@ -5,13 +5,19 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "cpu_detect.h" // for cputype_t
+#include "generic_helper.h" // for cputype_t
 
+#define DISASS_MAX_STR_LENGTH    (40)
+
+/*  */
 typedef enum {
    DISASS_SHOW_NOTHING = 0,
    DISASS_SHOW_ADDRESS = 1 << 0,
    DISASS_SHOW_HEXDUMP = 1 << 1
 } disass_show_t;
+
+/*  */
+typedef struct disass_historian_s *disass_historian_t;
 
 /* set cpu instruction set to disassemble */
 void disass_cpu( cputype_t cpu );
@@ -29,9 +35,6 @@ void disass_show( disass_show_t show );
 /* run disassembler for bytes of continuous memory */
 const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 );
 
-/* hexdump some data */
-void disass_hexdump( uint8_t *memory, uint16_t address, uint32_t size );
-
 /* for debugging purposes only */
 uint8_t disass_bytes( uint8_t opcode );
 int disass_debug_info( uint32_t id );
@@ -39,6 +42,17 @@ int disass_debug_info( uint32_t id );
 /* return expected next address to be disassembled */
 /* 24 bit value + upper 8 bits as maximum clock cycles */
 uint32_t disass_expected();
+
+
+/*  */
+disass_historian_t disass_historian_init( uint32_t *trace, uint32_t entries );
+
+/*  */
+void disass_historian_done( disass_historian_t d );
+
+/*  */
+const char *disass_historian_entry( disass_historian_t d, uint32_t entry );
+
 
 #if 0
 /* basic idea is to have two different algorithmic disassemblers

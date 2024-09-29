@@ -92,6 +92,8 @@ add_executable(mcp
    cpu_detect.c
    cpustate.h
    disassemble.c
+   disassemble_historian.c
+   generic_helper.c
    payload_mcp.h
    system_mcp.c
    getaline.c
@@ -119,6 +121,10 @@ setup_target(apple1)
 # Native: core for implementing a custom Sorbus system
 add_executable(native_alpha
    bus_rp2040_purple.c
+   cpu_detect.c
+   disassemble.c
+   disassemble_historian.c
+   generic_helper.c
    system_native.c
    dhara/error.c
    dhara/journal.c
@@ -127,8 +133,6 @@ add_executable(native_alpha
    native/core1.c
    native/dhara_flash.c
    native/event_queue.c
-   cpu_detect.c
-   disassemble.c
    )
 target_link_libraries(native_alpha
    pico_stdlib

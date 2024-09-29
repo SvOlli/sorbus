@@ -796,12 +796,12 @@ void debug_internal_drive()
 #if 0
    printf("dhara read sector $%04x:\n", dhara_sector );
 
-   disass_hexdump( dhara_buffer, 0, SECTOR_SIZE );
+   hexdump( dhara_buffer, 0, SECTOR_SIZE );
 #else
    uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
    uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
    printf("dhara last used sector: $%04x\n", *lba );
-   disass_hexdump( &ram[(*mem)-0x80], (*mem)-0x80, SECTOR_SIZE );
+   hexdump( &ram[(*mem)-0x80], (*mem)-0x80, SECTOR_SIZE );
 #endif
 }
 

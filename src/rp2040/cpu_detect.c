@@ -14,39 +14,31 @@
 #endif
 
 #include "cpudetect.h"
-
-static char* cputype_names[] =
-{
-   "NONE",
-   "6502",
-   "65C02",
-   "65816",
-   "65CE02",
-   "65SC02"
-};
-
-
-/* defined in disassemble.c */
-void disass_hexdump( uint8_t *memory, uint16_t address, uint32_t size );
+#include "disassemble.h"
 
 
 cputype_t cpu_detect( bool debug )
 {
+   const uint32_t cycles_total = 256;
+   uint32_t trace[cycles_total];
    uint32_t state;
    uint32_t address;
-   uint32_t cycles_left_reset = 16;
-   uint32_t cycles_left_run = 256;
+   uint32_t cycles_left_reset = 8;
+   uint32_t cycles_run = 0;
    uint8_t memory[0x20] = { 0 };
    memcpy( &memory[0], &cpudetect[0], sizeof(memory) );
+   bool reset_done = false;
 
    if( debug )
    {
-      disass_hexdump( &memory[0], 0, sizeof(memory) );
+      hexdump( &memory[0], 0, sizeof(memory) );
    }
+
+   memset( &trace[0], 0, sizeof(trace) );
 
    // set lines to required state
    gpio_set_mask( bus_config.mask_rdy | bus_config.mask_irq | bus_config.mask_nmi );
-   while( (0x00 == memory[sizeof(memory)-1]) && (--cycles_left_run > 0) )
+   for( cycles_run = 0; (0x00 == memory[sizeof(memory)-1]) && (cycles_run < cycles_total); ++cycles_run )
    {
       if( cycles_left_reset )
       {
@@ -80,6 +72,12 @@ cputype_t cpu_detect( bool debug )
       }
 
       address = ((state & bus_config.mask_address) >> bus_config.shift_address);
+      if( address == 0xFFFD )
+      {
+         // once the reset vector was read, the reset is complete and
+         // write to memory is allowed
+         reset_done = true;
+      }
       address &= sizeof(memory)-1; // we only use 32 bytes of memory
 
       if( state & bus_config.mask_rw )
@@ -90,33 +88,37 @@ cputype_t cpu_detect( bool debug )
       else
       {
          // read from bus and write to memory write
-         memory[address] = (gpio_get_all() >> bus_config.shift_data); // truncate is intended
+         if( reset_done )
+         {
+            // reset cycle might write to $01ff which breaks detection
+            memory[address] = (gpio_get_all() >> bus_config.shift_data); // truncate is intended
+         }
       }
 
       // done: wait for things to settle and set clock to low
       sleep_us( 7 );
-      if( debug )
-      {
-         printf( "%08x\n", gpio_get_all() );
-      }
+      trace[cycles_run] = gpio_get_all();
       gpio_clr_mask( bus_config.mask_clock );
    }
 
    if( debug )
    {
-      disass_hexdump( &memory[0], 0, sizeof(memory) );
+      disass_historian_t d = disass_historian_init( &trace[0], cycles_total );
+      printf( "cycles_total = %d\n", cycles_total );
+      for( int i = 0; i < cycles_run; ++i )
+      {
+         if( !disass_historian_entry( d, i ) )
+         {
+            break;
+         }
+         printf( "%3d:%s:%s\n", i,
+                 decode_trace( trace[i], false, 0 ),
+                 disass_historian_entry( d, i ) );
+      }
+      disass_historian_done( d );
+      hexdump( &memory[0], 0, sizeof(memory) );
    }
 
    // run complete, evaluate detected code
    return memory[sizeof(memory)-1] < CPU_UNDEF ? memory[sizeof(memory)-1] : CPU_ERROR;
-}
-
-
-const char *cputype_name( cputype_t cputype )
-{
-   if( cputype >= count_of(cputype_names) )
-   {
-      cputype = CPU_ERROR;
-   }
-   return cputype_names[cputype];
 }
