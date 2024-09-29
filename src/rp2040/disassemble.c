@@ -260,103 +260,117 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
    
    o = disass_opcodes + p0;
    
+   if( (PICK_OPCODE(o) == ZPN) || (PICK_OPCODE(o) == ZPNR) )
+   {
+      snprintf( b, bsize, "%s%d ", o->name, (p0 >> 4) & 7 );
+   }
+   else
+   {
+      snprintf( b, bsize, "%s%c ", o->name, PICK_RESERVED(o) ? '.' : ' ' );
+   }
+   b += 5;
+   bsize -= 5;
+
    switch( PICK_OPCODE(o) )
    {
       case ABS:   // OPC $1234
-         snprintf( b, bsize, "%s  $%04X",         o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "$%04X",         p1 | (p2 << 8) );
          break;
       case ABSIL: // OPC [$1234]
-         snprintf( b, bsize, "%s  [$%04X]",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "[$%04X]",       p1 | (p2 << 8) );
          break;
       case ABSL:  // OPC $123456
-         snprintf( b, bsize, "%s  $%06X",         o->name, p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "$%06X",         p1 | (p2 << 8) | (p3 << 16) );
          break;
       case ABSLX: // OPC $123456,X
-         snprintf( b, bsize, "%s  $%06X,X",       o->name, p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "$%06X,X",       p1 | (p2 << 8) | (p3 << 16) );
          break;
       case ABSLY: // OPC $123456,Y
-         snprintf( b, bsize, "%s  $%06X,Y",       o->name, p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "$%06X,Y",       p1 | (p2 << 8) | (p3 << 16) );
          break;
       case ABSX:  // OPC $1234,X
-         snprintf( b, bsize, "%s  $%04X,X",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "$%04X,X",       p1 | (p2 << 8) );
          break;
       case ABSY:  // OPC $1234,Y
-         snprintf( b, bsize, "%s  $%04X,Y",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "$%04X,Y",       p1 | (p2 << 8) );
          break;
       case ABSZ:  // OPC $1234,Z
-         snprintf( b, bsize, "%s  $%04X,Z",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "$%04X,Z",       p1 | (p2 << 8) );
          break;
       case AI:    // OPC ($1234)
-         snprintf( b, bsize, "%s  ($%04X)",       o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "($%04X)",       p1 | (p2 << 8) );
          break;
       case AIL:   // OPC ($123456)
-         snprintf( b, bsize, "%s  ($%06X)",       o->name, p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "($%06X)",       p1 | (p2 << 8) | (p3 << 16) );
          break;
       case AIX:   // OPC ($1234,X)
-         snprintf( b, bsize, "%s  ($%04X,X)",     o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "($%04X,X)",     p1 | (p2 << 8) );
          break;
       case IMP:   // OPC
-         snprintf( b, bsize, "%s",                o->name );
+         // strip off trainling spaces here
+         *(b-1) = '\0';
+         if( *(b-2) == ' ' )
+         {
+            *(b-2) = '\0';
+         }
          break;
       case IMM:   // OPC #$01
-         snprintf( b, bsize, "%s  #$%02X",        o->name, p1 );
+         snprintf( b, bsize, "#$%02X",        p1 );
          break;
       case IMM2:  // OPC #$01,#$02
-         snprintf( b, bsize, "%s  #$%02X,#$%02X", o->name, p1, p2 );
+         snprintf( b, bsize, "#$%02X,#$%02X", p1, p2 );
          break;
       case IMML:  // OPC #$1234
-         snprintf( b, bsize, "%s  #$%04X",        o->name, p1 | (p2 << 8) );
+         snprintf( b, bsize, "#$%04X",        p1 | (p2 << 8) );
          break;
       case REL:   // OPC LABEL
-         snprintf( b, bsize, "%s  $%04X",         o->name, ((addr+2) + (int8_t)p1) & 0xFFFF );
+         snprintf( b, bsize, "$%04X",         ((addr+2) + (int8_t)p1) & 0xFFFF );
          break;
       case RELL:  // OPC LABEL
-         snprintf( b, bsize, "%s  $%04X",         o->name, ((addr+3) + (int16_t)(p1 | (p2 << 8))) & 0xFFFF );
+         snprintf( b, bsize, "$%04X",         ((addr+3) + (int16_t)(p1 | (p2 << 8))) & 0xFFFF );
          break;
       case RELSY:   // OPC #$01
-         snprintf( b, bsize, "%s  (#$%02X,S),Y",  o->name, p1 );
+         snprintf( b, bsize, "(#$%02X,S),Y",  p1 );
          break;
       case ZP:    // OPC $12
-         snprintf( b, bsize, "%s  $%02X",         o->name, p1 );
-         break;
       case ZPN:   // OPC# $12
-         snprintf( b, bsize, "%s%d $%02X",        o->name, (p0 >> 4) & 7, p1 );
+         snprintf( b, bsize, "$%02X",         p1 );
          break;
       case ZPI:   // OPC ($12)
-         snprintf( b, bsize, "%s  ($%02X)",       o->name, p1 );
+         snprintf( b, bsize, "($%02X)",       p1 );
          break;
       case ZPIX:  // OPC ($12,X)
-         snprintf( b, bsize, "%s  ($%02X,X)",     o->name, p1 );
+         snprintf( b, bsize, "($%02X,X)",     p1 );
          break;
       case ZPIY:  // OPC ($12),Y
-         snprintf( b, bsize, "%s  ($%02X),Y",     o->name, p1 );
+         snprintf( b, bsize, "($%02X),Y",     p1 );
          break;
       case ZPIZ:  // OPC ($12),Z
-         snprintf( b, bsize, "%s  ($%02X),Z",     o->name, p1 );
+         snprintf( b, bsize, "($%02X),Z",     p1 );
          break;
       case ZPIL:  // OPC [$12]
-         snprintf( b, bsize, "%s  [$%02X]",       o->name, p1 );
+         snprintf( b, bsize, "[$%02X]",       p1 );
          break;
       case ZPILY: // OPC [$12],Y
-         snprintf( b, bsize, "%s  [$%02X],Y",     o->name, p1 );
+         snprintf( b, bsize, "[$%02X],Y",     p1 );
          break;
       case ZPISY: // OPC ($12,S),Y
-         snprintf( b, bsize, "%s  ($%02X,S),Y",   o->name, p1 );
+         snprintf( b, bsize, "($%02X,S),Y",   p1 );
          break;
       case ZPNR:  // OPC# $12,LABEL
-         snprintf( b, bsize, "%s%d $%02X,$%04X",  o->name, (p0 >> 4) & 7, p1, (addr+3) + (int8_t)p2 );
+         snprintf( b, bsize, "$%02X,$%04X",   p1, (addr+3) + (int8_t)p2 );
          break;
       case ZPS:   // OPC $12,S
-         snprintf( b, bsize, "%s  $%02X,S",       o->name, p1 );
+         snprintf( b, bsize, "$%02X,S",       p1 );
          break;
       case ZPX:   // OPC $12,X
-         snprintf( b, bsize, "%s  $%02X,X",       o->name, p1 );
+         snprintf( b, bsize, "$%02X,X",       p1 );
          break;
       case ZPY:   // OPC $12,Y
-         snprintf( b, bsize, "%s  $%02X,Y",       o->name, p1 );
+         snprintf( b, bsize, "$%02X,Y",       p1 );
          break;
       default:
-         strncpy( b, "internal error", bsize );
+         strncpy( b-5, "internal error", bsize+5 ); // overwrite opcode
          break;
    }
 
