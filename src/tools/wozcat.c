@@ -6,6 +6,7 @@
  * build/tools/wozcat.exe 0x400 <build/65c02/bcdcheck.sx4 >/dev/ttyACM0
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -76,7 +77,7 @@ int main( int argc, char *argv[] )
 
    if( runaddr < 0x10000 )
    {
-      printf( "%04XR\r", runaddr );
+      printf( "%04lXR\r", runaddr );
    }
 
    return 0;

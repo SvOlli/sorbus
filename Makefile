@@ -3,15 +3,19 @@
 # you can use the CMake/Pico-SDK project in the src/ folder
 
 # Parameters
-#CPM65_PATH = ../cpm65
+CPM65_PATH = $(shell readlink -f ../cpm65)
+CC65_SDK_DIR = cc65-sdk
 LLVM_MOS_SDK_VERSION = v18.0.0
-#EXTRA_CMAKE_ARGS += -DCMAKE_VERBOSE_MAKEFILE=ON
 
 # Commands
-MKDIR = mkdir -p
-RM = rm -rf
-LS = ls -l
+INSTALL      = install
+MKDIR        = mkdir -p
+RM           = rm -rf
+LS           = ls -l
 GIT_CHECKOUT = git clone --depth 1 --recurse-submodules --shallow-submodules
+
+CC65_SDK_INCLUDES = native.inc native_bios.inc
+CC65_SDK_TOOLS    = wozcat.c
 
 $(info # This Makefile is not required and for convenience only)
 
@@ -23,21 +27,17 @@ $(info # Using global pico sdk at: $(PICO_SDK_PATH))
 endif
 EXTRA_CMAKE_ARGS += -DPICO_SDK_PATH="$(PICO_SDK_PATH)"
 
-ifeq ($(PICO_EXTRAS_PATH),)
-PICO_EXTRAS_PATH=$(shell readlink -f ../pico-extras)
-$(info # Using local pico extras at: $(PICO_EXTRAS_PATH))
-else
-$(info # Using global pico extras at: $(PICO_EXTRAS_PATH))
-endif
+#ifeq ($(PICO_EXTRAS_PATH),)
+#PICO_EXTRAS_PATH=$(shell readlink -f ../pico-extras)
+#$(info # Using local pico extras at: $(PICO_EXTRAS_PATH))
+#else
+#$(info # Using global pico extras at: $(PICO_EXTRAS_PATH))
+#endif
 #EXTRA_CMAKE_ARGS += -DPICO_EXTRAS_PATH="$(PICO_EXTRAS_PATH)"
 
 CMAKE_CPM65_PATH = $(realpath $(CPM65_PATH))
 ifneq ($(CMAKE_CPM65_PATH),)
 EXTRA_CMAKE_ARGS += -DCPM65_PATH=$(CMAKE_CPM65_PATH)
-else
-  ifneq ($(wildcard external-build/cpm65/.*),)
-  EXTRA_CMAKE_ARGS += -DCPM65_PATH="$(realpath external-build/cpm65)"
-  endif
 endif
 
 # workaround to suppress annoying warning
@@ -51,7 +51,25 @@ BUILD_DIR ?= $(CURDIR)/build
 SRC_DIR := $(CURDIR)/src
 JOBS ?= 4
 
-.PHONY: all clean distclean release setup-apt
+cc65_sdk_deps :=
+
+define cc65_sdk_include
+my_dest := $$(CC65_SDK_DIR)/include/$(1)
+my_src  := src/65c02/$(1)
+cc65_sdk_deps += $$(my_dest)
+$$(my_dest): $$(my_src)
+	$(INSTALL) -D -m0644 $$< $$@
+endef
+
+define cc65_sdk_tool
+my_dest := $$(CC65_SDK_DIR)/tools/$(1)
+my_src  := src/tools/$(1)
+cc65_sdk_deps += $$(my_dest)
+$$(my_dest): $$(my_src)
+	$(INSTALL) -D -m0644 $$< $$@
+endef
+
+.PHONY: all clean distclean release setup-apt cc65-sdk
 
 all: $(PICO_SDK_PATH)/README.md
 	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(EXTRA_CMAKE_ARGS)
@@ -61,12 +79,20 @@ log: $(PICO_SDK_PATH)/README.md
 	cmake -S $(SRC_DIR) -B $(BUILD_DIR) -DCMAKE_VERBOSE_MAKEFILE=ON $(EXTRA_CMAKE_ARGS) 2>&1 | tee cmake.log
 	make -C $(BUILD_DIR) -j$(JOBS) 2>&1 | tee make.log
 
+$(foreach include,$(CC65_SDK_INCLUDES),$(eval $(call cc65_sdk_include,$(include))))
+$(foreach tool,$(CC65_SDK_TOOLS),$(eval $(call cc65_sdk_tool,$(tool))))
+
+cc65-sdk: $(cc65_sdk_deps)
+	$(MAKE) -C $@ EXPORT_DIR="$(CURDIR)/src/bin/cpm/10"
+
 clean:
 	make -C $(BUILD_DIR) clean
-	$(RM) $(RELEASE_ARCHIVE) cmake.log make.log
+	$(RM) $(RELEASE_ARCHIVE) cmake.log make.log $(cc65_sdk_deps)
+	make -C $(CC65_SDK_DIR) clean
 
 distclean:
-	$(RM) $(RELEASE_ARCHIVE) $(BUILD_DIR) make.log cmake.log
+	$(RM) $(RELEASE_ARCHIVE) $(BUILD_DIR) make.log cmake.log $(cc65_sdk_deps)
+	make -C $(CC65_SDK_DIR) clean
 
 $(PICO_SDK_PATH)/README.md:
 	$(MKDIR) $(PICO_SDK_PATH)
@@ -99,11 +125,13 @@ setup-dev: setup-apt
 setup-external:
 	sudo apt-get install 64tass libreadline-dev libfmt-dev moreutils fp-compiler ninja-build zip unzip
 
-$(RELEASE_ARCHIVE): all
+$(RELEASE_ARCHIVE): $(CC65_SDK_DIR) all
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done
 	cp doc/README_release.txt README.txt
 	$(RM) $@
 	7z a -mx=9 -bd -sdel $@ README.txt *.uf2
+	make -C $(CC65_SDK_DIR) clean
+	7z a -mx=9 -bd $@ $(CC65_SDK_DIR)
 
 release: $(RELEASE_ARCHIVE)
 

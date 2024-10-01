@@ -4,10 +4,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #ifndef count_of
 #define count_of(a) (sizeof(a)/sizeof(a[0]))
 #endif
+
+#define ring(x,s) ((x) & (s-1))
 
 struct disass_historian_s
 {
@@ -16,16 +19,17 @@ struct disass_historian_s
 };
 
 
-static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_t entries )
+static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_t entries, uint32_t start )
 {
    int index = 0, offset, i;
    uint16_t address, expectedaddress;
    uint8_t data[4];
    bool done;
+   uint8_t *eval = calloc( entries, sizeof(uint8_t) );
 
-   while( index < entries )
+   /* step 1: disassemble everything */
+   for( index = 0; index < entries; ++index )
    {
-      /* TODO: parameterize */
       address = trace[index] & 0xFFFF;
       data[0] = (trace[index] >> 16) & 0xFF;
       data[1] = 0x00;
@@ -40,57 +44,84 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
       offset = 0;
       while( !done ) // 12 clockcycles is too much, but who cares
       {
-//         printf( "i=%d\n", i );
-         if( (index+i) >= entries )
+         uint32_t addr = trace[ring(index+i,entries)] & 0xFFFF;
+         if( addr == expectedaddress )
          {
-//            printf( "(index+i) >= entries (%d+%d>%d)\n",index,i,entries );
-            done = true;
-         }
-         else
-         {
-            uint32_t addr = trace[index+i] & 0xFFFF;
-            if( addr == expectedaddress )
+            data[++offset] = (trace[ring(index+i,entries)] >> 16) & 0xFF;
+            ++expectedaddress;
+            if( offset > (count_of(data) - 1) )
             {
-               data[++offset] = (trace[index+i] >> 16) & 0xFF;
-//                  printf( "offset > (count_of(data) - 1) (%d>%d)\n",offset,(count_of(data) - 1) );
-               ++expectedaddress;
-               if( offset > (count_of(data) - 1) )
-               {
-                  done = true;
-               }
+               // found all parameters
+               done = true;
             }
          }
+
          if( ++i > 10 ) // longest 65xx instuction takes 8 clock cycles
          {
-//            printf( "i > 10 (%d)\n",i );
+            // could not find all parameters, d'oh!
             done = true;
          }
       }
-#if 0
-      printf( "%3d:%08x:disass(%04x,%02x,%02x,%02x,%02x):%s\n",
-              index, trace[index],
-              address, data[0], data[1], data[2], data[3],
-              disass( address, data[0], data[1], data[2], data[3] ) );
-#endif
       strncpy( d->text + (index * DISASS_MAX_STR_LENGTH),
                disass( address, data[0], data[1], data[2], data[3] ),
                DISASS_MAX_STR_LENGTH-1 );
       /* make sure string is null terminated */
-      *(d->text + ((index + 1) * DISASS_MAX_STR_LENGTH - 1)) = 0;
-      ++index;
+      *(d->text + ((index + 1) * DISASS_MAX_STR_LENGTH - 1)) = '\0';
    }
+
+   /* step 2: detect interruptions */
+   for( index = start; index != ring(start-1,entries); ++index )
+   {
+       uint32_t addr0 = trace[ring(index-5,entries)] & 0xFFFF;
+       uint32_t addr1 = trace[ring(index-4,entries)] & 0xFFFF;
+       uint32_t addr2 = trace[ring(index-3,entries)] & 0xFFFF;
+       uint32_t addr3 = trace[ring(index-2,entries)] & 0xFFFF;
+       uint32_t addr4 = trace[ring(index-1,entries)] & 0xFFFF;
+
+       if( ((addr0 & 0xFF00) == 0x0100) && // check stack access
+           ((addr1 & 0xFF00) == 0x0100) &&
+           ((addr2 & 0xFF00) == 0x0100) &&
+           ( addr3           >= 0xFFFA) &&
+           ( addr4           >= 0xFFFB) )
+       {
+          eval[ring(index-5,entries)] = 0; // writing to stack
+          eval[ring(index-4,entries)] = 0;
+          eval[ring(index-3,entries)] = 0;
+          eval[ring(index-2,entries)] = 0; // reading reset/nmi/irq vector
+          eval[ring(index-1,entries)] = 0;
+          eval[ring(index  ,entries)] = 9; // executing first instruction
+       }
+       else
+       {
+          eval[ring(index,entries)] = 3;
+       }
+   }
+
+   /* final step: clear unused */
+   for( i = 0; i < entries; ++i )
+   {
+      if( !eval[i] )
+      {
+         *(d->text + (i * DISASS_MAX_STR_LENGTH)) = '\0';
+      }
+   }
+
+   free( eval );
 }
 
 
-disass_historian_t disass_historian_init( uint32_t *trace, uint32_t entries )
+disass_historian_t disass_historian_init( uint32_t *trace, uint32_t entries, uint32_t start )
 {
    disass_historian_t d = (disass_historian_t)malloc( sizeof( struct disass_historian_s ) );
+
+   // TODO: find something better than assert (or somewhere else to check?)
+   assert( (x & (x-1)) == 0 );
 
    d->entries = entries;
    d->text    = (char*)malloc( entries * DISASS_MAX_STR_LENGTH );
 
    memset( d->text, 0, entries * DISASS_MAX_STR_LENGTH );
-   disass_historian_run( d, trace, entries );
+   disass_historian_run( d, trace, entries, start );
 
    return d;
 }

@@ -9,16 +9,12 @@
 ;
 
         .export         _read
-.if 0
-        .constructor    initstdin
-.endif
 
         .import         popax, popptr1
         .importzp       ptr1, ptr2, ptr3
-;        .forceimport    disable_caps
 
         .macpack        generic
-        .include        "../native_bios.inc"
+        .include        "native_bios.inc"
 
 .proc   _read
         cpx     #$01
@@ -42,30 +38,12 @@
         ldx     ptr1+1
         int     LINEINPUT
 
-; No error, return count.
+        lda     #$0a            ; print out newline
+        jsr     CHROUT
 
+; No error, return count.
 L9:     tya
         ldx     #$00
         rts
 
 .endproc
-
-.if 0
-;--------------------------------------------------------------------------
-; initstdin:  Reset the stdin console.
-
-.segment        "ONCE"
-
-initstdin:
-        ldx     #<-1
-        stx     text_count
-        rts
-
-
-;--------------------------------------------------------------------------
-
-.segment        "INIT"
-
-text_count:
-        .res    1
-.endif

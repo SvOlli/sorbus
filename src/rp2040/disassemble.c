@@ -219,6 +219,31 @@ uint8_t disass_bytes( uint8_t p0 )
    return retval;
 }
 
+uint8_t disass_bytes2( uint8_t p0 )
+{
+   opcode_t *o = 0;
+   if( !disass_opcodes )
+   {
+      return 0;
+   }
+   o = disass_opcodes + p0;
+
+   return PICK_BYTES(o);
+}
+
+uint8_t disass_cycles( uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
+{
+   uint8_t retval = 0;
+   opcode_t *o = 0;
+   if( !disass_opcodes )
+   {
+      return 0;
+   }
+   o = disass_opcodes + p0;
+
+   retval = PICK_CYCLES(o) | (PICK_EXTRA(o) << 4);
+}
+
 const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
 {
    static char buffer[64] = { 0 };

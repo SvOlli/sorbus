@@ -2,50 +2,112 @@
 CPU Detection Routine
 =====================
 
-For the Sorbus Computer it is interesting to know which CPU it is running
-on. Especially to detect if the instruction set does not match the label
-printed on the chip. So writing some kind to test code that behaves
-different on each CPU is something that can prove some benefit.
+The Sorbus Computer can run any kind of 6502 Variant. The small test and
+learn environment "Monitor Command Prompt" or MCP for shot (pun very
+intended) can be used to learn all the details about each CPU up to a
+certain degree. (Not all pins are connected due to a limit amount of
+GPIO pins of the RP2040.)
+
+However, it is interesting to know which CPU it is running on. Since the
+"Native" Core is the one with the most features, but does not work with
+an (old) NMOS 6502, it should be a good idea to detect that CPU and print
+an error message.
 
 A very easy way to tell apart an NMOS 6502 CPU and all the following CMOS
-variants is quite easy.
+variants is quite easy. In 65C02 assembly is looks something like this
 
 ```
-   LDA   #$00
-   DEC
-   BNE   CMOS
+; 65C02        ; NMOS 6502
+   LDA   #$00  ; LDA   #$00
+   DEC         ; .byte $3a  ; "illegal" NOP
+   BNE   CMOS  ; BNE   CMOS
 ```
 
 In the above case `DEC` will be assembled to $3A which is an undocumented
 (also called "illegal") `NOP` opcode. So, while the `LDA #$00` sets the
-zero-flag, it will be reset by the `DEC` opcode, but not by the "illegal"
+zero-flag, it will be cleared by the `DEC` opcode, but not by the "illegal"
 `NOP` opcode. This is a short and efficiant way to tell NMOS and CMOS
-variants apart.
+variants apart. (Note this works with the `INC` ($1A) Opcode as well.)
 
+```
+; 65816        ; 65C02           ; 6502
+   LDA   #$01  ; LDA   #$01      ; LDA   #$01
+   XBA         ; .byte $eb ; NOP ; .byte $EB, $EA ; "illegal" SBC #$EA
+   NOP         ; NOP             ; 
+   LDA   #$EA  ; LDA   #$EA      ; LDA   #$EA
+   XBA         ; .byte $eb ; NOP ; .byte $EB, $EA ; "illegal" SBC #$EA
+   NOP         ; NOP             ; 
+;  A=$01       ; A=$EA           ; A=$00
+```
 
-There are five different instruction sets detected by the Sorbus Computer:
+But there is another point where a CPU detection is very handy. If you
+search for cheap 65C02 processors, you typically get an offering on ebay
+or AliExpress for WDC W65C02S processors. However none of those are
+original ones, but all of those are pull of machines, and then get
+relabeled. (At least the ones I've seen so far.) For this project it
+would not be that bad, if they would not throw in NMOS 6502s in the mix
+as well, which don't fit the requirements.
+
+It would be useful, if one could tell CPUs apart by their instruction
+sets. There are five different instruction sets have been seen in chips
+with a pin layout similar to the original NMOS 6502 and the CMOS 65C02:
 
 - NMOS 6502
-- 65C02, which is the base CMOS variant, as compared to the NMOS version,
+- 65C02, the base CMOS variant, as compared to the NMOS version,
   a couple of bugs were fixed, and new instructions were introduced
-- 65SC02, which is a 65C02 with the bit-related opcodes removed ($x7 and $xF)
-- 65816, which is a 16 bit capable variant of the 65SC02, with all 256
-  opcodes defined now
-- 65CE02, a CMOS replementation of the 65C02 with also 256 opcodes defined
+- 65SC02, a 65C02 with the bit-related opcodes removed ($x7 and $xF are
+  just 1 byte, 1 cycle NOPs)
+- 65816, a 16 bit capable variant of the 65SC02, with all 256 opcodes
+  defined now
+- 65CE02, a CMOS reimplementation of the 65C02 by Commodore with also
+  256 opcodes defined
 
-What all these CPUs have in common is a pinout that is interchangeable.
-Not 100%, but still enough to run all CPUs with the Sorbus Computer, while
-omitting some of their features provided by pins on the chip.
+The pin layout is not 100% the same on all chips, but still enough to
+run all CPUs with the Sorbus Computer, while omitting some of their
+features provided by pins on the chip.
 
-The code used to detect all those processors runs in a small confined
-environment. A machine that only consists of 32 bytes of pre-loaded RAM.
-This way, some memory "wrap-around" features could be utilized to keep
-things simple. Also a write to the last byte of memory causes the machine
-to stop. It also stops after running a predefined number of cycles.
+The "runtime environment" is - as all other runtime environments like
+the previous mentioned MCP and Native Cores - written in C. It provides
+everything up to the RAM and clock signal. The running core to detect
+the CPU should write an identifier to the last byte of memory. If this
+value changes from the default one, the processing will be stopped.
 
-The "result-byte" will then be evaluated. If it is in the defined range,
-the processor type id will be returned by the detection environment,
-otherwise a zero to indicate a failure.
+Since the code will be rather simple, the environment provided also
+should be rather simple. Except from the "return value" no I/O is
+required. Memory used can also be kept very low: 32 bytes have been
+proven to be enough, if the memory is "wrapped around" by not fully
+decoding the address. The code size is just 24 bytes, by the amount of
+memory provided needs to be a power of 2.
+
+The "result-byte" written to the end of memory will then be evaluated.
+If it is in the defined range, the processor type id will be returned
+by the runtime environment, otherwise a zero to indicate a failure.
+
+The basic idea for supplying the return code is a slide of `INX`
+opcodes, which then writes the result to the exit code address ($FF).
+So the code would pratically something like this:
+```
+   LDX   #$00 ; clear out X
+   ; run test code
+   ; [...]
+   ; other return codes
+:is65816      ; exit for 16 bit 65816
+   INX
+:is65C02      ; exit for CMOS 65C02
+   INX
+:is6502       ; exit for NMOS 6502
+   INX
+   STX   $FF  ; stops runtime environment
+```
+This way, if a specific CPU was detected, jumping to the matching
+label will then return the proper code. So, for example a jump to
+`is65816` returns a `3`, while `is6502` returns a `1`.
+
+Because reading the [sourcecode](../src/65c02/cpudetect.s) is very
+hard, let's use a simple flow chart on how the detection is
+implemented. Red bubbles are a successful detection of a CPU variant.
+
+![flowchart](cpu_detect_flowchart.png)
 
 
 Test as seen by the CPUs

@@ -87,6 +87,7 @@ const static uint8_t cpufeatures[] =
    0x06, // CPU_65C02:  CMOS | bit set/reset/branch
    0x12, // CPU_65816:  CMOS | 16 bit
    0x0e, // CPU_65CE02: CMOS | bit set/reset/branch | z-register
+   0x21, // CPU_6502RA: NMOS without ROR
    0x02, // CPU_65SC02: CMOS
    0x00  // CPU_UNDEF
 };
@@ -274,6 +275,27 @@ static inline void event_timer_nmi( void *data )
 }
 
 
+static bool callback_timer_nmi( __unused struct repeating_timer *t )
+{
+   if( ram[0xDF0B] & 80 ) // bit 7 = NMI timer enabled
+   {
+      // trigger NMI
+      gpio_clr_mask( bus_config.mask_nmi );
+
+      // set state for reading
+      nmi_timer_triggered = true;
+
+      // repeat
+      return true;
+   }
+   else
+   {
+      // disabled
+      return false;
+   }
+}
+
+
 static inline void event_timer_irq( void *data )
 {
    // event handler for timer irq
@@ -289,6 +311,27 @@ static inline void event_timer_irq( void *data )
    if( timer_irq_total )
    {
       queue_event_add( timer_irq_total, event_timer_irq, 0 );
+   }
+}
+
+
+static bool callback_timer_irq( __unused struct repeating_timer *t )
+{
+   if( ram[0xDF0B] & 40 ) // bit 6 = IRQ timer enabled
+   {
+      // trigger IRQ
+      gpio_clr_mask( bus_config.mask_irq );
+
+      // set state for reading
+      irq_timer_triggered = true;
+
+      // repeat
+      return true;
+   }
+   else
+   {
+      // disabled
+      return false;
    }
 }
 

@@ -15,6 +15,7 @@ static char* cputype_names[] =
    "65C02",
    "65816",
    "65CE02",
+   "6502 (Rev.A)"
    "65SC02"
 };
 

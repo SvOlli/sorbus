@@ -25,7 +25,11 @@ start:
    ; 6502:   NOP ("illegal" opcode)
    ; 65C02:  INC
    .byte $1a
-   beq   is6502  ; 6502: A=$00, 65(S)C02: A=$01
+   bne   check65sc02  ; 6502: A=$00, 65(S)C02: A=$01
+   ror
+   bcs   is6502noror
+   bcc   is6502
+check65sc02:
    ; $97 is evaluated by:
    ; 65C02:  SMB1 $FF ; will set retval to $02 = 65C02
    ; 65SC02: NOP(reserved) : NOP(reserved, $FF)
@@ -33,6 +37,8 @@ start:
    .byte $FF
 
 is65SC02:
+   inx            ; X=$06
+is6502noror:
    inx            ; X=$05
 is65CE02:
    inx            ; X=$04
@@ -45,7 +51,7 @@ is6502:
    inx            ; X=$01
    stx   $ff      ; will stop CPU
 
-   .byte $ea,$ea,$ea,$ea,$ea,$ea,$ea,$4c ; unused
+   .byte $ea,$4c ; unused
 reset:
    .word irq      ; reset vector, start of ram
 irq:

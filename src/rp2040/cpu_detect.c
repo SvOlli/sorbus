@@ -103,7 +103,7 @@ cputype_t cpu_detect( bool debug )
 
    if( debug )
    {
-      disass_historian_t d = disass_historian_init( &trace[0], cycles_total );
+      disass_historian_t d = disass_historian_init( &trace[0], cycles_total, 0 );
       printf( "cycles_total = %d\n", cycles_total );
       for( int i = 0; i < cycles_run; ++i )
       {

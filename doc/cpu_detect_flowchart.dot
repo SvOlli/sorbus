@@ -1,0 +1,43 @@
+#!/bin/sh
+
+cd "$(dirname "${0}")"
+
+dot -Tpng >"$(basename "${0}" .dot).png" <<EOF
+
+digraph D {
+
+   IS6502   [style=filled fillcolor=lightcoral label="6502\\ncarry clear"]
+   IS6502RA [style=filled fillcolor=lightcoral label="6502 Rev.A\\ncarry set"]
+   IS65C02  [style=filled fillcolor=lightcoral label="65C02\\nSMB1 \$FF"]
+   IS65SC02 [style=filled fillcolor=lightcoral label="65SC02\\nNOP"]
+   IS65816  [style=filled fillcolor=lightcoral label="65816\\nJMP \$xxxxxx"]
+   IS65CE02 [style=filled fillcolor=lightcoral label="65CE02\\ncarry clear"]
+
+   CLC       [shape=box label="CLC"]
+   RUN65CE02 [label="65CE02\\nAUG \$xxxxxx → 4 bytes NOP"]
+   RUNREST1  [label="6502 / 65(S)C02\\n3 bytes NOP"]
+   SEC       [shape=box label="SEC"]
+   RUN5C     [shape=diamond label="run opcode \$5C"]
+   CHECK5C   [shape=diamond label="check carry"]
+   RUN1A     [shape=diamond label="6502/65(S)C02\\nrun opcode \$1A\\nand check for zero"]
+   RUN97     [shape=diamond label="65(S)C02\\nrun opcode \$97"]
+   ROR       [shape=diamond label="6502\\nROR\\nand check carry"]
+   
+   CLC -> RUN5C
+   RUN5C -> RUNREST1
+   RUN5C -> RUN65CE02
+   RUN5C -> IS65816
+   RUN65CE02 -> CHECK5C
+   RUNREST1 -> SEC
+   SEC -> CHECK5C
+   CHECK5C -> IS65CE02
+   CHECK5C -> RUN1A
+   RUN1A -> ROR
+   RUN1A -> RUN97
+   ROR -> IS6502
+   ROR -> IS6502RA
+   RUN97 -> IS65C02
+   RUN97 -> IS65SC02
+
+}
+EOF

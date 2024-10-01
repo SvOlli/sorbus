@@ -13,8 +13,8 @@
 .import    copydata, zerobss, initlib, donelib
 
 .include  "zeropage.inc"
-.include  "../native.inc"
-.include  "../native_bios.inc"
+.include  "native.inc"
+.include  "native_bios.inc"
 
 ; ---------------------------------------------------------------------------
 ; Place the startup code in a special segment
