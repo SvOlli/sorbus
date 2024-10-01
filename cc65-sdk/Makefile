@@ -23,13 +23,12 @@ INCLUDE_DIR    ?= include
 targets        :=
 
 define sx4build
-$(info sx4build $(1))
 my_dest := $$(EXPORT_DIR)/$$(notdir %$(basename $(1))).sx4
 my_src  := $(1)
 
 targets += $$(my_dest)
 $$(my_dest): $$(my_src) $$(EXPORT_DIR) $$(SORBUS_LIB)
-	$$(CL65) $$(SYS_FLAGS) $$(CC65_FLAGS) -c -o $$@ $$< $$(SORBUS_LIB)
+	$$(CL65) $$(SYS_FLAGS) $$(CC65_FLAGS) -o $$@ $$< $$(SORBUS_LIB)
 endef
 
 all: sx4

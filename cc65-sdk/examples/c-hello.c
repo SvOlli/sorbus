@@ -7,19 +7,19 @@
 
 int main()
 {
-   uint8_t *addr = 0xFF00;
+   uint8_t *addr;
    uint8_t i;
-   printf( "\nthis program written in C and compiled using the cc65-sdk\n" );
+   printf( "\nthis program was written in C and compiled using the cc65-sdk\n" );
    printf( "hexdump of BIOS page:\n" );
 
-   for( addr = 0xFF00; addr; addr += STEP )
+   for( addr = (uint8_t*)0xFF00; addr; addr += STEP )
    {
       printf( "%04x:", addr );
       for( i = 0; i < STEP; ++i )
       {
-         printf( " %02x", *(addr + i) );
+         printf( "%s%02x", i == 8 ? "  " : " ", *(addr + i) );
       }
-      printf( " : " );
+      printf( "  " );
       for( i = 0; i < STEP; ++i )
       {
          uint8_t c = *(addr + i);

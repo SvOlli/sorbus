@@ -9,6 +9,9 @@ It builds its own `sorbus.lib` and comes with a few examples.
 If you like to build your own programs create a directory `owncode`.
 Every file.c found there will be compiled to an SX4 executable.
 
+The files from the `example` direcotry are already installed onto the
+filesystem when building a release, and can be run using the filebrowser.
+
 To transfer the data, you can use the tool `wozcat` provided in the
 `tools` directory. Usage is:
 

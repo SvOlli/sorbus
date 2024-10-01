@@ -23,6 +23,9 @@ function(gencpmfs target)
    foreach(file ${CPMFS_EXTRA_TARGETS})
       set(extra_files ${extra_files} $<TARGET_FILE:${file}>)
    endforeach()
+   add_custom_target(${target}_cc65_sdk ALL
+      COMMAND make -C "${CMAKE_CURRENT_SOURCE_DIR}/../../cc65-sdk" EXPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/10"
+   )
    file(GLOB CPM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/*/*")
    add_custom_target(${target} ALL
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh"
