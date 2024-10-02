@@ -28,6 +28,7 @@ cputype_t cpu_detect( bool debug )
    uint8_t memory[0x20] = { 0 };
    memcpy( &memory[0], &cpudetect[0], sizeof(memory) );
    bool reset_done = false;
+   cputype_t cputype;
 
    if( debug )
    {
@@ -101,8 +102,10 @@ cputype_t cpu_detect( bool debug )
       gpio_clr_mask( bus_config.mask_clock );
    }
 
+   cputype = (memory[sizeof(memory)-1] < CPU_UNDEF) ? memory[sizeof(memory)-1] : CPU_ERROR;
    if( debug )
    {
+      disass_cpu( cputype ? cputype : CPU_6502 );
       disass_historian_t d = disass_historian_init( &trace[0], cycles_total, 0 );
       printf( "cycles_total = %d\n", cycles_total );
       for( int i = 0; i < cycles_run; ++i )
@@ -120,5 +123,5 @@ cputype_t cpu_detect( bool debug )
    }
 
    // run complete, evaluate detected code
-   return memory[sizeof(memory)-1] < CPU_UNDEF ? memory[sizeof(memory)-1] : CPU_ERROR;
+   return cputype;
 }

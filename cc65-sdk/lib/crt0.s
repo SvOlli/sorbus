@@ -29,10 +29,6 @@ _init:
    txs
    cld                           ; Clear decimal mode
 
-   int   COPYBIOS                ; Make sure BIOS routines are available
-   
-   stz   BANK                    ; Switch to RAM bank
-
 ; ---------------------------------------------------------------------------
 ; Set cc65 argument stack pointer
 

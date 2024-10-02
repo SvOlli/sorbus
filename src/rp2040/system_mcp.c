@@ -423,27 +423,20 @@ void cmd_steps( const char *input )
 
 void cmd_cold( const char *input )
 {
-   int count = 0x100;
+   bool debug = false;
    if( strlen( input ) )
    {
       if( !strcmp( input, "debug" ) )
       {
-         count = 1;
+         debug = true;
       }
       else
       {
          return;
       }
    }
+   cputype = cpu_detect( debug );
 
-   for( int i = count; i > 0; --i )
-   {
-      cputype = cpu_detect( i == 1 );
-      if( cputype != CPU_ERROR )
-      {
-         break;
-      }
-   }
    cycles_left_reset = 5;
    disass_cpu( cputype );
    disass_show( DISASS_SHOW_NOTHING );

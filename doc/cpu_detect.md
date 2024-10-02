@@ -2,32 +2,53 @@
 CPU Detection Routine
 =====================
 
-The Sorbus Computer can run any kind of 6502 Variant. The small test and
-learn environment "Monitor Command Prompt" or MCP for shot (pun very
-intended) can be used to learn all the details about each CPU up to a
-certain degree. (Not all pins are connected due to a limit amount of
-GPIO pins of the RP2040.)
+The Sorbus Computer can run any kind of 6502 Variant that shares the
+same pinout. The small test and learn environment "Monitor Command
+Prompt" or MCP for shot (pun very intended) can be used to learn all
+the details about each CPU up to a certain degree. (Not all pins are
+connected due to a limit amount of 30 GPIO pins of the RP2040.)
 
-However, it is interesting to know which CPU it is running on. Since the
-"Native" Core is the one with the most features, but does not work with
-an (old) NMOS 6502, it should be a good idea to detect that CPU and print
-an error message.
+However, it is interesting to know which CPU the system is running on.
+Since the "Native" Core is the one with the most features, but does not
+work with an (old) NMOS 6502, it should be a good idea to detect that
+CPU and print an error message.
+
+Also, there is another point where a CPU detection is very handy. If you
+search for cheap 65C02 processors, you typically get an offering on ebay
+or AliExpress for WDC W65C02S processors. However, none of those are
+original ones, but all of those are pulled out of machines, and then get
+relabeled. (At least the ones I've seen so far.) For this project it
+would not be that bad, if they would not throw in NMOS 6502s in the mix
+as well. Those, as stated above, don't fit the requirements.
+
+Finally, there is also another reason to try this: for the challenge.
+After all, this is something where there isn't a solution available on
+the internet in several variants.
+
+And the solution presented here is also not one without side effects, as
+it relys on special features of the runtime environment. This exact code
+would only work partially on an Apple II for example.
+
+
+Partial Detection
+-----------------
 
 A very easy way to tell apart an NMOS 6502 CPU and all the following CMOS
 variants is quite easy. In 65C02 assembly is looks something like this
 
 ```
-; 65C02        ; NMOS 6502
+;  65C02       ; NMOS 6502
    LDA   #$00  ; LDA   #$00
    DEC         ; .byte $3a  ; "illegal" NOP
-   BNE   CMOS  ; BNE   CMOS
+   BNE   CMOS  ; BNE   CMOS ; NMOS will not take the branch
 ```
 
 In the above case `DEC` will be assembled to $3A which is an undocumented
 (also called "illegal") `NOP` opcode. So, while the `LDA #$00` sets the
 zero-flag, it will be cleared by the `DEC` opcode, but not by the "illegal"
-`NOP` opcode. This is a short and efficiant way to tell NMOS and CMOS
-variants apart. (Note this works with the `INC` ($1A) Opcode as well.)
+`NOP` opcode. This also works the same with the `INC` ($1A) Opcode as well.
+So, this is a short and efficiant way to tell NMOS and CMOS variants apart,
+as all CMOS variants share the same INC/DEC instructions.
 
 ```
 ; 65816        ; 65C02           ; 6502
@@ -40,19 +61,16 @@ variants apart. (Note this works with the `INC` ($1A) Opcode as well.)
 ;  A=$01       ; A=$EA           ; A=$00
 ```
 
-But there is another point where a CPU detection is very handy. If you
-search for cheap 65C02 processors, you typically get an offering on ebay
-or AliExpress for WDC W65C02S processors. However none of those are
-original ones, but all of those are pull of machines, and then get
-relabeled. (At least the ones I've seen so far.) For this project it
-would not be that bad, if they would not throw in NMOS 6502s in the mix
-as well, which don't fit the requirements.
+
+The Goal
+--------
 
 It would be useful, if one could tell CPUs apart by their instruction
 sets. There are five different instruction sets have been seen in chips
 with a pin layout similar to the original NMOS 6502 and the CMOS 65C02:
 
 - NMOS 6502
+- NMOS 6502 Rev.A, the first 6502 that was still missing the ROR opcodes
 - 65C02, the base CMOS variant, as compared to the NMOS version,
   a couple of bugs were fixed, and new instructions were introduced
 - 65SC02, a 65C02 with the bit-related opcodes removed ($x7 and $xF are
@@ -60,11 +78,26 @@ with a pin layout similar to the original NMOS 6502 and the CMOS 65C02:
 - 65816, a 16 bit capable variant of the 65SC02, with all 256 opcodes
   defined now
 - 65CE02, a CMOS reimplementation of the 65C02 by Commodore with also
-  256 opcodes defined
+  256 opcodes defined, but totally different
 
 The pin layout is not 100% the same on all chips, but still enough to
 run all CPUs with the Sorbus Computer, while omitting some of their
 features provided by pins on the chip.
+
+Side note: the NMOS 6502 has 3510 transistors, the Rev.A should have a
+few less. The 65C02 and 65SC02 are told to have around 4000 transistors.
+The 65CE02 doubles that amount with about 8000, while the 65816 has
+whoppen 22000 transistors. (If you can, please provide more exact
+numbers.)
+
+
+The Runtime Environment
+-----------------------
+
+To make things easier, a runtime environment was defined with the sole
+purpose to detect the CPU. This is the advantage of this software
+defined computer: you can use a special environment for detection and
+then switch over to a generic one.
 
 The "runtime environment" is - as all other runtime environments like
 the previous mentioned MCP and Native Cores - written in C. It provides
@@ -76,12 +109,21 @@ Since the code will be rather simple, the environment provided also
 should be rather simple. Except from the "return value" no I/O is
 required. Memory used can also be kept very low: 32 bytes have been
 proven to be enough, if the memory is "wrapped around" by not fully
-decoding the address. The code size is just 24 bytes, by the amount of
+decoding the address. The code size is just 30 bytes, but the amount of
 memory provided needs to be a power of 2.
 
 The "result-byte" written to the end of memory will then be evaluated.
 If it is in the defined range, the processor type id will be returned
 by the runtime environment, otherwise a zero to indicate a failure.
+
+
+Every Byte Is Sacred
+--------------------
+
+One of the fun things about coding for a 6502 processor is trying to
+reach a maximum of efficiency. This typically means: either to use a
+minimum of CPU clock cycles or a minimum of bytes of code. This code
+focuses on the latter.
 
 The basic idea for supplying the return code is a slide of `INX`
 opcodes, which then writes the result to the exit code address ($FF).
@@ -102,6 +144,12 @@ So the code would pratically something like this:
 This way, if a specific CPU was detected, jumping to the matching
 label will then return the proper code. So, for example a jump to
 `is65816` returns a `3`, while `is6502` returns a `1`.
+
+TODO: Describe using vectors as code, utilizing wrap around of memory.
+
+
+The Detection Routine
+---------------------
 
 Because reading the [sourcecode](../src/65c02/cpudetect.s) is very
 hard, let's use a simple flow chart on how the detection is

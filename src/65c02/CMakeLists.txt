@@ -24,7 +24,7 @@ function(gencpmfs target)
       set(extra_files ${extra_files} $<TARGET_FILE:${file}>)
    endforeach()
    add_custom_target(${target}_cc65_sdk ALL
-      COMMAND make -C "${CMAKE_CURRENT_SOURCE_DIR}/../../cc65-sdk" EXPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/10"
+      COMMAND make -C "${CMAKE_CURRENT_SOURCE_DIR}/../../cc65-sdk" "SORBUS_65C02_DIR=${CMAKE_CURRENT_SOURCE_DIR}" "EXPORT_DIR=${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/10"
    )
    file(GLOB CPM_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/*/*")
    add_custom_target(${target} ALL

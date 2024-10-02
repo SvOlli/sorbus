@@ -66,7 +66,7 @@
 .define CPM_FNAME $0300
 .define CPM_SADDR CPM_FNAME+$0c
 .define CPM_EADDR CPM_FNAME+$0e
-; full memory block starts at $0300-$35a
+; full memory block starts at $0300-$035a
 ; (more if a file is loaded that is larger than 64k)
 ; during save, the memory $0200-$02ff is used for available blocks map
 

@@ -9,7 +9,7 @@
  * all detectable CPU instruction sets
  */
 typedef enum {
-   CPU_ERROR, CPU_6502, CPU_65C02, CPU_65816, CPU_65CE02, CPU_6502RA, CPU_65SC02, CPU_UNDEF
+   CPU_ERROR=0, CPU_6502, CPU_65C02, CPU_65816, CPU_65CE02, CPU_6502RA, CPU_65SC02, CPU_UNDEF
 } cputype_t;
 
 
