@@ -64,7 +64,7 @@
    /* $3D */ OPCODE( "AND", ABSX, 0, 3, 4, 1, 0, 0 ),
    /* $3E */ OPCODE( "ROL", ABSX, 0, 3, 7, 1, 0, 0 ),
    /* $3F */ OPCODE( "NOP", IMP, 1, 1, 1, 0, 0, 0 ),
-   /* $40 */ OPCODE( "RTI", IMP, 0, 1, 7, 0, 0, 1 ),
+   /* $40 */ OPCODE( "RTI", IMP, 0, 1, 6, 0, 0, 1 ),
    /* $41 */ OPCODE( "EOR", ZPIX, 0, 2, 6, 0, 0, 0 ),
    /* $42 */ OPCODE( "NOP", IMM, 1, 2, 2, 0, 0, 0 ),
    /* $43 */ OPCODE( "NOP", IMP, 1, 1, 1, 0, 0, 0 ),

@@ -105,6 +105,7 @@ cputype_t cpu_detect( bool debug )
    cputype = (memory[sizeof(memory)-1] < CPU_UNDEF) ? memory[sizeof(memory)-1] : CPU_ERROR;
    if( debug )
    {
+      int lineno = 0;
       disass_cpu( cputype ? cputype : CPU_6502 );
       disass_historian_t d = disass_historian_init( &trace[0], cycles_total, 0 );
       printf( "cycles_total = %d\n", cycles_total );
@@ -114,7 +115,11 @@ cputype_t cpu_detect( bool debug )
          {
             break;
          }
-         printf( "%3d:%s:%s\n", i,
+         if( trace[i] & bus_config.mask_reset )
+         {
+            ++lineno;
+         }
+         printf( "%3d:%s:%s\n", lineno,
                  decode_trace( trace[i], false, 0 ),
                  disass_historian_entry( d, i ) );
       }
