@@ -170,9 +170,9 @@ uint8_t disass_bytes( uint8_t p0 )
    {
       return 0;
    }
-   
+
    o = disass_opcodes + p0;
-   
+
    switch( PICK_OPCODE(o) )
    {
       case IMP:   // OPC
@@ -283,7 +283,7 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
          bsize -= 3;
       }
    }
-   
+
    o = disass_opcodes + p0;
    if( (PICK_OPCODE(o) == ZPN) || (PICK_OPCODE(o) == ZPNR) )
    {

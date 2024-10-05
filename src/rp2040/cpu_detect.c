@@ -9,32 +9,34 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifndef count_of
-#define count_of(a) (sizeof(a)/sizeof(a[0]))
-#endif
-
 #include "cpudetect.h"
 #include "disassemble.h"
+
+#define CYCLES_TOTAL (256)
+#if (CYCLES_TOTAL & (CYCLES_TOTAL-1))
+#error CYCLES_TOTAL is not a power of 2
+#endif
 
 
 cputype_t cpu_detect( bool debug )
 {
-   const uint32_t cycles_total = 256;
-   uint32_t trace[cycles_total];
-   uint32_t state;
-   uint32_t address;
-   uint32_t cycles_left_reset = 8;
-   uint32_t cycles_run = 0;
-   uint8_t memory[0x20] = { 0 };
-   memcpy( &memory[0], &cpudetect[0], sizeof(memory) );
-   bool reset_done = false;
+   uint32_t  trace[CYCLES_TOTAL];
+   uint32_t  state;
+   uint32_t  address;
+   uint32_t  cycles_left_reset = 8;
+   uint32_t  cycles_run = 0;
+   bool      reset_done = false;
    cputype_t cputype;
+   uint8_t   memory[0x20] = { 0 };
 
+   memcpy( &memory[0], &cpudetect[0], sizeof(memory) );
    memset( &trace[0], 0, sizeof(trace) );
 
    // set lines to required state
    gpio_set_mask( bus_config.mask_rdy | bus_config.mask_irq | bus_config.mask_nmi );
-   for( cycles_run = 0; (0x00 == memory[sizeof(memory)-1]) && (cycles_run < cycles_total); ++cycles_run )
+   for( cycles_run = 0;
+        (0x00 == memory[sizeof(memory)-1]) && (cycles_run < CYCLES_TOTAL);
+        ++cycles_run )
    {
       if( cycles_left_reset )
       {
@@ -102,9 +104,8 @@ cputype_t cpu_detect( bool debug )
    {
       int lineno = 0;
       disass_cpu( cputype ? cputype : CPU_6502 );
-      disass_historian_t d = disass_historian_init( &trace[0], cycles_total, 0 );
+      disass_historian_t d = disass_historian_init( &trace[0], CYCLES_TOTAL, 0 );
       hexdump( &cpudetect[0], 0, sizeof(cpudetect) );
-      printf( "cycles_total = %d\n", cycles_total );
       for( int i = 0; i < cycles_run; ++i )
       {
          if( !disass_historian_entry( d, i ) )

@@ -26,7 +26,7 @@ menuloop:
    jsr   CHRIN
    sec
    sbc   #'`'
-   cmp   #$03
+   cmp   #$04
    bcs   menuloop
    asl
    tax
@@ -71,6 +71,7 @@ user:
    jsr   CHROUT
 
    int   INTUSER
+   int   $80
 
    jsr   PRINT
    .byte "restore vector:$",$00
@@ -85,9 +86,14 @@ user:
    jmp   done
 
 userbrk:
+   lda   ASAVE
+   pha
    jsr   PRINT
-   .byte "user brk routine",$0a,$00
-   rts
+   .byte "user brk routine: ",$00
+   pla
+   int   PRHEX8
+   lda   #$0a
+   jmp   CHROUT
 
 dir:
    jsr   PRINT

@@ -67,6 +67,9 @@ bool cpu_running_request       = true;
 
 // number of states should be power of 2
 #define BUSLOG_SIZE (512)
+#if (BUSLOG_SIZE & (BUSLOG_SIZE-1))
+#error BUSLOG_SIZE is not a power of 2
+#endif
 uint32_t buslog_states[BUSLOG_SIZE] = { 0 };
 uint     buslog_index               = 0;
 uint32_t watchdog_cycles_total      = 0;
@@ -102,11 +105,7 @@ const static uint8_t cpufeatures[] =
 
 static inline void bus_data_write( uint8_t data )
 {
-#if 0
-   gpio_oc_set_by_mask( bus_config.mask_data, ((uint32_t)data) << bus_config.shift_data );
-#else
    gpio_put_masked( bus_config.mask_data, ((uint32_t)data) << bus_config.shift_data );
-#endif
 }
 
 
@@ -194,7 +193,7 @@ static inline void handle_ramrom()
 }
 
 
-static inline void event_estimate_cpufreq( void *data )
+static inline void event_estimate_cpufreq( __unused void *data )
 {
    // event handler for estimating the 65C02 CPU speed
    // this event is exactly 1 time in queue
@@ -213,7 +212,7 @@ static inline void event_estimate_cpufreq( void *data )
 }
 
 
-static inline void event_watchdog( void *data )
+static inline void event_watchdog( __unused void *data )
 {
    // event handler for watchdog timer
    // this event is max 1 time in queue
@@ -254,7 +253,7 @@ static inline void watchdog_setup( uint8_t value, uint8_t config )
 }
 
 
-static inline void event_timer_nmi( void *data )
+static inline void event_timer_nmi( __unused void *data )
 {
    // event handler for timer nmi
    // this event is max 1 time in queue
@@ -294,7 +293,7 @@ static bool callback_timer_nmi( __unused struct repeating_timer *t )
 }
 
 
-static inline void event_timer_irq( void *data )
+static inline void event_timer_irq( __unused void *data )
 {
    // event handler for timer irq
    // this event is max 1 time in queue
@@ -389,7 +388,7 @@ static inline void timer_setup( uint8_t value, uint8_t config )
 }
 
 
-static inline void event_clear_reset( void *data )
+static inline void event_clear_reset( __unused void *data )
 {
    gpio_set_mask( bus_config.mask_reset );
 }
@@ -468,7 +467,7 @@ static inline void handle_scratch_mem( uint8_t flags )
 }
 
 
-static inline void event_flash_sync( void *data )
+static inline void event_flash_sync( __unused void *data )
 {
    // event handler for flushing dhara journal
    // this event is max 1 time in queue
@@ -550,32 +549,6 @@ static inline void handle_flash_dma()
 }
 
 
-void debug_dump_state( int lineno, uint32_t _state, uint32_t _state1, uint32_t _state2, uint32_t _state3 )
-{
-   uint32_t addr =
-      (_state & bus_config.mask_address) >> (bus_config.shift_address);
-   uint8_t data = 
-      (_state & bus_config.mask_data) >> (bus_config.shift_data);
-   uint8_t data1 = 
-      (_state1 & bus_config.mask_data) >> (bus_config.shift_data);
-   uint8_t data2 = 
-      (_state2 & bus_config.mask_data) >> (bus_config.shift_data);
-   uint8_t data3 =
-      (_state3 & bus_config.mask_data) >> (bus_config.shift_data);
-   disass_show( DISASS_SHOW_NOTHING );
-   printf( "%3d:%04x %c %02x %c%c%c%c%c %s\n",
-      lineno, addr,
-      (_state & bus_config.mask_rw) ? 'r' : 'w',
-      data,
-      (_state & 0x80000000) ? '*' : ' ',
-      (_state & bus_config.mask_reset) ? ' ' : 'R',
-      (_state & bus_config.mask_nmi) ? ' ' : 'N',
-      (_state & bus_config.mask_irq) ? ' ' : 'I',
-      (_state & bus_config.mask_rdy) ? ' ' : 'S',
-      disass( addr, data, data1, data2, data3 ) );
-}
-
-
 static inline uint32_t getaddr( uint32_t _state )
 {
    return (_state & bus_config.mask_address) >> (bus_config.shift_address);
@@ -590,10 +563,10 @@ static inline uint32_t getdata( uint32_t _state )
 
 uint32_t debug_getbus( int i )
 {
-   uint32_t state = buslog_states[(i + buslog_index) & (count_of(buslog_states)-1)];
-   uint32_t prev2 = buslog_states[(i + buslog_index - 2) & (count_of(buslog_states)-1)];
-   uint32_t prev  = buslog_states[(i + buslog_index - 1) & (count_of(buslog_states)-1)];
-   uint32_t next  = buslog_states[(i + buslog_index + 1) & (count_of(buslog_states)-1)];
+   uint32_t state = buslog_states[(i + buslog_index) & (BUSLOG_SIZE-1)];
+   uint32_t prev2 = buslog_states[(i + buslog_index - 2) & (BUSLOG_SIZE-1)];
+   uint32_t prev  = buslog_states[(i + buslog_index - 1) & (BUSLOG_SIZE-1)];
+   uint32_t next  = buslog_states[(i + buslog_index + 1) & (BUSLOG_SIZE-1)];
 
    bool has_follow = ((getaddr( state ) + 1) == getaddr( next ));
    bool is_read = (state & bus_config.mask_rw) && (next & bus_config.mask_rw);
@@ -1044,7 +1017,7 @@ void bus_run()
       if( state & bus_config.mask_rdy )
       {
          // state is not valid on the data when RP2040 is writing
-         buslog_states[buslog_index++ & (count_of(buslog_states)-1)] = gpio_get_all();
+         buslog_states[buslog_index++ & (BUSLOG_SIZE-1)] = gpio_get_all();
       }
 
       // done: set clock to low

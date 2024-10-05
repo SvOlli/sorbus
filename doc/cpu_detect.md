@@ -152,7 +152,7 @@ The basic idea for supplying the return code is a slide of `INX`
 opcodes, which then writes the result to the exit code address ($FF).
 But for this to work, X has to be initialized to $00.
 
-So the code would pratically something like this:
+So the code would pratically look something like this:
 ```
    LDX   #$00 ; clear out X
    ; run test code
@@ -214,21 +214,21 @@ This ensures that when something does go wrong, the system does not
 drift into undefined behaviour.
 
 Before we dive into the disassemblies, first let's explain the format
-using the first instruction run as our example.
+using the first executed instruction as our example.
 ```
  10:001e r a2    :LDX  #$00
 ```
 The `10` is just a linenumber that starts when the interrupt register
 is pulled high, so the CPU leaves reset state.
 
-This is followed by an overview of the bus state at this time. `001e` is
-the address bus, `r` shows that the CPU is reading, and `1a` is the data
+This is followed by an overview of the bus state at that time. `001e` is
+the address bus, `r` shows that the CPU is reading, and `a2` is the data
 bus, showing what was read (or written). If lines like Reset, NMI or IRQ
 are triggered by pulling to GND, that would be also shown by a
 corresponding letter.
 
 `LDX  #$00` is the disassembly of the instruction starting at this
-memory address. (In this case "load the X register with the value of
+memory address. (In this case "LoaD the X register with the value of
 $00.)
 
 Every trace should end with a `00ff w XX`, which indicates the writing
@@ -281,6 +281,10 @@ Disassembly as seen on a 6502
  38:0039 r ff    :
  39:00ff w 01    :
 ```
+This is the exact CPU variant used in most machines in the late 1970s
+and early 1980s. The $5c used to detect the 65816 and 65CE02 is skipped
+and the `INC`-test for any CMOS variant does also not succeed. The third
+and final test for a working `ROR` instruction does succeed, though.
 
 Disassembly as seen on a 6502 Rev.A
 -----------------------------------
@@ -334,6 +338,12 @@ price.
  44:0039 r ff    :
  45:00ff w 05    :
 ```
+This is almost the same as before (6502), except that the `ROR`
+instruction does not modify the carry flag, like it was supposed to.
+So this has to be one of those early and rare 6502s with the
+`ROR`-instruction missing.
+TODO: onliner with link, that it was not broken, but just missing.
+
 
 Disassembly as seen on a 65C02
 ------------------------------
@@ -376,6 +386,16 @@ Disassembly as seen on a 65C02
  36:00ff r 00    :
  37:00ff w 02    :
 ```
+The way the $5c opcode is processed here looks a bit strange. For a
+couple of cycles, the CPU seems to have stop working like when an NMOS
+6502 executes a `KIL` (illegal) opcode. However at some point the CPU
+just continues working. So this behaviour is very different from the
+way the NMOS 6502 processes this opcode. The result is the same, though.
+Only when testing for an implemented `INC` instruction it succeeds this
+time. Then one of the bit manipulation instructions which is not present
+on the 65SC02, sets the bit 1 of the return value, making this the only
+time, the `INX`-slide is not used.
+
 
 Disassembly as seen on a 65SC02
 -------------------------------
@@ -429,6 +449,10 @@ Disassembly as seen on a 65SC02
  47:0039 r ff    :
  48:00ff w 06    :
 ```
+This the same as before (65C02), except that the bit set instruction is
+interpreted as `NOP`. It's the same with the address of that instruction.
+So execution continues with the `INX`-slide.
+
 
 Disassembly as seen on a 65816
 ------------------------------
@@ -459,6 +483,10 @@ Disassembly as seen on a 65816
  24:0019 r ff    :
  25:00ff w 03    :
 ```
+This is a straight forward one. The 65816 interprets the $5c opcode as
+JMP to a 24 bit address. Since we're wrapping around most of the address
+does not matter.
+
 
 Disassembly as seen on a 65CE02
 -------------------------------
@@ -487,13 +515,20 @@ Disassembly as seen on a 65CE02
  22:0039 r ff    :
  23:00ff w 04    :
 ```
+This CPU is very interesting. Notice how the INX are all processed
+within a single clock cycle. No other 6502 variant can do this. The rest
+of the detection is rather plain. The $5c opcode is evaluated as a 4
+bytes instruction. Only the 65816 also has 4 byte opcodes. In this case
+the `SEC` that's evaluated by all other CPUs (except for the 65816), is
+skipped, so the `BCC`-branch is taken by this CPU only.
 
 
 The Mysterious Problem
 ======================
 
-Sometimes a CPU could not be detected, but when running the test a couple
-of times, it then magically worked.
+Since the start of a CPU detection within the Sorbus Computer, sometimes
+a CPU could not be detected, but when running the test a couple of
+times, it then magically worked.
 
 What has happend? Typically when processing the reset, the CPU does some
 dummy reads from the stack. However, take a look at lines 4-6 from the

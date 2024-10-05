@@ -5,6 +5,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+
+#ifndef count_of
+#define count_of(a) (sizeof(a)/sizeof(a[0]))
+#endif
+
 /*
  * all detectable CPU instruction sets
  */
@@ -22,10 +27,10 @@ const char *cputype_name( cputype_t cputype );
 /*
  * hexdump some data
  */
-void hexdump( uint8_t *memory, uint16_t address, uint32_t size );
+void hexdump( const uint8_t *memory, uint16_t address, uint32_t size );
 
 /*
- * TODO!
+ * print trace data in format: aaaa r dd
  */
 const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank );
 

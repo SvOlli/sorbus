@@ -10,13 +10,13 @@ int main( int argc, char *argv[] )
    FILE *fin = NULL ,*fout = NULL;
    int i;
    size_t dataread;
-   
+
    if( argc < 3 )
    {
       fprintf( stderr, "usage: %s <outfile> <infile> (<infile...)\n", argv[0] );
-      return 10; 
+      return 10;
    }
-   
+
    fout = fopen( argv[1], "wb" );
    if( !fout )
    {
@@ -24,7 +24,7 @@ int main( int argc, char *argv[] )
          argv[1], strerror( errno ) );
       return 1;
    }
-   
+
    for( i = 2; i < argc; ++i )
    {
       fin = fopen( argv[i], "rb" );

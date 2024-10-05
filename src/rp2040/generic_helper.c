@@ -30,7 +30,7 @@ const char *cputype_name( cputype_t cputype )
 }
 
 
-void hexdump( uint8_t *memory, uint16_t address, uint32_t size )
+void hexdump( const uint8_t *memory, uint16_t address, uint32_t size )
 {
    for( uint32_t i = 0; i < size; i += 0x10 )
    {
@@ -89,7 +89,6 @@ const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank )
    }
 
    offset = strlen( buffer );
-
    snprintf( &buffer[offset], sizeof(buffer)-offset,
              "%04x %c %02x %c%c%c",
              (state & bus_config.mask_address) >> (bus_config.shift_address),
@@ -99,6 +98,6 @@ const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank )
              (state & bus_config.mask_nmi) ? ' ' : 'N',
              (state & bus_config.mask_irq) ? ' ' : 'I' );
    buffer[sizeof(buffer)-1] = '\0';
-   
+
    return &buffer[0];
 }

@@ -75,10 +75,10 @@ mkheader()
    local cpu="${1}"
    local infile="${2}"
    local outfile="${3}"
-   
+
    rm -f "${outfile}"
    echo "   /* automatically generated using $(basename "${0}") on ${infile} */" > "${outfile}"
-   grep '^\$' "${infile}" | sort | mklines >> "${outfile}" 
+   grep '^\$' "${infile}" | sort | mklines >> "${outfile}"
 }
 
 for i in 6502 65c02 65816 65ce02 65sc02;do

@@ -622,7 +622,7 @@ void run_bus()
                (state & bus_config.mask_reset) ? ' ' : 'R',
                (state & bus_config.mask_nmi) ? ' ' : 'N',
                (state & bus_config.mask_irq) ? ' ' : 'I',
-               disass( address, 
+               disass( address,
                        memory[(address + 0) & 0xFFFF],
                        memory[(address + 1) & 0xFFFF],
                        memory[(address + 2) & 0xFFFF],

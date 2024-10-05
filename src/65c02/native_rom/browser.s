@@ -261,7 +261,7 @@ init:
 :
    lda   #$01
    jsr   setline
-   
+
    ldy   #VT100_SCRN_CLR
    int   VT100
 
@@ -789,7 +789,7 @@ editname:
    bcc   @copyloop
 
    jsr   @findendfn
-   
+
 @printfn:
    ; print current filename (without user)
    tya
@@ -924,7 +924,7 @@ edituserorname:
    jsr   rstclr
    jsr   PRINT
    .byte "Name: ",0
-   
+
    jsr   editname
    bcs   @cancel
 

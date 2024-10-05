@@ -11,7 +11,7 @@
  * functions are written to by portable while not waisting any cycles,
  * nevertheless they might be slightly faster when copy/paste the static
  * inline implementation into the code instead of calling
- * 
+ *
  * will be verified if faster performance is required
  */
 
@@ -28,7 +28,7 @@ static inline void gpio_oc_set( uint pin, bool value )
    uint32_t mask = 1ul << pin;
    if( value )
    {
-      /* set high by setting to input */ 
+      /* set high by setting to input */
       gpio_set_dir_in_masked( mask );
       gpio_set_mask( mask );
    }
@@ -48,11 +48,11 @@ static inline void gpio_oc_set_by_mask( uint32_t mask, uint32_t value )
    uint32_t zeros = ~value & mask;
    if( ones )
    {
-      /* set high by setting to input */ 
+      /* set high by setting to input */
       gpio_set_dir_in_masked( ones );
       gpio_set_mask( ones );
    }
-   
+
    /* bits to be cleared? */
    if( zeros )
    {

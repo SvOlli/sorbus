@@ -148,7 +148,7 @@ inputline:
 @getloop:
    jsr   CHRIN
    beq   @getloop
-  
+
    bit   BRK_SY
    bpl   :+
    jsr   uppercase

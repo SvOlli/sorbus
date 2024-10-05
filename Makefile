@@ -4,6 +4,7 @@
 
 # Parameters
 CPM65_PATH = $(shell readlink -f ../cpm65)
+LLVM_MOS_PATH = $(shell readlink -f ../llvm-mos-sdk/bin)
 CC65_SDK_DIR = cc65-sdk
 
 # Commands
@@ -17,6 +18,10 @@ CC65_SDK_INCLUDES = native.inc native_bios.inc
 CC65_SDK_TOOLS    = wozcat.c
 
 $(info # This Makefile is not required and for convenience only)
+
+ifneq ($(LLVM_MOS_PATH),)
+export PATH := $(PATH):$(LLVM_MOS_PATH)
+endif
 
 ifeq ($(PICO_SDK_PATH),)
 PICO_SDK_PATH=$(shell readlink -f ../pico-sdk)

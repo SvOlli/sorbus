@@ -38,7 +38,7 @@ start:
    jmp   $ff00
 
 .else
-   jsr   print_generic   
+   jsr   print_generic
    jsr   print_detect
    jmp   ($fffc)
 
