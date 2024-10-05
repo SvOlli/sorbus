@@ -30,11 +30,6 @@ cputype_t cpu_detect( bool debug )
    bool reset_done = false;
    cputype_t cputype;
 
-   if( debug )
-   {
-      hexdump( &memory[0], 0, sizeof(memory) );
-   }
-
    memset( &trace[0], 0, sizeof(trace) );
 
    // set lines to required state
@@ -108,6 +103,7 @@ cputype_t cpu_detect( bool debug )
       int lineno = 0;
       disass_cpu( cputype ? cputype : CPU_6502 );
       disass_historian_t d = disass_historian_init( &trace[0], cycles_total, 0 );
+      hexdump( &cpudetect[0], 0, sizeof(cpudetect) );
       printf( "cycles_total = %d\n", cycles_total );
       for( int i = 0; i < cycles_run; ++i )
       {

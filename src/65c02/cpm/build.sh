@@ -23,8 +23,8 @@ if [ -d "${CPM65_DIR}/cpm65" ]; then
    CPM65_DIR="${CPM65_DIR}/cpm65"
 fi
 
-CPMEMU="${CPM65_DIR}/.obj/tools/cpmemu/+cpmemu/+cpmemu"
-CPMASM="${CPM65_DIR}/.obj/apps/+asm/+asm"
+CPMEMU="${CPM65_DIR}/.obj/tools/cpmemu/+cpmemu/cpmemu"
+CPMASM="${CPM65_DIR}/.obj/apps/+asm/asm"
 
 readonly BINDIR SRCDIR CPM65_DIR
 

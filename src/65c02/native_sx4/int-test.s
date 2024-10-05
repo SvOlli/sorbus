@@ -1,4 +1,5 @@
 
+.include "../native.inc"
 .include "../native_bios.inc"
 
 TMPVEC = $fe
@@ -15,8 +16,9 @@ start:
 
    jsr   PRINT
    .byte 10,"Select test:"
-   .byte 10,"a) $09: directory"
-   .byte 10,"b) $0b: line input"
+   .byte 10,"a) $00: user"
+   .byte 10,"b) $09: directory"
+   .byte 10,"c) $0b: line input"
    .byte 10,"`) quit"
    .byte 10,0
 
@@ -41,8 +43,51 @@ done:
 
 jmptab:
    .word quit
+   .word user
    .word dir
    .word lineinput
+
+user:
+   jsr   PRINT
+   .byte "save vector:$",$00
+   lda   UVBRK+0
+   ldx   UVBRK+1
+   pha
+   phx
+   int   PRHEX16
+
+   lda   #$0a
+   jsr   CHROUT
+
+   jsr   PRINT
+   .byte "set vector:$",$00
+   lda   #<userbrk
+   ldx   #>userbrk
+   sta   UVBRK+0
+   stx   UVBRK+1
+   int   PRHEX16
+
+   lda   #$0a
+   jsr   CHROUT
+
+   int   INTUSER
+
+   jsr   PRINT
+   .byte "restore vector:$",$00
+   plx
+   pla
+   sta   UVBRK+0
+   stx   UVBRK+1
+   int   PRHEX16
+
+   lda   #$0a
+   jsr   CHROUT
+   jmp   done
+
+userbrk:
+   jsr   PRINT
+   .byte "user brk routine",$0a,$00
+   rts
 
 dir:
    jsr   PRINT
@@ -83,8 +128,8 @@ hexdumppage:
    stz   TMPVEC+0
    sta   TMPVEC+1
 
-   ldy   #$00
 @addrloop:
+   ldy   #$00
    lda   #$0a
    jsr   CHROUT
 
@@ -103,25 +148,43 @@ hexdumppage:
 
 @dataloop:
    lda   #' '
+   cpy   #$08
+   bne   :+
+   jsr   CHROUT
+:
    jsr   CHROUT
 
    lda   (TMPVEC),y
    int   PRHEX8
 
    iny
-   beq   @done
-   tya
-   and   #$0f
-   beq   @addrloop
-   cmp   #$08
-   bne   @nospc
+   cpy   #$10
+   bcc   @dataloop
+
+@ascii:
    lda   #' '
    jsr   CHROUT
-@nospc:
-   bra   @dataloop
-
-@done:
-   lda   #$0a
    jsr   CHROUT
+   ldy   #$00
+@asciiloop:
+   lda   (TMPVEC),y
+   cmp   #' '
+   bcc   :+
+   cmp   #$7f
+   bcs   :+
+   .byte $2c
+:
+   lda   #'.'
+   jsr   CHROUT
+   iny
+   cpy   #$10
+   bcc   @asciiloop
 
-   rts
+   lda   #$10
+   clc
+   adc   TMPVEC+0
+   sta   TMPVEC+0
+   bne   @addrloop
+
+   lda   #$0a
+   jmp   CHROUT

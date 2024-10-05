@@ -5,7 +5,6 @@
 # Parameters
 CPM65_PATH = $(shell readlink -f ../cpm65)
 CC65_SDK_DIR = cc65-sdk
-LLVM_MOS_SDK_VERSION = v18.0.0
 
 # Commands
 INSTALL      = install

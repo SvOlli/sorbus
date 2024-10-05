@@ -30,7 +30,7 @@
 ; will jump using vector UVBRK ($DF78/$DF79)
 ; default configuration is trap
 ; in/out: depends on user implementation
-.define BRKUSER   $00
+.define INTUSER   $00
 
 ; wait for input from CHKIN and convert it to uppercase
 ; in:

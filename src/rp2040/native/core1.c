@@ -28,9 +28,6 @@
 #include "common.h"
 
 #include "../bus.h"
-#if 0
-#include "gpio_oc.h"
-#endif
 
 #include "event_queue.h"
 #include "dhara_flash.h"
@@ -69,9 +66,10 @@ bool cpu_running               = false;
 bool cpu_running_request       = true;
 
 // number of states should be power of 2
-uint32_t buslog_states[512]    = { 0 };
-uint     buslog_index          = 0;
-uint32_t watchdog_cycles_total = 0;
+#define BUSLOG_SIZE (512)
+uint32_t buslog_states[BUSLOG_SIZE] = { 0 };
+uint     buslog_index               = 0;
+uint32_t watchdog_cycles_total      = 0;
 
 uint16_t dhara_flash_size = 0;
 #define DHARA_SYNC_DELAY (20000)
@@ -612,33 +610,24 @@ uint32_t debug_getbus( int i )
 
 void debug_backtrace()
 {
-   static const int numstates = count_of(buslog_states);
-   printf( "system trap triggered, last cpu actions:\n" );
-   uint32_t _state, _state1, _state2, _state3;
-   for( int i = 0; i < numstates; ++i )
+   printf( "historian:\n" );
+
+   disass_cpu( cputype ? cputype : CPU_6502 );
+   disass_historian_t d = disass_historian_init( &buslog_states[0],
+                                                 BUSLOG_SIZE,
+                                                 buslog_index & (BUSLOG_SIZE)-1 );
+   for( int i = 0; i < BUSLOG_SIZE; ++i )
    {
-      //uint32_t _state = buslog_states[(i + buslog_index) & (count_of(buslog_states)-1)];
-      _state = debug_getbus( i );
-      _state1 = debug_getbus( (i+1) & (numstates-1) );
-      if( (_state & bus_config.mask_data) >> (bus_config.shift_data) == 0x20 )
+      int index = (i+buslog_index) & (BUSLOG_SIZE-1);
+      if( !disass_historian_entry( d, index ) )
       {
-         if( cputype == CPU_65CE02 )
-         {
-            _state2 = debug_getbus( (i+4) & (numstates-1) );
-         }
-         else
-         {
-            _state2 = debug_getbus( (i+5) & (numstates-1) );
-         }
+         break;
       }
-      else
-      {
-         _state2 = debug_getbus( (i+2) & (numstates-1) );
-      }
-      _state3 = debug_getbus( (i+3) & (numstates-1) );
-      debug_dump_state( count_of(buslog_states)-i, _state, _state1, _state2, _state3 );
+      printf( "%3d:%s:%s\n", BUSLOG_SIZE-i,
+              decode_trace( buslog_states[index], false, 0 ),
+              disass_historian_entry( d, index ) );
    }
-   debug_dump_state( 0, gpio_get_all(), 0, 0, 0 );
+   disass_historian_done( d );
 }
 
 

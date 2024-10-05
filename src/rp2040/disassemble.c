@@ -81,14 +81,14 @@ typedef enum {
  *  7: stack (rts,rti)
  */
 
-#define OPCODE(name, am, reserved, bytes, cycles, extra, mx, jump) \
-   { name, (uint32_t)am | reserved << 6 | bytes << 7 | cycles << 10 | extra << 14 | mx << 16 | jump << 18 }
+#define OPCODE(name, am, reserved, bytes, cycles, extra, mxe, jump) \
+   { name, (uint32_t)am | reserved << 6 | bytes << 7 | cycles << 10 | extra << 14 | mxe << 16 | jump << 19 }
 #define PICK_OPCODE(o)   ( o->variant        & 0x3F)
 #define PICK_RESERVED(o) ((o->variant >> 6)  & 0x01)
 #define PICK_BYTES(o)    ((o->variant >> 7)  & 0x07)
 #define PICK_CYCLES(o)   ((o->variant >> 10) & 0x0F)
 #define PICK_EXTRA(o)    ((o->variant >> 14) & 0x03)
-#define PICK_MX(o)       ((o->variant >> 16) & 0x03)
+#define PICK_MXE(o)      ((o->variant >> 16) & 0x07)
 #define PICK_JUMP(o)     ((o->variant >> 18) & 0x03)
 
 opcode_t opcodes6502[] = {
@@ -141,6 +141,7 @@ void disass_cpu( cputype_t cpu )
    switch( cpu )
    {
       case CPU_6502:
+      case CPU_6502RA:
          disass_opcodes = &opcodes6502[0];
          break;
       case CPU_65C02:
@@ -284,14 +285,20 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
    }
    
    o = disass_opcodes + p0;
-   
    if( (PICK_OPCODE(o) == ZPN) || (PICK_OPCODE(o) == ZPNR) )
    {
       snprintf( b, bsize, "%s%d ", o->name, (p0 >> 4) & 7 );
    }
    else
    {
-      snprintf( b, bsize, "%s%c ", o->name, PICK_RESERVED(o) ? '.' : ' ' );
+      bool reserved = PICK_RESERVED(o);
+      if( (disass_opcodes == &opcodes6502[0]) &&
+          (!strcmp( o->name, "ROR" )) )
+      {
+         // we are running a Rev.A, so ROR is an undefined opcode
+         reserved = true;
+      }
+      snprintf( b, bsize, "%s%c ", o->name, reserved ? '.' : ' ' );
    }
    b += 5;
    bsize -= 5;
