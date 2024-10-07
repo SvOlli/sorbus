@@ -169,6 +169,11 @@ add_executable(int-test
    )
 target_type(int-test sx4)
 
+add_executable(inst-ass
+   native_sx4/inst-ass.s
+   )
+target_type(inst-ass sx4)
+
 add_executable(1sthello
    native_sx4/a1hello.s
    )
