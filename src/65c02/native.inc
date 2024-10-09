@@ -18,16 +18,17 @@ TMP16  = $04
 ; UART and miscellaneous stuff
 BANK   = $DF00     ; ROM bank
 SBCID  = $DF01     ; (R) version information
-TRAP   = $DF01     ; (S) output debug messages and reboot
+TRAP   = $DF01     ; (S) output debug messages and drop to meta mode
 RANDOM = $DF02     ; (R) get a random value
 XRAMSW = $DF03     ; (W) save/restore/swap pages $00-$03
                    ; bits 0-3 -> pages 0-3 affected
                    ; $40 RAM -> buffer, $80 RAM <- buffer, $c0 RAM <-> buffer
-CPUID  = $DF04     ; CPU features:
+CPUID  = $DF04     ; (R) CPU features:
                    ; $01 NMOS, $02 CMOS, $04 BIT (RE)SET, $08 Z reg, $10 16 bit
                    ; known CPUs:
                    ; $01 6502, $02 65SC02, $06 65C02, $0E 65CE02, $12 65816
-
+                   ; $21 6502 Rev.A (no ROR)
+TMSTMP = $DF04     ; (S) debug/benchmark: print out time/cycles since last trigger
 UARTCF = $DF0B     ; config: bit 0: turn on/off crlf conversion
 UARTRD = $DF0C     ; (R) read from serial input queue (read only)
 UARTRS = $DF0D     ; (R) get serial input queue size (read only, up to 127, >127: error)

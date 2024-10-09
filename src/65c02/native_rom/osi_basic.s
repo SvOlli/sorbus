@@ -1,16 +1,21 @@
 ; changes todo
+; [ ] Reverse changes for better compatibility
+; [X] Change useless NULL instruction to SYS to align tokens
+; [X] Change input to "INT LINEINPUT"
+; [X] Drop DIR command (use LOAD"$")
+; [ ] Remove auto wrapping of line
 ; [X] RAM start set to $0400 (or $0380)
 ; [X] RAM end set to $D000 (hardcoded instead of detection)
 ; [X] Implement SAVE & LOAD via interrupts
 ; [X] Implement SYS command
-; [ ] Implement shadows to A,X,Y in SYS command
+; [X] Implement shadows to A,X,Y in SYS command
 ; [X] Allow BASIC keywords to be entered as lowercase
 ; [X] Allow BASIC variables to be entered as lowercase
-; [ ] Change hardcoded $03xx addresses for CP/M filename to variable names
+; [X] Change hardcoded $03xx addresses for CP/M filename to variable names
 ; [X] Reuse "No For" as "Not Found" error
 ; [X] Fix bug: load file, then save it saves wrong filesize
-; [ ] Change input buffer from zeropage to ~$0360
-; [ ] Remove useless NULL instruction
+; [?] Change input buffer from zeropage to ~$0360
+
 ; file taken from http://searle.x10host.com/6502/Simple6502.html
 
 ; Microsoft BASIC for 6502 (OSI VERSION)
@@ -39,7 +44,10 @@
 ; * Thanks to Joe Zbicak for help with Intellision Keyboard BASIC
 ; * This work is dedicated to the memory of my dear hacking pal Michael "acidity" Kollmann.
 
-.define USE_NULL 1
+; replace NULL token with SYS
+.define USE_SYS 1
+; replace custom input routine with kernel one
+.define USE_LINEINPUT 1
 
 .debuginfo +
 
@@ -57,12 +65,16 @@ ZP_START  = $10
 ;ZP_START4 = $75
 
 ;extra ZP variables
-USR      := $000D   ; 3 bytes
+USR             := $000A  ; 3 bytes
+SHADOW_A        := $000D
+SHADOW_X        := $000E
+SHADOW_Y        := $000F
 
 ; constants
 STACK_TOP       := $FC
 SPACE_FOR_GOSUB := $33
-.if USE_NULL
+.if USE_SYS
+.else
 NULL_MAX        := $0A
 .endif
 
@@ -100,7 +112,7 @@ GOGIVEAYF:  ; $0018
    .res 2
 
 ;.org ZP_START2
-NULLS:      ; $001A
+NULLS:      ; $001A     ; obsolete with USE_SYS
    .res 1
 POSX:       ; $001B     ; INPUTBUFFER-5
    .res 1
@@ -305,7 +317,8 @@ L4098:
    txa ;lda #$00
    sta   SHIFTSIGNEXT
    sta   LASTPT+1
-.if USE_NULL
+.if USE_SYS
+.else
    sta   NULLS
 .endif
    sta   POSX
@@ -360,11 +373,11 @@ L4192:
    lda   TXTTAB
    ldy   TXTTAB+1
    jsr   REASON
-.if USE_NULL
-   jsr   PRINTNULLS ;CRDO
-.else
+.if USE_SYS
    lda   #$00
    sta   POSX
+.else
+   jsr   PRINTNULLS ;CRDO
 .endif
    lda   MEMSIZ
    sec
@@ -386,22 +399,6 @@ L4192:
    sta   GORESTART+1
    sty   GORESTART+2
    jmp   (GORESTART+1)
-
-SYS:
-   jsr   FRMNUM
-   jsr   GETADR
-.if 0
-   lda   SHADOW_A
-   ldx   SHADOW_X
-   ldy   SHADOW_Y
-   jsr   @linnum
-   sta   SHADOW_A
-   stx   SHADOW_X
-   sty   SHADOW_Y
-   rts
-@linnum:
-.endif
-   jmp   (LINNUM)
 
 ; TXTTAB should be start of BASIC program
 ; VARTAB should be end of BASIC program
@@ -474,6 +471,16 @@ setfn:
 
 LOAD:
    jsr   setfn
+   lda   CPM_FNAME+1    ; check if first name of filename is '$'
+   cmp   #'$'
+   bne   @notdir
+
+   stz   CPM_SADDR+1
+   ldy   #$0b           ; user id for BASIC is 11 (decimal)
+   int   CPMDIR
+   rts
+
+@notdir:
    int   CPMLOAD
    bcc   @loadok
 
@@ -486,25 +493,14 @@ LOAD:
    lda   CPM_EADDR+1
    sta   VARTAB+1
 
-.if 1
-   jsr   PRINT
-   .byte 10,"LOADED",10,"OK",10,0
-.else
-   lda   #<QT_OK
-   ldy   #>QT_OK
+   lda   #<QT_LOADED
+   ldy   #>QT_LOADED
    jsr   GOSTROUT
-.endif
    jmp   FIX_LINKS
 
 SAVE:
    jsr   setfn
    int   CPMSAVE
-   rts
-
-DIR:
-   stz   CPM_SADDR+1
-   ldy   #$0b           ; user id for BASIC is 11 (decimal)
-   int   CPMDIR
    rts
 
 MONISCNTC:
@@ -536,7 +532,11 @@ TOKEN_REM=$80+(*-TOKEN_ADDRESS_TABLE)/2
    .word REM-1
    .word STOP-1
    .word ON-1
+.if USE_SYS
+   .word SYS-1
+.else
    .word NULL-1
+.endif
    .word WAIT-1
    .word LOAD-1
    .word SAVE-1
@@ -548,8 +548,6 @@ TOKEN_PRINT=$80+(*-TOKEN_ADDRESS_TABLE)/2
    .word LIST-1
    .word CLEAR-1
    .word NEW-1
-   .word DIR-1
-   .word SYS-1
 TOKEN_TAB=$00+$80+(*-TOKEN_ADDRESS_TABLE)/2
 TOKEN_TO=$01+$80+(*-TOKEN_ADDRESS_TABLE)/2
 TOKEN_FN=$02+$80+(*-TOKEN_ADDRESS_TABLE)/2
@@ -630,7 +628,11 @@ TOKEN_NAME_TABLE:
    .byte "RE", $80+'M'
    .byte "STO", $80+'P'
    .byte "O", $80+'N'
+.if USE_SYS
+   .byte "SY", $80+'S'
+.else
    .byte "NUL", $80+'L'
+.endif
    .byte "WAI", $80+'T'
    .byte "LOA", $80+'D'
    .byte "SAV", $80+'E'
@@ -641,8 +643,6 @@ TOKEN_NAME_TABLE:
    .byte "LIS", $80+'T'
    .byte "CLEA", $80+'R'
    .byte "NE", $80+'W'
-   .byte "DI", $80+'R'
-   .byte "SY", $80+'S'
    .byte "TAB", $80+'('
    .byte "T", $80+'O'
    .byte "F", $80+'N'
@@ -727,22 +727,20 @@ QT_ERROR:
    .byte 0
 QT_IN:
    .byte " IN "
-   .byte $00
+   .byte 0
+QT_LOADED:
+   .byte LF,"LOADED"
 QT_OK:
-   .byte LF,"OK",CR,LF
+   .byte LF,"OK",LF
    .byte 0
 QT_BREAK:
-   .byte CR,LF,"BREAK"
+   .byte LF,"BREAK"
    .byte 0
 QT_MESSAGE:
-   .byte CR,LF
-   .byte "OSI 6502 BASIC VERSION 1.0 REV 3.2"
-   .byte CR,LF
-   .byte "WRITTEN BY RICHARD W. WEILAND."
-   .byte CR,LF
-   .byte "COPYRIGHT 1977 BY MICROSOFT CO."
-   .byte CR,LF
-   .byte "SORBUS V0.1 ",0
+   .byte LF,"OSI 6502 BASIC VERSION 1.0 REV 3.2"
+   .byte LF,"WRITTEN BY RICHARD W. WEILAND"
+   .byte LF,"COPYRIGHT 1977 BY MICROSOFT CO."
+   .byte LF,"SORBUS V0.2 ",0
 QT_BYTES_FREE:
    .byte " BYTES FREE",0
 
@@ -1069,6 +1067,31 @@ L2405:
    sta   INDEX+1
    bcc   L23FA   ; always
 ; ----------------------------------------------------------------------------
+; ----------------------------------------------------------------------------
+; READ A LINE, AND STRIP OFF SIGN BITS
+; ----------------------------------------------------------------------------
+.if USE_LINEINPUT
+INLIN:
+; input text using a line
+; A/X: vector to buffer, if first byte is not $00, edit the content
+; Y: bits 0-6: maximum length of input, bit 7: convert to uppercase
+; returns:
+; C=1: Ctrl-C
+; C=0: Return
+; Y: input length
+; unused end of buffer will be padded with $00 bytes
+;.define LINEINPUT $0C
+   stz   INPUTBUFFER
+   lda   #<INPUTBUFFER
+   ldx   #>INPUTBUFFER
+   ldy   #INPUTSIZE
+   int   LINEINPUT
+   bcs   INLIN
+   ldy   #$00
+   ldx   #LINNUM+1
+   jmp   CRDO
+.else
+
 L2420:
 .ifndef CONFIG_NO_INPUTBUFFER_ZP
    jsr   OUTDO
@@ -1078,9 +1101,7 @@ L2423:
    jsr   OUTDO
    jsr   CRDO
 .endif
-; ----------------------------------------------------------------------------
-; READ A LINE, AND STRIP OFF SIGN BITS
-; ----------------------------------------------------------------------------
+
 INLIN:
    ldx   #$00
 INLIN2:
@@ -1112,6 +1133,7 @@ L244C:
    bne   INLIN2
 L2453:
    jmp   L29B9
+
 GETLN:
    jsr   CHRIN
    and   #$7F
@@ -1125,6 +1147,8 @@ RDKEY:
    pla
 L2465:
    rts
+.endif
+
 ; ----------------------------------------------------------------------------
 ; TOKENIZE THE INPUT LINE
 ; ----------------------------------------------------------------------------
@@ -1671,8 +1695,25 @@ L271C:
    sty   CURLIN+1
 RET1:
    rts
+.if USE_SYS
+SYS:
+   jsr   FRMNUM
+   jsr   GETADR
+.if 1
+   lda   SHADOW_A
+   ldx   SHADOW_X
+   ldy   SHADOW_Y
+   jsr   @linnum
+   sta   SHADOW_A
+   stx   SHADOW_X
+   sty   SHADOW_Y
+   rts
+@linnum:
+.endif
+   jmp   (LINNUM)
+
+.else
 NULL:
-.if USE_NULL
    jsr   GETBYT
    bne   RET1
    inx
@@ -2033,6 +2074,8 @@ L29B1:
    jsr   STRPRT
    jsr   OUTSP
    bne   L297E ; branch always
+.if USE_LINEINPUT
+.else
 L29B9:
 .ifdef CONFIG_NO_INPUTBUFFER_ZP
    stz   INPUTBUFFER,x
@@ -2043,13 +2086,21 @@ L29B9:
    sty   INPUTBUFFER,x
    ldx   #LINNUM+1
 .endif
+.endif
 CRDO:
+.if 1
+   stz   POSX
+   lda   #$0a
+   jsr   OUTDO
+.else
    lda   #CRLF_1
    sta   POSX
    jsr   OUTDO
    lda   #CRLF_2
    jsr   OUTDO
-.if USE_NULL
+.endif
+.if USE_SYS
+.else
 PRINTNULLS:
 .ifpc02
    phx
@@ -2129,15 +2180,20 @@ L2A22:
    lda   (INDEX),y
    jsr   OUTDO
    iny
-   cmp   #$0D
+   cmp   #$0A
    bne   L2A22
-.if USE_NULL
-   jsr   PRINTNULLS
-   jmp   L2A22
+.if USE_SYS
+.ifpc02
+   stz   POSX
+   bra   L2A22
 .else
    lda   #$00
    sta   POSX
    beq   L2A22
+.endif
+.else
+   jsr   PRINTNULLS
+   jmp   L2A22
 .endif
 ; ----------------------------------------------------------------------------
 OUTSP:
@@ -2197,17 +2253,10 @@ RESPERR:
    sty   TXTPTR+1
    rts
 ; ----------------------------------------------------------------------------
-; "GET" STATEMENT
-; ----------------------------------------------------------------------------
-;GET:
-; ----------------------------------------------------------------------------
-; "INPUT#" STATEMENT
-; ----------------------------------------------------------------------------
-; ----------------------------------------------------------------------------
 ; "INPUT" STATEMENT
 ; ----------------------------------------------------------------------------
 INPUT:
-   lsr   Z14
+   ;lsr   Z14
    cmp   #$22
    bne   L2A9E
    jsr   STRTXT
@@ -2227,9 +2276,6 @@ NXIN:
    jsr   OUTQUES   ; '?'
    jsr   OUTSP
    jmp   INLIN
-; ----------------------------------------------------------------------------
-; "GETC" STATEMENT
-; ----------------------------------------------------------------------------
 ; ----------------------------------------------------------------------------
 ; "READ" STATEMENT
 ; ----------------------------------------------------------------------------

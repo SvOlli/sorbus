@@ -218,7 +218,7 @@ using the first executed instruction as our example.
 ```
  10:001e r a2    :LDX  #$00
 ```
-The `10` is just a linenumber that starts when the interrupt register
+The `10` is just a line number that starts when the interrupt register
 is pulled high, so the CPU leaves reset state.
 
 This is followed by an overview of the bus state at that time. `001e` is
@@ -237,6 +237,7 @@ environment.
 
 The disassemblies were created with the command `cold debug` of the MCP
 core. They have been slightly modified for a better readability.
+
 
 Disassembly as seen on a 6502
 -----------------------------
@@ -285,6 +286,7 @@ This is the exact CPU variant used in most machines in the late 1970s
 and early 1980s. The $5c used to detect the 65816 and 65CE02 is skipped
 and the `INC`-test for any CMOS variant does also not succeed. The third
 and final test for a working `ROR` instruction does succeed, though.
+
 
 Disassembly as seen on a 6502 Rev.A
 -----------------------------------
@@ -539,6 +541,10 @@ after that the stackpointer seems to just stay where it was, moving by
 three bytes each reset. So during the retries, the stackpointer gets
 moved to a position, where the writes go to a part of memory that was
 not used during the test.
+
+Interestingly, this is described as an enhancement to the original NMOS
+6502 CPU according to the CMD G65SC02 datasheet. However, even later
+CPUs do not have this "feature".
 
 How was it fixed? The writes happen in a very early stage, even before
 the reset vector is being read to determine where in memory to start

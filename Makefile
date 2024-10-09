@@ -127,7 +127,7 @@ setup-dev: setup-apt
 	sudo gpasswd -a $(USER) plugdev
 
 setup-external:
-	sudo apt-get install 64tass libreadline-dev libfmt-dev moreutils fp-compiler ninja-build zip unzip
+	sudo apt install 64tass libreadline-dev libfmt-dev moreutils fp-compiler ninja-build zip unzip
 
 $(RELEASE_ARCHIVE): $(CC65_SDK_DIR) all
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done

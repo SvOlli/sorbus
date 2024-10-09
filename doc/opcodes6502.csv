@@ -1,4 +1,4 @@
-   ;Name;Mode;Reserved;Bytes;Cycles;ExtraCycles;MX;Jump
+   ;Name;Mode;Reserved;Bytes;Cycles;ExtraCycles;MXE;Jump
 $00;BRK;#IM;;2;7;;;1
 $10;BPL;REL;;2;2;2;;2
 $20;JSR;ABS;;3;6;;;1

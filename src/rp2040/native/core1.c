@@ -549,6 +549,21 @@ static inline void handle_flash_dma()
 }
 
 
+static inline void handle_timestamp()
+{
+   static uint64_t last_cycles    = 0;
+   static uint64_t last_timestamp = 0;
+   uint64_t this_timestamp = time_us_64();
+
+   printf( "\n%lld cycles | %lld us\n",
+           _queue_cycle_counter - last_cycles,
+           this_timestamp - last_timestamp );
+
+   last_cycles    = _queue_cycle_counter;
+   last_timestamp = this_timestamp;
+}
+
+
 static inline uint32_t getaddr( uint32_t _state )
 {
    return (_state & bus_config.mask_address) >> (bus_config.shift_address);
@@ -916,6 +931,9 @@ static inline void handle_io()
             break;
          case 0x03: // scratch-1k
             handle_scratch_mem( data );
+            break;
+         case 0x04:
+            handle_timestamp();
             break;
          case 0x0B: // UART read: enable crlf conversion
             console_set_crlf( data & 1 );

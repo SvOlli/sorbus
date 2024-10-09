@@ -60,4 +60,4 @@ endif
 sx4: $(targets)
 
 clean:
-	$(RM) lib/*.o $(SORBUS_LIB) $(targets)
+	$(RM) */*.o $(SORBUS_LIB) $(targets)
