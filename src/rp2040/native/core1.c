@@ -549,21 +549,6 @@ static inline void handle_flash_dma()
 }
 
 
-static inline void handle_timestamp()
-{
-   static uint64_t last_cycles    = 0;
-   static uint64_t last_timestamp = 0;
-   uint64_t this_timestamp = time_us_64();
-
-   printf( "\n%lld cycles | %lld us\n",
-           _queue_cycle_counter - last_cycles,
-           this_timestamp - last_timestamp );
-
-   last_cycles    = _queue_cycle_counter;
-   last_timestamp = this_timestamp;
-}
-
-
 static inline uint32_t getaddr( uint32_t _state )
 {
    return (_state & bus_config.mask_address) >> (bus_config.shift_address);
@@ -909,6 +894,7 @@ static inline void handle_io()
          case 0x27:
             bus_data_write( shadow_cycle_count.reg[address & 3] );
             break;
+         /* 0x2C-0x2F used as RAM for BRK routine */
          default:
             // everything else is handled like RAM by design
             handle_ramrom();
@@ -931,9 +917,6 @@ static inline void handle_io()
             break;
          case 0x03: // scratch-1k
             handle_scratch_mem( data );
-            break;
-         case 0x04:
-            handle_timestamp();
             break;
          case 0x0B: // UART read: enable crlf conversion
             console_set_crlf( data & 1 );
@@ -958,6 +941,7 @@ static inline void handle_io()
          case 0x23: // fall throughs are intended
             watchdog_setup( data, address & 0x03 );
             break;
+         /* 0x2C-0x2F used as RAM for BRK routine */
          case 0x74: // dma read from flash disk
          case 0x75: // dma write to flash disk
          case 0x77: // flash disk trim, no dma address used

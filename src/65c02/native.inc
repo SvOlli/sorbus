@@ -28,7 +28,6 @@ CPUID  = $DF04     ; (R) CPU features:
                    ; known CPUs:
                    ; $01 6502, $02 65SC02, $06 65C02, $0E 65CE02, $12 65816
                    ; $21 6502 Rev.A (no ROR)
-TMSTMP = $DF04     ; (S) debug/benchmark: print out time/cycles since last trigger
 UARTCF = $DF0B     ; config: bit 0: turn on/off crlf conversion
 UARTRD = $DF0C     ; (R) read from serial input queue (read only)
 UARTRS = $DF0D     ; (R) get serial input queue size (read only, up to 127, >127: error)
@@ -56,6 +55,7 @@ WDCH   = WDBASE+$3 ; set high counter, stars watchdog, reset when running
 
 CYCNTR = $DF24     ; PRELIMINARY!
 ; read only 32 bit value little endian up to $DF27
+; reading $DF24 copies value to shadow register from which is read
 
 IRQSVB = $DF2C     ; PRELIMINARY!
 BRK_SB = IRQSVB+$0 ; bank
