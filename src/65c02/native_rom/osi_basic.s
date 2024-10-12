@@ -1,9 +1,8 @@
 ; changes todo
-; [ ] Reverse changes for better compatibility
+; [X] remove SCRWIDTH, POSWARP, POSX
 ; [X] Change useless NULL instruction to SYS to align tokens
 ; [X] Change input to "INT LINEINPUT"
 ; [X] Drop DIR command (use LOAD"$")
-; [ ] Remove auto wrapping of line
 ; [X] RAM start set to $0400 (or $0380)
 ; [X] RAM end set to $D000 (hardcoded instead of detection)
 ; [X] Implement SAVE & LOAD via interrupts
@@ -48,6 +47,7 @@
 .define USE_SYS 1
 ; replace custom input routine with kernel one
 .define USE_LINEINPUT 1
+.define USE_LINEWRAP 0
 
 .debuginfo +
 
@@ -112,14 +112,19 @@ GOGIVEAYF:  ; $0018
    .res 2
 
 ;.org ZP_START2
+.if USE_SYS
+.else
 NULLS:      ; $001A     ; obsolete with USE_SYS
    .res 1
+.endif
+.if USE_LINEWRAP
 POSX:       ; $001B     ; INPUTBUFFER-5
    .res 1
-Z17:        ; $001C     ; INPUTBUFFER-4
+SCRWIDTH:   ; $001C     ; INPUTBUFFER-4
    .res 1
-Z18:        ; $001D     ; INPUTBUFFER-3
+POSWRAP:    ; $001D     ; INPUTBUFFER-3
    .res 1
+.endif
 LINNUM:
 TXPSV:      ; $001E     ; INPUTBUFFER-2
    .res 2
@@ -153,8 +158,11 @@ INPUTFLG:   ; $0027
    .res 1
 CPRMASK:    ; $0028
    .res 1
-Z14:        ; $0029
+.if USE_LINEINPUT
+.else
+CTRLOFLAG:  ; $0029
    .res 1
+.endif
 
 ;.org ZP_START4
 TEMPPT:     ; $002A
@@ -304,9 +312,9 @@ COLD_START:
 .if 0
    ; get overwritten by detection
    lda   #WIDTH
-   sta   Z17
+   sta   SCRWIDTH
    lda   #WIDTH2
-   sta   Z18
+   sta   POSWRAP
 .endif
    ldx   #GENERIC_CHRGET_END-GENERIC_CHRGET
 L4098:
@@ -321,9 +329,14 @@ L4098:
 .else
    sta   NULLS
 .endif
-   sta   POSX
+.if USE_LINEWRAP
+   stz   POSX
+.endif
    pha
-   sta   Z14
+.if USE_LINEINPUT
+.else
+   sta   CTRLOFLAG
+.endif
    lda   #$03
    sta   DSCLEN
    lda   #$2C
@@ -338,6 +351,7 @@ L4098:
    sty   MEMSIZ+1
    sta   FRETOP
    sty   FRETOP+1
+.if USE_LINEWRAP
    lda   #$fe           ; set max row, col
    tax
    ldy   #VT100_CPOS_SET; set cursor position
@@ -345,16 +359,16 @@ L4098:
    ldy   #VT100_CPOS_GET; get cursor position (size)
    int   VT100          ; vt100 interrupt
    txa                  ; X contains columns
-   sta   Z17
+   sta   SCRWIDTH       ; store # columns
 L4129:
    sbc   #$0E
    bcs   L4129
    eor   #$FF
    sbc   #$0C
    clc
-   adc   Z17
-   sta   Z18
-L4136:
+   adc   SCRWIDTH       ; add # columns
+   sta   POSWRAP        ; store as column to wrap around
+.endif
    ldx   #<RAMSTART2
    ldy   #>RAMSTART2
    stx   TXTTAB
@@ -374,8 +388,9 @@ L4192:
    ldy   TXTTAB+1
    jsr   REASON
 .if USE_SYS
-   lda   #$00
-   sta   POSX
+.if USE_LINEWRAP
+   stz   POSX
+.endif
 .else
    jsr   PRINTNULLS ;CRDO
 .endif
@@ -902,7 +917,10 @@ MEMERR:
 ; (CURLIN+1) = $FF IF IN DIRECT MODE
 ; ----------------------------------------------------------------------------
 ERROR:
-   lsr   Z14
+.if USE_LINEINPUT
+.else
+   lsr   CTRLOFLAG
+.endif
    jsr   CRDO
    jsr   OUTQUES
    lda   ERROR_MESSAGES,x
@@ -927,7 +945,10 @@ PRINT_ERROR_LINNUM:
 ; WARM RESTART ENTRY
 ; ----------------------------------------------------------------------------
 RESTART:
-   lsr   Z14
+.if USE_LINEINPUT
+.else
+   lsr   CTRLOFLAG
+.endif
    lda   #<QT_OK
    ldy   #>QT_OK
    jsr   GOSTROUT
@@ -1138,12 +1159,12 @@ GETLN:
    jsr   CHRIN
    and   #$7F
 RDKEY:
-   cmp   #$0F
+   cmp   #$0F              ; CTRL+O
    bne   L2465
    pha
-   lda   Z14
+   lda   CTRLOFLAG
    eor   #$FF
-   sta   Z14
+   sta   CTRLOFLAG
    pla
 L2465:
    rts
@@ -1671,7 +1692,10 @@ L2701:
    lda   #<QT_BREAK
    ldy   #>QT_BREAK
    ldx   #$00
-   stx   Z14
+.if USE_LINEINPUT
+.else
+   stx   CTRLOFLAG
+.endif
    bcc   L270E
    jmp   PRINT_ERROR_LINNUM
 L270E:
@@ -2063,14 +2087,16 @@ PRINT2:
    bmi   PRSTRING
    jsr   FOUT
    jsr   STRLIT
+.if USE_LINEWRAP
    ldy   #$00
    lda   (FAC_LAST-1),y
    clc
    adc   POSX
-   cmp   Z17
+   cmp   SCRWIDTH
    bcc   L29B1
    jsr   CRDO
 L29B1:
+.endif
    jsr   STRPRT
    jsr   OUTSP
    bne   L297E ; branch always
@@ -2089,12 +2115,16 @@ L29B9:
 .endif
 CRDO:
 .if 1
+.if USE_LINEWRAP
    stz   POSX
+.endif
    lda   #$0a
    jsr   OUTDO
 .else
    lda   #CRLF_1
+.if USE_LINEWRAP
    sta   POSX
+.endif
    jsr   OUTDO
    lda   #CRLF_2
    jsr   OUTDO
@@ -2116,7 +2146,9 @@ L29D3:
    dex
    bne   L29D3
 L29D9:
-   stx   POSX
+.if USE_LINEWRAP
+   stz   POSX
+.endif
 .ifpc02
    plx
 .else
@@ -2127,8 +2159,9 @@ L29D9:
 L29DD:
    rts
 L29DE:
-   lda   POSX
-   cmp   Z18
+.if USE_LINEWRAP
+   lda   POSX              ; load X pos
+   cmp   POSWRAP           ; check if line warp is required
    bcc   L29EA
    jsr   CRDO
    jmp   L2A0D
@@ -2140,6 +2173,7 @@ L29EB:
    eor   #$FF
    adc   #$01
    bne   L2A08
+.endif
 L29F5:
    pha
    jsr   GTBYTC
@@ -2148,10 +2182,23 @@ L29F5:
    pla
    cmp   #TOKEN_TAB
    bne   L2A0A
+.if USE_LINEWRAP
    txa
    sbc   POSX
    bcc   L2A0D
    beq   L2A0D
+.else
+   ;stx   FAC_LAST       ; obsolete
+   ldy   #VT100_CPOS_GET; get cursor position (size)
+   int   VT100          ; vt100 interrupt
+   dex                  ; offset 0 required
+   txa                  ; X contains columns
+   sec
+   eor   #$FF
+   adc   FAC_LAST       ; set by GTBYTC
+   bcc   L2A0D
+   beq   L2A0D
+.endif
 L2A08:
    tax
 L2A0A:
@@ -2180,6 +2227,7 @@ L2A22:
    lda   (INDEX),y
    jsr   OUTDO
    iny
+.if USE_LINEWRAP
    cmp   #$0A
    bne   L2A22
 .if USE_SYS
@@ -2195,6 +2243,9 @@ L2A22:
    jsr   PRINTNULLS
    jmp   L2A22
 .endif
+.else
+   bra   L2A22
+.endif
 ; ----------------------------------------------------------------------------
 OUTSP:
    lda   #$20
@@ -2205,14 +2256,18 @@ OUTQUES:
 ; PRINT CHAR FROM (A)
 ; ----------------------------------------------------------------------------
 OUTDO:
-   bit   Z14
+.if USE_LINEINPUT
+.else
+   bit   CTRLOFLAG
    bmi   L2A56
+.endif
+.if USE_LINEWRAP
 ; Commodore forgot to remove this in CBM1
    pha
    cmp   #$20
    bcc   L2A4E
    lda   POSX
-   cmp   Z17
+   cmp   SCRWIDTH
    bne   L2A4C
    jsr   CRDO
 L2A4C:
@@ -2220,13 +2275,11 @@ L2A4C:
 L2A4E:
 ; Commodore forgot to remove this in CBM1
    pla
+.endif
    jsr   CHROUT
 L2A56:
    and   #$FF
    rts
-; ----------------------------------------------------------------------------
-; ???
-; ----------------------------------------------------------------------------
 ; ----------------------------------------------------------------------------
 ; INPUT CONVERSION ERROR:  ILLEGAL CHARACTER
 ; IN NUMERIC FIELD.  MUST DISTINGUISH
@@ -2256,7 +2309,7 @@ RESPERR:
 ; "INPUT" STATEMENT
 ; ----------------------------------------------------------------------------
 INPUT:
-   ;lsr   Z14
+   ;lsr   CTRLOFLAG
    cmp   #$22
    bne   L2A9E
    jsr   STRTXT
@@ -3511,7 +3564,15 @@ GIVAYF:
    ldx   #$90
    jmp   FLOAT1    ; was FLOAT1, seems to fix negative FRE(0) problem
 POS:
+.if USE_LINEWRAP
    ldy   POSX
+.else
+   ldy   #VT100_CPOS_GET
+   int   VT100
+   dex               ; offset 0 required
+   txa
+   tay
+.endif
 ; ----------------------------------------------------------------------------
 ; FLOAT (Y) INTO FAC, GIVING VALUE 0-255
 ; ----------------------------------------------------------------------------
