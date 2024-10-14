@@ -30,7 +30,21 @@ const char *cputype_name( cputype_t cputype )
 }
 
 
-void hexdump( const uint8_t *memory, uint16_t address, uint32_t size )
+void hexdump_buffer( const uint8_t *memory, uint32_t size )
+{
+   /* I think that's the first time in anything I coded,
+    * where a function within a function actually makes totally sense.
+    * Today is a good day. */
+   uint8_t peek( uint16_t a )
+   {
+      return memory[a];
+   }
+
+   hexdump( peek, 0, size );
+}
+
+
+void hexdump( peek_t peek, uint16_t address, uint32_t size )
 {
    for( uint32_t i = 0; i < size; i += 0x10 )
    {
@@ -41,14 +55,16 @@ void hexdump( const uint8_t *memory, uint16_t address, uint32_t size )
          uint16_t a = address + i + j;
          if( (i + j) > size )
          {
-            while( j < 0x10 )
-            {
-               printf( "   " );
-               ++j;
-            }
-            break;
+            printf( "   " );
          }
-         printf( " %02x", memory[a] );
+         else
+         {
+            printf( " %02x", peek(a) );
+         }
+         if( j == 7 )
+         {
+            printf( " " );
+         }
       }
       printf( "  " );
       for( uint8_t j = 0; j < 0x10; ++j )
@@ -58,7 +74,7 @@ void hexdump( const uint8_t *memory, uint16_t address, uint32_t size )
          {
             break;
          }
-         uint8_t v = memory[a];
+         uint8_t v = peek(a);
          if( (v >= 32) && (v <= 127) )
          {
             printf( "%c", v );

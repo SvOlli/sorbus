@@ -24,14 +24,14 @@
 .if 1
 .define  USE16COLS   1
 .define  USE65C02    0
-XAML           :=     $10            ; Last "opened" location Low
-XAMH           :=     $11            ; Last "opened" location High
-STL            :=     $12            ; Store address Low
-STH            :=     $13            ; Store address High
-L              :=     $14            ; Hex value parsing Low
-H              :=     $15            ; Hex value parsing High
-YSAV           :=     $16            ; Used to see if hex value is given
-MODE           :=     $17            ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
+XAML           :=     $08            ; Last "opened" location Low
+XAMH           :=     $09            ; Last "opened" location High
+STL            :=     $0A            ; Store address Low
+STH            :=     $0B            ; Store address High
+L              :=     $0C            ; Hex value parsing Low
+H              :=     $0D            ; Hex value parsing High
+YSAV           :=     $0E            ; Used to see if hex value is given
+MODE           :=     $0F            ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
 .else
 ; original WozMon addresses for reference
 .define  USE16COLS   0

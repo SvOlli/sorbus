@@ -25,13 +25,14 @@ void bus_run();
 void system_init();
 void system_reboot();
 
-// Core1: debug output
+// Core1: debug output routines called from Core0 when CPU is stopped
 void debug_backtrace();
 void debug_clocks();
 void debug_disassembler();
 void debug_heap();
 void debug_hexdump( uint8_t *memory, uint32_t size, uint16_t address );
 void debug_internal_drive();
+void debug_memorydump();
 void debug_queue_event( const char *text );
 
 #endif

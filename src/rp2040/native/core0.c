@@ -87,8 +87,9 @@ void console_rp2040()
            , invoke );
 
    while( !leave )
-   {
-      printf( "\nB)acktrace, D)isassemble, E)vent queue, H)eap, I)nternal drive, S)peeds"
+   {          /* 12345678901234567890123456789012345678901234567890123456789012345678901234567890 */
+      printf( "\nB)acktrace, D)isassemble, E)vent queue, H)eap, I)nternal drive, M)emory dump,"
+              "\nS)peeds"
               "\nC)ontinue, R)eboot ? " );
       in = toupper( getchar() );
       switch( in )
@@ -112,6 +113,10 @@ void console_rp2040()
          case 'I':
             printf( "%c\n", in );
             debug_internal_drive();
+            break;
+         case 'M':
+            printf( "%c\n", in );
+            debug_memorydump();
             break;
          case 'S':
             printf( "%c\n", in );

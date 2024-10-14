@@ -115,6 +115,15 @@ static inline uint8_t bus_data_read()
 }
 
 
+void check_cpu_is_halted()
+{
+   while(gpio_get_all() & bus_config.mask_rdy)
+   {
+      printf( "\rinternal error: cpu should be stopped." );
+   }
+}
+
+
 void set_bank( uint8_t bank )
 {
    // rom banks are counted starting with 1, as 0 is RAM
@@ -583,6 +592,8 @@ uint32_t debug_getbus( int i )
 
 void debug_backtrace()
 {
+   check_cpu_is_halted();
+
    printf( "historian:\n" );
 
    disass_cpu( cputype ? cputype : CPU_6502 );
@@ -604,79 +615,113 @@ void debug_backtrace()
 }
 
 
+int32_t get_16bit_address( uint16_t lastaddr )
+{
+   uint16_t addr = 0;
+   int count = 0;
+
+   for(;;)
+   {
+      int c = getchar();
+      if( (c >= '0') && (c <= '9') )
+      {
+         putchar( c );
+         addr = (addr << 4) | (c & 0x0f);
+         if( ++count >= 4 )
+         {
+            return addr;
+         }
+      }
+      else if( ((c >= 'a') && (c <= 'f')) || ((c >= 'A') && (c <= 'F')) )
+      {
+         putchar( toupper(c) );
+         c = toupper(c) - 'A' + 10;
+         addr = (addr << 4) | (c & 0x0f);
+         if( ++count >= 4 )
+         {
+            return addr;
+         }
+      }
+      else switch( c )
+      {
+         case 'q':
+         case 0x1b:
+            puts( "quit" );
+            return (-1);
+         case ' ':
+            while( count > 0 )
+            {
+               printf( "\b \b" );
+               --count;
+            }
+            // slip through
+         case 0x0d:
+            if( !count )
+            {
+               addr = lastaddr;
+               printf( "%04X", addr );
+            }
+            return addr;
+            break;
+         case 0x08:
+         case 0x7f:
+            if( count >= 0 )
+            {
+               printf( "\b \b" );
+               addr >>= 4;
+               --count;
+            }
+            break;
+         default:
+            break;
+      }
+   }
+}
+
+
+void debug_memorydump()
+{
+   const uint16_t show_size = 0x100;
+   static uint16_t lastaddr = 0x0400;
+
+   check_cpu_is_halted();
+
+   for(;;)
+   {
+      printf( "%s mem ($%04X): ", cputype_name( cputype ), lastaddr );
+      int32_t addr = get_16bit_address( lastaddr );
+      printf( "\n" );
+      if( addr < 0 )
+      {
+         return;
+      }
+      // TODO: switch this somehow to get_memory()
+      hexdump( get_memory, addr, show_size );
+      lastaddr = addr + show_size;
+   }
+}
+
+
 void debug_disassembler()
 {
    static uint16_t lastaddr = 0x0400;
    uint16_t addr = 0;
    int count = 0;
-   bool quit = false;
-   bool inputdone = false;
 
-   while( !quit )
+   check_cpu_is_halted();
+
+   for(;;)
    {
       printf( "%s disass ($%04X): ", cputype_name( cputype ), lastaddr );
-      count = 0;
-      addr = 0;
-      inputdone = false;
-      while( !inputdone )
-      {
-         int c = getchar();
-         if( (c >= '0') && (c <= '9') )
-         {
-            putchar( c );
-            addr = (addr << 4) | (c & 0x0f);
-            if( ++count >= 4 )
-            {
-               inputdone = true;
-            }
-         }
-         else if( ((c >= 'a') && (c <= 'f')) || ((c >= 'A') && (c <= 'F')) )
-         {
-            putchar( toupper(c) );
-            c = toupper(c) - 'A' + 10;
-            addr = (addr << 4) | (c & 0x0f);
-            if( ++count >= 4 )
-            {
-               inputdone = true;
-            }
-         }
-         else switch( c )
-         {
-            case 'q':
-            case 0x1b:
-               puts( "quit" );
-               return;
-            case ' ':
-               while( count > 0 )
-               {
-                  printf( "\b \b" );
-                  --count;
-               }
-               // slip through
-            case 0x0d:
-               if( !count )
-               {
-                  addr = lastaddr;
-                  printf( "%04X", addr );
-               }
-               inputdone = true;
-               break;
-            case 0x08:
-            case 0x7f:
-               if( count >= 0 )
-               {
-                  printf( "\b \b" );
-                  addr >>= 4;
-                  --count;
-               }
-               break;
-            default:
-               break;
-         }
-      }
+      int32_t getaddr = get_16bit_address( lastaddr );
       printf( "\n" );
+      if( getaddr < 0 )
+      {
+         return;
+      }
 
-      for( count = 0; count < 10; ++count )
+      addr = (uint16_t)(getaddr & 0xFFFF);
+      for( count = 0; count < 16; ++count )
       {
          disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
          puts( disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ) );
@@ -749,6 +794,8 @@ void debug_clocks()
    uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
    uint time_hz = (double)1000000.0 / ((double)(time_per_mcc) / CLOCKS_PER_SEC / 10000);
 
+   check_cpu_is_halted();
+
    cpu_clk[snprintf( &cpu_clk[0], sizeof(cpu_clk)-1, "%s CLK:", cputype_name( cputype ) )] = ' ';
    printf("\n");
    printf("PLL_SYS:             %3d.%03dMHz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
@@ -783,6 +830,8 @@ void debug_internal_drive()
    uint8_t dhara_buffer[SECTOR_SIZE];
    uint16_t dhara_sector = 0;
 
+   check_cpu_is_halted();
+
    dhara_flash_info( dhara_sector, &dhara_buffer[0], &dhara_info );
    uint64_t hw_size  = dhara_info.erase_cells * dhara_info.erase_size;
    uint64_t lba_size = dhara_info.sectors * dhara_info.sector_size;
@@ -801,12 +850,12 @@ void debug_internal_drive()
 #if 0
    printf("dhara read sector $%04x:\n", dhara_sector );
 
-   hexdump( dhara_buffer, 0, SECTOR_SIZE );
+   hexdump_buffer( dhara_buffer, SECTOR_SIZE );
 #else
    uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
    uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
    printf("dhara last used sector: $%04x\n", *lba );
-   hexdump( &ram[(*mem)-0x80], (*mem)-0x80, SECTOR_SIZE );
+   hexdump( get_memory, (*mem)-0x80, SECTOR_SIZE );
 #endif
 }
 

@@ -62,8 +62,12 @@ This port has some significant changes compared to the original OSI
 BASIC.
 
 -  The zeropage starts at $10, not $00, so everything is moved there.
--  As the full code has been disassembled modified and reassembled, all
-   addresses of the ROM functions are not correct.
+-  user jumpcode is still at $0a
+-  NULL command removed, token replaced with SYS that behaves similar
+   to Commodore BASIC
+-  $0d (13), $0e (14), $0f (15) are used as A,X,Y when calling SYS
+-  As the full code has been disassembled, modified and reassembled,
+   all addresses of the ROM functions are not correct.
 -  The monitor has been replaced with routines for LOAD, SAVE, DIR and
    the BIOS. LOAD and SAVE take a filename for a parameter. “.BAS” is
    appended automatically. Those files utilize the user-partition 11.
@@ -72,9 +76,14 @@ BASIC.
    kernel for accessing the internal drive. ($0200-$02ff is only used
    for saving.)
 -  The LOAD and SAVE work totally different as stated in the manuals.
--  A DIR command has been added to display the directory on screen.
--  No need to enter size of memory size (compiled in) or terminal width
-   (detected using VT100 calls during startup).
+-  LOAD"$" is added to display the directory on screen.
+-  No need to enter size of memory size (compiled in)
+-  terminal width and auto-newline has totally been removed and should
+   be now handled by the terminal software used
+-  Opcode order is kept the same, so most original OSI BASIC code
+   should work on the Sorbus variant as well
+-  code for RND(0) has been changed, so sequence will not be the same,
+   actually being random
 
 SX4 File Format For Executables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,6 +104,8 @@ Memory map
    -  $07: save accumulator for PRINT
 
 -  $0008-$00FF: zeropage RAM for generic use
+   -  $0008-$000F: zeropage RAM used by WozMon
+   -  $00E3-$00FF: zeropage RAM used by TIM
 -  $0100-$01FF: stack
 -  $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs)
 -  $0400-$CFFF: RAM for generic use
@@ -107,8 +118,9 @@ Memory map
 -  $E000-$FFFF: bank 1 (ROM, custom firmware)
 -  $E000-$FFFF: bank 2 (ROM, tools e.g. filebrowser)
 -  $E000-$FFFF: bank 3 (ROM, OSI BASIC)
--  $FF00-$FFFF: bankswitching code, BRK handler, I/O routines can be
-   copied to RAM using code at $0100 after loading a bootblock
+-  $FF00-$FFFF: bankswitching code, BRK handler, I/O routines
+   -  can be copied to RAM using code at $0100 after loading a bootblock
+   -  is copied to RAM before running SX4 file
 
 Miscellaneous ($DF00-$DF0F)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

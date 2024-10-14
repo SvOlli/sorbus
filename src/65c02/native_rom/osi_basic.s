@@ -45,15 +45,19 @@
 
 ; replace NULL token with SYS
 .define USE_SYS 1
-; replace custom input routine with kernel one
+; replace custom input routine with Sorbus kernel
 .define USE_LINEINPUT 1
+; disable line wrapping code
 .define USE_LINEWRAP 0
+; replace non-functional random code with Sorbus specific
+.define USE_SORBUS_RND 1
 
 .debuginfo +
 
 .setcpu "65c02"
 .macpack longbranch
 
+.include "../native.inc"
 .include "../native_bios.inc"
 
 ; zero page
@@ -486,7 +490,7 @@ setfn:
 
 LOAD:
    jsr   setfn
-   lda   CPM_FNAME+1    ; check if first name of filename is '$'
+   lda   CPM_FNAME+1    ; check if first char of filename is '$'
    cmp   #'$'
    bne   @notdir
 
@@ -2101,6 +2105,8 @@ L29B1:
    jsr   OUTSP
    bne   L297E ; branch always
 .if USE_LINEINPUT
+   ldx   #<(INPUTBUFFER-1)
+   ldy   #>(INPUTBUFFER-1)
 .else
 L29B9:
 .ifdef CONFIG_NO_INPUTBUFFER_ZP
@@ -3058,7 +3064,7 @@ L2ECE:
    jsr   ISLETC
    bcs   L2ECE
 L2ED8:
-   cmp   #$24
+   cmp   #'$'      ; A$ means string
    bne   L2EF9
    lda   #$FF
    sta   VALTYP
@@ -5858,6 +5864,15 @@ RTS19:
 ; ----------------------------------------------------------------------------
 ; "RND" FUNCTION
 ; ----------------------------------------------------------------------------
+.if USE_SORBUS_RND
+RND:
+   ldx   #$03
+:
+   lda   RANDOM
+   sta   FAC,x
+   dex
+   bpl   :-
+.else
 CONRND1:
    .byte $98,$35,$44,$7A
 CONRND2:
@@ -5882,6 +5897,7 @@ L3F01:
    lda   FAC+1
    sta   FAC_LAST
    stx   FAC+1
+.endif
    lda   #$00
    sta   FACSIGN
    lda   FAC
