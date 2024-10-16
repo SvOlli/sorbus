@@ -35,6 +35,7 @@ void hexdump_buffer( const uint8_t *memory, uint32_t size )
    /* I think that's the first time in anything I coded,
     * where a function within a function actually makes totally sense.
     * Today is a good day. */
+   /* Note: nested functions are not C standard, but a GCC extension */
    uint8_t peek( uint16_t a )
    {
       return memory[a];

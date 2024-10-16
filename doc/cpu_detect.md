@@ -4,16 +4,19 @@ CPU Detection Routine
 
 The Sorbus Computer can run any kind of 6502 variant that shares the
 same pinout. The small test and learn environment "Monitor Command
-Prompt" or MCP for shot (pun very intended) can be used to learn all
-the details about each CPU up to a certain degree. (Not all pins are
-connected due to a limit amount of 30 GPIO pins of the RP2040.)
+Prompt" or MCP for short
+([pun](https://en.wikipedia.org/wiki/List_of_Tron_characters#Master_Control_Program)
+very intended) can be used to learn all the details about each CPU up
+to a certain degree. (Not all pins are connected due to a limit amount
+of 30 GPIO pins of the RP2040.)
 
 However, it is interesting to know which CPU the system is running on.
 The "Native Core" is the one with the most features, but does uses
 opcodes and features that are not available or buggy on an (old) NMOS
 6502. This means that a 65C02 or any other CMOS variant is required.
 So, it should be a good idea to detect that CPU and print an error
-message that the system won't work with one installed.
+message that the system won't work, when running on an NMOS 6502,
+instead of randomly crashing.
 
 Also, there is another point where a CPU detection is very handy. If you
 search for cheap 65C02 processors, you typically find offerings on ebay
@@ -35,8 +38,8 @@ would only work partially on an Apple II for example.
 Partial Detection
 -----------------
 
-A very easy way to tell apart an NMOS 6502 CPU and all the following CMOS
-variants looks something like this in assembly.
+A very easy way to tell apart an NMOS 6502 CPU from it's CMOS
+successors it done like this in the Sorbus Native kernel.
 
 ```
 ;  65C02       ; NMOS 6502
@@ -53,10 +56,11 @@ So, this is a short and efficiant way to tell NMOS and CMOS variants apart,
 as all CMOS variants share the same INC/DEC instructions. This is the
 detection the "Native Core" kernel uses for locking out the NMOS 6502.
 
-On the internet, I found a solution on how to detect the three major CPUs
-NMOS 6502, CMOS 65C02 and the 65816, a variant with 16 bit extensions.
-This was most probably used to tell apart an Apple IIgs from an Apple
-IIc/IIe enhanced and the original Apple II/II+/IIe.
+On the internet, I found a solution on how to detect the three major CPUs:
+NMOS 6502, CMOS 65C02 and the 65816, the variant with 16 bit extensions.
+This was most probably used to tell apart an Apple IIgs (using a 65816)
+from an Apple IIc/IIe enhanced (using a 65C02) and the original Apple
+II/II+/IIe (using an NMOS 6502).
 
 ```
 ;  65816       ; 65C02           ; 6502
@@ -67,12 +71,20 @@ IIc/IIe enhanced and the original Apple II/II+/IIe.
    XBA         ; .byte $eb ; NOP ; .byte $EB, $EA ; "illegal" SBC #$EA
    NOP         ; NOP             ; 
 ;  A=$01       ; A=$EA           ; A=$00
+
+;  ALL
+   BEQ   is6502   ; needs to be first
+   BPL   is65816
+   BMI   is65c02  ; is obsolete if 65c02 specific code continues here
 ```
 
-Just detecting three CPUs make things significantly more complex. But
-what makes things worse is that that the opcode $EB on a 65CE02 is
-totally incompatible as it is a read-modify-write instruction that even
-operates on 16 bit.
+As you can see, just detecting three CPUs make things significantly more
+complex. Still, this routine is also quite clever with utilizing the CPU
+flags for easy branching to the CPU specific routines.
+
+However, the opcode $EB on a 65CE02 is totally incompatible as it is
+a read-modify-write opcode that even operates on two bytes (`ROW`).
+This renders this routine useless when a 65CE02 is encountered.
 
 Now there are two ways. Either to check for the 65CE02 in advance or
 start from scratch.
@@ -85,7 +97,7 @@ The goal is to could tell 6502 variants apart by their instruction
 sets. There are five different instruction sets have been seen in chips
 with a pin layout similar to the original NMOS 6502 and the CMOS 65C02:
 
-- NMOS 6502
+- NMOS 6502 (Rev.D)
   - however, there is the NMOS 6502 Rev.A, the first 6502 that was still
     missing the ROR opcodes
 - 65C02, the base CMOS variant, as compared to the NMOS version,
@@ -95,7 +107,7 @@ with a pin layout similar to the original NMOS 6502 and the CMOS 65C02:
 - 65816, a 16 bit capable variant of the 65SC02, with all 256 opcodes
   defined now
 - 65CE02, a CMOS reimplementation of the 65C02 by Commodore with also
-  256 opcodes defined, but totally different
+  256 opcodes defined, but totally different compared to the 65816
 
 The pin layout is not 100% the same on all chips, but still enough to
 run all CPUs with the Sorbus Computer, while omitting some of their
@@ -107,7 +119,7 @@ Side note: the NMOS 6502 has 3510 transistors, the Rev.A should have a
 few less. The 65C02 and 65SC02 are told to have around 4000 transistors.
 The 65CE02 doubles that amount with about 8000, while the 65816 has
 whopping 22000 transistors. (If you can, please provide more exact
-numbers.)
+numbers and also references.)
 
 
 The Runtime Environment
@@ -129,11 +141,12 @@ also be rather simple. Except from the "return value" no I/O is
 required. Memory used can also be kept very low: 32 bytes have been
 proven to be enough, if the memory is "wrapped around" by not fully
 decoding the address. The code size is just 30 bytes, but the amount of
-memory provided needs to be a power of 2.
+memory provided needs to be a power of 2, as implementing this
+differently does not make sense.
 
 The "result-byte" written to the end of memory will then be evaluated.
 If it is in the defined range, the processor type id will be returned
-by the runtime environment, otherwise a zero to indicate a failure.
+by the runtime environment, otherwise a zero indicates a failure.
 
 The "runtime environment" also comes with another feature. Since it's
 well encapsulated, it can be used just as a subroutine in differenct
@@ -182,7 +195,7 @@ The Detection Routine
 Because reading the [sourcecode](../src/65c02/cpudetect.s) is very
 hard, as you can't write code for different variants at the same time,
 let's use a simple flow chart on how the detection is implemented.
-Red bubbles are a successful detection of a CPU variant.
+Red bubbles show a successful detection of a CPU variant.
 
 ![flowchart](cpu_detect_flowchart.png)
 
@@ -204,14 +217,14 @@ environment.
 ```
 
 Let's start by taking a look at the last six bytes, the vectors described
-above. The reset vector points to the last two bytes of memory, which
-holds the first instruction. The two bytes before the NMI vector ($0018)
-hold the `STX $FF` instruction that will stop the runtime environment.
-Even though the bytes for the NMI vector ($001a) shouldn't be processed,
-they contain same sane data, a NOP opcode and the opcode for JMP, this
-way using the reset vector as an address, this way restarting the code.
-This ensures that when something does go wrong, the system does not
-drift into undefined behaviour.
+above. The reset vector points to the last two bytes of memory ($001E),
+which holds the first instruction. The two bytes before the NMI vector
+($0018) hold the `STX $FF` instruction that will stop the runtime
+environment.  Even though the bytes for the NMI vector ($001a) shouldn't
+be processed, they contain same sane data, a NOP opcode and the opcode for
+JMP, this way using the reset vector as an address, this way restarting
+the code. This ensures that when something does go wrong, the system does
+not drift into undefined behaviour.
 
 Before we dive into the disassemblies, first let's explain the format
 using the first executed instruction as our example.
@@ -229,14 +242,17 @@ corresponding letter.
 
 `LDX  #$00` is the disassembly of the instruction starting at this
 memory address. (In this case "LoaD the X register with the value of
-$00.)
+$00".) A dot behind the opcode (like: `NOP.`) indicates that the opcode
+is a reserved (CMOS) or undocumented (NMOS) one.
 
 Every trace should end with a `00ff w XX`, which indicates the writing
 of the CPU id at the "end of memory". This also stops the runtime
 environment.
 
 The disassemblies were created with the command `cold debug` of the MCP
-core. They have been slightly modified for a better readability.
+core. They have been slightly modified for a better readability. (As of
+writing this document, the disassembler can't always tell apart if the
+byte read is an opcode or a parameter.)
 
 
 Disassembly as seen on a 6502
@@ -283,9 +299,10 @@ Disassembly as seen on a 6502
  39:00ff w 01    :
 ```
 This is the exact CPU variant used in most machines in the late 1970s
-and early 1980s. The $5c used to detect the 65816 and 65CE02 is skipped
-and the `INC`-test for any CMOS variant does also not succeed. The third
-and final test for a working `ROR` instruction does succeed, though.
+and early 1980s. The $5c used in line 14 to detect the 65816 and 65CE02
+is skipped and the `INC`-test in line 24 for any CMOS variant does also
+not succeed. The third and final test in line 28 for a working `ROR`
+instruction does succeed, though.
 
 
 Disassembly as seen on a 6502 Rev.A
@@ -341,10 +358,14 @@ price.
  45:00ff w 05    :
 ```
 This is almost the same as before (6502), except that the `ROR`
-instruction does not modify the carry flag, like it was supposed to.
-So this has to be one of those early and rare 6502s with the
-`ROR`-instruction missing.
-TODO: onliner with link, that it was not broken, but just missing.
+instruction in line 28 does not modify the carry flag, like it
+was supposed to. So this has to be one of those early and rare
+6502s with the `ROR`-instruction missing.
+
+For more details on this topic, I recommend watching the video
+["The 6502 Rotate Right Myth"](https://youtu.be/Uk_QC1eU0F) by
+Eric Schlaepfer, who also built the
+[MOnSter 6502](https://monster6502.com/).
 
 
 Disassembly as seen on a 65C02
@@ -388,15 +409,18 @@ Disassembly as seen on a 65C02
  36:00ff r 00    :
  37:00ff w 02    :
 ```
-The way the $5c opcode is processed here looks a bit strange. For a
-couple of cycles, the CPU seems to have stop working like when an NMOS
-6502 executes a `KIL` (illegal) opcode. However at some point the CPU
-just continues working. So this behaviour is very different from the
-way the NMOS 6502 processes this opcode. The result is the same, though.
-Only when testing for an implemented `INC` instruction it succeeds this
-time. Then one of the bit manipulation instructions which is not present
-on the 65SC02, sets the bit 1 of the return value, making this the only
-time, the `INX`-slide is not used.
+The way the $5c opcode at line 14 is processed here looks a bit strange.
+For a couple of cycles (lines 17-21), the CPU seems to have stopped
+working, like when an NMOS 6502 executes a `KIL` (illegal) opcode.
+However at some point the CPU just continues working at line 22. So this
+behaviour is very different from the way the NMOS 6502 processes this
+opcode. The result is the same, though: a three-byte NOP.
+
+But when testing for an implemented `INC` instruction at line 28, it
+succeeds this time. Then one of the bit manipulation instructions in line
+33, which is not present on the 65SC02, sets the bit 1 of the return
+value, at line 37 making this the only time, the `INX`-slide is not used
+for the return value.
 
 
 Disassembly as seen on a 65SC02
@@ -452,8 +476,9 @@ Disassembly as seen on a 65SC02
  48:00ff w 06    :
 ```
 This the same as before (65C02), except that the bit set instruction is
-interpreted as `NOP`. It's the same with the address of that instruction.
-So execution continues with the `INX`-slide.
+interpreted as a reserved `NOP.` opcode in lines 32. It's the same with
+the address of that instruction at line 33. So execution continues with
+the `INX`-slide.
 
 
 Disassembly as seen on a 65816
@@ -485,9 +510,10 @@ Disassembly as seen on a 65816
  24:0019 r ff    :
  25:00ff w 03    :
 ```
-This is a straight forward one. The 65816 interprets the $5c opcode as
-JMP to a 24 bit address. Since we're wrapping around most of the address
-does not matter.
+This is a straight forward one. The 65816 interprets the $5c opcode in
+line 13 as a JMP to a 24 bit address. Since we're wrapping around most
+of the address does not matter much, only the least significant byte is
+required here.
 
 
 Disassembly as seen on a 65CE02
@@ -517,12 +543,16 @@ Disassembly as seen on a 65CE02
  22:0039 r ff    :
  23:00ff w 04    :
 ```
-This CPU is very interesting. Notice how the INX are all processed
-within a single clock cycle. No other 6502 variant can do this. The rest
-of the detection is rather plain. The $5c opcode is evaluated as a 4
-bytes instruction. Only the 65816 also has 4 byte opcodes. In this case
-the `SEC` that's evaluated by all other CPUs (except for the 65816), is
-skipped, so the `BCC`-branch is taken by this CPU only.
+This CPU is very interesting. Notice how the `INX` opcodes in lines
+17-20 are all processed within a single clock cycle. No other 6502
+variant can do this, they all require two clock cycles.
+
+The rest of the detection is rather plain. The $5c opcode in line 11 is
+evaluated as a 4 bytes instruction. The only 4 byte opcode the CPU has.
+Only the 65816 also has 4 byte opcodes. In this case the `SEC` that's
+evaluated by all other CPUs (except for the 65816), is skipped, so the
+`BCC`-branch is taken by this CPU only. (Also branching requires only
+two clock cycles, not three like with all others.)
 
 
 The Mysterious Problem
@@ -544,10 +574,45 @@ not used during the test.
 
 Interestingly, this is described as an enhancement to the original NMOS
 6502 CPU according to the CMD G65SC02 datasheet. However, even later
-CPUs do not have this "feature".
+CPUs do not have this "feature". It is also not possible to cleanly
+"return" from a reset, since the program counter might not be pointing
+to an instruction. This is not the case with interrupts.
 
 How was it fixed? The writes happen in a very early stage, even before
 the reset vector is being read to determine where in memory to start
-executing code. So writes are now discared, if they were done before
+executing code. So, writes are now discared, if they were done before
 reading the reset vector. Or one can say: before the reset vector is
 read the memory is read-only. Problem solved with an elegant solution.
+
+
+There Is Always Someone Better
+==============================
+
+After finishing the CPU detection from the Sorbus, I found this:
+[getspu.s](https://github.com/cc65/cc65/blob/master/libsrc/common/getcpu.s)
+of the [cc65](https://cc65.github.io/) compiler suite. It can tell
+apart nine different 6502 based CPUs.
+
+While this is more than the six CPUs being detected with the method
+described here, it does not make sense to add any of those CPUs to this
+routine for a simple reason: they don't fix in a 40 pins socket compatible
+with the 65C02. The table has a slightly more detailed description:
+
+| CPU       | Description                           | Supported in Sorbus   |
+| --------- | ------------------------------------- | --------------------- |
+| NMOS 6502 | original 6502                         | yes                   |
+| 65C02     | "current" 6502 still being sold       | yes                   |
+| 65816     | 16-bit variant still being sold       | yes                   |
+| 65SC02    | 65C02 without bit manipultion opcodes | yes                   |
+| 65CE02    | Commodore CMOS, used in Amiga A2232   | yes                   |
+| 4510      | 65CE02 based microcontroller with MMU | no, different package |
+| HuC6280   | PC Engine, adds MMU and sound         | no, different package |
+| 2a03/2a07 | NES/Famicom, adds sound, no BCD       | no, different pinout  |
+| 45GS65    | MEGA65, huge expansion of 4510        | no, FPGA              |
+
+So, there is now other CPU to be detected.
+
+However, getcpu.s does not support the 6502 without the ROR opcode.
+As the output of the C compiler relies on this opcode, it does not make
+sense to add this detection to a library function. The code will most
+probably crash before running this function.

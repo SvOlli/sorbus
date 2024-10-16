@@ -155,32 +155,37 @@ add_executable(native_writeboot
 target_type_addr(native_writeboot native 0xC000)
 
 add_executable(memcheck
-   native_sx4/memcheck.s
+   sx4/memcheck.s
    )
 target_type(memcheck sx4)
 
 add_executable(bcdcheck
-   native_sx4/bcdcheck.s
+   sx4/bcdcheck.s
    )
 target_type(bcdcheck sx4)
 
 add_executable(int-test
-   native_sx4/int-test.s
+   sx4/int-test.s
    )
 target_type(int-test sx4)
 
 add_executable(inst-ass
-   native_sx4/inst-ass.s
+   sx4/inst-ass.s
    )
 target_type(inst-ass sx4)
 
+add_executable(asmprint
+   sx4/asmprint.s
+   )
+target_type(asmprint sx4)
+
 add_executable(1sthello
-   native_sx4/a1hello.s
+   sx4/a1hello.s
    )
 target_type(1sthello sx4)
 
 add_executable(sx4speed
-   native_sx4/speed.s
+   sx4/speed.s
    )
 target_type(sx4speed sx4)
 

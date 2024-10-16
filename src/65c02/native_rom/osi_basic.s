@@ -1,4 +1,5 @@
 ; changes todo
+; [ ] implement auto-load + run from file manager
 ; [X] remove SCRWIDTH, POSWARP, POSX
 ; [X] Change useless NULL instruction to SYS to align tokens
 ; [X] Change input to "INT LINEINPUT"
@@ -31,9 +32,9 @@
 ; (first revision of this distribution, 20 Oct 2008, Michael Steil www.pagetable.com)
 ;
 ;
-; Name     Release   MS Version    ROM   9digit  INPUTBUFFER   extensions
-;---------------------------------------------------------------------------------------------------
-; OSI BASIC      1977   1.0 REV 3.2    Y    N   ZP     -
+; Name      | Release | MS Version  | ROM | FP | INPUTBUFFER | extensions
+;-----------+---------+-------------+-----+------------------+------------
+; OSI BASIC |    1977 | 1.0 REV 3.2 |  Y  | 6  | ZP          | -
 ;
 ; Credits:
 ; * main work by Michael Steil
@@ -51,11 +52,15 @@
 .define USE_LINEWRAP 0
 ; replace non-functional random code with Sorbus specific
 .define USE_SORBUS_RND 1
+; disable restart code rather useless without an original OSI
+.define USE_RESTART_VECTOR 0
+; backport from later versions of BASIC
+.define CONFIG_PEEK_SAVE_LINENUM 1
+
 
 .debuginfo +
 
 .setcpu "65c02"
-.macpack longbranch
 
 .include "../native.inc"
 .include "../native_bios.inc"
@@ -106,8 +111,10 @@ CRLF_2 := LF
 ;.org $0000
 .org ZP_START
 ;.org ZP_START1
+.if USE_RESTART_VECTOR
 GORESTART:  ; $0010
    .res 3
+.endif
 GOSTROUT:   ; $0013
    .res 3
 GOAYINT:    ; $0016
@@ -136,7 +143,11 @@ TXPSV:      ; $001E     ; INPUTBUFFER-2
 .if 1
 ; must follow LINNUM
 INPUTBUFFER:
+.if (USE_SYS) & (USE_LINEINPUT) & (!USE_LINEWRAP) & (USE_SORBUS_RND) & (!USE_RESTART_VECTOR)
+.define INPUTSIZE $4F
+.else
 .define INPUTSIZE $47
+.endif
    .res INPUTSIZE
 .else
 .define INPUTSIZE $50
@@ -272,7 +283,10 @@ CHRGET:     ; $0081
 TXTPTR = <(GENERIC_TXTPTR-GENERIC_CHRGET + CHRGET)
 CHRGOT = <(GENERIC_CHRGOT-GENERIC_CHRGET + CHRGET)
 CHRGOT2 = <(GENERIC_CHRGOT2-GENERIC_CHRGET + CHRGET)
+.if USE_SORBUS_RND
+.else
 RNDSEED = <(GENERIC_RNDSEED-GENERIC_CHRGET + CHRGET)
+.endif
 
 ZPEND = CHRGET + GENERIC_CHRGET_END - GENERIC_CHRGET
 
@@ -290,10 +304,12 @@ COLD_START:
    ldx   #$FB
 .endif
    txs
+.if USE_RESTART_VECTOR
    lda   #<COLD_START
    ldy   #>COLD_START
    sta   GORESTART+1
    sty   GORESTART+2
+.endif
    sta   GOSTROUT+1
    sty   GOSTROUT+2
    lda   #<AYINT
@@ -305,7 +321,9 @@ COLD_START:
    sta   GOGIVEAYF
    sty   GOGIVEAYF+1
    lda   #$4C
+.if USE_RESTART_VECTOR
    sta   GORESTART
+.endif
    sta   GOSTROUT
    sta   JMPADRS
    sta   USR
@@ -314,7 +332,7 @@ COLD_START:
    sta   USR+1
    sty   USR+2
 .if 0
-   ; get overwritten by detection
+   ; get overwritten by detection or ignored totally
    lda   #WIDTH
    sta   SCRWIDTH
    lda   #WIDTH2
@@ -413,11 +431,15 @@ L4192:
    sta   GOSTROUT+1
    sty   GOSTROUT+2
    jsr   SCRTCH
+.if USE_RESTART_VECTOR
    lda   #<RESTART
    ldy   #>RESTART
    sta   GORESTART+1
    sty   GORESTART+2
    jmp   (GORESTART+1)
+.else
+   jmp   RESTART
+.endif
 
 ; TXTTAB should be start of BASIC program
 ; VARTAB should be end of BASIC program
@@ -462,7 +484,7 @@ setfn:
    sta   CPM_EADDR+1
 
 .if 0
-   ; for later: specify addresses
+   ; for later: specify addresses, untested
    jsr   CHRGOT
    cmp   #','
    bne   :+
@@ -958,12 +980,20 @@ RESTART:
    jsr   GOSTROUT
 L2351:
    jsr   INLIN
+   bcc   :+
+   ; Ctrl-C pressed, cancel input
+   lda   #$0a
+   jsr   CHROUT
+   bra   RESTART
+:
    stx   TXTPTR
    sty   TXTPTR+1
    jsr   CHRGET
 ; bug in pre-1.1: CHRGET sets Z on '\0'
 ; and ':' - a line starting with ':' in
 ; direct mode gets ignored
+   tax
+; the "tax" about is the fix
    beq   L2351
    ldx   #$FF
    stx   CURLIN+1
@@ -1071,8 +1101,9 @@ FIX_LINKS:
 L23FA:
    ldy   #$01
    lda   (INDEX),y
-   jeq   L2351
-
+   bne   :+
+   jmp   L2351
+:
    ldy   #$04
 L2405:
    iny
@@ -1111,7 +1142,7 @@ INLIN:
    ldx   #>INPUTBUFFER
    ldy   #INPUTSIZE
    int   LINEINPUT
-   bcs   INLIN
+   ;bcs   INLIN
    ldy   #$00
    ldx   #LINNUM+1
    jmp   CRDO
@@ -1627,8 +1658,9 @@ EXECUTE_STATEMENT:
    sec
 EXECUTE_STATEMENT1:
    sbc   #$80
-   jcc   LET   ; old: 1 cycle more on instr.
-
+   bcs   :+
+   jmp   LET
+:
    cmp   #NUM_TOKENS
    bcs   SYNERR1
    asl   a
@@ -2328,7 +2360,11 @@ L2A9E:
    sta   INPUTBUFFER-1
    jsr   NXIN
    lda   INPUTBUFFER
+.if USE_LINEINPUT
+   bcc   L2ABE
+.else
    bne   L2ABE
+.endif
    clc
    jmp   CONTROL_C_TYPED
 NXIN:
@@ -4406,6 +4442,12 @@ GETADR:
 ; "PEEK" FUNCTION
 ; ----------------------------------------------------------------------------
 PEEK:
+.if CONFIG_PEEK_SAVE_LINENUM
+   lda   LINNUM+1
+   pha
+   lda   LINNUM+0
+   pha
+.endif
    jsr   GETADR
 .ifpc02
    lda   (LINNUM)
@@ -4415,6 +4457,12 @@ PEEK:
 ; disallow PEEK between $C000 and $DFFF
    lda   (LINNUM),y
    tay
+.endif
+.if CONFIG_PEEK_SAVE_LINENUM
+   pla
+   sta   LINNUM+0
+   pla
+   sta   LINNUM+1
 .endif
    jmp   SNGFLT
 ; ----------------------------------------------------------------------------
@@ -5904,9 +5952,13 @@ L3F01:
    sta   FACEXTENSION
    lda   #$80
    sta   FAC
+.if USE_SORBUS_RND
+   jmp   NORMALIZE_FAC2
+.else
    jsr   NORMALIZE_FAC2
    ldx   #<RNDSEED
    ldy   #>RNDSEED
+.endif
 GOMOVMF:
    jmp   STORE_FAC_AT_YX_ROUNDED
 ; ----------------------------------------------------------------------------
@@ -6074,9 +6126,12 @@ GENERIC_CHRGOT2:
    sbc   #$D0
 L4058:
    rts
-GENERIC_RNDSEED:
 ; random number seed
+.if USE_SORBUS_RND
+.else
+GENERIC_RNDSEED:
    .byte $80,$4F,$C7,$52
+.endif
 GENERIC_CHRGET_END:
 ; ----------------------------------------------------------------------------
 

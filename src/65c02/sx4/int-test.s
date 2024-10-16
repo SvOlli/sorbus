@@ -172,6 +172,10 @@ lineinput:
    ldy   #$28
    int   LINEINPUT
 
+   bcc   :+
+   jsr   PRINT
+   .byte 10,"Ctrl-C ",0
+:
    jmp   done
 
 quit:
