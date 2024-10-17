@@ -3,32 +3,48 @@
 .include "../native_kernel.inc"
 .include "../native_bios.inc"
 
-valuei := PSAVE ; value integer part
-valued := ASAVE ; value decimal places
-deltai := $08   ; delta integer part
-deltad := $09   ; delta decimal places
+valuei := PSAVE      ; value integer part
+valued := ASAVE      ; value decimal places
+
+; need to be saved
+savest := $08
+
+deltai := $08        ; delta integer part
+deltad := $09        ; delta decimal places
 
 index0 := $0a
 index1 := $0b
 index2 := $0c
 index3 := $0d
 
+savend := $0e
+
 ovec   := TMP16
-max    := PSAVE
 
 ; ===========================================================================
 
 gensine:
 ; A: page for table
-; X: size ($01-$10)
-; Y: variant
+; X: size ($01-$10), taken from BRK_SX
+; Y: variant ($00-$03), add $04 to write decimal parts to following page
 
+   ; we need quite some zeropage variables
+   ; save previous values on the stack
+
+   stz   ovec+0
    sta   ovec+1
+   ldx   #(savend-savest-1)
+:
+   lda   savest,x
+   pha
+   dex
+   bpl   :-
+
    tya
    ror
    ror
    ror
-   and   #$c0    ; move start
+   and   #$c0        ; move start
    sta   index0
    clc
    adc   #$7f
@@ -39,12 +55,12 @@ gensine:
    adc   #$7f
    sta   index3
 
-   stz   valuei  ; value integer part
-   stz   valued  ; value decimal places
-   stz   deltai  ; delta integer part
-   stz   deltad  ; delta decimal places
+   stz   valuei      ; value integer part
+   stz   valued      ; value decimal places
+   stz   deltai      ; delta integer part
+   stz   deltad      ; delta decimal places
 
-   ldx   #$3f
+   ldx   #$40        ; just a counter
 @parloop:
    phx
    clc
@@ -67,16 +83,12 @@ gensine:
    ldx   valuei
    jsr   @store4q
 
-; could use bbs2 here, but that would break 65816 compatibility
-.if 0
-   bbs2  BRK_SY(needs to be copied to zeropage),:+
-.else
    lda   BRK_SY
    and   #$04
    beq   :+
 
+   ; bit 2 is set -> store decimal part in following page
    lda   valued
-.endif
    inc   ovec+1
    lda   #$ff
    sec
@@ -100,7 +112,16 @@ gensine:
    dec   index3
    plx
    dex
-   bpl   @parloop
+   bne   @parloop
+
+   ; restore zeropage variables used
+   ;ldx   #$00        ; X=0 already
+:
+   pla
+   sta   savest,x
+   inx
+   cpx   #(savend-savest)
+   bcc   :-
 
    rts
 
@@ -175,7 +196,7 @@ inputline:
    bra   @getloop
 
 @bs:
-   tya                ;cmp #$00
+   tya               ; cmp #$00
    beq   @getloop
    lda   #$7f
    jsr   CHROUT
@@ -199,4 +220,3 @@ inputline:
 @clrdone:
    plp
    rts
-

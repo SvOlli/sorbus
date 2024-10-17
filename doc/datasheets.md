@@ -30,7 +30,7 @@ directory that can be used to download these documents.
 * [MOS 6502 User's Manual](https://archive.org/download/6502um/6502UsersManual.pdf)
 * [MOS 6500 Preliminary](http://www.6502.org/documents/datasheets/mos/mos_6500_mpu_preliminary_may_1976.pdf)
 * [MOS 65CE02 Preliminary](http://www.6502.org/documents/datasheets/mos/mos_65ce02_mpu.pdf)
-* [CMD G65SC02](https://www.datasheetspdf.com/pdf-down/G/6/5/G65SC02_CaliforniaMicroDevicesCorp.pdf)
+* [CMD G65SC02](https://www.datasheetcafe.com/wp-content/uploads/pdf/G65SC02.pdf)
 
 6502 Based SBCs
 ---------------

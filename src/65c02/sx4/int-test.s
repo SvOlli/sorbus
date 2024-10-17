@@ -4,6 +4,9 @@
 
 TMPVEC = $fe
 
+SIN_XR = $fc
+SIN_YR = $fd
+
 .segment "CODE"
 start:
    ldy   #VT100_SCRN_CLR
@@ -29,7 +32,7 @@ start:
    .byte 10,"c) $0a: VT100"
    ; $0b: COPYBIOS
    .byte 10,"d) $0c: line input"
-   ; $0d: GENSINE
+   .byte 10,"e) $0d: generate sine"
    .byte 10,"`) quit"
    .byte 10,0
 
@@ -58,6 +61,7 @@ jmptab:
    .word dir
    .word vt100
    .word lineinput
+   .word gensine
 jmpend:
 
 user:
@@ -245,3 +249,92 @@ hexdumppage:
 
    lda   #$0a
    jmp   CHROUT
+
+gensine:
+   ldy   #VT100_SCRN_CLR
+   int   VT100
+   lda   #$10
+   sta   SIN_XR
+   lda   #$00
+   sta   SIN_YR
+
+@inputloop:
+   lda   #$01
+   tax
+   ldy   #VT100_CPOS_SET
+   int   VT100
+
+   jsr   PRINT
+   .byte "amplitude:",0
+
+   lda   SIN_XR
+   int   PRHEX8
+
+   jsr   PRINT
+   .byte " variant:",0
+
+   lda   SIN_YR
+   int   PRHEX8
+
+   lda   #$0a
+   jsr   CHROUT
+
+   lda   #$CF
+   jsr   hexdumppage
+
+   jsr   PRINT
+   .byte 10,"0-9,a-f) amplitude   i-l) offset   q) quit"
+   .byte 10,0
+
+@keyloop:
+   jsr   CHRIN
+   bcs   @keyloop
+
+   cmp   #'q'
+   bne   :+
+   jmp   start
+:
+   cmp   #'0'
+   bcc   @keyloop
+   cmp   #'9'+1
+   bcc   @amp09
+
+   cmp   #'a'
+   bcc   @keyloop
+   cmp   #'f'+1
+   bcc   @ampaf
+
+   cmp   #'i'
+   bcc   @keyloop
+   cmp   #'l'+1
+   bcc   @offset
+
+   bra   @keyloop
+
+@offset:
+   and   #$0f    ; now is at $9-$c
+   sec
+   sbc   #$09
+   sta   SIN_YR
+   bra   @calcsine
+
+@ampaf:
+   ;clc          ; called via bcc
+   adc   #$09    ; 'a'=$61, +9=$6a
+@amp09:
+   and   #$0f
+   bne   :+
+   lda   #$10    ; 0 is interpreted as $10
+:
+   sta   SIN_XR
+
+@calcsine:
+; A: page for table
+; X: size ($01-$10)
+; Y: variant ($00-$03)
+   lda   #$CF
+   ldx   SIN_XR
+   ldy   SIN_YR
+   int   GENSINE
+
+   jmp   @inputloop

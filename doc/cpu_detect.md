@@ -548,11 +548,16 @@ This CPU is very interesting. Notice how the `INX` opcodes in lines
 variant can do this, they all require two clock cycles.
 
 The rest of the detection is rather plain. The $5c opcode in line 11 is
-evaluated as a 4 bytes instruction. The only 4 byte opcode the CPU has.
-Only the 65816 also has 4 byte opcodes. In this case the `SEC` that's
-evaluated by all other CPUs (except for the 65816), is skipped, so the
-`BCC`-branch is taken by this CPU only. (Also branching requires only
-two clock cycles, not three like with all others.)
+evaluated as a 4 bytes instruction. The only 4 byte opcode this CPU has.
+Only the 65816 also has 4 byte opcodes.
+
+This opcode however, even though it is called `AUG`, behaves like a
+4 byte `NOP`. So, in this case the `SEC`, that's evaluated by all other
+CPUs (except for the 65816), is skipped, and the `BCC`-branch is taken
+by this CPU only. (The 4510 chip uses the $5c opcode, now called `MAP`
+and shrunken down to 1 byte, to set up memory mapping. Also note that
+branching requires only two clock cycles, not three like with all other
+6502 variants.)
 
 
 The Mysterious Problem
@@ -573,10 +578,12 @@ moved to a position, where the writes go to a part of memory that was
 not used during the test.
 
 Interestingly, this is described as an enhancement to the original NMOS
-6502 CPU according to the CMD G65SC02 datasheet. However, even later
-CPUs do not have this "feature". It is also not possible to cleanly
-"return" from a reset, since the program counter might not be pointing
-to an instruction. This is not the case with interrupts.
+6502 CPU according to the
+[CMD G65SC02 datasheet](https://www.alldatasheet.com/datasheet-pdf/view/57031/CALMIRCO/G65SC02.html).
+However, even later CPUs do not have this "feature". It is also not
+possible to cleanly "return" from a reset, since the program counter
+might not be pointing to an instruction. This is not the case with
+interrupts.
 
 How was it fixed? The writes happen in a very early stage, even before
 the reset vector is being read to determine where in memory to start
@@ -593,7 +600,7 @@ After finishing the CPU detection from the Sorbus, I found this:
 of the [cc65](https://cc65.github.io/) compiler suite. It can tell
 apart nine different 6502 based CPUs.
 
-While this is more than the six CPUs being detected with the method
+While there are more than the six CPUs being detected with the method
 described here, it does not make sense to add any of those CPUs to this
 routine for a simple reason: they don't fix in a 40 pins socket compatible
 with the 65C02. The table has a slightly more detailed description:
@@ -606,9 +613,9 @@ with the 65C02. The table has a slightly more detailed description:
 | 65SC02    | 65C02 without bit manipultion opcodes | yes                   |
 | 65CE02    | Commodore CMOS, used in Amiga A2232   | yes                   |
 | 4510      | 65CE02 based microcontroller with MMU | no, different package |
-| HuC6280   | PC Engine, adds MMU and sound         | no, different package |
-| 2a03/2a07 | NES/Famicom, adds sound, no BCD       | no, different pinout  |
 | 45GS65    | MEGA65, huge expansion of 4510        | no, FPGA              |
+| HuC6280   | PC Engine, CMOS, adds MMU and sound   | no, different package |
+| 2a03/2a07 | NES/Famicom, NMOS, adds sound, no BCD | no, different pinout  |
 
 So, there is now other CPU to be detected.
 

@@ -151,5 +151,10 @@
 ; unused end of buffer will be padded with $00 bytes
 .define LINEINPUT $0C
 
+; generate a sine table
+; A=page to write table to
+; X=amplitude ($01-$10)
+; Y=offset ($00-$03)
+;   adding $04 also writes the decimal parts to following page
 .define GENSINE   $0D
 

@@ -107,7 +107,7 @@ Memory map
    -  $0008-$000F: zeropage RAM used by WozMon
    -  $00E3-$00FF: zeropage RAM used by TIM
 -  $0100-$01FF: stack
--  $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs)
+-  $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs, VT100)
 -  $0400-$CFFF: RAM for generic use
 -  $D000-$DEFF: I/O provided by external boards
 -  $D000-$D3FF: scratch RAM that can by exchanged with $0000-$03FF
@@ -261,13 +261,16 @@ Kernel Interrupts
 -  $03: prhex8: output accumulator as 2 digit hex value
 -  $04: prhex16: output X and accumulator as 4 digit hex value
 -  $05: CP/M-fs set filename: convert filename (pointer in X/A),
-   Y=userid
+        Y=userid
 -  $06: CP/M-fs load: load file to address in ($030c/d)
 -  $07: CP/M-fs save: save file from address in ($030c/d) to ($030e/f)
 -  $08: CP/M-fs erase: delete file
 -  $09: CP/M-fs directory: load directory to address in ($030c/d) or
-   screen
+        console ($030d=$00)
 -  $0A: VT100: several screen functions: Y=specify function (see below)
+-  $0B: copy BIOS from ROM to RAM
+-  $0C: input a text line from console (pointer in X/A,
+        Y: size of input ($00-$7F), add $80 for only upper case)
 
 For an own interrupt handler invoked via $DF78/9, it is recommended to
 use interrupt arguments starting with $80, as those won't be used by the
