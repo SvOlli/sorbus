@@ -7,16 +7,18 @@ same pinout. The small test and learn environment "Monitor Command
 Prompt" or MCP for short
 ([pun](https://en.wikipedia.org/wiki/List_of_Tron_characters#Master_Control_Program)
 very intended) can be used to learn all the details about each CPU up
-to a certain degree. (Not all pins are connected due to a limit amount
-of 30 GPIO pins of the RP2040.)
+to a certain degree. (Not all pins are connected due to a limited amount
+of 30 GPIO pins on the RP2040.)
 
 However, it is interesting to know which CPU the system is running on.
-The "Native Core" is the one with the most features, but does uses
+The "Native Core" is the one with the most features, but does use
 opcodes and features that are not available or buggy on an (old) NMOS
 6502. This means that a 65C02 or any other CMOS variant is required.
-So, it should be a good idea to detect that CPU and print an error
+So, it should be a good idea to detect the NMOS 6502 and print an error
 message that the system won't work, when running on an NMOS 6502,
-instead of randomly crashing.
+instead of randomly crashing. (It even drops you to WozMon after
+acknowledging the error message, so that some very basic things can be
+done.)
 
 Also, there is another point where a CPU detection is very handy. If you
 search for cheap 65C02 processors, you typically find offerings on ebay
@@ -32,7 +34,7 @@ the internet in several variants.
 
 And the solution presented here is also not one without side effects, as
 it relys on special features of the runtime environment. This exact code
-would only work partially on an Apple II for example.
+would only work partially on an Apple II series machine for example.
 
 
 Partial Detection
@@ -63,14 +65,14 @@ from an Apple IIc/IIe enhanced (using a 65C02) and the original Apple
 II/II+/IIe (using an NMOS 6502).
 
 ```
-;  65816       ; 65C02           ; 6502
-   LDA   #$01  ; LDA   #$01      ; LDA   #$01
-   XBA         ; .byte $eb ; NOP ; .byte $EB, $EA ; "illegal" SBC #$EA
-   NOP         ; NOP             ; 
-   LDA   #$EA  ; LDA   #$EA      ; LDA   #$EA
-   XBA         ; .byte $eb ; NOP ; .byte $EB, $EA ; "illegal" SBC #$EA
-   NOP         ; NOP             ; 
-;  A=$01       ; A=$EA           ; A=$00
+;  65816       ; 65C02            ; 6502
+   LDA   #$01  ; LDA   #$01       ; LDA   #$01
+   XBA         ; .byte $eb ; NOP  ; .byte $EB, $EA ; "illegal" SBC #$EA
+   NOP         ; NOP              ;
+   LDA   #$EA  ; LDA   #$EA       ; LDA   #$EA
+   XBA         ; .byte $eb ; NOP  ; .byte $EB, $EA ; "illegal" SBC #$EA
+   NOP         ; NOP              ;
+;  A=$01       ; A=$EA            ; A=$00
 
 ;  ALL
    BEQ   is6502   ; needs to be first
@@ -112,7 +114,7 @@ with a pin layout similar to the original NMOS 6502 and the CMOS 65C02:
 The pin layout is not 100% the same on all chips, but still enough to
 run all CPUs with the Sorbus Computer, while omitting some of their
 features provided by pins on the chip. Variants like the
-[HuC6280](https://en.wikipedia.org/wiki/Hudson_Soft_HuC6280) is not part
+[HuC6280](https://en.wikipedia.org/wiki/Hudson_Soft_HuC6280) are not part
 of conciderations, as those chips have totally different pin layouts.
 
 Side note: the NMOS 6502 has 3510 transistors, the Rev.A should have a
@@ -171,11 +173,11 @@ So the code would pratically look something like this:
    ; run test code
    ; [...]
    ; more return codes before those three
-:is65816      ; exit for 16 bit 65816 (3)
+is65816:      ; exit for 16 bit 65816 (3)
    INX
-:is65C02      ; exit for CMOS 65C02 (2)
+is65C02:      ; exit for CMOS 65C02 (2)
    INX
-:is6502       ; exit for NMOS 6502 (1)
+is6502:       ; exit for NMOS 6502 (1)
    INX
    STX   $FF  ; stops runtime environment
 ```
@@ -617,7 +619,7 @@ with the 65C02. The table has a slightly more detailed description:
 | HuC6280   | PC Engine, CMOS, adds MMU and sound   | no, different package |
 | 2a03/2a07 | NES/Famicom, NMOS, adds sound, no BCD | no, different pinout  |
 
-So, there is now other CPU to be detected.
+So, there is no other CPU to be detected.
 
 However, getcpu.s does not support the 6502 without the ROR opcode.
 As the output of the C compiler relies on this opcode, it does not make
