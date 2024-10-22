@@ -1,5 +1,6 @@
 ; changes todo
 ; [ ] implement auto-load + run from file manager
+; [ ] fix fre(0)
 ; [X] remove SCRWIDTH, POSWARP, POSX
 ; [X] Change useless NULL instruction to SYS to align tokens
 ; [X] Change input to "INT LINEINPUT"
@@ -409,10 +410,10 @@ L4192:
    lda   TXTTAB
    ldy   TXTTAB+1
    jsr   REASON
-.if USE_SYS
 .if USE_LINEWRAP
    stz   POSX
 .endif
+.if USE_SYS
 .else
    jsr   PRINTNULLS ;CRDO
 .endif

@@ -96,14 +96,20 @@
 ;  -------------------------------------------------------------------
 
 ; zeropage addresses used
+.if 0
 CRDLY     := $E3 ; 227              ;DELAY FOR CR IN BIT-TIMES
+.endif
 WRAP      := $E4 ; 228              ;ADDRESS WRAP-AROUND FLAG
 DIFF      := $E5 ; 229
+.if 0
 HSPTR     := $E7 ; 231
 HSROP     := $E8 ; 232
+.endif
 PREVC     := $E9 ; 233
+.if 0
 MAJORT    := $EA ; 234
 MINORT    := $EB ; 235
+.endif
 ACMD      := $EC ; 236
 TMP0      := $EE ; 238
 TMP2      := $F0 ; 240
@@ -140,12 +146,21 @@ timstart:
 
    txs
    inx
+.if 0
    stx   MAJORT         ; init major t count to zero
    stx   HSPTR          ; clear hsptr flags
    stx   HSROP
+.endif
    cli                  ; enable ints
+   txa
+   tay
    int   $00            ; TIM repurposes Sorbus user interrupt vector
    jmp   ($FFFC)        ; continue with reset
+
+timvecs:
+   .word timbrk         ; UVBRK
+   .word timnmint       ; UVNMI
+   .word timintrq       ; UVNBI
 
 timnmint:
    sta   ACC
@@ -157,13 +172,13 @@ timintrq:
    bne   bintcom        ; jmp to interrupt common code
 timbrk:
    sta   ACC            ; save acc
-   pla                  ; pull jsr return address saved on stack by BRK routine
-   pla                  ; pull jsr return address saved on stack by BRK routine
+   pla                  ; pull jsr return address saved on stack by kernel BRK routine
+   pla                  ; pull jsr return address saved on stack by kernel BRK routine
    lda   #' '           ; space shows brk
 bintcom:
    sta   TMPC           ; save int type flag
    cld                  ; clear decimal mode
-   lsr                  ; # is odd, space is even
+   ;lsr                  ; # is odd, space is even
                         ; set cy for pc brk correction
 
    stx   XR             ; save X
@@ -193,7 +208,9 @@ bintcom:
 
 start:
    lda   #$00           ; next command from user
+.if 0
    sta   HSPTR          ; clear h.s. paper tape flag
+.endif
    sta   WRAP           ; clear address wrap-around flag
    jsr   CRLF
    lda   #'.'           ; type prompting '.'
@@ -365,36 +382,43 @@ GO:
    rti
 
 HSP:
+.if 0
    inc   HSROP         ; toggle bit C
+.endif
    jmp   start
 
 LH:
-   jsr   RDOC          ; read second cmd char
+   jsr   RDOC          ; read second cmd char -> and ignore
    jsr   CRLF
+.if 0
    ldx   HSROP         ; enable ptr option if set
    stx   HSPTR
+.endif
 LH1:
    jsr   RDOC
+   and   #$fe          ; SORBUS addition because the output if WH is ';'
    cmp   #':'          ; find next bcd mark (:)
-   bne   LH1
+   bne   LH1           ; loop until found
 
    ldx   #$04
    jsr   ZTMP          ; clear cksum regs TMP4
-   jsr   RDOB
-   bne   LH2
+   jsr   RDOB          ; read hex value -> length
+   bne   LH2           ; data remain
 
    ldx   #$00          ; clear hs ror flag
+.if 0
    stx   HSPTR
+.endif
    beq   BEQS1         ; finished
 
 LH2:
-   sta   RCNT          ; RCNT
-   jsr   CADD          ; bcd lngh to cksum
+   sta   RCNT          ; RCNT -> save counter
+   jsr   CADD          ; bcd lngh to cksum ; add to chksum
    jsr   RDOB          ; sa ho to TMP0+1 (sa=startaddress)
    sta   TMP0+1
    jsr   CADD          ; add to cksum
    jsr   RDOB          ; sa lo to TMP0
-   sta   TMP0
+   sta   TMP0+0
    jsr   CADD          ; add to cksum
 
 LH3:
@@ -763,11 +787,6 @@ hexit:
    adc   #$08           ; alpha acc 8+CY=9
 hex09:
    rts
-
-timvecs:
-   .word timbrk         ; UVBRK
-   .word timnmint       ; UVNMI
-   .word timintrq       ; UVNBI
 
 .out "   ==============="
 .out .sprintf( "   TIM size: $%04x", * - timstart )

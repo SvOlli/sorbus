@@ -63,15 +63,14 @@ reset:
    tax
 @no65c02char:
    lda   @no65c02message,x
-   bne   :+
-
-   jsr   CHRIN
-   bcs   @no65c02loop
-   bcc   @woz
-:
+   beq   :+
    jsr   CHROUT
    inx
    bne   @no65c02char
+:
+   jsr   CHRIN
+   bcs   @no65c02loop
+   bcc   @woz
 
 @no65c02message:
    .byte "NMOS 6502 not supported, dropping to WozMon", 13, 0

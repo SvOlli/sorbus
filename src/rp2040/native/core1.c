@@ -590,6 +590,17 @@ uint32_t debug_getbus( int i )
 
 
 
+void debug_raw_backtrace()
+{
+   printf( "TRACE_START %s\n", cputype_name( cputype ) );
+   for( int i = buslog_index; i < (buslog_index + BUSLOG_SIZE); ++i )
+   {
+      printf( "%08x\n", buslog_states[i & (BUSLOG_SIZE-1)] );
+   }
+   printf( "TRACE_END\n" );
+}
+
+
 void debug_backtrace()
 {
    check_cpu_is_halted();

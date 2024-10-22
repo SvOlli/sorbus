@@ -94,6 +94,10 @@ void console_rp2040()
       in = toupper( getchar() );
       switch( in )
       {
+         case '!':
+            printf( "%c\n", in );
+            debug_raw_backtrace();
+            break;
          case 'B':
             printf( "%c\n", in );
             debug_backtrace();

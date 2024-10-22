@@ -46,16 +46,14 @@
 .include "../native_bios.inc"
 
 .define SORBUS 1 ; set this to 0 to build KIM-1 version
+.define CPUID $DF04
 
 .segment "CODE"
 ;      *= $0200      ; set program counter
 ;      !to "org0200e.bin", plain   ; set output file and format
 .if SORBUS
 start:
-   jsr   message
-   lda   #$2c     ; change jsr to bit to disable message upon restart
-   sta   start
-   jmp   x40b   ; convenience, start address same as load point
+   jmp   message
 
    INL    = $F8
    INH    = $F9
@@ -81,15 +79,50 @@ outsp:
    jmp   CHROUT
 
 prtpnt:
-   phx
+   lda   POINTH
+   jsr   prtbyt
    lda   POINTL
-   ldx   POINTH
-   int   PRHEX16
-   plx
+prtbyt:
+   pha
+   pha
+   lsr
+   lsr
+   lsr
+   lsr
+   jsr   prthex
+   pla
+   jsr   prthex
+   pla
    rts
+prthex:
+   and   #$0f
+   ora   #'0'
+   cmp   #':'
+   bcc   :+
+   adc   #$06
+:
+   jmp   CHROUT
+
 
 getch:
-   int   CHRINUC
+   jsr   CHRIN
+   bcs   getch
+
+   cmp   #'a'
+   bcc   :+
+   cmp   #'z'+1
+   bcs   :+
+   and   #$df     ; uppercase
+:
+
+   cmp   #$0d
+   bne   :+
+   lda   #' '        ; convenience: return -> space, so return ends input
+:
+   cmp   #$7f
+   bne   :+
+   lda   #'<'
+:
    jmp   CHROUT
 
 getbyt:
@@ -98,10 +131,6 @@ getbyt:
    jsr   getch
    jsr   pack
    lda   INL
-   rts
-
-prtbyt:
-   int   PRHEX8
    rts
 
 incpt:
@@ -316,10 +345,6 @@ x4d6:
    jsr   getch
    cmp   #'<'  ; the cancel character
    beq   x4c5 ; restarts the input
-.if SORBUS
-   cmp   #$7f   ; backspace as additional cancel character
-   beq   x4c5 ; restarts the input
-.endif
    rts
 ; get a character and try to pack it as hex
 ; on return A=0 if it was hex, A=character otherwise
@@ -367,10 +392,37 @@ x55f:   .byte $c0, $07, $38
 
 .if SORBUS
 message:
+   ; message will be shown only on first start
+   ; by changing start address to original
+   lda   #<message
+   sta   POINTL
+   lda   #>message
+   sta   POINTH
+   lda   #<x40b
+   sta   start+1
+   lda   #>x40b
+   sta   start+2
+
+   lda   CPUID
+   lsr            ; is this NMOS?
+   bcc   cmos
+   ldx   #$00
+:
+   lda   welcome,x
+   beq   :+
+   jsr   CHROUT
+   inx
+   bne   :-
+:
+   jmp   x40b     ; skip intoductions
+cmos:
+
    jsr   PRINT ;345678901234567890123456789012345678901234567890123456789012345678901234567890
+welcome:
    .byte $0a,"Instant 6502 Assembler for the KIM-1 ported to the Sorbus Computer"
    .byte $0a,"written by Alan Cashin"
-   .byte $0a
+   .byte $0a,$00
+   jsr   PRINT
    .byte $0a,"The assembler is presented more for curiosity value than as a serious"
    .byte $0a,"programming tool. It was written for the base model KIM-1 with very little"
    .byte $0a,"memory, to ease the task of entering programs."
@@ -416,10 +468,7 @@ message:
    .byte $0a,"WozMon's ",$22,"R",$22," command. Assembler can be restarted with ",$22,"0400 R",$22
    .byte $0a,"On restart, this message will not be displayed"
    .byte $00
-   lda   #<message
-   sta   POINTL
-   ldx   #>message
-   stx   POINTH
-   jmp   crlf
+   jsr   crlf
+   jmp   x40b
 .endif
 

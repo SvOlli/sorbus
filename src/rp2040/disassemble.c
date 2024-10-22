@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bus.h"
+
 static uint8_t mx_flag_816 = 0;
 static disass_show_t show_flags = DISASS_SHOW_NOTHING;
 void disass_mx816( bool m, bool x )
@@ -20,42 +22,6 @@ typedef struct {
    const char *name;
    uint32_t variant;
 } opcode_t;
-
-typedef enum {
-   UNDEF = 0,
-   ABS,   // OPC $1234
-   ABSIL, // OPC [$1234]
-   ABSL,  // OPC $123456
-   ABSLX, // OPC $123456,X
-   ABSLY, // OPC $123456,Y
-   ABSX,  // OPC $1234,X
-   ABSY,  // OPC $1234,Y
-   ABSZ,  // OPC $1234,Z
-   AI,    // OPC ($1234)
-   AIL,   // OPC ($123456)
-   AIX,   // OPC ($1234,X)
-   IMP,   // OPC
-   IMM,   // OPC #$01
-   IMM2,  // OPC #$01,#$02
-   IMML,  // OPC #$1234
-   REL,   // OPC LABEL
-   RELL,  // OPC LABEL
-   RELSY, // OPC (LABEL,S),Y
-   ZP,    // OPC $12
-   ZPI,   // OPC ($12)
-   ZPIL,  // OPC [$12]
-   ZPILY, // OPC [$12],Y
-   ZPISY, // OPC ($12,S),Y
-   ZPN,   // OPC# $12
-   ZPNR,  // OPC# $12,LABEL
-   ZPS,   // OPC $12,S
-   ZPX,   // OPC $12,X
-   ZPY,   // OPC $12,Y
-   ZPIX,  // OPC ($12,X)
-   ZPIY,  // OPC ($12),Y
-   ZPIZ,  // OPC ($12),Z
-   ADDREND
-} addrmode_t;
 
 /* at bit:
  *  |  bits used:                             expected values
@@ -89,7 +55,7 @@ typedef enum {
 #define PICK_CYCLES(o)   ((o->variant >> 10) & 0x0F)
 #define PICK_EXTRA(o)    ((o->variant >> 14) & 0x03)
 #define PICK_MXE(o)      ((o->variant >> 16) & 0x07)
-#define PICK_JUMP(o)     ((o->variant >> 18) & 0x03)
+#define PICK_JUMP(o)     ((o->variant >> 19) & 0x01)
 
 opcode_t opcodes6502[] = {
 #include "opcodes6502.tab"
@@ -111,7 +77,27 @@ opcode_t opcodes65sc02[] = {
 #include "opcodes65sc02.tab"
 };
 
+
 static opcode_t *disass_opcodes = 0;
+
+
+bool trace_is_write( uint32_t trace )
+{
+   return (trace & bus_config.mask_rw) == 0;
+}
+
+
+uint16_t trace_address( uint32_t trace )
+{
+   return (trace >> bus_config.shift_address);
+}
+
+
+uint8_t trace_data( uint32_t trace )
+{
+   return (trace >> bus_config.shift_data);
+}
+
 
 int disass_debug_info( uint32_t id )
 {
@@ -123,6 +109,7 @@ int disass_debug_info( uint32_t id )
          return 0;
    }
 }
+
 
 uint8_t disass_jsr_offset( uint8_t opcode )
 {
@@ -136,8 +123,10 @@ uint8_t disass_jsr_offset( uint8_t opcode )
    }
 }
 
+
 void disass_cpu( cputype_t cpu )
 {
+   //_disass_cpu = cpu;
    switch( cpu )
    {
       case CPU_6502:
@@ -160,6 +149,7 @@ void disass_cpu( cputype_t cpu )
          disass_opcodes = 0;
    }
 }
+
 
 uint8_t disass_bytes( uint8_t p0 )
 {
@@ -220,6 +210,7 @@ uint8_t disass_bytes( uint8_t p0 )
    return retval;
 }
 
+
 uint8_t disass_bytes2( uint8_t p0 )
 {
    opcode_t *o = 0;
@@ -232,9 +223,9 @@ uint8_t disass_bytes2( uint8_t p0 )
    return PICK_BYTES(o);
 }
 
-uint8_t disass_cycles( uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
+
+uint8_t disass_basecycles( uint8_t p0 )
 {
-   uint8_t retval = 0;
    opcode_t *o = 0;
    if( !disass_opcodes )
    {
@@ -242,8 +233,48 @@ uint8_t disass_cycles( uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
    }
    o = disass_opcodes + p0;
 
-   retval = PICK_CYCLES(o) | (PICK_EXTRA(o) << 4);
+   return PICK_CYCLES(o);
 }
+
+
+uint8_t disass_addrmode( uint8_t p0 )
+{
+   opcode_t *o = 0;
+   if( !disass_opcodes )
+   {
+      return 0;
+   }
+   o = disass_opcodes + p0;
+
+   return PICK_OPCODE(o);
+}
+
+
+bool disass_isjump( uint8_t p0 )
+{
+   opcode_t *o = 0;
+   if( !disass_opcodes )
+   {
+      return 0;
+   }
+   o = disass_opcodes + p0;
+
+   return PICK_JUMP(o);
+}
+
+
+uint8_t disass_extracycles( uint8_t p0 )
+{
+   opcode_t *o = 0;
+   if( !disass_opcodes )
+   {
+      return 0;
+   }
+   o = disass_opcodes + p0;
+
+   return PICK_EXTRA(o);
+}
+
 
 const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
 {
@@ -408,115 +439,3 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
 
    return buffer;
 }
-
-
-#if 0
-
-typedef enum predict_variant{
-   PREDICT_NONE         = 0,
-   PREDICT_ADDRESS      = 1 << 0,
-   PREDICT_CYCLES       = 1 << 1,
-   PREDICT_CORRECTION   = 1 << 2
-} predict_variant_t;
-
-typedef struct {
-   predict_variant_t variant;
-   uint16_t          address;
-   uint8_t           cycles;
-   uint8_t           extra_cycles;
-} predict_t;
-
-static struct {
-   uint16_t address;
-   uint8_t  data;
-} clairvoyant_history[0x10] = { 0 }; // size needs to be power of 2;
-static int clairvoyant_index = 0;
-
-
-void clairvoyant_history_add( uint16_t address, uint8_t data )
-{
-   clairvoyant_history[clairvoyant_index].address = address;
-   clairvoyant_history[clairvoyant_index].data    = data;
-
-   ++clairvoyant_index;
-   clairvoyant_index &= count_of(clairvoyant_history) - 1;
-}
-
-
-bool clairvoyant( uint32_t address, uint32_t flags, disass_peek_t peek )
-{
-   bool retval = false;
-   static predict_t correction = { 0 };
-   static predict_t prediction = { 0 };
-
-   /*
-    * 0: next address without branch
-    * 1: branch target
-    * 2: interrupts
-    */
-   static uint32_t next      = 0xffffffff;
-   static uint32_t jump      = 0xffffffff;
-   static uint32_t interrupt = 0xffffffff;
-
-   if( next == 0xffffffff )
-   {
-      /* first call: initialize */
-      next = address )
-   }
-
-   if( interrupt == address )
-   {
-      /* branch was taken, correct output */
-      next = address;
-      interrupt = 0xffffffff;
-   }
-   else if( branch == address )
-   {
-      /* interrupt, reset, etc */
-      next = address;
-      interrupt = 0xffffffff;
-   }
-
-   if( next == address )
-   {
-      uint8_t opcode = peek(address+0);
-      uint8_t byte1  = peek(address+1);
-      uint8_t byte2  = peek(address+2);
-      uint8_t byte3  = peek(address+3);
-
-      disass( address, opcode, byte1, byte2, byte3 );
-      switch( PICK_JUMP(opcode) )
-      {
-         case  1: // branch
-            next = address + 2;
-            jump = address + 2 + (int8_t)byte1;
-            break;
-         case  2: // long branch
-            next = address + 3;
-            jump = address + 3 + (int16_t)(byte1 | (byte2 << 8));
-            break;
-         case  3: // absolute
-            next = (uint32_t)(byte1 | (byte2 << 8));
-            jump = next;
-            break;
-         case  4: // long absolute
-            next = (uint32_t)(byte1 | (byte2 << 8) | (byte3 << 16) );
-            jump = next;
-            break;
-         case  5: // indirect
-            next = (uint32_t)(byte1 | (byte2 << 8));
-            jump = (uint32_t)(peek(next+0) | (peek(next+1) << 8));
-            next = jump;
-            break;
-         case  6: // indirect,x
-            break;
-         case  7: // stack (rts,rti)
-            break;
-         default:
-            next = address + PICK_BYTES(opcode);
-            break;
-      }
-   }
-}
-
-#endif

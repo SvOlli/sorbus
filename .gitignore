@@ -3,3 +3,4 @@ dump
 external-build
 doc/downloaded
 pcb/*/*-backups
+doc/traces/*.diff

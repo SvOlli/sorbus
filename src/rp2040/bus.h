@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+#ifndef BUS_H
+#define BUS_H BUS_H
+
 #include "pico/stdlib.h"
 
 typedef struct {
@@ -38,3 +41,5 @@ typedef struct {
 extern const bus_config_t bus_config;
 
 void bus_init();
+
+#endif

@@ -67,10 +67,10 @@ II/II+/IIe (using an NMOS 6502).
 ```
 ;  65816       ; 65C02            ; 6502
    LDA   #$01  ; LDA   #$01       ; LDA   #$01
-   XBA         ; .byte $eb ; NOP  ; .byte $EB, $EA ; "illegal" SBC #$EA
+   XBA         ; .byte $EB ; NOP  ; .byte $EB, $EA ; "illegal" SBC #$EA
    NOP         ; NOP              ;
    LDA   #$EA  ; LDA   #$EA       ; LDA   #$EA
-   XBA         ; .byte $eb ; NOP  ; .byte $EB, $EA ; "illegal" SBC #$EA
+   XBA         ; .byte $EB ; NOP  ; .byte $EB, $EA ; "illegal" SBC #$EA
    NOP         ; NOP              ;
 ;  A=$01       ; A=$EA            ; A=$00
 

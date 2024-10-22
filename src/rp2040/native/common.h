@@ -33,5 +33,6 @@ void debug_heap();
 void debug_internal_drive();
 void debug_memorydump();
 void debug_queue_event( const char *text );
+void debug_raw_backtrace();
 
 #endif

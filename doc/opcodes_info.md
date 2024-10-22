@@ -15,7 +15,7 @@ Columns
 - ExtraCycles: extra cycles taken when crossing a page(1) and/or taking a branch(2)
 - MXE: (65816 only) add an extra byte for 16 bit A(1) or X,Y(2)?
   Or is there any other specific behaviour bound to "E"-flag(4)?
-- Jump: no jump(0), will jump(1), might jump(2)
+- Jump: brk, jsr, jmp, rts, branch, etc.
 
 Those columns will be mapped onto a 32 bit config bit array, see
 `src/rp2040/disassemble.c` for details.

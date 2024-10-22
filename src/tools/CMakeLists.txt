@@ -34,7 +34,17 @@ add_executable(binjoin
    binjoin.c
    )
 
-# tool to convert binary data to header file for including in source code
+# tool to convert test disassembler
+add_executable(historian
+   historian.c
+   )
+
+# tool to convert binary data to TIM paper tape format
+add_executable(timcat
+   timcat.c
+   )
+
+# tool to convert binary data to WozMon input
 add_executable(wozcat
    wozcat.c
    )

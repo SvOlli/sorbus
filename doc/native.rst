@@ -46,6 +46,15 @@ to RAM. This will enable the loaded code to utilize the software
 interrupt handler and other features of the kernel. This part is called
 the BIOS.
 
+Using an NMOS 6502
+------------------
+
+The firmware of this core does not support an NMOS 6502, and shows an
+appropriate message upon startup. However, is it possible to drop into
+WozMon. This can be used for some rudimentary work. It's also possible
+to run Instant Assembler within WozMon using the tool ``wozcat``.
+
+
 CP/M 65 Usage
 ~~~~~~~~~~~~~
 

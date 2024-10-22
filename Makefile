@@ -15,7 +15,7 @@ LS           = ls -l
 GIT_CHECKOUT = git clone --depth 1 --recurse-submodules --shallow-submodules
 
 CC65_SDK_INCLUDES = native.inc native_bios.inc
-CC65_SDK_TOOLS    = wozcat.c
+CC65_SDK_TOOLS    = wozcat.c timcat.c
 
 $(info # This Makefile is not required and for convenience only)
 
