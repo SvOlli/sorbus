@@ -601,6 +601,9 @@ browsedir:
    ldx   DIRSTART       ; check for dummy entry
    bmi   @inputloop
 
+   cmp   #'`'
+   beq   @leave
+
    cmp   #'L'
    bne   :+
    jmp   load
@@ -628,8 +631,6 @@ browsedir:
 
 @esc:
    int   CHRINUC
-   cmp   #$1b
-   beq   @leave
    cmp   #'['
    bne   @inputloop+2
 

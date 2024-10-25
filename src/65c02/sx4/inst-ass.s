@@ -43,10 +43,12 @@
 ; / returns to the KIM monitor
 ;
 
-.include "../native_bios.inc"
-
 .define SORBUS 1 ; set this to 0 to build KIM-1 version
-.define CPUID $DF04
+
+.define CPUID  $DF04
+.define CHRIN  $FF00
+.define CHROUT $FF03
+.define PRINT  $FF06
 
 .segment "CODE"
 ;      *= $0200      ; set program counter
@@ -69,10 +71,7 @@ open:
 
 crlf:
    lda   #$0a
-   jsr   CHROUT
-   lda   #$00
-   ldx   #$ff
-   rts
+   jmp   CHROUT
 
 outsp:
    lda   #$20
@@ -84,16 +83,17 @@ prtpnt:
    lda   POINTL
 prtbyt:
    pha
-   pha
    lsr
    lsr
    lsr
    lsr
    jsr   prthex
    pla
+   pha
    jsr   prthex
    pla
    rts
+
 prthex:
    and   #$0f
    ora   #'0'
@@ -112,7 +112,7 @@ getch:
    bcc   :+
    cmp   #'z'+1
    bcs   :+
-   and   #$df     ; uppercase
+   and   #$df        ; uppercase
 :
 
    cmp   #$0d
@@ -121,7 +121,7 @@ getch:
 :
    cmp   #$7f
    bne   :+
-   lda   #'<'
+   lda   #'<'        ; convenience: backspace -> "<", to cancel input
 :
    jmp   CHROUT
 
@@ -169,8 +169,10 @@ pack:
    lda   #$00
 @done:
    rts
+
 exit:
    jmp   ($fffc)
+
 .else
 ; define some KIM-1 ROM addresses
    open    = $1fcc ; copy INL/INH to POINTL/POINTH

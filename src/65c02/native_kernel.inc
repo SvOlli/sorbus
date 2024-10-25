@@ -20,3 +20,5 @@
 .global  gensine
 .global  printtmp16
 .global  inputline
+.global  ramio
+.global  ramio_cmd

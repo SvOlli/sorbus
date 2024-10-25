@@ -68,7 +68,7 @@ endfunction()
 bin2h(krusader.h ${CMAKE_HOME_DIRECTORY}/bin/krusader_65C02.bin krusader_e000)
 src2h(cpudetect_apple1.h cpudetect_apple1 cpudetect_0280)
 src2h(cpudetect.h cpudetect cpudetect)
-src2h(cpustate.h cpustate cpustate)
+#src2h(cpustate.h cpustate cpustate)
 src2h(payload_mcp.h payload_mcp payload_mcp)
 src2h(a1hello.h a1hello a1hello_0800)
 src2h(cpudetect_65.h cpudetect_65 cpudetect_code)
@@ -90,7 +90,7 @@ add_executable(mcp
    bus_rp2040_purple.c
    cpudetect.h
    cpu_detect.c
-   cpustate.h
+#   cpustate.h
    disassemble.c
    disassemble_historian.c
    generic_helper.c

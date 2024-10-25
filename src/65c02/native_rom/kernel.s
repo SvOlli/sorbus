@@ -73,7 +73,7 @@ reset:
    bcc   @woz
 
 @no65c02message:
-   .byte "NMOS 6502 not supported, dropping to WozMon", 13, 0
+   .byte 13, "NMOS 6502 not supported, dropping to WozMon", 0
 
 @woz:
    lda   #$0a           ; start WozMon port

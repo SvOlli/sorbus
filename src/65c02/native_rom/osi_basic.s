@@ -1,6 +1,6 @@
 ; changes todo
 ; [ ] implement auto-load + run from file manager
-; [ ] fix fre(0)
+; [X] fix fre(0)
 ; [X] remove SCRWIDTH, POSWARP, POSX
 ; [X] Change useless NULL instruction to SYS to align tokens
 ; [X] Change input to "INT LINEINPUT"
@@ -57,7 +57,8 @@
 .define USE_RESTART_VECTOR 0
 ; backport from later versions of BASIC
 .define CONFIG_PEEK_SAVE_LINENUM 1
-
+; fix bug FRE(0) being negative
+.define USE_FIX_FREE 1
 
 .debuginfo +
 
@@ -398,7 +399,7 @@ L4129:
    sty   TXTTAB+1
    ldy   #$00
    tya
-   sta   (TXTTAB),y
+   sta   (TXTTAB),y     ; ensure that $0400 contains $00
    inc   TXTTAB
    bne   L4192
    inc   TXTTAB+1
@@ -3584,12 +3585,24 @@ FRE:
    jsr   FREFAC
 L3188:
    jsr   GARBAG
+.if USE_FIX_FREE
+   sec
+   lda   FRETOP
+   sbc   STREND
+   sta   FAC+2
+   lda   FRETOP+1
+   sbc   STREND+1
+   sta   FAC+1
+   ldx   #$90
+   jmp   FLOAT2
+.else
    sec
    lda   FRETOP
    sbc   STREND
    tay
    lda   FRETOP+1
    sbc   STREND+1
+.endif
 ; FALL INTO GIVAYF TO FLOAT THE VALUE
 ; NOTE THAT VALUES OVER 32767 WILL RETURN AS NEGATIVE
 ; ----------------------------------------------------------------------------

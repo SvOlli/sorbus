@@ -18,7 +18,9 @@ typedef enum {
 } cputype_t;
 
 /*
- * functions to define interface for reading from and writing to memory
+ * callback function for hexdump to get/set memory data
+ * address is typically uint16_t, but can be 24 bit when 65816 is used
+ * note: functions MUST NOT trigger any events
  */
 typedef uint8_t (*peek_t)(uint16_t);
 typedef void (*poke_t)(uint16_t,uint8_t);

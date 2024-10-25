@@ -60,6 +60,16 @@ chrin:
    clc
    rts
 
+ramio:                  ; internal-only routine to access RAM under ROM
+   ldx   BANK           ; save current ROM bank
+   stz   BANK           ; switch to RAM
+ramio_cmd:
+   lda   ($00),y        ; intended to be switched to sta ($00),y
+   stx   BANK           ; restore current ROM bank
+   rts                  ; return
+; optional idea: push X to stack and expand ramio_cmd to 3 bytes for JSR
+
+
 RESET:
    ; reset routine that also works when copied to RAM
    lda   #$01
@@ -84,12 +94,12 @@ IRQCHECK:
    stx   BRK_SX
    sty   BRK_SY
    tsx
-   lda   $0102,x        ; get the return address from stack
-   sta   TMP16+0        ; and write it to temp vector
    lda   $0103,x        ; offset of current stack pointer is 1+2
    sta   TMP16+1        ; at offset 0 is processor status (got called via BRK)
+   lda   $0102,x        ; get the return address from stack
+   sta   TMP16+0        ; and write it to temp vector
 
-   lda   TMP16+0        ; decrease it by one to get the BRK operand
+   ;lda   TMP16+0        ; decrease it by one to get the BRK operand
    bne   :+
    dec   TMP16+1
 :

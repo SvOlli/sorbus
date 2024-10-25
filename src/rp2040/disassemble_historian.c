@@ -21,6 +21,7 @@
 
 struct disass_historian_s
 {
+   cputype_t   cpu;
    uint32_t    entries;
    char        *text;
 };
@@ -38,52 +39,48 @@ static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
    {
       switch( disass_addrmode( data )  )
       {
+         int8_t offset;
          case REL: /* 8-bit branch */
+            offset = trace_data( trace[re(index+1)] );
+            nextaddr = address + 2 + offset;
+            if( trace_address( trace[re(index+2)] ) == nextaddr )
             {
-               int8_t offset = trace_data( trace[re(index+1)] );
-               nextaddr = address + 2 + offset;
-               if( trace_address( trace[re(index+2)] ) == nextaddr )
-               {
-                  /* 65CE02 branch taken */
-                  return 2;
-               }
-               else if( trace_address( trace[re(index+3)] ) == nextaddr )
-               {
-                  /* branch taken */
-                  return 3;
-               }
-               else if( trace_address( trace[re(index+4)] ) == nextaddr )
-               {
-                  /* branch taken crossing page */
-                  return 4;
-               }
-               /* assume branch not taken */
+               /* 65CE02 branch taken */
                return 2;
             }
+            else if( trace_address( trace[re(index+3)] ) == nextaddr )
+            {
+               /* branch taken */
+               return 3;
+            }
+            else if( trace_address( trace[re(index+4)] ) == nextaddr )
+            {
+               /* branch taken crossing page */
+               return 4;
+            }
+            /* assume branch not taken */
+            return 2;
             break;
          case ZPNR:
+            offset = trace_data( trace[re(index+4)] );
+            nextaddr = address + 3 + offset;
+            if( trace_address( trace[re(index+4)] ) == nextaddr )
             {
-               int8_t offset = trace_data( trace[re(index+4)] );
-               nextaddr = address + 3 + offset;
-               if( trace_address( trace[re(index+4)] ) == nextaddr )
-               {
-                  /* 65CE02 branch taken... or not, who cares? */
-                  return 4;
-               }
-               else if( trace_address( trace[re(index+6)] ) == nextaddr )
-               {
-                  /* branch taken */
-                  return 6;
-               }
-               else if( trace_address( trace[re(index+6)] ) == nextaddr )
-               {
-                  /* branch taken crossing page */
-                  return 7;
-               }
-               /* assume branch not taken */
-               return 5;
+               /* 65CE02 branch taken... or not, who cares? */
+               return 4;
             }
-            /* on 65CE02 always 4 cycles, even if branch is taken */
+            else if( trace_address( trace[re(index+6)] ) == nextaddr )
+            {
+               /* branch taken */
+               return 6;
+            }
+            else if( trace_address( trace[re(index+6)] ) == nextaddr )
+            {
+               /* branch taken crossing page */
+               return 7;
+            }
+            /* assume branch not taken */
+            return 5;
             break;
          default:
             /* most jumps are handled by custom code */
@@ -117,16 +114,18 @@ static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
             break;
       }
    }
-   return 0;
+   return bc;
 }
 
 
-static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_t entries, uint32_t start )
+static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_t start )
 {
-   int index = 0, offset, i;
+   int index = 0, offset, i, n;
    uint16_t address, expectedaddress;
    uint8_t data[4];
    bool done;
+   const uint32_t entries = d->entries;
+   const cputype_t cpu = d->cpu;
    int8_t *eval = calloc( entries, sizeof(uint8_t) );
 
    /* step 1: disassemble everything */
@@ -182,7 +181,7 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
 
    /* step 2: run some assumptions */
    index = start;
-   for( i = 0; i < entries; i++ )
+   for( i = 0; i < entries; ++i )
    {
       uint32_t addr5 = trace_address( trace[re(index-5)] );
       uint32_t addr4 = trace_address( trace[re(index-4)] );
@@ -193,24 +192,90 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
       uint16_t addr  = trace_address( trace[re(index)] );
       uint8_t  data  = trace_data( trace[re(index)] );
 
-      /* detect processed interruptions */
-      if( ((addr5 & 0xFF00) == 0x0100) && // check stack access
+      if( cpu == CPU_65CE02 )
+      {
+         /* check for IRQ or NMI on 65CE02 */
+             /* first writing to stack, which can be 16-bit */
+         if( trace_is_write( trace[re(index-5)] ) &&
+             trace_is_write( trace[re(index-4)] ) &&
+             trace_is_write( trace[re(index-3)] ) &&
+             ((addr5-1) == addr4) &&
+             ((addr4-1) == addr3) &&
+             /* then check fetching the vector */
+             ( addr2 >= 0xFFFA ) &&
+             ( addr1 == (addr2 + 1) ) )
+         {
+            for( n = 1; n <= 5; ++n )
+            {
+               eval[re(index-n)] = 0;
+            }
+            eval[re(index)] = 9;
+         }
+      }
+
+      if( cpu == CPU_65816 )
+      {
+         uint16_t vector = trace_data( trace[re(index-2)] ) |
+                          (trace_data( trace[re(index-1)] ) << 8);
+         if( vector >= 0xFFF0 )
+         {
+            /* emulation mode vector table (8-bit) */
+
+                /* check stack access */
+            if( ((addr5 & 0xFF00) == 0x0100) &&
+                ((addr4 & 0xFF00) == 0x0100) &&
+                ((addr3 & 0xFF00) == 0x0100) )
+            {
+               /* a false positive could be a JMP ($FFFx) stored in stack page */
+               for( n = 1; n <= 6; ++n )
+               {
+                  eval[re(index-n)] = 0;
+               }
+               eval[re(index)] = 9; // executing first instruction
+            }
+         }
+         else if( vector >= 0xFFE0 )
+         {
+            /* native mode vector table (16-bit) */
+            uint32_t addr6 = trace_address( trace[re(index-6)] );
+                /* check if four byte get written to the stack */
+            if( trace_is_write( trace[re(index-6)] ) &&
+                trace_is_write( trace[re(index-5)] ) &&
+                trace_is_write( trace[re(index-4)] ) &&
+                trace_is_write( trace[re(index-3)] ) &&
+                (addr6 == (addr5+1)) &&
+                (addr5 == (addr4+1)) &&
+                (addr4 == (addr3+1)) )
+            {
+               for( n = 1; n <= 6; ++n )
+               {
+                  eval[re(index-n)] = 0;
+               }
+            }
+         }
+      }
+
+      /* check for reset on all
+       * and on 6502, 65C02, 65SC02 check for IRQ/NMI */
+          /* check stack access at page $01, both read or write */
+      if( ((addr5 & 0xFF00) == 0x0100) &&
           ((addr4 & 0xFF00) == 0x0100) &&
           ((addr3 & 0xFF00) == 0x0100) &&
+          /* then check fetching the vector */
           ( addr2           >= 0xFFFA) &&
-          ( addr1           >= 0xFFFB) )
+          ( addr1            = addr2+1 ) )
       {
-         eval[re(index-5)] = 0; // writing to stack
-         eval[re(index-4)] = 0;
-         eval[re(index-3)] = 0;
-         eval[re(index-2)] = 0; // reading reset/nmi/irq vector
-         eval[re(index-1)] = 0;
+         /* a false positive could be a JMP ($FFFx) stored in stack page */
+         for( n = 1; n <= 5; ++n )
+         {
+            eval[re(index-n)] = 0;
+         }
          eval[re(index  )] = 9; // executing first instruction
       }
 
       if( data == 0x20 )
       {
-         /* JSR cycles are:
+         /* JSR ABS cycles are:
           * 0: opcode
           * 1: read low
           * 2: adjust stack (not on 65CE02)
@@ -226,9 +291,39 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
             )
          {
             eval[re(index)] = 9;
-            for( int n = 1; n < bc; ++n )
+            for( n = 1; n < bc; ++n )
             {
                eval[re(index+n)] = 0;
+            }
+            eval[re(index+bc)] = 9;
+         }
+      }
+      else if( data == 0x40 )
+      {
+         int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
+         /* RTI cycles are:
+          * 0: opcode
+          * 1: dummy read
+          * 2: stack+0 dummy (not on 65CE02)
+          * 3: stack+1 processor status
+          * 4: stack+2 target low
+          * 5: stack+3 target high
+          */
+         uint16_t target = trace_data( trace[re(index+bc-2)] ) |
+                          (trace_data( trace[re(index+bc-1)] ) << 8);
+         if( (trace_address( trace[re(index+1)] ) == addr+1) &&
+             (trace_address( trace[re(index+bc-4)] ) ==
+                (trace_address( trace[re(index+bc-3)] ) - 1) ) &&
+             (trace_address( trace[re(index+bc-3)] ) ==
+                (trace_address( trace[re(index+bc-2)] ) - 1) ) &&
+             (trace_address( trace[re(index+bc-2)] ) ==
+                (trace_address( trace[re(index+bc-1)] ) - 1) ) &&
+             (trace_address( trace[re(index+bc)] ) == target ) )
+         {
+            eval[re(index)] = 9;
+            for( n = 1; n < bc; ++n )
+            {
+               eval[re(index)+n] = 0;
             }
             eval[re(index+bc)] = 9;
          }
@@ -236,17 +331,17 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
       else if( data == 0x60 )
       {
          int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
+         /* RTS cycles are:
+          * 0: opcode
+          * 1: dummy read
+          * 2: stack+0 dummy (not on 65CE02)
+          * 3: stack+1 target low
+          * 4: stack+2 target high
+          * 5: dummy read to inc PC (not on 65CE02)
+          */
          uint16_t target;
          if( bc == 6 )
          {
-            /* RTS cycles are:
-             * 0: opcode
-             * 1: dummy read
-             * 2: stack+0 dummy (not on 65CE02)
-             * 3: stack+1 target high
-             * 4: stack+2 target low
-             * 5: dummy read to inc PC (not on 65CE02)
-             */
             target = trace_data( trace[re(index+3)] ) |
                     (trace_data( trace[re(index+4)] ) << 8);
             if( (trace_address( trace[re(index+1)] ) == addr+1) &&
@@ -257,7 +352,7 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
                 (trace_address( trace[re(index+5)] ) == target ) )
             {
                eval[re(index)] = 9;
-               for( int n = 1; n < bc; ++n )
+               for( n = 1; n < bc; ++n )
                {
                   eval[re(index)+n] = 0;
                }
@@ -280,7 +375,7 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
                 (trace_address( trace[re(index+4)] ) == target+1 ) )
             {
                eval[re(index)] = 9;
-               for( int n = 1; n < bc; ++n )
+               for( n = 1; n < bc; ++n )
                {
                   eval[re(index)+n] = 0;
                }
@@ -288,10 +383,30 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
             }
          }
       }
+      else if( data == 0x4c )
+      {
+         const int bc = 3;
+         /* JMP ABS cycles are:
+          * 0: opcode
+          * 1: read low addr
+          * 2: read high addr
+          */
+         uint16_t target  = trace_data( trace[re(index+1)] ) |
+                           (trace_data( trace[re(index+2)] ) << 8);
+         if( trace_address( trace[re(index+3)] ) == target )
+         {
+            eval[re(index)] = 9;
+            for( n = 1; n < bc; ++n )
+            {
+               eval[re(index)+n] = 0;
+            }
+            eval[re(index+bc)] = 9;
+         }
+      }
       else if( data == 0x6c )
       {
          int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
-         /* JMP() cycles are:
+         /* JMP (ABS) cycles are:
           * 0: opcode
           * 1: read low addr
           * 2: read high addr
@@ -309,7 +424,35 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
             )
          {
             eval[re(index)] = 9;
-            for( int n = 1; n < bc; ++n )
+            for( n = 1; n < bc; ++n )
+            {
+               eval[re(index)+n] = 0;
+            }
+            eval[re(index+bc)] = 9;
+         }
+      }
+      else if( data == 0x7c )
+      {
+         int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
+         /* JMP (ABS,X) cycles are:
+          * 0: opcode
+          * 1: read low base addr
+          * 2: read high base addr
+          * 3: dummy read (not on 65CE02)
+          * 4: target low
+          * 5: target high
+          */
+         uint16_t jmpaddr = trace_data( trace[re(index+1)] ) |
+                           (trace_data( trace[re(index+2)] ) << 8);
+         uint16_t target  = trace_data( trace[re(index+bc-2)] ) |
+                           (trace_data( trace[re(index+bc-1)] ) << 8);
+         if( ( trace_address( trace[re(index+bc-2)] ) == jmpaddr ) &&
+             ( trace_address( trace[re(index+bc-1)] ) == jmpaddr+1 ) &&
+             ( (target - trace_address( trace[re(index+bc)] )) < 0x100 )
+            )
+         {
+            eval[re(index)] = 9;
+            for( n = 1; n < bc; ++n )
             {
                eval[re(index)+n] = 0;
             }
@@ -322,6 +465,27 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
       {
          eval[re(index-1)] = 0; // dummy read
          ++eval[re(index)];
+         if( cpu != CPU_65CE02 )
+         {
+            // every CPU except for 65CE02 does a read after opcode fetch
+            if( trace_address(trace[re(index+1)]) == (addr+1) )
+            {
+               eval[re(index+1)] = 0;
+            }
+         }
+      }
+
+      /* memory access */
+      if( addr3+1 == addr ) /* LDA $1234,X */
+      {
+         --eval[re(index-2)]; // dummy read
+         --eval[re(index-1)]; // read/write memory
+         ++eval[re(index)];
+      }
+      else if( addr2+1 == addr ) /* LDA $1234 */
+      {
+         --eval[re(index-1)]; // read/write memory
+         ++eval[re(index)];
       }
 
       /* follow sure tracks */
@@ -330,11 +494,14 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
          int ni = getcycles( trace, entries, index );
          if( ni > 0 )
          {
-            for( int n = 1; n < ni; ++n )
+            for( n = 1; n < ni; ++n )
             {
                eval[re(index+n)] = 0;
             }
-            eval[re(index+ni)] = 9;
+            if( re(index+ni) != start )
+            {
+               eval[re(index+ni)] = 9;
+            }
          }
       }
 
@@ -354,11 +521,14 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
          int ni = getcycles( trace, entries, index );
          if( ni > 0 )
          {
-            for( int n = 1; n < ni; ++n )
+            for( n = 1; n < ni; ++n )
             {
                --eval[re(index+n)];
             }
-            ++eval[re(index+ni)];
+            if( re(index+ni) != start )
+            {
+               ++eval[re(index+ni)];
+            }
          }
       }
 
@@ -395,18 +565,21 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
 }
 
 
-disass_historian_t disass_historian_init( uint32_t *trace, uint32_t entries, uint32_t start )
+disass_historian_t disass_historian_init( cputype_t cpu,
+   uint32_t *trace, uint32_t entries, uint32_t start )
 {
    disass_historian_t d = (disass_historian_t)malloc( sizeof( struct disass_historian_s ) );
 
    // TODO: find something better than assert (or somewhere else to check?)
    assert( (entries & (entries-1)) == 0 );
 
+   d->cpu     = cpu;
    d->entries = entries;
    d->text    = (char*)malloc( entries * DISASS_MAX_STR_LENGTH );
 
    memset( d->text, 0, entries * DISASS_MAX_STR_LENGTH );
-   disass_historian_run( d, trace, entries, start );
+   disass_cpu( cpu );
+   disass_historian_run( d, trace, start );
 
    return d;
 }

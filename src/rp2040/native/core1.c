@@ -607,8 +607,8 @@ void debug_backtrace()
 
    printf( "historian:\n" );
 
-   disass_cpu( cputype ? cputype : CPU_6502 );
-   disass_historian_t d = disass_historian_init( &buslog_states[0],
+   disass_historian_t d = disass_historian_init( cputype ? cputype : CPU_6502,
+                                                 &buslog_states[0],
                                                  BUSLOG_SIZE,
                                                  buslog_index & (BUSLOG_SIZE)-1 );
    for( int i = 0; i < BUSLOG_SIZE; ++i )

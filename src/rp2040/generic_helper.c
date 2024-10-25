@@ -30,6 +30,9 @@ const char *cputype_name( cputype_t cputype )
 }
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+/* disable pedantic as it warns about non ISO C usage of nested functions */
 void hexdump_buffer( const uint8_t *memory, uint32_t size )
 {
    /* I think that's the first time in anything I coded,
@@ -43,6 +46,7 @@ void hexdump_buffer( const uint8_t *memory, uint32_t size )
 
    hexdump( peek, 0, size );
 }
+#pragma GCC diagnostic pop
 
 
 void hexdump( peek_t peek, uint16_t address, uint32_t size )

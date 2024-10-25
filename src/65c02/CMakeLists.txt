@@ -84,10 +84,10 @@ add_executable(cpudetect_apple1
    )
 target_type_addr(cpudetect_apple1 apple1 0x0280)
 
-add_executable(cpustate
-   cpustate.s
-   )
-target_type_addr(cpustate mcp 0x0000)
+#add_executable(cpustate
+#   cpustate.s
+#   )
+#target_type_addr(cpustate mcp 0x0000)
 
 add_executable(wozmon
    apple1/wozmon.s

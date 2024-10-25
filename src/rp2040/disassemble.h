@@ -112,7 +112,8 @@ uint8_t trace_data( uint32_t trace );
 
 
 /*  */
-disass_historian_t disass_historian_init( uint32_t *trace, uint32_t entries, uint32_t start );
+disass_historian_t disass_historian_init( cputype_t cputype,
+   uint32_t *trace, uint32_t entries, uint32_t start );
 
 /*  */
 void disass_historian_done( disass_historian_t d );

@@ -142,7 +142,7 @@
    /* $8B */ OPCODE( "NOP", IMP, 1, 1, 1, 0, 0, 0 ),
    /* $8C */ OPCODE( "STY", ABS, 0, 3, 4, 0, 0, 0 ),
    /* $8D */ OPCODE( "STA", ABS, 0, 3, 4, 0, 0, 0 ),
-   /* $8E */ OPCODE( "STX", ABS, 0, 3, 6, 0, 0, 0 ),
+   /* $8E */ OPCODE( "STX", ABS, 0, 3, 4, 0, 0, 0 ),
    /* $8F */ OPCODE( "BBS", ZPNR, 0, 3, 5, 2, 0, 1 ),
    /* $90 */ OPCODE( "BCC", REL, 0, 2, 2, 2, 0, 1 ),
    /* $91 */ OPCODE( "STA", ZPIY, 0, 2, 5, 1, 0, 0 ),

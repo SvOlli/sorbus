@@ -314,7 +314,7 @@ A and X registers.
 -  $02: set text attributes (colors) (30..37 bgcol, 40..47 fgcol, DECIMAL)
 -  $03: get cursor pos (out: X=col, A=row, 1 based)
 -  $04: clear screen
--  $05: clear to end of line -
+-  $05: clear to end of line
 -  $06: reset scroll area
 -  $07: scroll down
 -  $08: scroll up

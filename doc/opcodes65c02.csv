@@ -231,7 +231,7 @@ $4E;LSR;ABS;;3;6;;;
 $5E;LSR;ABS,X;;3;7;1;;
 $6E;ROR;ABS;;3;6;;;
 $7E;ROR;ABS,X;;3;7;1;;
-$8E;STX;ABS;;3;6;;;
+$8E;STX;ABS;;3;4;;;
 $9E;STZ;ABS,X;;3;5;1;;
 $AE;LDX;ABS;;3;4;;;
 $BE;LDX;ABS,Y;;3;4;1;;

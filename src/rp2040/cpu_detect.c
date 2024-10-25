@@ -103,8 +103,8 @@ cputype_t cpu_detect( bool debug )
    if( debug )
    {
       int lineno = 0;
-      disass_cpu( cputype ? cputype : CPU_6502 );
-      disass_historian_t d = disass_historian_init( &trace[0], CYCLES_TOTAL, 0 );
+      disass_historian_t d = disass_historian_init( cputype ? cputype : CPU_6502,
+                                                    &trace[0], CYCLES_TOTAL, 0 );
       hexdump_buffer( &cpudetect[0], sizeof(cpudetect) );
       for( int i = 0; i < cycles_run; ++i )
       {

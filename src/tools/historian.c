@@ -147,10 +147,6 @@ int main( int argc, char *argv[] )
                fprintf( stderr, "known CPUs: 6502, 65C02, 65SC02, 65816, 65CE02\n" );
                fail = true;
             }
-            else
-            {
-               disass_cpu( cpu );
-            }
             break;
          case 'd':
             show_extra |= DISASS_SHOW_HEXDUMP;
@@ -216,7 +212,7 @@ int main( int argc, char *argv[] )
    fclose( f );
 
    disass_show( show_extra );
-   dah = disass_historian_init( buffer, size, 0 );
+   dah = disass_historian_init( cpu, buffer, size, 0 );
    for( count = 0; count < size; ++count )
    {
       printf( "%5d:", count );
@@ -225,9 +221,12 @@ int main( int argc, char *argv[] )
          printf( "%s:",
                  decode_trace( *(buffer + count), false, 0 ) );
       }
-      printf( "%s\n", show_confidence ?
-              disass_historian_entry( dah, count ) :
-              disass_historian_entry( dah, count ) + 2 );
+      if( disass_historian_entry( dah, count ) )
+      {
+         printf( "%s\n", show_confidence ?
+                 disass_historian_entry( dah, count ) :
+                 disass_historian_entry( dah, count ) + 2 );
+      }
    }
    disass_historian_done( dah );
    free( buffer );
