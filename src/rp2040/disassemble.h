@@ -89,17 +89,17 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
 uint8_t disass_bytes( uint8_t opcode );
 int disass_debug_info( uint32_t id );
 
-/*  */
+/* get minimum clockcycles used by an opcode */
 uint8_t disass_basecycles( uint8_t p0 );
 
-/*  */
+/* get maximum number of extra clockcycles (e.g. for pagecrossing) */
 uint8_t disass_extracycles( uint8_t p0 );
 
-/*  */
-uint8_t disass_addrmode( uint8_t p0 );
+/* get address mode */
+addrmode_t disass_addrmode( uint8_t p0 );
 
-/*  */
-bool disass_isjump( uint8_t p0 );
+/* check if opcode is an instruction that might jump */
+bool disass_is_jump( uint8_t p0 );
 
 /* check if trace value is writing to bus */
 bool trace_is_write( uint32_t trace );

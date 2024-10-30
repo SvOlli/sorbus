@@ -3,6 +3,13 @@
 ; Distributed unter the terms: GPL-3.0-or-later
 ;
 
+; Some useful / important hints:
+; - The functions CHRIN, CHROUT, PRINT are compatible with every 6502
+; - Software interrupts require at least a 65SC02.
+; - For the 65CE02 code, the use of the int macro is strongly recommended
+;   to take care of the additional Z register, else the Z register must
+;   be $00
+
 ; $FF00: read a character from UART in A, returns C=1 when no queue is empty
 .define CHRIN  $FF00
 
@@ -16,6 +23,8 @@
 ; this routine saves all CPU registers, including P, so it can be used for
 ; debugging messages
 .define PRINT  $FF06
+; PRIMM is a common used synonym for PRINT here
+.define PRIMM  PRINT
 
 ; non-API addresses required for BIOS <-> kernel calls
 .global  BIOS
@@ -23,9 +32,20 @@
 .global  brkjump        ; kernel only, doesn't matter in other banks
 .global  reset          ; kernel only, doesn't matter in other banks
 
+.ifp4510
+.macro int arg
+   stz   $DF2B          ; save Z register that can't be written to stack
+   ldz   #$00           ; clear Z register to be compatible to 65(S)C02
+   .byte $00,arg        ; BRK with operand
+   php                  ; ldz changes processor status register
+   ldz   $DF2B          ; restore Z register
+   plp                  ; restore processor status
+.endmacro
+.else
 .macro int arg
    .byte $00,arg        ; BRK with operand
 .endmacro
+.endif
 
 ; will jump using vector UVBRK ($DF78/$DF79)
 ; default configuration is trap

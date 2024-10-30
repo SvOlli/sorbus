@@ -19,7 +19,7 @@ void writeblock( uint16_t addr, uint16_t size, uint8_t *data )
    uint8_t i;
    uint16_t chksum;
 
-   //printf( "WH %04x %04x\n", addr, addr+size-1 );
+   //printf( "WH %04X %04X\n", addr, addr+size-1 );
    printf( "LH\r" );
    fflush( stdout );
    usleep( 1000 );
@@ -27,15 +27,15 @@ void writeblock( uint16_t addr, uint16_t size, uint8_t *data )
    for( a = 0; a < size; a += maxline )
    {
       uint8_t line = min( maxline, size - a );
-      printf( ";%02x%04x", line, addr + a );
+      printf( ";%02X%04X", line, addr + a );
       chksum = line + ((addr + a) & 0xff) + ((addr + a) >> 8);
       for( i = 0; i < line; ++i )
       {
-         printf( "%02x", *d );
+         printf( "%02X", *d );
          chksum += *d;
          ++d;
       }
-      printf( "%04x\r", chksum );
+      printf( "%04X\r", chksum );
       fflush( stdout );
       usleep( 10000 );
    }
@@ -61,7 +61,7 @@ void gototim()
 
 void gotoaddr( uint16_t addr )
 {
-   printf( "R:%04x\rG", addr );
+   printf( "R:%04X\rG", addr );
    fflush( stdout );
 }
 

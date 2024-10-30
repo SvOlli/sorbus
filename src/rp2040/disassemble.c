@@ -237,7 +237,7 @@ uint8_t disass_basecycles( uint8_t p0 )
 }
 
 
-uint8_t disass_addrmode( uint8_t p0 )
+addrmode_t disass_addrmode( uint8_t p0 )
 {
    opcode_t *o = 0;
    if( !disass_opcodes )
@@ -250,7 +250,7 @@ uint8_t disass_addrmode( uint8_t p0 )
 }
 
 
-bool disass_isjump( uint8_t p0 )
+bool disass_is_jump( uint8_t p0 )
 {
    opcode_t *o = 0;
    if( !disass_opcodes )

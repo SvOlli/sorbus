@@ -35,7 +35,7 @@ static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
    uint16_t nextaddr = address + disass_bytes( data );
    uint8_t  bc       = disass_basecycles( data );
 
-   if( disass_isjump( data ) )
+   if( disass_is_jump( data ) )
    {
       switch( disass_addrmode( data )  )
       {
@@ -192,10 +192,12 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
       uint16_t addr  = trace_address( trace[re(index)] );
       uint8_t  data  = trace_data( trace[re(index)] );
 
+      uint16_t vector, target;
+
       if( cpu == CPU_65CE02 )
       {
          /* check for IRQ or NMI on 65CE02 */
-             /* first writing to stack, which can be 16-bit */
+             /* first check writing to stack, which can be 16-bit */
          if( trace_is_write( trace[re(index-5)] ) &&
              trace_is_write( trace[re(index-4)] ) &&
              trace_is_write( trace[re(index-3)] ) &&
@@ -211,20 +213,53 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
             }
             eval[re(index)] = 9;
          }
+
+         if( data == 0x23 )
+         {
+            /* JSR (IND,X) cycles are on 65CE02:
+             * 0: opcode
+             * 1: read vector low
+             * 2: write stack high
+             * 3: write stack low
+             * 4: read vector high
+             * 5: read target low
+             * 6: read target high
+             */
+            int bc = 7;
+            vector = trace_data( trace[re(index+1)] ) |
+                    (trace_data( trace[re(index+4)] ) << 8);
+            target = trace_data( trace[re(index+5)] ) |
+                    (trace_data( trace[re(index+6)] ) << 8);
+            if( (trace_address( trace[re(index+1)] ) == addr+1) &&
+                (trace_address( trace[re(index+4)] ) == addr+2) &&
+                trace_is_write( trace[re(index+2)] ) &&
+                trace_is_write( trace[re(index+3)] ) &&
+                (trace_address( trace[re(index+5)] ) == vector) &&
+                (trace_address( trace[re(index+bc)] ) == target)
+               )
+            {
+               eval[re(index)] = 9;
+               for( n = 1; n < bc; ++n )
+               {
+                  eval[re(index+n)] = 0;
+               }
+               eval[re(index+bc)] = 9;
+            }
+         }
       }
 
       if( cpu == CPU_65816 )
       {
-         uint16_t vector = trace_data( trace[re(index-2)] ) |
-                          (trace_data( trace[re(index-1)] ) << 8);
+         vector = trace_data( trace[re(index-2)] ) |
+                 (trace_data( trace[re(index-1)] ) << 8);
          if( vector >= 0xFFF0 )
          {
-            /* emulation mode vector table (8-bit) */
-
+            /* emulation mode vector table (8-bit mode) */
                 /* check stack access */
             if( ((addr5 & 0xFF00) == 0x0100) &&
                 ((addr4 & 0xFF00) == 0x0100) &&
-                ((addr3 & 0xFF00) == 0x0100) )
+                ((addr3 & 0xFF00) == 0x0100) &&
+                (vector == trace_address(addr)) )
             {
                /* a false positive could be a JMP ($FFFx) stored in stack page */
                for( n = 1; n <= 6; ++n )
@@ -236,7 +271,7 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
          }
          else if( vector >= 0xFFE0 )
          {
-            /* native mode vector table (16-bit) */
+            /* native mode vector table (16-bit mode) */
             uint32_t addr6 = trace_address( trace[re(index-6)] );
                 /* check if four byte get written to the stack */
             if( trace_is_write( trace[re(index-6)] ) &&
@@ -245,12 +280,48 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
                 trace_is_write( trace[re(index-3)] ) &&
                 (addr6 == (addr5+1)) &&
                 (addr5 == (addr4+1)) &&
-                (addr4 == (addr3+1)) )
+                (addr4 == (addr3+1)) &&
+                (vector == trace_address(addr)) )
             {
                for( n = 1; n <= 6; ++n )
                {
                   eval[re(index-n)] = 0;
                }
+            }
+         }
+
+         if( data == 0xFC )
+         {
+            /* JSR (IND,X) cycles are on 65816:
+             * 0: opcode
+             * 1: read vector low
+             * 2: write stack high
+             * 3: write stack low
+             * 4: read vector high
+             * 5: dummy read on same address again
+             * 6: read target low
+             * 7: read target high
+             */
+            int bc = 8;
+            vector = trace_data( trace[re(index+1)] ) |
+                    (trace_data( trace[re(index+4)] ) << 8);
+            target = trace_data( trace[re(index+5)] ) |
+                    (trace_data( trace[re(index+6)] ) << 8);
+            if( (trace_address( trace[re(index+1)] ) == addr+1) &&
+                (trace_address( trace[re(index+4)] ) == addr+2) &&
+                trace_is_write( trace[re(index+2)] ) &&
+                trace_is_write( trace[re(index+3)] ) &&
+                (trace_address( trace[re(index+3)] ) == trace_address( trace[re(index+4)] )) &&
+                (trace_address( trace[re(index+7)] ) == vector) &&
+                (trace_address( trace[re(index+bc)] ) == target)
+               )
+            {
+               eval[re(index)] = 9;
+               for( n = 1; n < bc; ++n )
+               {
+                  eval[re(index+n)] = 0;
+               }
+               eval[re(index+bc)] = 9;
             }
          }
       }
@@ -273,106 +344,54 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
          eval[re(index  )] = 9; // executing first instruction
       }
 
-      if( data == 0x20 )
+      if( eval[re(index)] > 0 )
       {
-         /* JSR ABS cycles are:
-          * 0: opcode
-          * 1: read low
-          * 2: adjust stack (not on 65CE02)
-          * 3: write stack high
-          * 4: write stack low
-          * 5: read high
-          */
-         int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
-         if( (trace_address( trace[re(index+1)] ) == addr+1) &&
-             (trace_address( trace[re(index+bc-1)] ) == addr+2) &&
-             trace_is_write( trace[re(index+bc-2)] ) &&
-             trace_is_write( trace[re(index+bc-3)] )
-            )
+         if( data == 0x20 )
          {
-            eval[re(index)] = 9;
-            for( n = 1; n < bc; ++n )
-            {
-               eval[re(index+n)] = 0;
-            }
-            eval[re(index+bc)] = 9;
-         }
-      }
-      else if( data == 0x40 )
-      {
-         int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
-         /* RTI cycles are:
-          * 0: opcode
-          * 1: dummy read
-          * 2: stack+0 dummy (not on 65CE02)
-          * 3: stack+1 processor status
-          * 4: stack+2 target low
-          * 5: stack+3 target high
-          */
-         uint16_t target = trace_data( trace[re(index+bc-2)] ) |
-                          (trace_data( trace[re(index+bc-1)] ) << 8);
-         if( (trace_address( trace[re(index+1)] ) == addr+1) &&
-             (trace_address( trace[re(index+bc-4)] ) ==
-                (trace_address( trace[re(index+bc-3)] ) - 1) ) &&
-             (trace_address( trace[re(index+bc-3)] ) ==
-                (trace_address( trace[re(index+bc-2)] ) - 1) ) &&
-             (trace_address( trace[re(index+bc-2)] ) ==
-                (trace_address( trace[re(index+bc-1)] ) - 1) ) &&
-             (trace_address( trace[re(index+bc)] ) == target ) )
-         {
-            eval[re(index)] = 9;
-            for( n = 1; n < bc; ++n )
-            {
-               eval[re(index)+n] = 0;
-            }
-            eval[re(index+bc)] = 9;
-         }
-      }
-      else if( data == 0x60 )
-      {
-         int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
-         /* RTS cycles are:
-          * 0: opcode
-          * 1: dummy read
-          * 2: stack+0 dummy (not on 65CE02)
-          * 3: stack+1 target low
-          * 4: stack+2 target high
-          * 5: dummy read to inc PC (not on 65CE02)
-          */
-         uint16_t target;
-         if( bc == 6 )
-         {
-            target = trace_data( trace[re(index+3)] ) |
-                    (trace_data( trace[re(index+4)] ) << 8);
-            if( (trace_address( trace[re(index+1)] ) == addr+1) &&
-                (trace_address( trace[re(index+2)] ) ==
-                   (trace_address( trace[re(index+3)] ) - 1) ) &&
-                (trace_address( trace[re(index+3)] ) ==
-                   (trace_address( trace[re(index+4)] ) - 1) ) &&
-                (trace_address( trace[re(index+5)] ) == target ) )
+            /* JSR ABS cycles are:
+             * 0: opcode
+             * 1: read low
+             * 2: adjust stack (not on 65CE02)
+             * 3: write stack high
+             * 4: write stack low
+             * 5: read high
+             */
+            const int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
+            target = trace_data( trace[re(index+1)] ) |
+                    (trace_data( trace[re(index+bc-1)] ) << 8);
+            if( (trace_address( trace[re(index+   1)] ) == addr+1) &&
+                (trace_address( trace[re(index+bc-1)] ) == addr+2) &&
+                trace_is_write( trace[re(index+bc-2)] ) &&
+                trace_is_write( trace[re(index+bc-3)] ) &&
+                (trace_address( trace[re(index+bc  )] ) == target)
+               )
             {
                eval[re(index)] = 9;
                for( n = 1; n < bc; ++n )
                {
-                  eval[re(index)+n] = 0;
+                  eval[re(index+n)] = 0;
                }
                eval[re(index+bc)] = 9;
             }
          }
-         else if( bc == 4 )
+         else if( data == 0x40 )
          {
-            /* RTS cycles on 65CE02 are:
+            const int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
+            /* RTI cycles are:
              * 0: opcode
              * 1: dummy read
-             * 2: stack+0 target high
-             * 3: stack+1 target low
+             * 2: stack+0 dummy (not on 65CE02)
+             * 3: stack+1 processor status
+             * 4: stack+2 target low
+             * 5: stack+3 target high
              */
-            target = trace_data( trace[re(index+2)] ) |
-                    (trace_data( trace[re(index+3)] ) << 8);
-            if( (trace_address( trace[re(index+1)] ) == addr+1) &&
-                (trace_address( trace[re(index+2)] ) ==
-                   (trace_address( trace[re(index+3)] ) - 1) ) &&
-                (trace_address( trace[re(index+4)] ) == target+1 ) )
+            target = trace_data( trace[re(index+bc-2)] ) |
+                    (trace_data( trace[re(index+bc-1)] ) << 8);
+            if( (trace_address( trace[re(index+   1)] ) == addr+1) &&
+                (trace_address( trace[re(index+bc-4)] ) == (trace_address( trace[re(index+bc-3)] ) - 1) ) &&
+                (trace_address( trace[re(index+bc-3)] ) == (trace_address( trace[re(index+bc-2)] ) - 1) ) &&
+                (trace_address( trace[re(index+bc-2)] ) == (trace_address( trace[re(index+bc-1)] ) - 1) ) &&
+                (trace_address( trace[re(index+bc  )] ) == target) )
             {
                eval[re(index)] = 9;
                for( n = 1; n < bc; ++n )
@@ -382,95 +401,162 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
                eval[re(index+bc)] = 9;
             }
          }
-      }
-      else if( data == 0x4c )
-      {
-         const int bc = 3;
-         /* JMP ABS cycles are:
-          * 0: opcode
-          * 1: read low addr
-          * 2: read high addr
-          */
-         uint16_t target  = trace_data( trace[re(index+1)] ) |
-                           (trace_data( trace[re(index+2)] ) << 8);
-         if( trace_address( trace[re(index+3)] ) == target )
+         else if( data == 0x4c )
          {
-            eval[re(index)] = 9;
-            for( n = 1; n < bc; ++n )
+            const int bc = 3;
+            /* JMP ABS cycles are:
+             * 0: opcode
+             * 1: read low addr
+             * 2: read high addr
+             */
+            target  = trace_data( trace[re(index+1)] ) |
+                     (trace_data( trace[re(index+2)] ) << 8);
+            if( ( trace_address( trace[re(index+1)] ) == addr+1 ) &&
+                ( trace_address( trace[re(index+2)] ) == addr+2 ) &&
+                ( trace_address( trace[re(index+bc)] ) == target )
+               )
             {
-               eval[re(index)+n] = 0;
+               eval[re(index)] = 9;
+               for( n = 1; n < bc; ++n )
+               {
+                  eval[re(index)+n] = 0;
+               }
+               eval[re(index+bc)] = 9;
             }
-            eval[re(index+bc)] = 9;
          }
-      }
-      else if( data == 0x6c )
-      {
-         int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
-         /* JMP (ABS) cycles are:
-          * 0: opcode
-          * 1: read low addr
-          * 2: read high addr
-          * 3: dummy read (not on 65CE02)
-          * 4: target low
-          * 5: target high
-          */
-         uint16_t jmpaddr = trace_data( trace[re(index+1)] ) |
-                           (trace_data( trace[re(index+2)] ) << 8);
-         uint16_t target  = trace_data( trace[re(index+bc-2)] ) |
-                           (trace_data( trace[re(index+bc-1)] ) << 8);
-         if( ( trace_address( trace[re(index+bc-2)] ) == jmpaddr ) &&
-             ( trace_address( trace[re(index+bc-1)] ) == jmpaddr+1 ) &&
-             ( trace_address( trace[re(index+bc)] ) == target )
-            )
+         else if( data == 0x60 )
          {
-            eval[re(index)] = 9;
-            for( n = 1; n < bc; ++n )
+            const int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
+            /* RTS cycles are:
+             * 0: opcode
+             * 1: dummy read
+             * 2: stack+0 dummy (not on 65CE02)
+             * 3: stack+1 target low
+             * 4: stack+2 target high
+             * 5: dummy read to inc PC (not on 65CE02)
+             */
+            if( bc == 6 )
             {
-               eval[re(index)+n] = 0;
+               target = trace_data( trace[re(index+3)] ) |
+                       (trace_data( trace[re(index+4)] ) << 8);
+               if( (trace_address( trace[re(index+1)] ) == addr+1) &&
+                   (trace_address( trace[re(index+2)] ) == (trace_address( trace[re(index+3)] ) - 1) ) &&
+                   (trace_address( trace[re(index+3)] ) == (trace_address( trace[re(index+4)] ) - 1) ) &&
+                   (trace_address( trace[re(index+5)] ) == target ) &&
+                   (trace_address( trace[re(index+bc)] ) == target+1 )
+                  )
+               {
+                  eval[re(index)] = 9;
+                  for( n = 1; n < bc; ++n )
+                  {
+                     eval[re(index)+n] = 0;
+                  }
+                  eval[re(index+bc)] = 9;
+               }
             }
-            eval[re(index+bc)] = 9;
+            else if( bc == 4 )
+            {
+               /* RTS cycles are on 65CE02:
+                * 0: opcode
+                * 1: dummy read
+                * 2: stack+0 target high
+                * 3: stack+1 target low
+                */
+               target = trace_data( trace[re(index+2)] ) |
+                       (trace_data( trace[re(index+3)] ) << 8);
+               if( (trace_address( trace[re(index+1)] ) == addr+1) &&
+                   (trace_address( trace[re(index+2)] ) == (trace_address( trace[re(index+3)] ) - 1) ) &&
+                   (trace_address( trace[re(index+bc)] ) == target+1 ) )
+               {
+                  eval[re(index)] = 9;
+                  for( n = 1; n < bc; ++n )
+                  {
+                     eval[re(index)+n] = 0;
+                  }
+                  eval[re(index+bc)] = 9;
+               }
+            }
          }
-      }
-      else if( data == 0x7c )
-      {
-         int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
-         /* JMP (ABS,X) cycles are:
-          * 0: opcode
-          * 1: read low base addr
-          * 2: read high base addr
-          * 3: dummy read (not on 65CE02)
-          * 4: target low
-          * 5: target high
-          */
-         uint16_t jmpaddr = trace_data( trace[re(index+1)] ) |
-                           (trace_data( trace[re(index+2)] ) << 8);
-         uint16_t target  = trace_data( trace[re(index+bc-2)] ) |
-                           (trace_data( trace[re(index+bc-1)] ) << 8);
-         if( ( trace_address( trace[re(index+bc-2)] ) == jmpaddr ) &&
-             ( trace_address( trace[re(index+bc-1)] ) == jmpaddr+1 ) &&
-             ( (target - trace_address( trace[re(index+bc)] )) < 0x100 )
-            )
+         else if( data == 0x6c )
          {
-            eval[re(index)] = 9;
-            for( n = 1; n < bc; ++n )
+            int bc = 6;
+            /* JMP (ABS) cycles are:
+             * 0: opcode
+             * 1: read low addr
+             * 2: read high addr
+             * 3: dummy read (only on some variants)
+             * 4: target low
+             * 5: target high
+             */
+            vector = trace_data( trace[re(index+1)] ) |
+                    (trace_data( trace[re(index+2)] ) << 8);
+            target = trace_data( trace[re(index+bc-2)] ) |
+                    (trace_data( trace[re(index+bc-1)] ) << 8);
+            if( target != trace_address( trace[re(index+bc)] ) )
             {
-               eval[re(index)+n] = 0;
+               /* with dummy read did not succeed, try without */
+               --bc;
+               target = trace_data( trace[re(index+bc-2)] ) |
+                       (trace_data( trace[re(index+bc-1)] ) << 8);
             }
-            eval[re(index+bc)] = 9;
+            if( ( trace_address( trace[re(index+   1)] ) == addr+1 ) &&
+                ( trace_address( trace[re(index+   2)] ) == addr+2 ) &&
+                ( trace_address( trace[re(index+bc-2)] ) == vector ) &&
+                ( trace_address( trace[re(index+bc-1)] ) == vector+1 ) &&
+                ( trace_address( trace[re(index+bc  )] ) == target )
+               )
+            {
+               eval[re(index)] = 9;
+               for( n = 1; n < bc; ++n )
+               {
+                  eval[re(index)+n] = 0;
+               }
+               eval[re(index+bc)] = 9;
+            }
          }
-      }
+         else if( data == 0x7c )
+         {
+            const int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
+            /* JMP (ABS,X) cycles are:
+             * 0: opcode
+             * 1: read low base addr
+             * 2: read high base addr
+             * 3: dummy read (not on 65CE02)
+             * 4: target low
+             * 5: target high
+             */
+            vector = trace_data( trace[re(index+1)] ) |
+                    (trace_data( trace[re(index+2)] ) << 8);
+            target = trace_data( trace[re(index+bc-2)] ) |
+                    (trace_data( trace[re(index+bc-1)] ) << 8);
+            if( ( trace_address( trace[re(index+   1)] ) == addr+1 ) &&
+                ( trace_address( trace[re(index+   2)] ) == addr+2 ) &&
+                ( trace_address( trace[re(index+bc-2)] ) < (vector + 0x100) ) &&
+                ( trace_address( trace[re(index+bc-2)] ) == (trace_address( trace[re(index+bc-1)] ) - 1) ) &&
+                ( trace_address( trace[re(index+bc  )] ) == target )
+               )
+            {
+               eval[re(index)] = 9;
+               for( n = 1; n < bc; ++n )
+               {
+                  eval[re(index)+n] = 0;
+               }
+               eval[re(index+bc)] = 9;
+            }
+         }
 
-      /* prefetch */
-      if( addr1 == addr )
-      {
-         eval[re(index-1)] = 0; // dummy read
-         ++eval[re(index)];
-         if( cpu != CPU_65CE02 )
+         /* prefetch */
+         if( addr1 == addr )
          {
-            // every CPU except for 65CE02 does a read after opcode fetch
-            if( trace_address(trace[re(index+1)]) == (addr+1) )
+            eval[re(index-1)] = 0; // dummy read
+            ++eval[re(index)];
+            if( cpu != CPU_65CE02 )
             {
-               eval[re(index+1)] = 0;
+               // every CPU except for 65CE02 does a read after opcode fetch
+               if( trace_address(trace[re(index+1)]) == (addr+1) )
+               {
+                  eval[re(index+1)] = 0;
+               }
             }
          }
       }
@@ -512,6 +598,13 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
          {
             ++eval[re(index+1)];
          }
+
+         /* a read before a write at the same address can't be an opcode */
+         if( trace_address( trace[re(index-1)] ) == trace_address( trace[re(index)] ) )
+         {
+            eval[re(index-1)] = 0;
+         }
+
          /* writes can never be opcodes */
          eval[re(index)] = 0;
       }

@@ -59,21 +59,21 @@ reset:
 
    dec                  ; 65C02 opcode that on 6502 is an argument of $4b/ALR
    bne   @cmos6502      ; no NMOS 6502, continue
+
+   ; set NMI and IRQ to something more useful for NMOS 6502
+   lda   #<@nmosirq
+   sta   UVNMI+0
+   sta   UVIRQ+0
+   lda   #>@nmosirq
+   sta   UVNMI+1
+   sta   UVIRQ+1
+
 @no65c02loop:
-   tax
-@no65c02char:
-   lda   @no65c02message,x
-   beq   :+
-   jsr   CHROUT
-   inx
-   bne   @no65c02char
-:
+   jsr   PRINT
+   .byte 13, "NMOS 6502 not supported, dropping to WozMon", 0
    jsr   CHRIN
    bcs   @no65c02loop
-   bcc   @woz
-
-@no65c02message:
-   .byte 13, "NMOS 6502 not supported, dropping to WozMon", 0
+   ; slip through
 
 @woz:
    lda   #$0a           ; start WozMon port
@@ -81,7 +81,11 @@ reset:
 :  ; workaround for WozMon not handling RTS when executing external code
    jsr   wozstart
    ; will be reached if own code run within WozMon exits using rts
-   jmp   :-             ; no bra here: 6502 fallback mode
+   jmp   :-             ; no bra here: NMOS 6502 fallback mode
+
+@nmosirq:
+   sta   TRAP
+   rti
 
 ; NMOS 6502 compatible code end
 

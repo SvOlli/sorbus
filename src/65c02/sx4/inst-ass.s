@@ -405,26 +405,10 @@ message:
    lda   #>x40b
    sta   start+2
 
-   lda   CPUID
-   lsr            ; is this NMOS?
-   bcc   cmos
-   ldx   #$00
-:
-   lda   welcome,x
-   beq   :+
-   jsr   CHROUT
-   inx
-   bne   :-
-:
-   jmp   x40b     ; skip intoductions
-cmos:
-
    jsr   PRINT ;345678901234567890123456789012345678901234567890123456789012345678901234567890
-welcome:
    .byte $0a,"Instant 6502 Assembler for the KIM-1 ported to the Sorbus Computer"
    .byte $0a,"written by Alan Cashin"
-   .byte $0a,$00
-   jsr   PRINT
+   .byte $0a
    .byte $0a,"The assembler is presented more for curiosity value than as a serious"
    .byte $0a,"programming tool. It was written for the base model KIM-1 with very little"
    .byte $0a,"memory, to ease the task of entering programs."

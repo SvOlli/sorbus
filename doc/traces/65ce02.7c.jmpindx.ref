@@ -1,0 +1,512 @@
+    0:000d r 00    :
+    1:000d w 00    :
+    2:e9b0 r ca    :DEX
+    3:e9b1 r d0    :BNE  $E9AB
+    4:e9b2 r f8    :
+    5:e9b3 r c8    :INY
+    6:e9b4 r d0    :BNE  $E990
+    7:e9b5 r da    :
+    8:e990 r b9    :LDA  $0200,Y
+    9:e991 r 00    :
+   10:e992 r 02    :
+   11:0202 r 30    :
+   12:e993 r c9    :CMP  #$30
+   13:e994 r 30    :
+   14:e995 r 90    :BCC  $E9B6
+   15:e996 r 1f    :
+   16:e997 r c9    :CMP  #$47
+   17:e998 r 47    :
+   18:e999 r b0    :BCS  $E9B6
+   19:e99a r 1b    :
+   20:e99b r c9    :CMP  #$3A
+   21:e99c r 3a    :
+   22:e99d r 90    :BCC  $E9A5
+   23:e99e r 06    :
+   24:e9a5 r 0a    :ASL
+   25:e9a6 r 0a    :ASL
+   26:e9a7 r 0a    :ASL
+   27:e9a8 r 0a    :ASL
+   28:e9a9 r a2    :LDX  #$04
+   29:e9aa r 04    :
+   30:e9ab r 0a    :ASL
+   31:e9ac r 26    :ROL  $0C
+   32:e9ad r 0c    :
+   33:000c r 40    :
+   34:000c w 80    :
+   35:e9ae r 26    :ROL  $0D
+   36:e9af r 0d    :
+   37:000d r 00    :
+   38:000d w 00    :
+   39:e9b0 r ca    :DEX
+   40:e9b1 r d0    :BNE  $E9AB
+   41:e9b2 r f8    :
+   42:e9ab r 0a    :ASL
+   43:e9ac r 26    :ROL  $0C
+   44:e9ad r 0c    :
+   45:000c r 80    :
+   46:000c w 00    :
+   47:e9ae r 26    :ROL  $0D
+   48:e9af r 0d    :
+   49:000d r 00    :
+   50:000d w 01    :
+   51:e9b0 r ca    :DEX
+   52:e9b1 r d0    :BNE  $E9AB
+   53:e9b2 r f8    :
+   54:e9ab r 0a    :ASL
+   55:e9ac r 26    :ROL  $0C
+   56:e9ad r 0c    :
+   57:000c r 00    :
+   58:000c w 00    :
+   59:e9ae r 26    :ROL  $0D
+   60:e9af r 0d    :
+   61:000d r 01    :
+   62:000d w 02    :
+   63:e9b0 r ca    :DEX
+   64:e9b1 r d0    :BNE  $E9AB
+   65:e9b2 r f8    :
+   66:e9ab r 0a    :ASL
+   67:e9ac r 26    :ROL  $0C
+   68:e9ad r 0c    :
+   69:000c r 00    :
+   70:000c w 00    :
+   71:e9ae r 26    :ROL  $0D
+   72:e9af r 0d    :
+   73:000d r 02    :
+   74:000d w 04    :
+   75:e9b0 r ca    :DEX
+   76:e9b1 r d0    :BNE  $E9AB
+   77:e9b2 r f8    :
+   78:e9b3 r c8    :INY
+   79:e9b4 r d0    :BNE  $E990
+   80:e9b5 r da    :
+   81:e990 r b9    :LDA  $0200,Y
+   82:e991 r 00    :
+   83:e992 r 02    :
+   84:0203 r 52    :
+   85:e993 r c9    :CMP  #$30
+   86:e994 r 30    :
+   87:e995 r 90    :BCC  $E9B6
+   88:e996 r 1f    :
+   89:e997 r c9    :CMP  #$47
+   90:e998 r 47    :
+   91:e999 r b0    :BCS  $E9B6
+   92:e99a r 1b    :
+   93:e9b6 r c4    :CPY  $0E
+   94:e9b7 r 0e    :
+   95:000e r 00    :
+   96:e9b8 r f0    :BEQ  $E94C
+   97:e9b9 r 92    :
+   98:e9ba r 24    :BIT  $0F
+   99:e9bb r 0f    :
+  100:000f r 00    :
+  101:e9bc r 50    :BVC  $E9CE
+  102:e9bd r 10    :
+  103:e9ce r 30    :BMI  $EA04
+  104:e9cf r 34    :
+  105:e9d0 r a2    :LDX  #$02
+  106:e9d1 r 02    :
+  107:e9d2 r b5    :LDA  $0B,X
+  108:e9d3 r 0b    :
+  109:000d r 04    :
+  110:e9d4 r 95    :STA  $09,X
+  111:e9d5 r 09    :
+  112:000b w 04    :
+  113:e9d6 r 95    :STA  $07,X
+  114:e9d7 r 07    :
+  115:0009 w 04    :
+  116:e9d8 r ca    :DEX
+  117:e9d9 r d0    :BNE  $E9D2
+  118:e9da r f7    :
+  119:e9d2 r b5    :LDA  $0B,X
+  120:e9d3 r 0b    :
+  121:000c r 00    :
+  122:e9d4 r 95    :STA  $09,X
+  123:e9d5 r 09    :
+  124:000a w 00    :
+  125:e9d6 r 95    :STA  $07,X
+  126:e9d7 r 07    :
+  127:0008 w 00    :
+  128:e9d8 r ca    :DEX
+  129:e9d9 r d0    :BNE  $E9D2
+  130:e9da r f7    :
+  131:e9db r d0    :BNE  $E9F1
+  132:e9dc r 14    :
+  133:e9dd r a9    :LDA  #$0A
+  134:e9de r 0a    :
+  135:e9df r 20    :JSR  $FF03
+  136:e9e0 r 03    :
+  137:01fd w e9    :
+  138:01fc w e1    :
+  139:e9e1 r ff    :
+  140:ff03 r 4c    :JMP  $FF2E
+  141:ff04 r 2e    :
+  142:ff05 r ff    :
+  143:ff2e r 2c    :BIT  $DF0F
+  144:ff2f r 0f    :
+  145:ff30 r df    :
+  146:df0f r 00    :
+  147:ff31 r 30    :BMI  $FF2E
+  148:ff32 r fb    :
+  149:ff33 r 8d    :STA  $DF0E
+  150:ff34 r 0e    :
+  151:ff35 r df    :
+  152:df0e w 0a    :
+  153:ff36 r 60    :RTS
+  154:ff37 r ad    :
+  155:01fc r e1    :
+  156:01fd r e9    :
+  157:e9e2 r a5    :LDA  $09
+  158:e9e3 r 09    :
+  159:0009 r 04    :
+  160:e9e4 r 20    :JSR  $E262
+  161:e9e5 r 62    :
+  162:01fd w e9    :
+  163:01fc w e6    :
+  164:e9e6 r e2    :
+  165:e262 r 48    :PHA
+  166:e263 r 4a    :
+  167:01fb w 04    :
+  168:e263 r 4a    :LSR
+  169:e264 r 4a    :LSR
+  170:e265 r 4a    :LSR
+  171:e266 r 4a    :LSR
+  172:e267 r 20    :JSR  $E26B
+  173:e268 r 6b    :
+  174:01fa w e2    :
+  175:01f9 w 69    :
+  176:e269 r e2    :
+  177:e26b r 29    :AND  #$0F
+  178:e26c r 0f    :
+  179:e26d r 09    :ORA  #$30
+  180:e26e r 30    :
+  181:e26f r c9    :CMP  #$3A
+  182:e270 r 3a    :
+  183:e271 r 90    :BCC  $E275
+  184:e272 r 02    :
+  185:e275 r 4c    :JMP  $FF03
+  186:e276 r 03    :
+  187:e277 r ff    :
+  188:ff03 r 4c    :JMP  $FF2E
+  189:ff04 r 2e    :
+  190:ff05 r ff    :
+  191:ff2e r 2c    :BIT  $DF0F
+  192:ff2f r 0f    :
+  193:ff30 r df    :
+  194:df0f r 00    :
+  195:ff31 r 30    :BMI  $FF2E
+  196:ff32 r fb    :
+  197:ff33 r 8d    :STA  $DF0E
+  198:ff34 r 0e    :
+  199:ff35 r df    :
+  200:df0e w 30    :
+  201:ff36 r 60    :RTS
+  202:ff37 r ad    :
+  203:01f9 r 69    :
+  204:01fa r e2    :
+  205:e26a r 68    :PLA
+  206:e26b r 29    :
+  207:01fb r 04    :
+  208:e26b r 29    :AND  #$0F
+  209:e26c r 0f    :
+  210:e26d r 09    :ORA  #$30
+  211:e26e r 30    :
+  212:e26f r c9    :CMP  #$3A
+  213:e270 r 3a    :
+  214:e271 r 90    :BCC  $E275
+  215:e272 r 02    :
+  216:e275 r 4c    :JMP  $FF03
+  217:e276 r 03    :
+  218:e277 r ff    :
+  219:ff03 r 4c    :JMP  $FF2E
+  220:ff04 r 2e    :
+  221:ff05 r ff    :
+  222:ff2e r 2c    :BIT  $DF0F
+  223:ff2f r 0f    :
+  224:ff30 r df    :
+  225:df0f r 00    :
+  226:ff31 r 30    :BMI  $FF2E
+  227:ff32 r fb    :
+  228:ff33 r 8d    :STA  $DF0E
+  229:ff34 r 0e    :
+  230:ff35 r df    :
+  231:df0e w 34    :
+  232:ff36 r 60    :RTS
+  233:ff37 r ad    :
+  234:01fc r e6    :
+  235:01fd r e9    :
+  236:e9e7 r a5    :LDA  $08
+  237:e9e8 r 08    :
+  238:0008 r 00    :
+  239:e9e9 r 20    :JSR  $E262
+  240:e9ea r 62    :
+  241:01fd w e9    :
+  242:01fc w eb    :
+  243:e9eb r e2    :
+  244:e262 r 48    :PHA
+  245:e263 r 4a    :
+  246:01fb w 00    :
+  247:e263 r 4a    :LSR
+  248:e264 r 4a    :LSR
+  249:e265 r 4a    :LSR
+  250:e266 r 4a    :LSR
+  251:e267 r 20    :JSR  $E26B
+  252:e268 r 6b    :
+  253:01fa w e2    :
+  254:01f9 w 69    :
+  255:e269 r e2    :
+  256:e26b r 29    :AND  #$0F
+  257:e26c r 0f    :
+  258:e26d r 09    :ORA  #$30
+  259:e26e r 30    :
+  260:e26f r c9    :CMP  #$3A
+  261:e270 r 3a    :
+  262:e271 r 90    :BCC  $E275
+  263:e272 r 02    :
+  264:e275 r 4c    :JMP  $FF03
+  265:e276 r 03    :
+  266:e277 r ff    :
+  267:ff03 r 4c    :JMP  $FF2E
+  268:ff04 r 2e    :
+  269:ff05 r ff    :
+  270:ff2e r 2c    :BIT  $DF0F
+  271:ff2f r 0f    :
+  272:ff30 r df    :
+  273:df0f r 00    :
+  274:ff31 r 30    :BMI  $FF2E
+  275:ff32 r fb    :
+  276:ff33 r 8d    :STA  $DF0E
+  277:ff34 r 0e    :
+  278:ff35 r df    :
+  279:df0e w 30    :
+  280:ff36 r 60    :RTS
+  281:ff37 r ad    :
+  282:01f9 r 69    :
+  283:01fa r e2    :
+  284:e26a r 68    :PLA
+  285:e26b r 29    :
+  286:01fb r 00    :
+  287:e26b r 29    :AND  #$0F
+  288:e26c r 0f    :
+  289:e26d r 09    :ORA  #$30
+  290:e26e r 30    :
+  291:e26f r c9    :CMP  #$3A
+  292:e270 r 3a    :
+  293:e271 r 90    :BCC  $E275
+  294:e272 r 02    :
+  295:e275 r 4c    :JMP  $FF03
+  296:e276 r 03    :
+  297:e277 r ff    :
+  298:ff03 r 4c    :JMP  $FF2E
+  299:ff04 r 2e    :
+  300:ff05 r ff    :
+  301:ff2e r 2c    :BIT  $DF0F
+  302:ff2f r 0f    :
+  303:ff30 r df    :
+  304:df0f r 00    :
+  305:ff31 r 30    :BMI  $FF2E
+  306:ff32 r fb    :
+  307:ff33 r 8d    :STA  $DF0E
+  308:ff34 r 0e    :
+  309:ff35 r df    :
+  310:df0e w 30    :
+  311:ff36 r 60    :RTS
+  312:ff37 r ad    :
+  313:01fc r eb    :
+  314:01fd r e9    :
+  315:e9ec r a9    :LDA  #$3A
+  316:e9ed r 3a    :
+  317:e9ee r 20    :JSR  $FF03
+  318:e9ef r 03    :
+  319:01fd w e9    :
+  320:01fc w f0    :
+  321:e9f0 r ff    :
+  322:ff03 r 4c    :JMP  $FF2E
+  323:ff04 r 2e    :
+  324:ff05 r ff    :
+  325:ff2e r 2c    :BIT  $DF0F
+  326:ff2f r 0f    :
+  327:ff30 r df    :
+  328:df0f r 00    :
+  329:ff31 r 30    :BMI  $FF2E
+  330:ff32 r fb    :
+  331:ff33 r 8d    :STA  $DF0E
+  332:ff34 r 0e    :
+  333:ff35 r df    :
+  334:df0e w 3a    :
+  335:ff36 r 60    :RTS
+  336:ff37 r ad    :
+  337:01fc r f0    :
+  338:01fd r e9    :
+  339:e9f1 r c9    :CMP  #$08
+  340:e9f2 r 08    :
+  341:e9f3 r d0    :BNE  $E9FA
+  342:e9f4 r 05    :
+  343:e9fa r a9    :LDA  #$20
+  344:e9fb r 20    :
+  345:e9fc r 20    :JSR  $FF03
+  346:e9fd r 03    :
+  347:01fd w e9    :
+  348:01fc w fe    :
+  349:e9fe r ff    :
+  350:ff03 r 4c    :JMP  $FF2E
+  351:ff04 r 2e    :
+  352:ff05 r ff    :
+  353:ff2e r 2c    :BIT  $DF0F
+  354:ff2f r 0f    :
+  355:ff30 r df    :
+  356:df0f r 00    :
+  357:ff31 r 30    :BMI  $FF2E
+  358:ff32 r fb    :
+  359:ff33 r 8d    :STA  $DF0E
+  360:ff34 r 0e    :
+  361:ff35 r df    :
+  362:df0e w 20    :
+  363:ff36 r 60    :RTS
+  364:ff37 r ad    :
+  365:01fc r fe    :
+  366:01fd r e9    :
+  367:e9ff r a1    :LDA  ($08,X)
+  368:ea00 r 08    :
+  369:0008 r 00    :
+  370:0009 r 04    :
+  371:0400 r a2    :
+  372:ea01 r 20    :JSR  $E262
+  373:ea02 r 62    :
+  374:01fd w ea    :
+  375:01fc w 03    :
+  376:ea03 r e2    :
+  377:e262 r 48    :PHA
+  378:e263 r 4a    :
+  379:01fb w a2    :
+  380:e263 r 4a    :LSR
+  381:e264 r 4a    :LSR
+  382:e265 r 4a    :LSR
+  383:e266 r 4a    :LSR
+  384:e267 r 20    :JSR  $E26B
+  385:e268 r 6b    :
+  386:01fa w e2    :
+  387:01f9 w 69    :
+  388:e269 r e2    :
+  389:e26b r 29    :AND  #$0F
+  390:e26c r 0f    :
+  391:e26d r 09    :ORA  #$30
+  392:e26e r 30    :
+  393:e26f r c9    :CMP  #$3A
+  394:e270 r 3a    :
+  395:e271 r 90    :BCC  $E275
+  396:e272 r 02    :
+  397:e273 r 69    :
+  398:e274 r 06    :
+  399:e275 r 4c    :JMP  $FF03
+  400:e276 r 03    :
+  401:e277 r ff    :
+  402:ff03 r 4c    :JMP  $FF2E
+  403:ff04 r 2e    :
+  404:ff05 r ff    :
+  405:ff2e r 2c    :BIT  $DF0F
+  406:ff2f r 0f    :
+  407:ff30 r df    :
+  408:df0f r 00    :
+  409:ff31 r 30    :BMI  $FF2E
+  410:ff32 r fb    :
+  411:ff33 r 8d    :STA  $DF0E
+  412:ff34 r 0e    :
+  413:ff35 r df    :
+  414:df0e w 41    :
+  415:ff36 r 60    :RTS
+  416:ff37 r ad    :
+  417:01f9 r 69    :
+  418:01fa r e2    :
+  419:e26a r 68    :PLA
+  420:e26b r 29    :
+  421:01fb r a2    :
+  422:e26b r 29    :AND  #$0F
+  423:e26c r 0f    :
+  424:e26d r 09    :ORA  #$30
+  425:e26e r 30    :
+  426:e26f r c9    :CMP  #$3A
+  427:e270 r 3a    :
+  428:e271 r 90    :BCC  $E275
+  429:e272 r 02    :
+  430:e275 r 4c    :JMP  $FF03
+  431:e276 r 03    :
+  432:e277 r ff    :
+  433:ff03 r 4c    :JMP  $FF2E
+  434:ff04 r 2e    :
+  435:ff05 r ff    :
+  436:ff2e r 2c    :BIT  $DF0F
+  437:ff2f r 0f    :
+  438:ff30 r df    :
+  439:df0f r 00    :
+  440:ff31 r 30    :BMI  $FF2E
+  441:ff32 r fb    :
+  442:ff33 r 8d    :STA  $DF0E
+  443:ff34 r 0e    :
+  444:ff35 r df    :
+  445:df0e w 32    :
+  446:ff36 r 60    :RTS
+  447:ff37 r ad    :
+  448:01fc r 03    :
+  449:01fd r ea    :
+  450:ea04 r 86    :STX  $0F
+  451:ea05 r 0f    :
+  452:000f w 00    :
+  453:ea06 r a5    :LDA  $08
+  454:ea07 r 08    :
+  455:0008 r 00    :
+  456:ea08 r c5    :CMP  $0C
+  457:ea09 r 0c    :
+  458:000c r 00    :
+  459:ea0a r a5    :LDA  $09
+  460:ea0b r 09    :
+  461:0009 r 04    :
+  462:ea0c r e5    :SBC  $0D
+  463:ea0d r 0d    :
+  464:000d r 04    :
+  465:ea0e r b0    :BCS  $E9C8
+  466:ea0f r b8    :
+  467:e9c8 r 4c    :JMP  $E971
+  468:e9c9 r 71    :
+  469:e9ca r e9    :
+  470:e971 r b9    :LDA  $0200,Y
+  471:e972 r 00    :
+  472:e973 r 02    :
+  473:0203 r 52    :
+  474:e974 r c9    :CMP  #$0D
+  475:e975 r 0d    :
+  476:e976 r f0    :BEQ  $E951
+  477:e977 r d9    :
+  478:e978 r 09    :ORA  #$80
+  479:e979 r 80    :
+  480:e97a r c9    :CMP  #$AE
+  481:e97b r ae    :
+  482:e97c r 90    :BCC  $E970
+  483:e97d r f2    :
+  484:e97e r f0    :BEQ  $E96E
+  485:e97f r ee    :
+  486:e980 r c9    :CMP  #$BA
+  487:e981 r ba    :
+  488:e982 r f0    :BEQ  $E96D
+  489:e983 r e9    :
+  490:e984 r 29    :AND  #$5F
+  491:e985 r 5f    :
+  492:e986 r c9    :CMP  #$52
+  493:e987 r 52    :
+  494:e988 r f0    :BEQ  $E9CB
+  495:e989 r 41    :
+  496:e9cb r 6c    :JMP  ($0008)
+  497:e9cc r 08    :
+  498:e9cd r 00    :
+  499:0008 r 00    :
+  500:0009 r 04    :
+  501:0400 r a2    :LDX  #$05
+  502:0401 r 05    :
+  503:0402 r 7c    :JMP  ($0400,X)
+  504:0403 r 00    :
+  505:0404 r 04    :
+  506:0405 r 07    :
+  507:0406 r 04    :
+  508:0407 r 9c    :STZ  $DF01
+  509:0408 r 01    :
+  510:0409 r df    :
+  511:df01 w 00    :

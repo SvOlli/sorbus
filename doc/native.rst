@@ -51,8 +51,10 @@ Using an NMOS 6502
 
 The firmware of this core does not support an NMOS 6502, and shows an
 appropriate message upon startup. However, is it possible to drop into
-WozMon. This can be used for some rudimentary work. It's also possible
+WozMon. This can be used for some rudimentary work. It is also possible
 to run Instant Assembler within WozMon using the tool ``wozcat``.
+Furthermore, it is planned to have a more sophisticated monitor
+included in the future.
 
 
 CP/M 65 Usage
@@ -194,10 +196,11 @@ Cyclecount ($DF24-$DF27)
 Variables Used By Kernel ($DF2C-$DF2F)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-  $DF2B: Z index register (65CE02 only, this might change)
 -  $DF2C: bank
 -  $DF2D: accumulator
--  $DF2E: X index
--  $DF2F: Y index
+-  $DF2E: X index register
+-  $DF2F: Y index register
 
 This are just variables used during handling an interrupt service call
 
