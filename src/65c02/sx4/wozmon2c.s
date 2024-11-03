@@ -67,7 +67,7 @@
 ; 65SC02 is minimum requirement
 ;.psc02
 
-.define CONFIG_CMD_NOT_FOUND  1
+.define CONFIG_CMD_NOT_FOUND  0
 .define CONFIG_SHOW_HELP      1
 
 .if 1
@@ -160,10 +160,14 @@ wozmon2c:
    .byte 10,"disass: startL"
    .byte 10,"go:     startG"
    .byte 10,"assemb: !"
+   .byte 10,"regs:   R"
    .byte 10,"dir:    user$"
    .byte 10,"load:   user<start{filename.ext"
    .byte 10,"save:   user<start.end}filename.ext"
    .byte 10,"quit:   X"
+   .byte 10
+   .byte 10,"More detailed instructions at:"
+   .byte 10,"https://github.com/SvOlli/sorbus/blob/master/doc/monitors.md"
    .byte 10,0
 .endif
 
@@ -251,8 +255,6 @@ setfilename:
    lda   A4L
    and   #$0f
    tay
-;   lda   YSAV
-;   inc
    pla
 .if .lobyte(IN)
 .error IN must be at page start
@@ -264,17 +266,20 @@ setfilename:
 
 LOAD:
    jsr   setfilename
-   sta   TRAP
    int   CPMLOAD
    bcs   ioerror
    rts
 
 SAVE:
    jsr   setfilename
-   sta   TRAP
    int   CPMSAVE
    bcs   ioerror
    rts
+
+;******************************************************************************
+;* Sorbus subroutines end here                                                *
+;******************************************************************************
+
 
 ;******************************************************************************
 ;
@@ -716,7 +721,6 @@ LT2:
    rts
 
 MOVE:
-   sta   TRAP
 :
    lda   (A1L),y           ;MOVE (A) THRU (A2) TO (A4)
    sta   (A4L),y

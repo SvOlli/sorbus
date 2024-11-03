@@ -10,8 +10,8 @@ On Target
 WozMon
 ------
 
-The most basic one, implemented originally in just 256 bytes. Everything is
-entered and displayed as hex.
+The most basic one, implemented originally in just 256 bytes for the Apple 1
+Computer. Everything is entered and displayed as hex.
 
 Available commands (examples):
 
@@ -20,11 +20,72 @@ Available commands (examples):
 - `0400.0407`: dump the content of memory locations $0400 to $0407
 - `0400: 9C`: write $9C to memory location $0400
 - `0400: 9C 01 DF A0 00 00 09 60`: write the bytes to memory starting at $0400
-- `0400R`: start the program $0400
+- `0400R`: start the program $0400 (an alias `0400G` can be used as well)
 
 A significant change to the Sorbus version of WozMon is that if a routine
 started using the `R` command returns using the `RTS` opcode will drop you
 back to WozMon.
+
+
+System Monitor of Apple //c (WozMon 2c)
+---------------------------------------
+
+This monitor is a very enhanced version of the original WozMon, now
+utilizing about 1.5k bytes without the help message. But for this it
+comes with a lot of new features like a disassembler, a direct mini
+assembler from the Apple //c and file access which is custom to the
+Sorbus Computer.
+
+Displaying and entering data works the same as on the original WozMon.
+There is an addition: instead of entering hex data, you can also enter
+ASCII by prepending the letter with a single quote (`'`). However, when
+entering multiple data, make sure that every letter is prepended with a
+quote, and also that the input is separated by spaces.
+
+Furthermore, the `R` command has been renamed to `G` for "go".
+
+All implemented commands (examples):
+
+When the prompt is a asterisk (`*`):
+
+- `0400`: dump the content of memory location $0400
+- `0400 0404`: dump the content of memory locations $0400 and $0404
+- `0400.0407`: dump the content of memory locations $0400 to $0407
+- `0400: 9C`: write $9C to memory location $0400
+- `0400: 9C 0D 03 A0 00 00 09 60`: write the bytes to memory starting at $0400
+- `0410: 20 06 FF 'H 'e 'l 'l 'o 'r 'l 'd '! 00 60`:
+   write a small program that outputs "Hellorld!". Greetings to Usage Electric.
+- `0400G`: start the program $0400
+- `50+50`: add those to hex values, getting $A0
+- `30-22`: subtract those to hex values, getting $0E
+- `R`: print out the CPU shadow registers of A, X, Y, P and SP. These will
+   be read when using `G` and saved to then the program exists with an `RTS`
+   opcode. (Option renamed from Ctrl-E.) The values of those registers can
+   be changed by the `:` command as the edit address pointer has been put to
+   the correct place in memory ($00FB-$00FF).
+- `c000<0400.07ffM`: move (or rather copy) the memory from $0400 to $0BFF to
+   $C000 to $C7FF.
+- `c000<0400.07ffV`: verify (or rather compare) the memory from $0400 to
+   $0BFF to $C000 to $C7FF.
+- `0400L`: list (or rather disassemble) 20 instructions starting at $0400.
+- `!`: drop to the direct mini assembler (see below)
+- `A$`: display the directory of the user id $A (10) (Sorbus extension)
+- `A<1000{int-test.sx4`: load the file "int-test.sx4" from user id $A (10)
+   to address $1000.
+- `2<1000.1FFF}savetest.sx4`: load the file "savetest.sx4" from user id $2
+   (2) from address $1000 to $1FFF, including.
+
+When the prompt is an exclamation mark (`!`), the direct mini assembler is
+running. Now the user input is evaluated like:
+
+- `1000:stz $DF01`: assemble the instruction `STZ $DF01` to address $1000.
+   (Note the `$` is optional.)
+- `(space)rts`: assemble the instruction `RTS` to the now current address.
+   ($1003 in this example, also note that the `(space)` means a space
+   character.)
+- an empty input returns to the "asterisk input"
+
+The supported instruction set is of the 65SC02.
 
 
 TIM
@@ -82,7 +143,7 @@ A more detailed documentation is at the start of the
 On Meta-Mode
 ============
 
-Pressing Ctrl+] will get you in a "Meta-Mode" where the CPU stops. Then
+Pressing Ctrl+] will get you in a "meta-mode" where the CPU stops. Then
 a debug menu is shown which provides some developer information. A few
 entries there also relate to "monitor commands".
 
@@ -90,6 +151,9 @@ entries there also relate to "monitor commands".
   CPU cycles). This option will also provide some disassembly. However,
   not every line is valid, as an instruction takes several cycles to
   execute (up to 8), and no logic to detect instruction fetches has been
-  implemented, yet.
+  implemented, yet. But there are some rules installed that disables
+  the output of more false instructions.
 - D)isassemble: this will disassemble memory. Press space to advance.
   Press "Q" to quit and return to meta menu.
+- M)memory dump: view memory 256 bytes at a time, combined hexdump and
+  ASCII.
