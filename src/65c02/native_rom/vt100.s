@@ -14,21 +14,25 @@ ESC := $1b
 .global  vt100_tests
 
 vt100:
+   pha
+   lda   #$44           ; save page $0200
+   sta   XRAMSW
+   pla
    cpy   #$03
    bcs   @simple
    jmp   vt100_2param
 
 @simple:
-   lda   escfirst-3,y    ; Y contains offset, see table below
+   lda   escfirst-3,y   ; Y contains offset, see table below
    sta   escbuffer+2
-   lda   escsecond-3,y   ; second character, if required
+   lda   escsecond-3,y  ; second character, if required
    sta   escbuffer+3
-   stz   escbuffer+4     ; make sure, string is NULL terminated
+   stz   escbuffer+4    ; make sure, string is NULL terminated
 
 printbuffer:
-   lda   #ESC            ; create escape sequence, start with ESC
+   lda   #ESC           ; create escape sequence, start with ESC
    sta   escbuffer+0
-   lda   #'['            ; followed by "["
+   lda   #'['           ; followed by "["
    sta   escbuffer+1
    ldx   #$00
 :
@@ -40,7 +44,7 @@ printbuffer:
 @end:
    cpy   #$03
    beq   vt100_getreply
-   rts
+   bra   vt100_done
 
     ; from left to right
     ; 3) get cursor
@@ -99,19 +103,20 @@ vt100_getreply:
    phx
    dex
    jsr   ascii2bin
-   sta   $ffe
    sta   BRK_SA
    plx
 :
    inx
-   stx   $ff8
    lda   escbuffer,x
    jsr   isdigit
    bcc   :-
    dex
    jsr   ascii2bin
    sta   BRK_SX
-   sta   $fff
+   ; slip through
+vt100_done:
+   lda   #$84           ; restore page $0200
+   sta   XRAMSW
    rts
 
 bin2ascii:
@@ -208,7 +213,7 @@ isdigit:
    bcs   :+
    cmp   #'0'
    rol
-   eor   #$01 ; negate carry, keep A
+   eor   #$01           ; negate carry, keep A
    ror
 :
    ; carry set indicates not a digit

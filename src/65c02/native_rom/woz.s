@@ -145,6 +145,8 @@ nextitem:
    and   #$5f
    cmp   #'R'           ; check for 'R'
    beq   run
+   cmp   #'G'           ; check for 'G' (same as 'R', as in Apple ][)
+   beq   run
    stx   L
    stx   H
    sty   YSAV

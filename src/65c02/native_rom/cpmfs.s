@@ -343,6 +343,8 @@ dmafile:
 ; - create directory entries
 
 setupsave:
+   lda   #$44           ; save page $0200
+   sta   XRAMSW
    clc                  ; subtract one more, assuming end address is + 1
    lda   cpm_eaddr+0
    sbc   cpm_saddr+0
@@ -433,7 +435,7 @@ setupsave:
 
    plx                  ; fix stack
    sec                  ; notify error: disk full
-   rts
+   bra   @restore200
 
 @freefound:
    ldy   #$ff
@@ -490,6 +492,9 @@ setupsave:
    ldx   #<i_create
    jsr   scandir
    clc
+@restore200:
+   lda   #$84           ; restore page $0200
+   sta   XRAMSW
    rts
 
 ;-------------------------------------------------------------------------

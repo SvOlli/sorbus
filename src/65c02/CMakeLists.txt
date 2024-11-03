@@ -189,4 +189,9 @@ add_executable(sx4speed
    )
 target_type(sx4speed sx4)
 
+add_executable(wozmon2
+   sx4/wozmon2.s
+   )
+target_type(wozmon2 sx4)
+
 gencpmfs(native_cpmfs.img)

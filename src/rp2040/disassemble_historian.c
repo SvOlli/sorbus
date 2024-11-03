@@ -40,6 +40,23 @@ static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
       switch( disass_addrmode( data )  )
       {
          int8_t offset;
+         uint16_t indirect;
+         case AI: /* JMP ($0000) */
+         case AIX: /* JMP ($0000,X) */
+            nextaddr = trace_address( trace[re(index+bc)] );
+            indirect = trace_data( trace[re(index+bc-2)] ) | (trace_data( trace[re(index+bc-1)] ) << 8);
+            if( indirect == nextaddr )
+            {
+               return bc;
+            }
+            /* let's check if we need one cycle more */
+            nextaddr = trace_address( trace[re(index+bc+1)] );
+            indirect = trace_data( trace[re(index+bc-1)] ) | (trace_data( trace[re(index+bc)] ) << 8);
+            if( indirect == nextaddr )
+            {
+               return bc + 1;
+            }
+            break;
          case REL: /* 8-bit branch */
             offset = trace_data( trace[re(index+1)] );
             nextaddr = address + 2 + offset;

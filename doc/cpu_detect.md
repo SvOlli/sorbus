@@ -365,7 +365,7 @@ was supposed to. So this has to be one of those early and rare
 6502s with the `ROR`-instruction missing.
 
 For more details on this topic, I recommend watching the video
-["The 6502 Rotate Right Myth"](https://youtu.be/Uk_QC1eU0F) by
+["The 6502 Rotate Right Myth"](https://youtu.be/Uk_QC1eU0Fg) by
 Eric Schlaepfer, who also built the
 [MOnSter 6502](https://monster6502.com/).
 
@@ -604,7 +604,7 @@ apart nine different 6502 based CPUs.
 
 While there are more than the six CPUs being detected with the method
 described here, it does not make sense to add any of those CPUs to this
-routine for a simple reason: they don't fix in a 40 pins socket compatible
+routine for a simple reason: they don't fit in a 40 pins socket compatible
 with the 65C02. The table has a slightly more detailed description:
 
 | CPU       | Description                           | Supported in Sorbus   |

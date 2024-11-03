@@ -656,7 +656,8 @@ int32_t get_16bit_address( uint16_t lastaddr )
       else switch( c )
       {
          case 'q':
-         case 0x1b:
+         case 0x1b: // ESC
+         case 0x1d: // CTRL+]
             puts( "quit" );
             return (-1);
          case ' ':
@@ -734,7 +735,8 @@ void debug_disassembler()
       addr = (uint16_t)(getaddr & 0xFFFF);
       for( count = 0; count < 16; ++count )
       {
-         disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
+         disass_show( DISASS_SHOW_NOTHING );
+         //disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
          puts( disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ) );
          //printf( "%s ; %d\n",
          //   disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ),
