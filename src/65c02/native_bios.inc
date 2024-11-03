@@ -156,6 +156,7 @@
                            ; (30..37 bgcol, 40..47 fgcol, DECIMAL)
 .define VT100_SCRN_CLR $04 ; clear screen
 .define VT100_EOLN_CLR $05 ; clear to end of line
+.define VT100_SCRN_SIZ $FF ; combined functions CPOS_*: get size of screen
 
 ; copy the BIOS ($FF00-$FFFF) from ROM to RAM, so $E000-$FFFF can be banked
 ; to RAM without losing the functionality of the kernel

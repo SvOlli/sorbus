@@ -14,13 +14,26 @@ ESC := $1b
 .global  vt100_tests
 
 vt100:
+   cpy   #VT100_SCRN_SIZ
+   bne   :+
+   ; convenience function: get size of window
+   ldy   #VT100_CPOS_SAV   ; step 1: save cursor position
+   jsr   vt100
+   lda   #$fe
+   tax
+   ldy   #VT100_CPOS_SET   ; step 2: set cursor to bottom right position
+   jsr   vt100
+   ldy   #VT100_CPOS_GET   ; step 3: write cursor position to return values
+   jsr   vt100
+   ldy   #VT100_CPOS_RST   ; step 4: restore cursor position
+:
    pha
    lda   #$44           ; save page $0200
    sta   XRAMSW
    pla
-   cpy   #$03
+   cpy   #VT100_CPOS_GET
    bcs   @simple
-   jmp   vt100_2param
+   bra   vt100_2param
 
 @simple:
    lda   escfirst-3,y   ; Y contains offset, see table below

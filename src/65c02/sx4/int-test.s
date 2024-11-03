@@ -133,6 +133,9 @@ dir:
    jmp   done
 
 vt100:
+   jsr   PRINT
+   .byte 10,"The old way:",0
+
    ldy   #VT100_CPOS_SAV
    int   VT100
 
@@ -143,28 +146,40 @@ vt100:
 
    ldy   #VT100_CPOS_GET
    int   VT100
-   sta   TMPVEC+0
-   stx   TMPVEC+1
+   ; position save to X and A here, and not changed until printing out
 
    ldy   #VT100_CPOS_RST
    int   VT100
 
+   jsr   @printxa
+
+   jsr   PRINT
+   .byte "New convenience function:",0
+
+   ldy   #VT100_SCRN_SIZ
+   int   VT100
+
+   jsr   @printxa
+
+   jmp   done
+
+@printxa:
    jsr   PRINT
    .byte 10,"terminal size $",0
 
-   lda   TMPVEC+1
+   pha
+   txa
    int   PRHEX8
 
    jsr   PRINT
    .byte " x $",0
 
-   lda   TMPVEC+0
+   pla
    int   PRHEX8
 
    lda   #$0a
-   jsr   CHROUT
+   jmp   CHROUT
 
-   jmp   done
 
 lineinput:
    jsr   PRINT

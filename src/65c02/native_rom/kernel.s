@@ -58,13 +58,13 @@ reset:
                         ; 6502: ALR #im
 
    dec                  ; 65C02 opcode that on 6502 is an argument of $4b/ALR
-   bne   @cmos6502      ; no NMOS 6502, continue
+   bne   cmos6502       ; no NMOS 6502, continue
 
    ; set NMI and IRQ to something more useful for NMOS 6502
-   lda   #<@nmosirq
+   lda   #<nmosirq
    sta   UVNMI+0
    sta   UVIRQ+0
-   lda   #>@nmosirq
+   lda   #>nmosirq
    sta   UVNMI+1
    sta   UVIRQ+1
 
@@ -75,7 +75,7 @@ reset:
    bcs   @no65c02loop
    ; slip through
 
-@woz:
+woz:
    lda   #$0a           ; start WozMon port
    jsr   CHROUT
 :  ; workaround for WozMon not handling RTS when executing external code
@@ -83,13 +83,13 @@ reset:
    ; will be reached if own code run within WozMon exits using rts
    jmp   :-             ; no bra here: NMOS 6502 fallback mode
 
-@nmosirq:
+nmosirq:
    sta   TRAP
    rti
 
 ; NMOS 6502 compatible code end
 
-@cmos6502:
+cmos6502:
    txs                  ; fix for 65816's phk
 @iloop:
    jsr   PRINT
@@ -100,7 +100,7 @@ reset:
    bcs   :-
 
    cmp   #'W'
-   beq   @woz
+   beq   woz
 
    cmp   #'0'           ; is it a boot block number?
    bcc   :+
@@ -196,13 +196,10 @@ boota:
    ror
    ror
    sta   ID_LBA+0
-   stz   ID_LBA+1
-.if (<SECTOR_BUFFER <> $00)
+   lda   #$00
+   sta   ID_LBA+1
    lda   #<SECTOR_BUFFER
    sta   ID_MEM+0
-.else
-   stz   ID_MEM+0
-.endif
    lda   #>SECTOR_BUFFER
    sta   ID_MEM+1
 
@@ -213,8 +210,8 @@ boota:
 
 @notfound:
    jsr   PRINT
-   .byte ": failed",10,0
-   jmp   $E000
+   .byte ": failed, dropping to WozMon",10,0
+   jmp   woz
 
 @checksig:
    dec   ID_LBA+0       ; reset LBA for re-reading to $E000

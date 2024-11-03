@@ -607,6 +607,7 @@ void debug_backtrace()
 
    printf( "historian:\n" );
 
+   disass_show( DISASS_SHOW_NOTHING );
    disass_historian_t d = disass_historian_init( cputype ? cputype : CPU_6502,
                                                  &buslog_states[0],
                                                  BUSLOG_SIZE,
@@ -735,8 +736,7 @@ void debug_disassembler()
       addr = (uint16_t)(getaddr & 0xFFFF);
       for( count = 0; count < 16; ++count )
       {
-         disass_show( DISASS_SHOW_NOTHING );
-         //disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
+         disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
          puts( disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ) );
          //printf( "%s ; %d\n",
          //   disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ),
