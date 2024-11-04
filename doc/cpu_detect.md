@@ -105,7 +105,7 @@ with a pin layout similar to the original NMOS 6502 and the CMOS 65C02:
 - 65C02, the base CMOS variant, as compared to the NMOS version,
   a couple of bugs were fixed, and new instructions were introduced
 - 65SC02, a 65C02 with the bit-related opcodes removed ($x7 and $xF are
-  just 1 byte, 1 cycle NOPs)
+  just 1 byte, 1 cycle NOPs), STP and WAI are missing as well
 - 65816, a 16 bit capable variant of the 65SC02, with all 256 opcodes
   defined now
 - 65CE02, a CMOS reimplementation of the 65C02 by Commodore with also

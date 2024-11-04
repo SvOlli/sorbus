@@ -36,6 +36,10 @@ comes with a lot of new features like a disassembler, a direct mini
 assembler from the Apple //c and file access which is custom to the
 Sorbus Computer.
 
+As of now, this monitor needs to be loaded from the internal drive
+using the file browser. This is intended to change, once it is
+considered stable.
+
 Displaying and entering data works the same as on the original WozMon.
 There is an addition: instead of entering hex data, you can also enter
 ASCII by prepending the letter with a single quote (`'`). However, when
@@ -63,10 +67,12 @@ When the prompt is a asterisk (`*`):
    opcode. (Option renamed from Ctrl-E.) The values of those registers can
    be changed by the `:` command as the edit address pointer has been put to
    the correct place in memory ($00FB-$00FF).
-- `c000<0400.07ffM`: move (or rather copy) the memory from $0400 to $0BFF to
+- `c000<0400.0bffM`: move (or rather copy) the memory from $0400 to $0BFF to
    $C000 to $C7FF.
-- `c000<0400.07ffV`: verify (or rather compare) the memory from $0400 to
+- `c000<0400.0bffV`: verify (or rather compare) the memory from $0400 to
    $0BFF to $C000 to $C7FF.
+- `bd<c000.cfffP`: put (or rather fill) the memory from $C000 to $CFFF with
+   the value of $BD.
 - `0400L`: list (or rather disassemble) 20 instructions starting at $0400.
 - `!`: drop to the direct mini assembler (see below)
 - `A$`: display the directory of the user id $A (10) (Sorbus extension)
@@ -80,12 +86,13 @@ running. Now the user input is evaluated like:
 
 - `1000:stz $DF01`: assemble the instruction `STZ $DF01` to address $1000.
    (Note the `$` is optional.)
-- `(space)rts`: assemble the instruction `RTS` to the now current address.
-   ($1003 in this example, also note that the `(space)` means a space
-   character.)
+- ` rts`: assemble the instruction `RTS` to the now current address.
+   ($1003 in this example, also note the mendatory leading space character
+   for this case.)
 - an empty input returns to the "asterisk input"
 
-The supported instruction set is of the 65SC02.
+The supported instruction set is of the 65SC02. The BRK instruction is not
+supporing an operand here, as it is used with the Sorbus Native kernel.
 
 
 TIM
@@ -155,5 +162,5 @@ entries there also relate to "monitor commands".
   the output of more false instructions.
 - D)isassemble: this will disassemble memory. Press space to advance.
   Press "Q" to quit and return to meta menu.
-- M)memory dump: view memory 256 bytes at a time, combined hexdump and
+- M)emory dump: view memory 256 bytes at a time, combined hexdump and
   ASCII.

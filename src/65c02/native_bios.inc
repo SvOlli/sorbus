@@ -9,6 +9,7 @@
 ; - For the 65CE02 code, the use of the int macro is strongly recommended
 ;   to take care of the additional Z register, else the Z register must
 ;   be $00
+; - For NMOS 6502 variant, only CHRIN, CHROUT and PRINT are suppored
 
 ; $FF00: read a character from UART in A, returns C=1 when no queue is empty
 .define CHRIN  $FF00
@@ -32,19 +33,25 @@
 .global  brkjump        ; kernel only, doesn't matter in other banks
 .global  reset          ; kernel only, doesn't matter in other banks
 
-.ifp4510
-.macro int arg
+.ifp02
+ .macro int arg
+  .error trying to use software interrupt which is not supported on MOS 6502
+ .endmacro
+.else
+ .ifp4510
+  .macro int arg
    stz   $DF2B          ; save Z register that can't be written to stack
    ldz   #$00           ; clear Z register to be compatible to 65(S)C02
    .byte $00,arg        ; BRK with operand
    php                  ; ldz changes processor status register
    ldz   $DF2B          ; restore Z register
    plp                  ; restore processor status
-.endmacro
-.else
-.macro int arg
+  .endmacro
+ .else
+  .macro int arg
    .byte $00,arg        ; BRK with operand
-.endmacro
+  .endmacro
+ .endif
 .endif
 
 ; will jump using vector UVBRK ($DF78/$DF79)

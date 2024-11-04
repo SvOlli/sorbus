@@ -70,9 +70,17 @@ reset:
 
 @no65c02loop:
    jsr   PRINT
-   .byte 13, "NMOS 6502 not supported, dropping to WozMon", 0
+   .byte 13, "NMOS 6502 not supported, key to boot sector 1 ", 0
+:
+   iny
+   bne   :-
+   inx
+   bne   :-
    jsr   CHRIN
    bcs   @no65c02loop
+
+   lda   #$01
+   jmp   boota
    ; slip through
 
 woz:
@@ -117,13 +125,13 @@ cmos6502:
 :
    cmp   #'B'
    bne   :+
-   ldy   #$03
+   lda   #$03
 @execrom2:
    jmp   execrom        ; execute 3rd ROM bank @ $E000
 :
    cmp   #'F'
    bne   :+
-   ldy   #$02
+   lda   #$02
    ldx   #$00           ; jmp vector 0: file browser
    bra   @execrom2      ; execute 2nd ROM bank @ $E000
 :
@@ -243,16 +251,16 @@ boota:
    .byte "Go",10,0
 execram:
    ; execute loaded boot block in RAM at $E000
-   ldy   #$00
-execrom:                ; has to be called with Y=bank to switch to
-   phy
+   lda   #$00
+execrom:                ; has to be called with A=bank to switch to
+   pha
    ldy   #(@trampolineend-@trampoline-1)
 :
    lda   @trampoline,y  ; this requires bankswitching code written to RAM
    sta   TRAMPOLINE,y
    dey
    bpl   :-
-   ply
+   pla
    jmp   TRAMPOLINE+@jmpbank0-@trampoline
 
 @trampoline:
@@ -261,7 +269,7 @@ execrom:                ; has to be called with Y=bank to switch to
    stz   BANK           ; set BANK back to $00 (RAM)
    rts
 @jmpbank0:
-   sty   BANK
+   sta   BANK
    jmp   $E000
 @trampolineend:
 

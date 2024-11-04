@@ -7,6 +7,8 @@ TMPVEC = $fe
 SIN_XR = $fc
 SIN_YR = $fd
 
+D_BUF  = $fb ; 3 bytes
+
 .segment "CODE"
 start:
    ldy   #VT100_SCRN_CLR
@@ -54,7 +56,6 @@ done:
    bcs   :-
    jmp   start
 
-
 jmptab:
    .word quit
    .word user
@@ -63,6 +64,65 @@ jmptab:
    .word lineinput
    .word gensine
 jmpend:
+
+dec8:  ; print A as a decimal value
+   ldx   #$00
+dec16: ; print A/X (lo/hi) as a decimal value
+   sta   TMPVEC+0
+   stx   TMPVEC+1
+   stz   D_BUF+0
+   stz   D_BUF+1
+   stz   D_BUF+2
+   ldy   #$10
+   sed
+:
+   asl   TMPVEC+0
+   rol   TMPVEC+1
+   ; lda + adc is the same as asl, only in decimal mode
+   lda   D_BUF+0
+   adc   D_BUF+0
+   sta   D_BUF+0
+   lda   D_BUF+1
+   adc   D_BUF+1
+   sta   D_BUF+1
+   lda   D_BUF+2
+   adc   D_BUF+2
+   sta   D_BUF+2
+   dey
+   bne   :-
+   cld
+
+   ldx   #$02
+:
+   lda   D_BUF+0,x
+   jsr   prhex8
+   dex
+   bpl   :-
+   rts
+
+prhex8: ; print a hex value, Y=0 -> skip leading zeros
+   pha
+   lsr
+   lsr
+   lsr
+   lsr
+   jsr   :+
+   pla
+:
+   and   #$0f
+   ora   #$30
+   cmp   #'9'+1
+   bcc   :+
+   adc   #$06
+:
+   cmp   #$30
+   bne   :+
+   cpy   #$00
+   bne   :+
+   rts
+:
+   iny
+   jmp   CHROUT
 
 user:
    jsr   PRINT
@@ -165,17 +225,17 @@ vt100:
 
 @printxa:
    jsr   PRINT
-   .byte 10,"terminal size $",0
+   .byte 10,"terminal size ",0
 
    pha
    txa
-   int   PRHEX8
+   jsr   dec8
 
-   jsr   PRINT
-   .byte " x $",0
+   lda   #'x'
+   jsr   CHROUT
 
    pla
-   int   PRHEX8
+   jsr   dec8
 
    lda   #$0a
    jmp   CHROUT

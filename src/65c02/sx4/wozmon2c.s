@@ -157,6 +157,7 @@ wozmon2c:
    .byte 10,"change: start: value value value"
    .byte 10,"verify: dest<start.endV"
    .byte 10,"move:   dest<start.endM"
+   .byte 10,"put:    value<start.endP"
    .byte 10,"disass: startL"
    .byte 10,"go:     startG"
    .byte 10,"assemb: !"
@@ -333,9 +334,9 @@ REL:
    ldy   A2H
    ldx   A2L
    bne   REL1
-   dey   ;point to offset
+   dey                     ;point to offset
 REL1:
-   dex   ;displacement -1
+   dex                     ;displacement -1
    txa
    clc
    sbc   PCL               ;subtract current PCL
@@ -343,7 +344,7 @@ REL1:
    bpl   REL2              ;check page
    iny
 REL2:
-   tya   ;get page
+   tya                     ;get page
    sbc   PCH               ;check page
 GOERR:
    bne   MINIERR           ;display error
@@ -503,14 +504,14 @@ NNBL:
 ; If Y is not a new opcode, Z=0.
 ;
 NEWOPS:
-   tya   ;get the opcode
+   tya                     ;get the opcode
    ldx   #<(INDX-OPTBL-1)  ;check through new opcodes
 NEWOP1:
    cmp   OPTBL,x           ;does it match?
    beq   GETINDX           ;=>yes, get new index
    dex
    bpl   NEWOP1            ;else check next one
-   rts   ;not found, exit with BNE
+   rts                     ;not found, exit with BNE
 
 GETINDX:
    lda   INDX,x            ;lookup index for mnemonic
@@ -523,7 +524,7 @@ SCRN2:
    bcc   RTMSKZ            ;IF EVEN, USE LO H
    lsr
    lsr
-   lsr   ;SHIFT HIGH HALF BYTE DOWN
+   lsr                     ;SHIFT HIGH HALF BYTE DOWN
    lsr
 RTMSKZ:
    and   #$0F              ;MASK 4-BITS
@@ -539,7 +540,7 @@ INSDS1:
    ;lda   (PCL,x)           ;GET OPCODE
    lda   (PCL)             ;GET OPCODE
 INDS2:
-   tay   ;LABLE moved down 1
+   tay                     ;LABLE moved down 1
    lsr                     ;EVEN/ODD TEST
    bcc   IEVEN
    ror                     ;BIT 1 TEST
@@ -565,8 +566,8 @@ GETFMT:
    jsr   NEWOPS            ;get index for new opcodes
    beq   GOTONE            ;found a new op (or no op)
    and   #$8F              ;MASK FOR 1XXX1010 TEST
-   tax   ; SAVE IT
-   tya   ;OPCODE TO A AGAIN
+   tax                     ; SAVE IT
+   tya                     ;OPCODE TO A AGAIN
    ldy   #$03
    cpx   #$8A
    beq   MNNDX3
@@ -577,9 +578,9 @@ MNNDX1:
 MNNDX2:
    lsr                     ;  1) 1XXX1010 => 00101XXX
    ora   #$20              ;  2) XXXYYY01 => 00111XXX
-   dey   ;  3) XXXYYY10 => 00110XXX
+   dey                     ;  3) XXXYYY10 => 00110XXX
    bne   MNNDX2            ;  4) XXXYY100 => 00100XXX
-   iny   ;  5) XXXXX000 => 000XXXXX
+   iny                     ;  5) XXXXX000 => 000XXXXX
 MNNDX3:
    dey
    bne   MNNDX1
@@ -590,21 +591,20 @@ GOTONE:
 ;******************************************************************************
 instdsp:
    jsr   INSDS1            ;GEN FMT, LEN BYTES (sets Y=$00)
-   pha   ;SAVE MNEMONIC TABLE INDEX
+   pha                     ;SAVE MNEMONIC TABLE INDEX
 PRNTOP:
-   ;lda   (PCL),y
-   lda   (PCL)
-   jsr   PRBYTE
+   lda   (PCL),y
+   int   PRHEX8
    ldx   #$01              ;PRINT 2 BLANKS
 PRNTBL:
    jsr   PRBL2
    cpy   LENGTH            ;PRINT INST (1-3 BYTES)
-   iny   ;IN A 12 CHR FIELD
+   iny                     ;IN A 12 CHR FIELD
    bcc   PRNTOP
    ldx   #$03              ;CHAR COUNT FOR MNEMONIC INDEX
    cpy   #$04
    bcc   PRNTBL
-   pla   ;RECOVER MNEMONIC INDEX
+   pla                     ;RECOVER MNEMONIC INDEX
    asl
    tay
    lda   MNEM+1,y
@@ -646,7 +646,7 @@ PRADR3:
 PRADR4:
    dey
    bmi   PRADR2
-   jsr   PRBYTE
+   int   PRHEX8
 PRADR5:
    lda   FORMAT
    cmp   #$E8              ;HANDLE REL ADR MODE
@@ -660,10 +660,11 @@ PRADR5:
 PRNTYX:
    tya
 PRNTAX:
-   jsr   PRBYTE            ;OUTPUT TARGET ADR
+   int   PRHEX8            ;OUTPUT TARGET ADR
 PRNTX:
-   txa   ;  OF BRANCH AND RETURN
-   jmp   PRBYTE
+   txa                     ;  OF BRANCH AND RETURN
+   int   PRHEX8
+   rts
 
 PRBLNK:
    ldx   #$03              ;BLANK COUNT
@@ -675,17 +676,17 @@ PRBL2:
    rts
 
 pcadj:
-   sec   ;0=1 BYTE, 1=2 BYTE,
+   sec                     ;0=1 BYTE, 1=2 BYTE,
    lda   LENGTH            ;  2=3 BYTE
 pcadj3:
    ldy   PCH
-   tax   ;TEST DISPLACEMENT SIGN
+   tax                     ;TEST DISPLACEMENT SIGN
    bpl   pcadj4            ;  (FOR REL BRANCH)
-   dey   ;EXTEND NEG BY DECR PCH
+   dey                     ;EXTEND NEG BY DECR PCH
 pcadj4:
    adc   PCL
    bcc   RTS2              ;PCL+LENGTH(OR DISPL)+1 TO A
-   iny   ;  CARRY INTO Y (PCH)
+   iny                     ;  CARRY INTO Y (PCH)
 RTS2:
    rts
 
@@ -721,11 +722,17 @@ LT2:
    rts
 
 MOVE:
-:
    lda   (A1L),y           ;MOVE (A) THRU (A2) TO (A4)
    sta   (A4L),y
    jsr   NXTA4
-   bcc   :- ;MOVE
+   bcc   MOVE
+   rts
+
+PUT:
+   lda   A5L
+   sta   (A1L),y
+   jsr   NXTA4
+   bcc   PUT
    rts
 
 VERIFY:
@@ -734,13 +741,13 @@ VERIFY:
    beq   VFYOK
    jsr   PRA1
    lda   (A1L),y
-   jsr   PRBYTE
+   int   PRHEX8
    lda   #$A0
    jsr   cout
    lda   #$A8
    jsr   cout
    lda   (A4L),y
-   jsr   PRBYTE
+   int   PRHEX8
    lda   #$A9
    jsr   cout
 VFYOK:
@@ -756,10 +763,10 @@ LIST:
    jsr   a1pc              ;MOVE A1 (2 BYTES) TO
    lda   #$14              ; PC IF SPEC'D AND
 LIST2:
-   pha   ;+DISASSEMBLE 20 INSTRUCTIONS.
+   pha                     ;+DISASSEMBLE 20 INSTRUCTIONS.
    jsr   showinst          ;+Display a line
    pla
-   dec   ;+Count down
+   dec                     ;+Count down
    bne   LIST2
    rts
 
@@ -773,7 +780,7 @@ showinst:
 
 ;******************************************************************************
 a1pc:
-   txa   ;IF USER SPECIFIED AN ADDRESS,
+   txa                     ;IF USER SPECIFIED AN ADDRESS,
    beq   A1PCRTS           ; COPY IT FROM A1 TO PC.
 A1PCLP:
    lda   A1L,x             ;YEP, SO COPY IT.
@@ -821,12 +828,13 @@ RDSP1:
 .else
    lda   ACC+5,x
 .endif
-   jsr   PRBYTE
+   int   PRHEX8
    inx
    bne   RDSP1
    rts
 rtbl:
    .byte "AXYPS"
+
 
 ;******************************************************************************
 GETLNZ:
@@ -884,7 +892,7 @@ GO:
    ldy   YREG
    plp
 
-   jsr   @jsrindirect      ; AND GO!
+   jsr   @indirect         ; AND GO!
 
    php
    sta   A5H               ;SAVE 6502 REGISTER CONTENTS
@@ -899,7 +907,7 @@ GO:
 
    cld
    rts
-@jsrindirect:
+@indirect:
    jmp   (PCL)
 ;
 BL1:
@@ -957,7 +965,7 @@ DATAOUT:
    cpx   #$07
    beq   :-
    lda   (A1L)             ;was: lda   (A1L),y
-   jsr   PRBYTE            ;OUTPUT BYTE IN HEX
+   int   PRHEX8            ;OUTPUT BYTE IN HEX
    jsr   NXTA1
    bcc   MOD8CHK           ;NOT DONE YET. GO CHECK MOD 8
    rts                     ;DONE.
@@ -978,23 +986,8 @@ ADD:
    lda   #$BD              ;PRINT '=', THEN RESULT
    jsr   cout
    pla
-;
-PRBYTE:
-   pha                     ;PRINT BYTE AS 2 HEX DIGITA
-   lsr                     ; (DESTROYS A-REG)
-   lsr
-   lsr
-   lsr
-   jsr   PRHEXZ
-   pla
-;
-PRHEX:
-   and   #$0F              ;PRINT HEX DIGIT IN A-REG
-PRHEXZ:
-   ora   #$B0              ;LSBITS ONLY.
-   cmp   #$BA
-   bcc   cout
-   adc   #$06
+   int   PRHEX8
+   rts
 ;
 cout:
    pha
@@ -1055,7 +1048,7 @@ NXTBIT:
    asl
    rol   A2L
    rol   A2H
-   dex   ;LEAVE X=$FF IF DIG
+   dex                     ;LEAVE X=$FF IF DIG
    bpl   NXTBIT
 NXTBAS:
    lda   MODE
@@ -1110,7 +1103,7 @@ TOSUB:
 ZMODE:
    ldy   #$00              ; MODE IN A-REG),
    sty   MODE
-   rts   ; AND 'RTS' TO THE SUBROUTINE!
+   rts                     ; AND 'RTS' TO THE SUBROUTINE!
 
 
 ;******************************************************************************
@@ -1190,6 +1183,7 @@ MNEM:
    .word $ACC6             ; $41:"TRB"
    .word $8A74             ; $42:"PHY"
    .word $8B74             ; $43:"PLY"
+   .word $0000             ; $44:"???" (was $FC)
 
 ;******************************************************************************
 ; FMT1 BYTES:    XXXXXXY0 INSTRS
@@ -1355,8 +1349,7 @@ INDX:
    .byte $3D               ;LDA (ZPAG)
    .byte $3E               ;CMP (ZPAG) ;??? (the unknown opcode)
    .byte $3F               ;SBC (ZPAG)
-   .byte $FC               ;???
-   .byte $00
+   .byte $44               ;???
 
 
 CHRTBL:
@@ -1366,6 +1359,7 @@ CHRTBL:
    .byte $D6               ;}   (SAVE)
    .byte $EB               ;R was: $BE ;^E  (OPEN AND DISPLAY REGISTERS)
    .byte $9A               ;+!  (Mini assembler)
+   .byte $E9               ;P   (MEMORY PUT/FILL)
    .byte $EF               ;V   (MEMORY VERIFY)
    .byte $A6               ;'-' (SUBSTRACTION)
    .byte $A4               ;'+' (ADDITION)
@@ -1385,6 +1379,7 @@ SUBTBL:
    .word SAVE-1
    .word REGDSP-1          ;R was: $BE ;^E  (OPEN AND DISPLAY REGISTERS)
    .word GETINST1-1        ;+!  (Mini assembler)
+   .word PUT-1             ;P   (MEMORY PUT/FILL)
    .word VERIFY-1          ;V   (MEMORY VERIFY)
    .word SETMODE-1         ;'-' (SUBSTRACTION)
    .word SETMODE-1         ;'+' (ADDITION)

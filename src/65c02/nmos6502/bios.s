@@ -1,4 +1,7 @@
 
+; set processor to NMOS 6502
+.p02
+
 .include "../native.inc"
 .include "../native_bios.inc"
 
@@ -66,63 +69,14 @@ chrin:
    clc
    rts
 
-ramio:                  ; internal-only routine to access RAM under ROM
-   ldx   BANK           ; save current ROM bank
-   stz   BANK           ; switch to RAM
-ramio_cmd:
-   lda   ($00),y        ; intended to be switched to sta ($00),y
-   stx   BANK           ; restore current ROM bank
-   rts                  ; return
-; optional idea: push X to stack and expand ramio_cmd to 3 bytes for JSR
-
 
 IRQCHECK:
-   sta   BRK_SA         ; let's figure out the source of the IRQ
-   pla                  ; get processor status from stack
-   pha                  ; and put it back
-   and   #$10           ; check for BRK bit
-   bne   @isbrk
-   lda   BRK_SA         ; restore saved accumulator
-   jmp   (UVNBI)        ; user vector for non-BRK IRQ ($DF7C)
-@isbrk:
-   lda   BANK           ; get current bank
-   sta   BRK_SB         ; save it
-   stx   BRK_SX
-   sty   BRK_SY
-   tsx
-   lda   $0103,x        ; offset of current stack pointer is 1+2
-   sta   TMP16+1        ; at offset 0 is processor status (got called via BRK)
-   lda   $0102,x        ; get the return address from stack
-   sta   TMP16+0        ; and write it to temp vector
-
-   ;lda   TMP16+0        ; decrease it by one to get the BRK operand
-   bne   :+
-   dec   TMP16+1
-:
-   dec   TMP16+0
-   lda   (TMP16)        ; finally get BRK operand!
-                        ; needs to be read without bank change
-   sta   ASAVE          ; misuse asave to store BRK operand for user handler
-   ldx   #$01           ; will be restored by brkjump
-   stx   BANK           ; switch to first ROM bank
-   jsr   brkjump        ; to call the subroutine selector
-
-   php
-   ldy   BRK_SY         ; get stored Y
-   pla
-   sta   BRK_SY         ; use stored Y for now storing P
-   ldx   BRK_SX         ; get stored X
-   lda   BRK_SB         ; get stored BANK
-   sta   BANK           ; restore saved bank
-   pla                  ; drop P from stack
-   lda   BRK_SY         ; get P from store
-   pha                  ; put it on the stack, so flags can be returned
-   lda   BRK_SA         ; get stored accumulator
+   sta   TRAP
    rti                  ; return to calling code
 
-.out "   ============================="
-.out .sprintf( "   BIOS size: $%04x ($%04x free)", * - BIOS, $FA - (* - BIOS) )
-.out "   ============================="
+.out "   =================================="
+.out .sprintf( "   NMOS BIOS size: $%04x ($%04x free)", * - BIOS, $FA - (* - BIOS) )
+.out "   =================================="
 
 .segment "VECTORS"
 NMI:
@@ -130,7 +84,7 @@ NMI:
 IRQ:
    jmp   (UVIRQ)        ; user vector for BRK/IRQ ($DF7E) -> irqcheck (default)
 RESET:
-   ; reset routine that also works when copied to RAM
+   ; reset routine that also has to work when copied to RAM
    lda   #$01
    sta   BANK           ; set banking to first ROM bank (kernel)
    jmp   reset          ; jump to reset routine

@@ -30,10 +30,10 @@ function(gencpmfs target)
    add_custom_target(${target} ALL
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh"
          "${target}"
-         $<TARGET_FILE:native_cpm_bootblock>
+         $<TARGET_FILE:native_cpm_bootblock>:$<TARGET_FILE:native_nmos6502_bootblock>
          "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
          ${extra_files}
-      DEPENDS ${native_cpm_bootblock} ${native_browser} ${CPM_FILES} ${CPMFS_EXTRA_TARGETS}
+      DEPENDS ${native_cpm_bootblock} ${native_nmos6502_bootblock} ${native_browser} ${CPM_FILES} ${CPMFS_EXTRA_TARGETS}
    )
 endfunction()
 
@@ -132,6 +132,13 @@ add_executable(native_tools
    native_rom/bios_stub.s
    )
 target_type(native_tools native_kernel)
+
+add_executable(native_nmos6502_bootblock
+   nmos6502/kernel.s
+   native_rom/woz.s
+   nmos6502/bios.s
+   )
+target_type(native_nmos6502_bootblock native_kernel)
 
 add_executable(native_cpm_bootblock
    linkcpm.s
