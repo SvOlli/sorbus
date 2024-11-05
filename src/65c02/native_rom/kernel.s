@@ -92,6 +92,7 @@ woz:
    jmp   :-             ; no bra here: NMOS 6502 fallback mode
 
 nmosirq:
+   ;cld                  ; would be useful with NMOS, if doing more than return
    sta   TRAP
    rti
 

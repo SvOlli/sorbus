@@ -311,9 +311,9 @@ COLD_START:
    ldy   #>COLD_START
    sta   GORESTART+1
    sty   GORESTART+2
-.endif
    sta   GOSTROUT+1
    sty   GOSTROUT+2
+.endif
    lda   #<AYINT
    ldy   #>AYINT
    sta   GOAYINT
@@ -1144,7 +1144,6 @@ INLIN:
    ldx   #>INPUTBUFFER
    ldy   #INPUTSIZE
    int   LINEINPUT
-   ;bcs   INLIN
    ldy   #$00
    ldx   #LINNUM+1
    jmp   CRDO
@@ -2154,21 +2153,11 @@ L29B9:
 .endif
 .endif
 CRDO:
-.if 1
 .if USE_LINEWRAP
    stz   POSX
 .endif
    lda   #$0a
    jsr   OUTDO
-.else
-   lda   #CRLF_1
-.if USE_LINEWRAP
-   sta   POSX
-.endif
-   jsr   OUTDO
-   lda   #CRLF_2
-   jsr   OUTDO
-.endif
 .if USE_SYS
 .else
 PRINTNULLS:

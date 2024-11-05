@@ -70,7 +70,6 @@
 .define CONFIG_CMD_NOT_FOUND  0
 .define CONFIG_SHOW_HELP      1
 
-.if 1
 zpstart         :=     $e6
 
 LMNEM           :=     $e6    ;{addr/1}   ;temp for mnemonic decoding
@@ -78,7 +77,7 @@ RMNEM           :=     $e7    ;{addr/1}   ;temp for mnemonic decoding
 FORMAT          :=     $e8    ;{addr/1}   ;temp for opcode decode
 LENGTH          :=     $e9    ;{addr/1}   ;temp for opcode decode
 
-SCRWIDTH        :=     $ea    ;{addr/1}   ;storing screen with for input line
+INPUTSIZE       :=     $ea    ;{addr/1}   ;storing screen with for input line
 PROMPT          :=     $eb    ;{addr/1}   ;prompt characater
 YSAV            :=     $ec    ;{addr/1}   ;position in Monitor command
 YSAV1           :=     $ed    ;{addr/1}   ;temp for Y register
@@ -101,55 +100,38 @@ XREG            :=     $fc    ;{addr/1}   ;X reg after break
 YREG            :=     $fd    ;{addr/1}   ;Y reg after break
 STATUS          :=     $fe    ;{addr/1}   ;P reg after break
 SPNT            :=     $ff    ;{addr/1}   ;SP After Break
-.else
-; old positions for historical reasons, will be removed when stable!
-LMNEM           :=     $2C    ;{addr/1}   ;temp for mnemonic decoding
-RMNEM           :=     $2D    ;{addr/1}   ;temp for mnemonic decoding
-FORMAT          :=     $2E    ;{addr/1}   ;temp for opcode decode
-LENGTH          :=     $2F    ;{addr/1}   ;temp for opcode decode
 
-MODE            :=     $31    ;{addr/1}   ;Monitor mode
-
-PROMPT          :=     $33    ;{addr/1}   ;prompt characater
-YSAV            :=     $34    ;{addr/1}   ;position in Monitor command
-YSAV1           :=     $35    ;{addr/1}   ;temp for Y register
-CSWL            :=     $36    ;{addr/1}   ;character output hook
-CSWH            :=     $37    ;{addr/1}
-
-PCL             :=     $3A    ;{addr/1}   ;temp for program counter
-PCH             :=     $3B    ;{addr/1}
-A1L             :=     $3C    ;{addr/1}   ;Monitor Temp
-A1H             :=     $3D    ;{addr/1}   ;Monitor Temp
-A2L             :=     $3E    ;{addr/1}   ;Monitor Temp
-A2H             :=     $3F    ;{addr/1}   ;Monitor Temp
-A3L             :=     $40    ;{addr/1}   ;Monitor Temp
-A3H             :=     $41    ;{addr/1}   ;Monitor Temp
-A4L             :=     $42    ;{addr/1}   ;Monitor Temp
-A4H             :=     $43    ;{addr/1}   ;Monitor Temp
-A5L             :=     $44    ;{addr/1}   ;Monitor Temp
-MSTATE          :=     $44    ;{addr/1}   ;Monitor Temp
-A5H             :=     $45    ;{addr/1}   ;Monitor Temp
-ACC             :=     $45    ;{addr/1}   ;Acc after BRK
-XREG            :=     $46    ;{addr/1}   ;X reg after break
-YREG            :=     $47    ;{addr/1}   ;Y reg after break
-STATUS          :=     $48    ;{addr/1}   ;P reg after break
-SPNT            :=     $49    ;{addr/1}   ;SP After Break
-.endif
 IN              :=     $0200  ;{addr/2}   ;input buffer for GETLN
 
 
 ; SX4 always starts at load address
 wozmon2c:
    php
-   ldx   #zpstart
-:
-   stz   $00,x
-   inx
-   bne   :-
+   sta   ACC
+   stx   XREG
+   sty   YREG
    pla                     ;SAVE STATUS FOR DEBUG SOFTWARE
    sta   STATUS
+   tsx
+   stx   SPNT
+   ; clean up zeropage from zpstart but leave last 5 intact
+.ifp02
+   ldx   #zpstart-5
+   lda   #$00
+:
+   sta   ACC,x
+   inx
+   bne   :-
+.else
+   ldx   #zpstart-5
+:
+   stz   ACC,x
+   inx
+   bne   :-
+.endif
 
 .if CONFIG_SHOW_HELP
+helpstart:
    jsr   PRINT
    .byte 10,"WozMon port based on Apple //c"
    .byte 10,"Supported commands:"
@@ -170,10 +152,8 @@ wozmon2c:
    .byte 10,"More detailed instructions at:"
    .byte 10,"https://github.com/SvOlli/sorbus/blob/master/doc/monitors.md"
    .byte 10,0
+helpend:
 .endif
-
-   tsx
-   stx   SPNT
 
    ldy   #VT100_SCRN_SIZ   ; get screen size for line input size
    int   VT100
@@ -184,7 +164,7 @@ wozmon2c:
 :
    dex                     ; subtract one for prompt
    dex                     ; subtract one for cursor at end of line
-   stx   SCRWIDTH
+   stx   INPUTSIZE
 
    jmp   MON
 
@@ -234,8 +214,8 @@ setfilename:
    bcc   ioerrorsub
 
    ldy   YSAV
-   phy
    tya
+   pha
    dey
    lda   #$8d
    sta   IN,y
@@ -247,7 +227,7 @@ setfilename:
    beq   @done
    and   #$7f
    sta   IN,y
-   bra   :-
+   bpl   :-
 
 @done:
    lda   #$00
@@ -361,20 +341,29 @@ MOV1:
 ;
 ; Display information
 ;
-   jsr   PRBLNK            ;print blanks to make ProDOS work
-   ldy   #VT100_CPOS_GET
-   int   VT100
-   dec                     ;move up 2 lines
-   dec
-   ldy   #VT100_CPOS_SET
-   int   VT100
+   ;jsr   PRBLNK            ;print blanks to make ProDOS work
+   ; print cursor up twice
+   jsr   PRINT
+   .byte $1b,"[A",$1b,"[A",0
    jsr   showinst          ;Display line & get next instruction
 ; Get the next instruction
 GETINST1:
    lda   #$A1              ;! for prompt
    sta   PROMPT
    jsr   GETLNZ            ;Get a line
-   bra   DOINST            ;Go do the instruction
+;
+; Read a line of input.  If prefaced with " ", decode
+; mnemonic. If "$" do monitor command.  Otherwise parse
+; hex address before decoding mnemonic.
+;
+DOINST:
+   jsr   ZMODE             ;clear mode (set Y=$00)
+   lda   IN                ;get first char in line
+   cmp   #$A0              ;if blank,
+   beq   DOLIN             ;=>go attempt disassembly
+   cmp   #$8D              ;is it return?
+   bne   GETI1             ;=>no, continue
+   rts                     ;else return to Monitor
 
 ;
 ; Compare disassembly of all known opcodes
@@ -415,21 +404,7 @@ ERR2:
    jsr   PRBL2
    lda   #$DE              ;^ to point to error
    jsr   cout
-   bra   GETINST1          ;try again
-
-;
-; Read a line of input.  If prefaced with " ", decode
-; mnemonic. If "$" do monitor command.  Otherwise parse
-; hex address before decoding mnemonic.
-;
-DOINST:
-   jsr   ZMODE             ;clear mode (set Y=$00)
-   lda   IN                ;get first char in line
-   cmp   #$A0              ;if blank,
-   beq   DOLIN             ;=>go attempt disassembly
-   cmp   #$8D              ;is it return?
-   bne   GETI1             ;=>no, continue
-   rts                     ;else return to Monitor
+   bne   GETINST1          ;(always) try again
 
 GETI1:
    jsr   GETNUM            ;prase hexadecimal input
@@ -537,8 +512,11 @@ INSDS1:
    ldy   PCH
    jsr   PRYX2
    jsr   PRBLNK            ;FOLLOWED BY A BLANK (will set X=$00)
-   ;lda   (PCL,x)           ;GET OPCODE
+.ifp02
+   lda   (PCL,x)           ;GET OPCODE
+.else
    lda   (PCL)             ;GET OPCODE
+.endif
 INDS2:
    tay                     ;LABLE moved down 1
    lsr                     ;EVEN/ODD TEST
@@ -594,7 +572,11 @@ instdsp:
    pha                     ;SAVE MNEMONIC TABLE INDEX
 PRNTOP:
    lda   (PCL),y
+.ifp02
+   jsr   prhex8s
+.else
    int   PRHEX8
+.endif
    ldx   #$01              ;PRINT 2 BLANKS
 PRNTBL:
    jsr   PRBL2
@@ -646,7 +628,11 @@ PRADR3:
 PRADR4:
    dey
    bmi   PRADR2
+.ifp02
+   jsr   prhex8s
+.else
    int   PRHEX8
+.endif
 PRADR5:
    lda   FORMAT
    cmp   #$E8              ;HANDLE REL ADR MODE
@@ -660,11 +646,19 @@ PRADR5:
 PRNTYX:
    tya
 PRNTAX:
+.ifp02
+   jsr   prhex8s
+.else
    int   PRHEX8            ;OUTPUT TARGET ADR
+.endif
 PRNTX:
    txa                     ;  OF BRANCH AND RETURN
+.ifp02
+   jmp   prhex8s
+.else
    int   PRHEX8
    rts
+.endif
 
 PRBLNK:
    ldx   #$03              ;BLANK COUNT
@@ -741,13 +735,21 @@ VERIFY:
    beq   VFYOK
    jsr   PRA1
    lda   (A1L),y
+.ifp02
+   jsr   prhex8s
+.else
    int   PRHEX8
+.endif
    lda   #$A0
    jsr   cout
    lda   #$A8
    jsr   cout
    lda   (A4L),y
+.ifp02
+   jsr   prhex8s
+.else
    int   PRHEX8
+.endif
    lda   #$A9
    jsr   cout
 VFYOK:
@@ -828,7 +830,11 @@ RDSP1:
 .else
    lda   ACC+5,x
 .endif
+.ifp02
+   jsr   prhex8s
+.else
    int   PRHEX8
+.endif
    inx
    bne   RDSP1
    rts
@@ -837,6 +843,9 @@ rtbl:
 
 
 ;******************************************************************************
+.ifp02
+.error TODO write or call new input code
+.else
 GETLNZ:
    jsr   CROUT
 GETLN:
@@ -845,7 +854,7 @@ GETLN:
    stz   IN
    lda   #<IN
    ldx   #>IN
-   ldy   SCRWIDTH
+   ldy   INPUTSIZE
    int   LINEINPUT
    bcc   @eolmarker
    lda   #$DC              ;BACKSLASH AFTER CANCELLED LINE
@@ -861,8 +870,9 @@ GETLN:
    sta   IN,y
    dey
    bpl   @loop
+   iny                     ; for convenience, return with Y=0 and Z=1,N=0,O=0
    rts
-
+.endif
 
 ;******************************************************************************
 PRA1:
@@ -873,7 +883,21 @@ PRYX2:
    jsr   PRNTYX
    ldy   #$00
    lda   #$AD              ;PRINT "-"
-   jmp   cout
+   ;jmp   cout
+
+   .byte $2c               ; skip to cout
+CROUT:
+   lda   #$8D
+cout:
+   pha
+   and   #$7f              ; adjust output for Sorbus Computer
+   cmp   #$0d              ; convert cr -> nl
+   bne   :+
+   lda   #$0a
+:
+   jsr   CHROUT
+   pla                     ; routines expect A unchanged
+   rts
 
 GO:
    jsr   a1pc              ;ADDR TO PC IF SPECIFIED
@@ -887,7 +911,7 @@ GO:
 
    lda   STATUS            ;RESTORE 6502 REGISTER CONTENTS
    pha                     ; USED BY DEBUG SOFTWARE
-   lda   A5H
+   lda   ACC
    ldx   XREG
    ldy   YREG
    plp
@@ -895,7 +919,7 @@ GO:
    jsr   @indirect         ; AND GO!
 
    php
-   sta   A5H               ;SAVE 6502 REGISTER CONTENTS
+   sta   ACC               ;SAVE 6502 REGISTER CONTENTS
    stx   XREG              ; FOR DEBUG SOFTWARE
    sty   YREG
    pla
@@ -965,7 +989,11 @@ DATAOUT:
    cpx   #$07
    beq   :-
    lda   (A1L)             ;was: lda   (A1L),y
+.ifp02
+   jsr   prhex8s
+.else
    int   PRHEX8            ;OUTPUT BYTE IN HEX
+.endif
    jsr   NXTA1
    bcc   MOD8CHK           ;NOT DONE YET. GO CHECK MOD 8
    rts                     ;DONE.
@@ -986,23 +1014,12 @@ ADD:
    lda   #$BD              ;PRINT '=', THEN RESULT
    jsr   cout
    pla
+.ifp02
+   jmp   prhex8s
+.else
    int   PRHEX8
    rts
-;
-cout:
-   pha
-   and   #$7f              ; adjust output for Sorbus Computer
-   cmp   #$0d              ; convert cr -> nl
-   bne   :+
-   lda   #$0a
-:
-   jsr   CHROUT
-   pla                     ; routines expect A unchanged
-   rts
-
-CROUT:
-   lda   #$8D
-   bra   cout              ;(ALWAYS) was bne
+.endif
 
 
 ;******************************************************************************
@@ -1026,12 +1043,14 @@ CHRSRCH:
    bpl   :+
    jsr   PRINT
    .byte "cmd not found:",0
-   int   PRHEX8
-   bra   MON
-:
+.ifp02
+   jsr   prhex8s
 .else
-   bmi   MON               ;COMMAND NOT FOUND, BEEP & TRY AGAIN.
+   int   PRHEX8
 .endif
+:
+.endif
+   bmi   MON               ;COMMAND NOT FOUND, BEEP & TRY AGAIN.
    cmp   CHRTBL,y          ;FIND COMMAND CHAR IN TABLE
    bne   CHRSRCH           ;NOT THIS TIME
    jsr   TOSUB             ;GOT IT! CALL CORRESPONDING SUBROUTINE
@@ -1110,7 +1129,7 @@ ZMODE:
 MNEM:
    ; format is:
    ; convert each letter to 5 bits by
-   ; - ascii & 0x1f + 1
+   ; - ascii & 0x1f + 1 ($00 = ASCII of "?")
    ; word offsets:
    ; - 1st letter << 11
    ; - 2nd letter <<  6
@@ -1280,7 +1299,7 @@ FMT2:
 CHAR2:
    .byte $D9               ;'Y'
    .byte $00               ; (byte F of FMT2)
-   .byte $D8               ;'Y'
+   .byte $D8               ;'X'
    .byte $A4               ;'$'
    .byte $A4               ;'$'
    .byte $00
@@ -1391,3 +1410,10 @@ SUBTBL:
    .word SETMODE-1         ;'.' (ADDRESS DELIMITER)
    .word CRMON-1           ;'CR' (END OF INPUT)
    .word BLANK-1           ;BLANK
+
+.out "   ===================="
+.out .sprintf( "   WozMon2c size: $%04x", * - wozmon2c )
+.if CONFIG_SHOW_HELP
+.out .sprintf( "    without help: $%04x", * - wozmon2c - helpend + helpstart )
+.endif
+.out "   ===================="

@@ -48,7 +48,7 @@
 
 ;  .G                    GO, CONTINUE EXECUTION FROM CIRRENT PC ADDRESS
 
-;  .H                    TOGGLES HIGH-SPEED-READER OPTION
+;  .V                    TOGGLES VERIFY OPTION (DEFAULT: OFF)
 ;                          (IF ITS ON, TURNS IT OFF; IF OFF, TURNS ON)
 
 ;  BRK AND NMI ENTRY POINTS TO TIM
@@ -96,20 +96,10 @@
 ;  -------------------------------------------------------------------
 
 ; zeropage addresses used
-.if 0
-CRDLY     := $E3 ; 227              ;DELAY FOR CR IN BIT-TIMES
-.endif
-WRAP      := $E4 ; 228              ;ADDRESS WRAP-AROUND FLAG
-DIFF      := $E5 ; 229
-.if 0
-HSPTR     := $E7 ; 231
-HSROP     := $E8 ; 232
-.endif
-PREVC     := $E9 ; 233
-.if 0
-MAJORT    := $EA ; 234
-MINORT    := $EB ; 235
-.endif
+WRAP      := $E8 ; 232              ;ADDRESS WRAP-AROUND FLAG
+DIFF      := $E9 ; 233
+VFLAG     := $EA ; 234
+PREVC     := $EB ; 235
 ACMD      := $EC ; 236
 TMP0      := $EE ; 238
 TMP2      := $F0 ; 240
@@ -146,11 +136,6 @@ timstart:
 
    txs
    inx
-.if 0
-   stx   MAJORT         ; init major t count to zero
-   stx   HSPTR          ; clear hsptr flags
-   stx   HSROP
-.endif
    cli                  ; enable ints
    txa
    tay
@@ -208,9 +193,6 @@ bintcom:
 
 start:
    lda   #$00           ; next command from user
-.if 0
-   sta   HSPTR          ; clear h.s. paper tape flag
-.endif
    sta   WRAP           ; clear address wrap-around flag
    jsr   CRLF
    lda   #'.'           ; type prompting '.'
@@ -284,6 +266,8 @@ BYTE:
    ldx   #$00           ; store byte
    sta   (TMP0,x)
 
+   bit   VFLAG          ; test for verify flag
+   bmi   BY2            ; skip if not set
    cmp   (TMP0,x)       ; test for valid write (RAM)
    beq   BY2
    pla                  ; err, clear jsr adr in stack
@@ -309,10 +293,10 @@ SETR:
    lda   #$05
    rts
 
-CMDS:     .byte ':'   , 'R'    , 'M'    , 'G', 'H' , 'L', 'W'
+CMDS:     .byte ':'   , 'R'    , 'M'    , 'G', 'V' , 'L', 'W'
    ; W MUST BE LAST CMD IN CHAIN
-ADRLOS:   .byte <ALTER, <DSPLYR, <DSPLYM, <GO, <HSP, <LH, <WO
-ADRHIS:   .byte >ALTER, >DSPLYR, >DSPLYM, >GO, >HSP, >LH, >WO
+ADRLOS:   .byte <ALTER, <DSPLYR, <DSPLYM, <GO, <VRFY, <LH, <WO
+ADRHIS:   .byte >ALTER, >DSPLYR, >DSPLYM, >GO, >VRFY, >LH, >WO
 
 
 ;  display reg cmd - P,A,X,Y, AND SP
@@ -324,7 +308,7 @@ DSPLYR:
 
 DSPLYM:
    jsr   RDOA           ; read mem adr into TMPC
-   bcc   ERRS1          ; err if no addr
+   bcc   ERROPR         ; err if no addr
    lda   #$08
 M0:
    sta   TMPC
@@ -338,9 +322,6 @@ M1:
    bne   M1
 BEQS1:
    jmp   start
-
-ERRS1:
-   jmp   ERROPR
 
 ;  ALTER LAST DISPLAYED ITEM (ADR IN TMPC)
 
@@ -364,7 +345,6 @@ A5:
    jsr   space          ; preserves Y
    jsr   BYTE
    bne   A5
-A9:
    beq   BEQS1
 
 GO:
@@ -381,19 +361,19 @@ GO:
    ldy   YR
    rti
 
-HSP:
-.if 0
-   inc   HSROP         ; toggle bit C
-.endif
+VRFY:
+   lda   VFLAG
+   eor   #$80
+   sta   VFLAG
+   asl
+   rol
+   ora   #'0'
+   jsr   CHROUT
    jmp   start
 
 LH:
    jsr   RDOC          ; read second cmd char -> and ignore
    jsr   CRLF
-.if 0
-   ldx   HSROP         ; enable ptr option if set
-   stx   HSPTR
-.endif
 LH1:
    jsr   RDOC
    and   #$fe          ; SORBUS addition because the output if WH is ';'
@@ -406,9 +386,6 @@ LH1:
    bne   LH2           ; data remain
 
    ldx   #$00          ; clear hs ror flag
-.if 0
-   stx   HSPTR
-.endif
    beq   BEQS1         ; finished
 
 LH2:
@@ -431,7 +408,6 @@ LH3:
    sta   TMP2+1
    jsr   DCMP
    beq   LH1
-ERRP1:
    jmp   ERROPR
 
 WO:
@@ -601,15 +577,9 @@ WRTWO:
    jsr   CHROUT
    pla
    jmp   CHROUT
-RDT:
+
 RDOC:
-.if 1
    jsr   chrinuc
-.else
-   jsr   CHRIN
-   bcs   RDOC
-   jsr   uppercase
-.endif
    jmp   CHROUT
 
 ASCII:
@@ -637,36 +607,8 @@ ASCX:
 spac2:
    jsr   space
 space:
-.if 1
    lda   #' '
    jmp   CHROUT
-.else
-   ; Sorbus print char does not change A,X,Y
-.ifpc02
-   pha                  ; save A,X,Y
-   phx
-   phy
-   lda   #' '
-   jsr   WRT
-   ply                  ; restore A,X,Y
-   plx
-   pla
-.else
-   pha                  ; save A,X,Y
-   txa
-   pha
-   tya
-   pha
-   lda   #' '
-   jsr   WRT            ; type SP
-   pla                  ; restore A,X,Y
-   tay
-   pla
-   tax
-   pla
-.endif
-   rts
-.endif
 
 T2T2:
    ldx   #$02

@@ -11,9 +11,41 @@ reset:
    jmp   start
    .byte "SBC23"
 
+knownids:
+   .byte $00,$01,$02,$06,$0E,$12,$21
+cpunames:
+   .byte "??",0,0
+   .byte "02",0,0
+   .byte "SC02"
+   .byte "C02",0
+   .byte "CE02"
+   .byte "816",0
+   .byte "65RA"
+
+vectab:
+   .word $0000          ; UVBRK: (unused) IRQ handler dispatches BRK
+   .word uvnmi          ; UVNMI: hardware NMI handler
+   .word $0000          ; UVNBI: (unused) IRQ handler dispatches non-BRK
+   .word uvirq          ; UVIRQ: hardware IRQ handler
+
+uvnmi:
+uvirq:
+   cld
+   sta   TRAP
+   rti
+
 start:
    cld
    sei
+   ldx   #$07           ; move to BIOS code?
+:
+   lda   vectab,x
+   sta   UVBRK,x        ; setup user vectors
+   dex
+   bpl   :-
+
+   txs                  ; initialize stack to $FF
+
    jsr   PRINT
    .byte 10,"CPU features: ",0
                    ; $01 NMOS, $02 CMOS, $04 BIT (RE)SET, $08 Z reg, $10 16 bit
@@ -43,6 +75,30 @@ start:
    jsr   PRINT
    .byte "16bit ",0
 :
+   jsr   PRINT
+   .byte "=> 65",0
+
+   lda   CPUID
+   ldx   #<(cpunames-knownids)
+:
+   dex
+   beq   :+
+   cmp   knownids,x
+   bne   :-
+:
+   txa
+   asl
+   asl
+   tax
+   ldy   #$04
+:
+   lda   cpunames,x
+   beq   :+
+   jsr   CHROUT
+   inx
+   dey
+   bne   :-
+:
 
 woz:
    lda   #$0a           ; start WozMon port
@@ -65,6 +121,12 @@ uppercase:
 :
    rts
 
+prhex8s:
+   ; print hex byte in A without modifying A (required by WozMon2)
+   pha
+   jsr   prhex8
+   pla
+   rts
 prhex16:
    ; output 16 bit value in X,A
    pha
@@ -90,3 +152,86 @@ prhex4:
 :
    jmp   CHROUT
 
+
+; ===========================================================================
+
+printtmp16:
+   ldy   #$00
+:
+   lda   (TMP16),y
+   beq   :+
+   jsr   CHROUT
+   iny
+   bne   :-
+:
+   rts
+
+; ===========================================================================
+
+inputline:
+; A/X: buffer
+; Y: maxlength (up to 127 bytes) (bit 7: convert to uppercase)
+
+   sta   TMP16+0
+   stx   TMP16+1
+   tya
+   and   #$7f
+   sta   ASAVE
+
+   jsr   printtmp16
+
+@getloop:
+   jsr   CHRIN
+   beq   @getloop
+
+   bit   BRK_SY
+   bpl   :+
+   jsr   uppercase
+:
+   cmp   #$08
+   beq   @bs
+   cmp   #$7f
+   beq   @bs
+   bcs   @getloop
+   cmp   #$03
+   beq   @cancel
+   cmp   #$0d
+   beq   @okay
+
+   cpy   ASAVE
+   bcs   @getloop
+
+   cmp   #' '
+   bcc   @getloop
+
+   sta   (TMP16),y
+   jsr   CHROUT
+   iny
+   bne   @getloop
+
+@bs:
+   tya               ; cpy #$00
+   beq   @getloop
+   lda   #$7f
+   jsr   CHROUT
+   dey
+   bpl   @getloop
+
+@cancel:
+   sec
+   .byte $24
+@okay:
+   clc
+   php
+   sty   BRK_SY
+   lda   #$00
+@clrloop:
+   cpy   ASAVE
+   bcs   @clrdone
+   sta   (TMP16),y
+   iny
+   bne   @clrloop
+@clrdone:
+   ldy   BRK_SY
+   plp
+   rts

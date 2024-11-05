@@ -196,7 +196,7 @@ inputline:
    bra   @getloop
 
 @bs:
-   tya               ; cmp #$00
+   tya               ; cpy #$00
    beq   @getloop
    lda   #$7f
    jsr   CHROUT
