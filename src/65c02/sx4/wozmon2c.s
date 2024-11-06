@@ -172,19 +172,10 @@ EXIT:
    jmp   ($FFFC)
 
 DIR:
-.if 0
-   jsr   PRINT
-   .byte "User:",0
-.endif
    stz   CPM_SADDR+1
    lda   A2L
    and   #$0f
    tay
-.if 0
-   int   PRHEX8
-   lda   #$0a
-   jsr   CHROUT
-.endif
    int   CPMDIR
    rts
 
@@ -210,16 +201,13 @@ setfilename:
    sta   CPM_SADDR+0
    lda   A1H
    sta   CPM_SADDR+1
-   cmp   #$04
+   cmp   #$04              ; load address must be >= $0400
    bcc   ioerrorsub
 
+   dec   YSAV
    ldy   YSAV
-   tya
-   pha
-   dey
    lda   #$8d
    sta   IN,y
-   dec   YSAV
 :
    iny
    lda   IN,y
@@ -236,14 +224,13 @@ setfilename:
    lda   A4L
    and   #$0f
    tay
-   pla
+   lda   YSAV
 .if .lobyte(IN)
-.error IN must be at page start
+.error IN must be at page start or add some code here
 .endif
    ldx   #>IN
    int   CPMNAME
    rts
-
 
 LOAD:
    jsr   setfilename
@@ -494,6 +481,7 @@ GETINDX:
    rts
 
 
+.if 0
 ;******************************************************************************
 SCRN2:
    bcc   RTMSKZ            ;IF EVEN, USE LO H
@@ -504,6 +492,7 @@ SCRN2:
 RTMSKZ:
    and   #$0F              ;MASK 4-BITS
    rts
+.endif
 
 
 ;******************************************************************************
@@ -528,8 +517,18 @@ IEVEN:
    lsr                     ;LASB INTO CARRY FOR L/R TEST
    tax
    lda   FMT1,x            ;GET FORMAT INDEX BYTE
-
+.if 0
    jsr   SCRN2             ;R/L H-BYTE ON CARRY
+.else
+   ; taken from SCRN2
+   bcc   RTMSKZ            ;IF EVEN, USE LO H
+   lsr
+   lsr
+   lsr                     ;SHIFT HIGH HALF BYTE DOWN
+   lsr
+RTMSKZ:
+   and   #$0F              ;MASK 4-BITS
+.endif
    bne   GETFMT
 ERR:
    ldy   #$FC              ;SBSTITUTE $FC FOR INVALID OPS
@@ -802,11 +801,11 @@ GETUP:
    ora   #$80              ;set high bit for execs
 UPSHIFT:
    cmp   #$FB
-   bcs   X_UPSHIFT
+   bcs   :+
    cmp   #$E1
-   bcc   X_UPSHIFT
+   bcc   :+
    and   #$DF
-X_UPSHIFT:
+:
    rts
 
 
@@ -1055,7 +1054,7 @@ CHRSRCH:
    bne   CHRSRCH           ;NOT THIS TIME
    jsr   TOSUB             ;GOT IT! CALL CORRESPONDING SUBROUTINE
    ldy   YSAV              ;PROCESS NEXT ENTRY ON HIS LINE
-   jmp   NXTITM
+   bra   NXTITM            ;todo check: can this be bne?
 
 DIG:
    ldx   #$03
@@ -1372,7 +1371,7 @@ INDX:
 
 
 CHRTBL:
-   .byte $F1               ;X (exit)
+   .byte $F1               ;X   (EXIT)
    .byte $9D               ;$   (DIR)
    .byte $D4               ;{   (LOAD)
    .byte $D6               ;}   (SAVE)
@@ -1392,10 +1391,10 @@ CHRTBL:
    .byte $99               ;BLANK
 
 SUBTBL:
-   .word EXIT-1            ;X (exit)
-   .word DIR-1
-   .word LOAD-1
-   .word SAVE-1
+   .word EXIT-1            ;X   (EXIT)
+   .word DIR-1             ;$   (DIR)
+   .word LOAD-1            ;{   (LOAD)
+   .word SAVE-1            ;}   (SAVE)
    .word REGDSP-1          ;R was: $BE ;^E  (OPEN AND DISPLAY REGISTERS)
    .word GETINST1-1        ;+!  (Mini assembler)
    .word PUT-1             ;P   (MEMORY PUT/FILL)

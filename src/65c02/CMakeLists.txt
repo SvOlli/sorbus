@@ -136,6 +136,7 @@ target_type(native_tools native_kernel)
 add_executable(native_nmos6502_bootblock
    nmos6502/kernel.s
    native_rom/woz.s
+   nmos6502/vt100.s
    nmos6502/bios.s
    )
 target_type(native_nmos6502_bootblock native_kernel)

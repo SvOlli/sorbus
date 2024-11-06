@@ -78,7 +78,7 @@ When the prompt is a asterisk (`*`):
 - `A$`: display the directory of the user id $A (10) (Sorbus extension)
 - `A<1000{int-test.sx4`: load the file "int-test.sx4" from user id $A (10)
    to address $1000.
-- `2<1000.1FFF}savetest.sx4`: load the file "savetest.sx4" from user id $2
+- `2<1000.1FFF}savetest.bin`: load the file "savetest.bin" from user id $2
    (2) from address $1000 to $1FFF, including.
 
 When the prompt is an exclamation mark (`!`), the direct mini assembler is

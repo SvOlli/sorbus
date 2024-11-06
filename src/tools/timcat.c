@@ -37,7 +37,7 @@ void writeblock( uint16_t addr, uint16_t size, uint8_t *data )
       }
       printf( "%04X\r", chksum );
       fflush( stdout );
-      usleep( 10000 );
+      usleep( 12500 );
    }
    printf( ";00" );
    fflush( stdout );

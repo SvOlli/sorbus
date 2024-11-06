@@ -103,7 +103,7 @@ cmos6502:
 @iloop:
    jsr   PRINT
    .byte 10,"Sorbus Native V", VERSION
-   .byte ": 0-3)Boot, F)ilebrowser, B)ASIC, T)IM, W)ozMon? ", 0
+   .byte ": 1-4)Boot, F)ilebrowser, B)ASIC, T)IM, W)ozMon? ", 0
 :
    jsr   chrinuc        ; wait for keypress and make it uppercase
    bcs   :-
@@ -111,11 +111,12 @@ cmos6502:
    cmp   #'W'
    beq   woz
 
-   cmp   #'0'           ; is it a boot block number?
+   cmp   #'1'           ; is it a boot block number?
    bcc   :+
-   cmp   #'4'
+   cmp   #'5'
    bcs   :+
 
+   dec
    and   #$03
    jmp   boota
 
@@ -132,7 +133,7 @@ cmos6502:
 :
    cmp   #'F'
    bne   :+
-   lda   #$02
+   lda   #$02           ; bank 2
    ldx   #$00           ; jmp vector 0: file browser
    bra   @execrom2      ; execute 2nd ROM bank @ $E000
 :

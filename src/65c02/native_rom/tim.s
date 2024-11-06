@@ -267,7 +267,7 @@ BYTE:
    sta   (TMP0,x)
 
    bit   VFLAG          ; test for verify flag
-   bmi   BY2            ; skip if not set
+   bpl   BY2            ; skip if not set
    cmp   (TMP0,x)       ; test for valid write (RAM)
    beq   BY2
    pla                  ; err, clear jsr adr in stack

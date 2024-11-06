@@ -42,14 +42,15 @@ vt100:
    pla
    cpy   #VT100_CPOS_GET
    bcs   @simple
-   bra   vt100_2param
+   bcc   vt100_2param
 
 @simple:
    lda   escfirst-3,y   ; Y contains offset, see table below
    sta   escbuffer+2
    lda   escsecond-3,y  ; second character, if required
    sta   escbuffer+3
-   stz   escbuffer+4    ; make sure, string is NULL terminated
+   lda   #$00
+   sta   escbuffer+4    ; make sure, string is NULL terminated
 
 printbuffer:
    lda   #ESC           ; create escape sequence, start with ESC
@@ -62,11 +63,11 @@ printbuffer:
    beq   @end
    jsr   CHROUT
    inx
-   bra   :-
+   bne   :-
 @end:
    cpy   #$03
    beq   vt100_getreply
-   bra   vt100_done
+   bne   vt100_done
 
     ; from left to right
     ; 3) get cursor
@@ -85,8 +86,8 @@ esclast:
    .byte "Hrm" ; 0) cursor, 1) scroll, 2) colors
 
 vt100_2param:
-   phy                  ; save command index on stack
-   phx                  ; save second parameter on stack
+   phy ;TODO:replace    ; save command index on stack
+   phx ;TODO:replace    ; save second parameter on stack
 
    ldx   #$02
    jsr   bin2ascii
@@ -98,12 +99,12 @@ vt100_2param:
    pla                  ; get second parameter from stack
    jsr   bin2ascii
 
-   ply                  ; get command index from stack
+   ply ;TODO:replace    ; get command index from stack
    lda   esclast,y
    sta   escbuffer,x
-
-   stz   escbuffer+1,x
-   bra   printbuffer
+   lda   #$00
+   sta   escbuffer+1,x
+   beq   printbuffer
 
 vt100_getreply:
    ldx   #$00
@@ -122,11 +123,11 @@ vt100_getreply:
    lda   escbuffer,x
    jsr   isdigit
    bcc   :-
-   phx
+   phx ;TODO:replace
    dex
    jsr   ascii2bin
    sta   BRK_SA
-   plx
+   plx ;TODO:replace
 :
    inx
    lda   escbuffer,x
