@@ -255,6 +255,9 @@ lineinput:
    jsr   PRINT
    .byte 10,"Ctrl-C ",0
 :
+   lda   #$cf
+   jsr   hexdumppage
+
    jmp   done
 
 quit:

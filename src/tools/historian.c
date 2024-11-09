@@ -229,6 +229,11 @@ int main( int argc, char *argv[] )
    dah = disass_historian_init( cpu, buffer, size, 0 );
    for( count = 0; count < size; ++count )
    {
+      if( ! *(buffer + count) )
+      {
+         /* empty entry -> end of input */
+         break;
+      }
       printf( "%5d:", count );
       if( show_trace )
       {

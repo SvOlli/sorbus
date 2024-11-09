@@ -16,6 +16,7 @@
 #if (CYCLES_TOTAL & (CYCLES_TOTAL-1))
 #error CYCLES_TOTAL is not a power of 2
 #endif
+#define SHOW_RAW_DUMP_IN_DEBUG 0
 
 
 cputype_t cpu_detect( bool debug )
@@ -103,6 +104,14 @@ cputype_t cpu_detect( bool debug )
    if( debug )
    {
       int lineno = 0;
+#if SHOW_RAW_DUMP_IN_DEBUG
+      printf( "TRACE_START %s\n", cputype_name( cputype ) );
+      for( int i = 0; i < CYCLES_TOTAL; ++i )
+      {
+         printf( "%08x\n", i < cycles_run ? trace[i] : 0 );
+      }
+      printf( "TRACE_END\n" );
+#endif
       disass_historian_t d = disass_historian_init( cputype ? cputype : CPU_6502,
                                                     &trace[0], CYCLES_TOTAL, 0 );
       hexdump_buffer( &cpudetect[0], sizeof(cpudetect) );

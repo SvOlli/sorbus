@@ -376,7 +376,7 @@ LH:
    jsr   CRLF
 LH1:
    jsr   RDOC
-   and   #$fe          ; SORBUS addition because the output if WH is ';'
+   and   #$fe          ; SORBUS: addition because the output if WH is ';'
    cmp   #':'          ; find next bcd mark (:)
    bne   LH1           ; loop until found
 
@@ -385,7 +385,6 @@ LH1:
    jsr   RDOB          ; read hex value -> length
    bne   LH2           ; data remain
 
-   ldx   #$00          ; clear hs ror flag
    beq   BEQS1         ; finished
 
 LH2:
@@ -522,9 +521,15 @@ CADD:
    clc
    adc   TMP4
    sta   TMP4
+.if 1
+   bcc   :+
+   inc   TMP4+1
+:
+.else
    lda   TMP4+1
    adc   #$00
    sta   TMP4+1
+.endif
    pla                  ; restore A
    rts
 

@@ -4,12 +4,31 @@
 .include "../native_bios.inc"
 .include "../native_kernel.inc"
 
+.define INPUT_DEBUG 0
+
 .import wozstart
+.import Monitor
+
+.export inputline
+.export prhex16
+.export prhex4
+.export prhex8
+.export prhex8s
+
+ESC      := $1b
+VT_LEFT  := 'D'
+VT_RIGHT := 'C'
+VT_SAVE  := 's'
+VT_UNSAVE:= 'u'
 
 .segment "CODE"
 reset:
    jmp   start
    .byte "SBC23"
+
+   jmp   inputtest
+   jmp   getkeytest
+;   jmp   Monitor
 
 knownids:
    .byte $00,$01,$02,$06,$0E,$12,$21
@@ -174,20 +193,61 @@ inputline:
 
    sta   TMP16+0
    stx   TMP16+1
+   sty   BRK_SY
    tya
    and   #$7f
    sta   ASAVE
 
-   jsr   printtmp16
+   jsr   printtmp16  ; returns with A=$00 and Y=index
+
+   sty   PSAVE
+:
+   sta   (TMP16),y
+   cpy   ASAVE
+   iny
+   bcc   :-
+   bcs   @getloop
+
+@bs:
+   tya               ; cpx #$00
+   beq   @getloop
+   lda   #$08
+   jsr   CHROUT
+
+   lda   #VT_SAVE
+   jsr   vtprint
+   dey
+:
+   iny
+   lda   (TMP16),y
+   dey
+   sta   (TMP16),y
+   jsr   CHROUT
+   iny
+   cpy   ASAVE
+   bcc   :-
+   dec   PSAVE
+   lda   #' '
+   jsr   CHROUT
+   lda   #VT_UNSAVE
+   jsr   vtprint
 
 @getloop:
-   jsr   CHRIN
-   beq   @getloop
+.if INPUT_DEBUG
+   jsr   debug
+.endif
 
-   bit   BRK_SY
-   bpl   :+
-   jsr   uppercase
-:
+   jsr   getkey
+   ldy   PSAVE
+
+   cmp   #$c8
+   beq   @chome
+   cmp   #$c6
+   beq   @cend
+   cmp   #$c3
+   beq   @cright
+   cmp   #$c4
+   beq   @cleft
    cmp   #$08
    beq   @bs
    cmp   #$7f
@@ -198,40 +258,207 @@ inputline:
    cmp   #$0d
    beq   @okay
 
-   cpy   ASAVE
-   bcs   @getloop
-
    cmp   #' '
    bcc   @getloop
 
+   pha               ; save letter
+   ; move buffer from INBUF+CPOS to input+CPOS+1
+   ldy   ASAVE
+   dey
+   lda   (TMP16),y
+   beq   :+
+   pla               ; correct stack
+   bne   @getloop    ; letter != $00
+:
+   iny
+:
+   dey
+   lda   (TMP16),y
+   iny
    sta   (TMP16),y
+   dey
+   cpy   PSAVE
+   bne   :-
+   pla               ; restore letter
+   sta   (TMP16),y
+   inc   PSAVE
+   jsr   CHROUT      ; always returns n=0
+   lda   #VT_SAVE
+   jsr   vtprint
+   iny
+:
+   lda   (TMP16),y
+   beq   :+
    jsr   CHROUT
    iny
-   bne   @getloop
+   bne   :-
+:
+   lda   #VT_UNSAVE
+   jsr   vtprint
+   bpl   @getloop    ; always true because of vtprint
 
-@bs:
+@cleft:
    tya               ; cpy #$00
    beq   @getloop
-   lda   #$7f
+   dec   PSAVE
+   lda   #VT_LEFT
+   jsr   vtprint
+   bpl   @getloop    ; always true
+
+@cright:
+   lda   (TMP16),y
+   beq   @getloop
+   inc   PSAVE
+   lda   #VT_RIGHT
+   jsr   vtprint
+   bpl   @getloop    ; always true
+
+@chome:
+   lda   #$08
    jsr   CHROUT
    dey
-   bpl   @getloop
+   bne   @chome
+   sty   PSAVE
+   jmp   @getloop
+
+@cend:
+   lda   (TMP16),y
+   beq   :+
+   jsr   CHROUT
+   iny
+   bne   @cend
+:
+   sty   PSAVE
+   jmp   @getloop
 
 @cancel:
    sec
    .byte $24
 @okay:
    clc
-   php
-   sty   BRK_SY
-   lda   #$00
-@clrloop:
-   cpy   ASAVE
-   bcs   @clrdone
-   sta   (TMP16),y
+   ldy   #$ff
+:
    iny
-   bne   @clrloop
-@clrdone:
-   ldy   BRK_SY
-   plp
+   lda   (TMP16),y
+   bne   :-
+rts0:
    rts
+
+; this function returns:
+; $00-$7f: ascii value of key
+; $b2: insert
+; $b3: delete
+; $b5: page up
+; $b6: page down
+; $c1: up
+; $c2: down
+; $c3: right
+; $c4: left
+; $c6: end
+; $c8: home
+getkey:
+   jsr   CHRIN
+   bcs   getkey
+   cmp   #ESC
+   bne   @done
+
+   ldy   #$00
+:
+   jsr   CHRIN
+   cmp   #'['
+   beq   :+
+   iny
+   bne   :-
+   beq   @retesc     ; return the ESC
+:
+   jsr   CHRIN
+   bcc   :+
+   iny
+   bne   :-
+:
+   cmp   #$40
+   bcs   @conv
+   pha
+:
+   jsr   CHRIN
+   cmp   #'~'
+   beq   :+
+   iny
+   bne   :-
+   beq   @retesc1    ; return the ESC
+:
+   pla
+@conv:
+   ora   #$80
+   bne   @done
+
+@retesc1:
+   pla
+@retesc:
+   lda   #ESC
+@done:
+   bit   BRK_SY
+   bpl   rts0
+   jmp   uppercase
+
+vtprint:
+   pha
+   lda   #ESC
+   jsr   CHROUT
+   lda   #'['
+   jsr   CHROUT
+   pla
+   jmp   CHROUT
+
+inputtest:
+   jsr   PRINT
+   .byte 10,"prompt> ",0
+   lda   #$00
+   sta   $0200
+   ldx   #$02
+   ldy   #$0f
+   jsr   inputline
+   jmp   $e000
+
+getkeytest:
+   jsr   getkey
+   jsr   prhex8
+   lda   #' '
+   jsr   CHROUT
+   jmp   getkeytest
+
+.if INPUT_DEBUG
+home:
+   .byte ESC,"[s",ESC,"[1;1H",0
+
+debug:
+   ldy   #$00
+:
+   lda   home,y
+   beq   :+
+   jsr   CHROUT
+   iny
+   bne   :-
+:
+   lda   PSAVE
+   jsr   prhex8
+   lda   #' '
+   jsr   CHROUT
+   lda   ASAVE
+   jsr   prhex8
+   lda   #' '
+   jsr   CHROUT
+
+   ldy   #$00
+:
+   lda   (TMP16),y
+   jsr   prhex8
+   lda   #' '
+   jsr   CHROUT
+   iny
+   cpy   ASAVE
+   bne   :-
+
+   lda   #VT_UNSAVE
+   jmp   vtprint
+.endif

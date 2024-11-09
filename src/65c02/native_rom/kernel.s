@@ -102,8 +102,10 @@ cmos6502:
    txs                  ; fix for 65816's phk
 @iloop:
    jsr   PRINT
-   .byte 10,"Sorbus Native V", VERSION
-   .byte ": 1-4)Boot, F)ilebrowser, B)ASIC, T)IM, W)ozMon? ", 0
+   ;         123456789012345678
+   .byte 10,"Sorbus Native V", VERSION ;    5         6         7         8
+   ;         90123456789012345678901234567890123456789012345678901234567890
+   .byte ": 1-4)Bootsector, F)ilebrowser, B)ASIC, T)IM, W)ozMon? ", 0
 :
    jsr   chrinuc        ; wait for keypress and make it uppercase
    bcs   :-
@@ -199,6 +201,8 @@ boota:
    .byte 10,"Checking bootblock ",0
    and   #$03
    pha
+   clc                  ; add one extra for bootblock starting with 1
+   adc   #$01
    jsr   prhex4
    pla
    clc
