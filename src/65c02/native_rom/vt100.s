@@ -42,14 +42,19 @@ vt100:
    pla
    cpy   #VT100_CPOS_GET
    bcs   @simple
-   bra   vt100_2param
+   bcc   vt100_2param
 
 @simple:
    lda   escfirst-3,y   ; Y contains offset, see table below
    sta   escbuffer+2
    lda   escsecond-3,y  ; second character, if required
    sta   escbuffer+3
+.ifp02
+   lda   #$00
+   sta   escbuffer+4    ; make sure, string is NULL terminated
+.else
    stz   escbuffer+4    ; make sure, string is NULL terminated
+.endif
 
 printbuffer:
    lda   #ESC           ; create escape sequence, start with ESC
@@ -62,11 +67,11 @@ printbuffer:
    beq   @end
    jsr   CHROUT
    inx
-   bra   :-
+   bne   :-
 @end:
    cpy   #$03
    beq   vt100_getreply
-   bra   vt100_done
+   bne   vt100_done
 
     ; from left to right
     ; 3) get cursor
@@ -85,8 +90,13 @@ esclast:
    .byte "Hrm" ; 0) cursor, 1) scroll, 2) colors
 
 vt100_2param:
+.ifp02
+   sty   @restorey+1
+   stx   @restorex+1
+.else
    phy                  ; save command index on stack
    phx                  ; save second parameter on stack
+.endif
 
    ldx   #$02
    jsr   bin2ascii
@@ -95,15 +105,29 @@ vt100_2param:
    sta   escbuffer,x
    inx
 
+.ifp02
+@restorex:
+   lda   #$00
+   jsr   bin2ascii
+
+@restorey:
+   ldy   #$00
+.else
    pla                  ; get second parameter from stack
    jsr   bin2ascii
 
    ply                  ; get command index from stack
+.endif
    lda   esclast,y
    sta   escbuffer,x
-
+.ifp02
+   lda   #$00
+   sta   escbuffer+1,x
+   beq   printbuffer
+.else
    stz   escbuffer+1,x
    bra   printbuffer
+.endif
 
 vt100_getreply:
    ldx   #$00
@@ -122,11 +146,19 @@ vt100_getreply:
    lda   escbuffer,x
    jsr   isdigit
    bcc   :-
+.ifp02
+   stx   @restorex+1
+   dex
+   jsr   ascii2bin
+@restorex:
+   ldx   #$00
+.else
    phx
    dex
    jsr   ascii2bin
-   sta   BRK_SA
    plx
+.endif
+   sta   BRK_SA
 :
    inx
    lda   escbuffer,x

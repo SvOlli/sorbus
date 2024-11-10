@@ -118,6 +118,9 @@ add_executable(native_kernel
    native_rom/functions.s
    native_rom/bios.s
    )
+target_compile_options(native_kernel
+   PUBLIC --cpu 65sc02
+)
 target_type(native_kernel native_kernel)
 
 add_executable(native_basic
@@ -125,6 +128,9 @@ add_executable(native_basic
    native_rom/bios.s
    native_rom/bios_stub.s
    )
+target_compile_options(native_basic
+   PUBLIC --cpu 65sc02
+)
 target_type(native_basic native_kernel)
 
 add_executable(native_tools
@@ -132,15 +138,22 @@ add_executable(native_tools
    native_rom/bios.s
    native_rom/bios_stub.s
    )
+target_compile_options(native_tools
+   PUBLIC --cpu 65sc02
+)
 target_type(native_tools native_kernel)
 
 add_executable(native_nmos6502_bootblock
    nmos6502/kernel.s
    native_rom/woz.s
-   nmos6502/lineinput.s
-   nmos6502/vt100.s
+#   nmos6502/minimon.s
+   native_rom/lineinput.s
+   native_rom/vt100.s
    nmos6502/bios.s
    )
+target_compile_options(native_nmos6502_bootblock
+   PUBLIC --cpu 6502
+)
 target_type(native_nmos6502_bootblock native_kernel)
 
 add_executable(native_cpm_bootblock
