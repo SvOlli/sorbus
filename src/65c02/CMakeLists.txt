@@ -114,6 +114,7 @@ add_executable(native_kernel
    native_rom/tim.s
    native_rom/woz.s
    native_rom/vt100.s
+   native_rom/lineinput.s
    native_rom/functions.s
    native_rom/bios.s
    )
@@ -136,6 +137,7 @@ target_type(native_tools native_kernel)
 add_executable(native_nmos6502_bootblock
    nmos6502/kernel.s
    native_rom/woz.s
+   nmos6502/lineinput.s
    nmos6502/vt100.s
    nmos6502/bios.s
    )
@@ -162,10 +164,16 @@ add_executable(native_writeboot
    )
 target_type_addr(native_writeboot native 0xC000)
 
-add_executable(memcheck
-   sx4/memcheck.s
+# SX4 executables
+add_executable(1sthello
+   sx4/a1hello.s
    )
-target_type(memcheck sx4)
+target_type(1sthello sx4)
+
+add_executable(asmprint
+   sx4/asmprint.s
+   )
+target_type(asmprint sx4)
 
 add_executable(bcdcheck
    sx4/bcdcheck.s
@@ -182,15 +190,15 @@ add_executable(inst-ass
    )
 target_type(inst-ass sx4)
 
-add_executable(asmprint
-   sx4/asmprint.s
+add_executable(keycode
+   sx4/keycode.s
    )
-target_type(asmprint sx4)
+target_type(keycode sx4)
 
-add_executable(1sthello
-   sx4/a1hello.s
+add_executable(memcheck
+   sx4/memcheck.s
    )
-target_type(1sthello sx4)
+target_type(memcheck sx4)
 
 add_executable(sx4speed
    sx4/speed.s

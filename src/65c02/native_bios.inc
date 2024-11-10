@@ -40,11 +40,12 @@
 .else
  .ifp4510
   .macro int arg
-   stz   $DF2B          ; save Z register that can't be written to stack
+   stz   $DF0A          ; save Z register that can't be written to stack
+                        ; address might change
    ldz   #$00           ; clear Z register to be compatible to 65(S)C02
    .byte $00,arg        ; BRK with operand
    php                  ; ldz changes processor status register
-   ldz   $DF2B          ; restore Z register
+   ldz   $DF0A          ; restore Z register
    plp                  ; restore processor status
   .endmacro
  .else
@@ -173,10 +174,12 @@
 
 ; input text using a line
 ; A/X: vector to buffer, if first byte is not $00, edit the content
-; Y: bits 0-6: maximum length of input, bit 7: convert to uppercase
+; Y bit 7=0: bits 0-6: maximum length of input
+; Y bit 7=1: bits 0-6 get shifted to 1-7 and are ZP address of config block
+; (config block not implemented yet)
 ; returns:
-; C=1: Ctrl-C
-; C=0: Return
+; Z=0: Ctrl-C, CRSR-up/down, etc.
+; Z=1: Return
 ; Y: input length
 ; unused end of buffer will be padded with $00 bytes
 .define LINEINPUT $0C
@@ -187,4 +190,3 @@
 ; Y=offset ($00-$03)
 ;   adding $04 also writes the decimal parts to following page
 .define GENSINE   $0D
-

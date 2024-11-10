@@ -33,8 +33,9 @@ start:
    .byte 10,"b) $09: directory"
    .byte 10,"c) $0a: VT100"
    ; $0b: COPYBIOS
-   .byte 10,"d) $0c: line input"
-   .byte 10,"e) $0d: generate sine"
+   .byte 10,"d) $0c: line input (enter)"
+   .byte 10,"e) $0c: line input (edit)"
+   .byte 10,"f) $0d: generate sine"
    .byte 10,"`) quit"
    .byte 10,0
 
@@ -61,6 +62,7 @@ jmptab:
    .word user
    .word dir
    .word vt100
+   .word lineinput0
    .word lineinput
    .word gensine
 jmpend:
@@ -241,6 +243,8 @@ vt100:
    jmp   CHROUT
 
 
+lineinput0:
+   stz   $CF00
 lineinput:
    jsr   PRINT
    .byte 10,"        1234567890123456789012345678901234567890"
@@ -251,10 +255,32 @@ lineinput:
    ldy   #$28
    int   LINEINPUT
 
-   bcc   :+
+   php
    jsr   PRINT
-   .byte 10,"Ctrl-C ",0
+   .byte 10,"A=",0
+   int   PRHEX8
+
+   tya
+   jsr   PRINT
+   .byte " Y=",0
+   int   PRHEX8
+
+   pla
+   sta   D_BUF
+   jsr   PRINT
+   .byte " P(nv-bdizc)=",0
+   ldy   #$08
 :
+   rol   D_BUF
+   lda   #$18
+   rol
+   jsr   CHROUT
+   dey
+   bne   :-
+
+   lda   #$0a
+   jsr   CHROUT
+
    lda   #$cf
    jsr   hexdumppage
 

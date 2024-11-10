@@ -315,7 +315,7 @@ brkjump:
 @jumptable:
    .word @user, chrinuc, chrcfg, prhex8, prhex16
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir
-   .word vt100, copybios, inputline, gensine
+   .word vt100, copybios, xinputline, gensine
 @jumptableend:
 
 signature:
@@ -380,6 +380,13 @@ prhex4:
    adc   #$06           ; adjust offset for letters A-F
 :
    jmp   CHROUT
+
+xinputline:
+   bit   BRK_SY
+   bmi   :+
+   jmp   inputline
+:
+   jmp   inputline      ; replace this with inputlinecfg, once implemented
 
 brktrap:
    ; make some stuff visible for backtrace

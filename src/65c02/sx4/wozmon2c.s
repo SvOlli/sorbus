@@ -69,6 +69,7 @@
 
 .define CONFIG_CMD_NOT_FOUND  0
 .define CONFIG_SHOW_HELP      1
+.define CONFIG_OPCODE_DEBUG   0
 
 zpstart         :=     $e6
 
@@ -331,7 +332,7 @@ MOV1:
    ;jsr   PRBLNK            ;print blanks to make ProDOS work
    ; print cursor up twice
    jsr   PRINT
-   .byte $1b,"[A",$1b,"[A",0
+   .byte $1b,"[2A",0
    jsr   showinst          ;Display line & get next instruction
 ; Get the next instruction
 GETINST1:
@@ -506,6 +507,11 @@ INSDS1:
 .else
    lda   (PCL)             ;GET OPCODE
 .endif
+.if CONFIG_OPCODE_DEBUG
+   jsr   PRINT
+   .byte " O:",0
+   int   PRHEX8
+.endif
 INDS2:
    tay                     ;LABLE moved down 1
    lsr                     ;EVEN/ODD TEST
@@ -513,10 +519,27 @@ INDS2:
    ror                     ;BIT 1 TEST
    bcs   ERR               ;XXXXXX11 INVALID OP
    and   #$87              ;MASK BITS
+.if CONFIG_OPCODE_DEBUG
+   jsr   PRINT
+   .byte " OM:",0
+   int   PRHEX8
+.endif
 IEVEN:
    lsr                     ;LASB INTO CARRY FOR L/R TEST
    tax
+.if CONFIG_OPCODE_DEBUG
+   jsr   PRINT
+   .byte " F1X:",0
+   int   PRHEX8
+
    lda   FMT1,x            ;GET FORMAT INDEX BYTE
+
+   jsr   PRINT
+   .byte " F1:",0
+   int   PRHEX8
+.else
+   lda   FMT1,x
+.endif
 .if 0
    jsr   SCRN2             ;R/L H-BYTE ON CARRY
 .else
@@ -535,7 +558,17 @@ ERR:
    lda   #$00              ;SET PRINT FORMAT INDEX TO 0
 GETFMT:
    tax
+.if CONFIG_OPCODE_DEBUG
+   jsr   PRINT
+   .byte " F2X:",0
+   int   PRHEX8
+.endif
    lda   FMT2,x            ;INDEX INTO PRINT FORMAT TABLE
+.if CONFIG_OPCODE_DEBUG
+   jsr   PRINT
+   .byte " F2:",0
+   int   PRHEX8
+.endif
    sta   FORMAT            ;SAVE FOR ADR FIELD FORMATTING
    and   #$03              ;MASK FOR 2-BIT LENGTH
 ; (0=1 BYTE, 1=2 BYTE, 2=3 BYTE)
@@ -855,7 +888,7 @@ GETLN:
    ldx   #>IN
    ldy   INPUTSIZE
    int   LINEINPUT
-   bcc   @eolmarker
+   beq   @eolmarker
    lda   #$DC              ;BACKSLASH AFTER CANCELLED LINE
    jsr   cout
    jsr   CROUT
@@ -869,7 +902,7 @@ GETLN:
    sta   IN,y
    dey
    bpl   @loop
-   iny                     ; for convenience, return with Y=0 and Z=1,N=0,O=0
+   iny                     ; for convenience, return with Y=0 and Z=1,N=0
    rts
 .endif
 
@@ -1210,7 +1243,7 @@ MNEM:
 ;                   (X=INDEX)
 ;
 FMT1:
-   .byte $0F
+   .byte $01               ; was $0F -> now BRK is BRK #$00
    .byte $22
    .byte $FF
    .byte $33
@@ -1280,24 +1313,24 @@ FMT1:
    .byte $78
 ; ZZXXXY01 INSTR'S
 FMT2:
-   .byte $00               ;ERR
-   .byte $21               ;IMM
-   .byte $81               ;Z-PAGE
-   .byte $82               ;ABS
-   .byte $59               ;(ZPAG,X)
-   .byte $4D               ;(ZPAG),Y
-   .byte $91               ;ZPAG,X
-   .byte $92               ;ABS,X
-   .byte $86               ;ABS,Y
-   .byte $4A               ;(ABS)
-   .byte $85               ;ZPAG,Y
-   .byte $9D               ;RELATIVE
-   .byte $49               ;(ZPAG)      (new)
-   .byte $5A               ;(ABS,X)     (new)
+   .byte $00               ; $00: ERR
+   .byte $21               ; $01: #IMM
+   .byte $81               ; $02: Z-PAGE
+   .byte $82               ; $03: ABS
+   .byte $59               ; $04: (ZPAG,X)
+   .byte $4D               ; $05: (ZPAG),Y
+   .byte $91               ; $06: ZPAG,X
+   .byte $92               ; $07: ABS,X
+   .byte $86               ; $08: ABS,Y
+   .byte $4A               ; $09: (ABS)
+   .byte $85               ; $0a: ZPAG,Y
+   .byte $9D               ; $0b: RELATIVE
+   .byte $49               ; $0c: (ZPAG)      (new)
+   .byte $5A               ; $0d: (ABS,X)     (new)
 ;
 CHAR2:
    .byte $D9               ;'Y'
-   .byte $00               ; (byte F of FMT2)
+   .byte $00               ; $0f: implied (of FMT2)
    .byte $D8               ;'X'
    .byte $A4               ;'$'
    .byte $A4               ;'$'
@@ -1331,7 +1364,7 @@ OPTBL:
    .byte $74               ;STZ ZPAG,X
    .byte $7A               ;PLY
    .byte $7C               ;JMP (ABS,X)
-   .byte $89               ;BIT IMM
+   .byte $89               ;BIT #IMM
    .byte $92               ;STA (ZPAG)
    .byte $9C               ;STZ ABS
    .byte $9E               ;STZ ABS,X

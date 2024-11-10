@@ -149,6 +149,7 @@ Miscellaneous ($DF00-$DF0F)
 -  $DF04: (R) CPU: $01=6502, $06=65C02, $12=65816, $0e=65CE02, $02=65SC02
    (bit set indicate CPU features:NMOS,CMOS,BIT (RE)SET,Z reg,16 bit)
 -  $DF05-$DF0A: reserved for future use
+-  $DF0A: 65CE02: userspace workaround to save Z for BRK (might change)
 -  $DF0B: UART config: bit 0=enable crlf conversion
 -  $DF0C: (R) UART in queue read
 -  $DF0D: (R) serial in queue size (up to 240, 255: error)

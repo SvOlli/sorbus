@@ -1,5 +1,7 @@
 ; changes todo
 ; [ ] implement auto-load + run from file manager
+; [ ] entering "10"+crsr up will pull line 10 in input buffer
+; [ ] runtime switch for token case in LIST
 ; [X] fix fre(0)
 ; [X] remove SCRWIDTH, POSWARP, POSX
 ; [X] Change useless NULL instruction to SYS to align tokens
@@ -57,6 +59,8 @@
 .define USE_RESTART_VECTOR 0
 ; backport from later versions of BASIC
 .define CONFIG_PEEK_SAVE_LINENUM 1
+; convert tokens to lowercase when running "LIST"
+.define CONFIG_LIST_LOWERCASE 0
 ; fix bug FRE(0) being negative
 .define USE_FIX_FREE 1
 
@@ -1140,10 +1144,20 @@ INLIN:
 ; unused end of buffer will be padded with $00 bytes
 ;.define LINEINPUT $0C
    stz   INPUTBUFFER
+:
+   ldy   #VT100_CPOS_SOL
+   int   VT100
    lda   #<INPUTBUFFER
    ldx   #>INPUTBUFFER
    ldy   #INPUTSIZE
    int   LINEINPUT
+   beq   :+                ; input okay -> CLC
+   cmp   #$03              ; on any other key but Ctrl-C just continue input
+   bne   :-
+   sec
+   .byte $24
+:
+   clc
    ldy   #$00
    ldx   #LINNUM+1
    jmp   CRDO
@@ -1525,7 +1539,12 @@ L25F5:
    bmi   L25F2
 L25FD:
    iny
+.if CONFIG_LIST_LOWERCASE
    lda   TOKEN_NAME_TABLE,y
+.else
+   lda   #$20 ; lowercase token
+   ora   TOKEN_NAME_TABLE,y
+.endif
    bmi   L25CA
    jsr   OUTDO
    bne   L25FD   ; always
