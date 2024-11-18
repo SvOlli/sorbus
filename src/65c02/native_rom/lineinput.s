@@ -306,6 +306,8 @@ getkey:
    jsr   CHRIN
    cmp   #'['
    beq   :+
+   cmp   #'O'
+   beq   :+
    iny
    bne   :-
    beq   @retesc     ; return the ESC

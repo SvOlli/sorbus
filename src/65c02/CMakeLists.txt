@@ -213,6 +213,15 @@ add_executable(memcheck
    )
 target_type(memcheck sx4)
 
+add_executable(mon
+   mon/main.s
+   mon/asciihex.s
+   mon/hexdump.s
+   mon/papertape.s
+   mon/registers.s
+   )
+target_type(mon sx4)
+
 add_executable(sx4speed
    sx4/speed.s
    )

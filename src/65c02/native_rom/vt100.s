@@ -262,13 +262,11 @@ a2b_100:
 a2b_10:
    .byte 0,10,20,30,40,50,60,70,80,90
 
-isdigit:
-   cmp   #'9'+1
-   bcs   :+
-   cmp   #'0'
-   rol
-   eor   #$01           ; negate carry, keep A
-   ror
 :
-   ; carry set indicates not a digit
+   sec
+   rts
+isdigit:
+   cmp   #'0'
+   bcc   :-
+   cmp   #'9'+1
    rts

@@ -60,7 +60,9 @@ freetab   = $0200
 cpm_fname = $0300       ; format: St F0 F1 F2 F3 F4 F5 F6 F7 E0 E1 E2
 cpm_saddr = cpm_fname + $0c ; word: load,save: start address
 cpm_eaddr = cpm_fname + $0e ; word: save: end address
-cpm_hndlr = cpm_fname + $10 ; word: handler function pointer for scandir
+
+; internally used
+cpm_hndlr = $0310           ; word: handler function pointer for scandir
 cpm_dirty = cpm_fname + $12 ; byte: save,delete: current dirbuffer needs to be saved
 cpm_spare = cpm_fname + $13 ; byte: load: number of used bytes in final sector
 cpm_ndent = cpm_fname + $14 ; byte: save: number of dirents to create

@@ -12,10 +12,10 @@
 ; - For NMOS 6502 variant, only CHRIN, CHROUT and PRINT are suppored
 
 ; $FF00: read a character from UART in A, returns C=1 when no queue is empty
-.define CHRIN  $FF00
+CHRIN    := $FF00
 
 ; $FF03: write a character from A to UART
-.define CHROUT $FF03
+CHROUT   := $FF03
 
 ; $FF06: print a string
 ; usage:
@@ -23,9 +23,9 @@
 ; .byte "text", 0
 ; this routine saves all CPU registers, including P, so it can be used for
 ; debugging messages
-.define PRINT  $FF06
+PRINT    := $FF06
 ; PRIMM is a common used synonym for PRINT here
-.define PRIMM  PRINT
+PRIMM    := PRINT
 
 ; non-API addresses required for BIOS <-> kernel calls
 .global  BIOS
