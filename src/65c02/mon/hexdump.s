@@ -2,10 +2,11 @@
 .export     hexenter
 .export     hexupdown
 .export     memorydump
-.export     prhex8
 .export     prhex4
-.export     inbufhex8
+.export     prhex8
+.export     prhex8s
 .export     inbufhex4
+.export     inbufhex8
 .export     inbufsp
 .export     inbufa
 
@@ -124,6 +125,12 @@ memorydumpline:
    bcc   @asciiloop
    lda   #':'
    sta   MODE
+   rts
+
+prhex8s:
+   pha
+   jsr   prhex8
+   pla
    rts
 
 prhex8:

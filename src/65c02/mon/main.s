@@ -67,14 +67,19 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .exportzp   R_SP
 .exportzp   R_P
 .exportzp   TMP8
+.exportzp   TMP16
 
 ; from asciihex.s
 .import     uppercase
+
+; from disassembler.s
+.import     disassemble
 
 ; from hexdump.s
 .import     hexenter
 .import     hexupdown
 .import     memorydump
+.import     prhex8
 
 ; from papertape.s
 .import     papertape
@@ -218,7 +223,6 @@ handleupdown:
 
 assembleedit:
 assemble:
-disassemble:
    stx   $DF01
    rts
 

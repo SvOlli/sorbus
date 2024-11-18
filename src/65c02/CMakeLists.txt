@@ -216,9 +216,11 @@ target_type(memcheck sx4)
 add_executable(mon
    mon/main.s
    mon/asciihex.s
+   mon/disassembler.s
    mon/hexdump.s
    mon/papertape.s
    mon/registers.s
+   mon/table65sc02.s
    )
 target_type(mon sx4)
 
