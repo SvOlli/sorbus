@@ -9,22 +9,33 @@
 ; [X] (~) register edit
 ; [X] (g) go
 ; [X] (;) papertape load
+; [X] (d) disassemble
+; [X] (a) assemble
+; [ ] reorganize zeropage memory usage
+; [ ] BRK handler
 ; [ ] (s) cpmfs save
 ; [ ] (l) cpmfs load
-; [ ] (d) disassemble
-; [ ] (a) assemble
 ; [ ] (h) find/hunt
 ; [ ] (c) compare
 ; [ ] (f) fill
+; [ ] (t) transfer
 
+.ifp02
+; configuration for NMOS 6502 toolkit
+.define LOADSAVE      0
+.define BRKADJUST     1
+.else
+; configuration for CMOS native rom
+.define LOADSAVE      0
+.define BRKADJUST     0
+.endif
 
-LMNEM           :=     $e6    ;{addr/1}   ;temp for mnemonic decoding
-RMNEM           :=     $e7    ;{addr/1}   ;temp for mnemonic decoding
-FORMAT          :=     $e8    ;{addr/1}   ;temp for opcode decode
-LENGTH          :=     $e9    ;{addr/1}   ;temp for opcode decode
-PCL             :=     $ee    ;{addr/1}   ;temp for program counter
-PCH             :=     $ef    ;{addr/1}
+; also in use (temporary only), provided by kernel (4 bytes)
+;TMP16       := $04
+;PSAVE       := $06
+;ASAVE       := $07
 
+; shadow registers for CPU (7 bytes)
 R_PC        := $f0
 R_A         := R_PC + 2
 R_X         := R_PC + 3
@@ -32,16 +43,18 @@ R_Y         := R_PC + 4
 R_SP        := R_PC + 5
 R_P         := R_PC + 6
 
+; used for internal functions
 MODE        := R_PC + 7
-;ASAVE       := R_PC + 8
-
-ADDR0       := $e0      ; the last one entered
+ADDR0       := $f8      ; the last one entered, must be after MODE
 ADDR1       := ADDR0+2  ; the one typically used
 ADDR2       := ADDR0+4  ; the last one used (indicator for "clean" up/down)
 
-TMP8        := $fd
+FORMAT      := ADDR0+6  ;{addr/1}   ;temp for opcode decode
+LENGTH      := ADDR0+7  ;{addr/1}   ;temp for opcode decode
 
-TMPVEC      := $fe
+TMP8        := $ef
+
+; handling addresses (from input, traverse, etc)
 
 INBUF       := $0200
 INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
@@ -50,8 +63,12 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .export     CHROUT
 .export     PRINT
 .export     getfirstnonspace
+.export     prterr
 .export     prtsp
+.export     prt3sp
+.export     prtxsp
 .export     skipspace
+.export     newedit
 
 .export     INBUF
 .exportzp   ASAVE
@@ -68,9 +85,14 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .exportzp   R_P
 .exportzp   TMP8
 .exportzp   TMP16
+.exportzp   FORMAT
+.exportzp   LENGTH
 
 ; from asciihex.s
 .import     uppercase
+
+; from assembler.s
+.import     assemble
 
 ; from disassembler.s
 .import     disassemble
@@ -79,7 +101,7 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .import     hexenter
 .import     hexupdown
 .import     memorydump
-.import     prhex8
+.import     prthex8
 
 ; from papertape.s
 .import     papertape
@@ -101,9 +123,40 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
    sta   R_PC+1
    jmp   start
 
+prterr:
+   ;sta   $DF01
+   lda   #$0a
+   jsr   CHROUT
+.ifp02
+   txa
+   pha
+.else
+   phx
+.endif
+   inx
+   jsr   prtxsp
+   lda   #'^'
+   jsr   CHROUT
+.ifp02
+   pla
+   tax
+.else
+   plx
+.endif
+   ; TODO: check if rts is okay, of if pla:pla:jmp will be better
+   rts
+
 prtsp:
    lda   #' '
    jmp   CHROUT
+prt3sp:
+   ldx   #$03
+prtxsp:
+:
+   jsr   prtsp
+   dex
+   bne   :-
+   rts
 
 getfirstnonspace:
    ldx   #$ff
@@ -124,6 +177,14 @@ start:
 newenter:
    lda   #$0a
    jsr   CHROUT
+   bit   MODE
+   bvc   :+
+   lda   MODE
+   and   #$bf           ; clear $40
+   sta   MODE
+   clv
+   bne   newedit
+:
 .ifp02
    lda   #$00
    sta   INBUF
@@ -150,12 +211,6 @@ newedit:
    bne   newedit
 @updown:
    jsr   handleupdown   ; should return with X = size of INBUF
-.ifp02
-   lda   #$00
-   sta   INBUF,x
-.else
-   stz   INBUF,x
-.endif
    jmp   newedit
 @enter:
    jsr   handleenter
@@ -178,7 +233,7 @@ handleenter:
    ; since X is used as index in input buffer can't use it here
    ; so jmp (addr,x) is out of a question, let's go the classic way
    ; at least there's no split between NMOS and CMOS here
-   sta   TMP8
+   sta   TMP8           ; can be switched to LENGTH or FORMAT
    tya
    asl
    tay
@@ -187,11 +242,14 @@ handleenter:
    lda   @funcs+0,y
    pha
    inx
-   lda   TMP8
+   lda   TMP8           ; can be switched to LENGTH or FORMAT
    rts
 
 @cmds:
    .byte ":;>~ADGMRZ"
+.if LOADSAVE
+   .byte "LS"
+.endif
 @funcs:
    .word hexenter-1     ; :
    .word papertape-1    ; ;
@@ -203,6 +261,10 @@ handleenter:
    .word memorydump-1   ; M
    .word regdump-1      ; R
    .word test-1         ; Z
+.if LOADSAVE
+   .word load-1         ; L
+   .word save-1         ; S
+.endif
 
 handleupdown:
    tay                  ; save up/down key in Y
@@ -222,7 +284,6 @@ handleupdown:
    rts
 
 assembleedit:
-assemble:
    stx   $DF01
    rts
 

@@ -37,9 +37,9 @@ getaddr:
    beq   @checkfail
    cmp   #' '
    beq   @exit
-   inx
    jsr   asc2hex
-   bmi   @fail
+   bcs   @checkfail
+   inx
    asl
    asl
    asl
@@ -64,7 +64,6 @@ getaddr:
    cmp   #$04
    bcc   @exit
 @fail:
-   sec
    rts
 
 ; read a byte from input buffer to A
@@ -132,9 +131,11 @@ asc2hex:
    ;clc
    adc   #$09           ; 'A' = $41 + 9 = $4A
 :
-   and   #$0f           ; will always set n=0,o=0 on success
+   and   #$0f
+   clc
    rts
 
 @fail:
-   lda   #$c0           ; set n=1,o=1
+   sec
+   lda   #$00
    rts

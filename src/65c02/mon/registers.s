@@ -7,7 +7,7 @@
 
 .import     CHROUT
 .import     PRINT
-.import     prhex8
+.import     prthex8
 .import     prtsp
 .import     inbufhex8
 .import     inbufsp
@@ -23,7 +23,6 @@
 .importzp   R_SP
 .importzp   R_P
 .importzp   MODE
-.importzp   TMP8
 .import     INBUF
 
 
@@ -35,30 +34,31 @@ regdump:
    ;           FFF2 14 43 45 FF 00000000
    .byte 10," ~",0
    lda   R_PC+1
-   jsr   prhex8
+   jsr   prthex8
    lda   R_PC+0
-   jsr   prhex8
+   jsr   prthex8
    
    ldx   #R_A
 :
    jsr   prtsp
    lda   $00,x
-   jsr   prhex8
+   jsr   prthex8
    inx
    cpx   #R_P
    bcc   :-
 
    jsr   prtsp
    lda   R_P
-   sta   TMP8
+   sta   MODE
    ldx   #$08
 :
-   rol   TMP8
-   lda   #$18
+   rol   MODE
+   lda   #$18           ; '0' >> 1
    rol
    jsr   CHROUT
    dex
    bne   :-
+exitsetmode:
    lda   #'~'
    sta   MODE
    rts
@@ -96,17 +96,19 @@ regupdown:
    
    jsr   inbufsp
    lda   R_P
-   sta   TMP8
+   sta   MODE
    ldy   #$08
 :
-   rol   TMP8
+   rol   MODE
    lda   #$18
    rol
    jsr   inbufa
    dey
    bne   :-
 
-   rts
+   lda   #$00
+   jsr   inbufa
+   bne   exitsetmode    ; always true
 
 regedit:
    jsr   getaddr        ; get PC
@@ -133,14 +135,16 @@ regedit:
    bne   @done
 :
    ror
-   rol   TMP8
+   rol   MODE
    dey
    bne   @ploop
-   
+
+   ; successfully converted bits to byte
+   lda   MODE
    sta   R_P
    
 @done:
-   rts
+   jmp   exitsetmode
 
 go:
    ; check if there is an address as parameter

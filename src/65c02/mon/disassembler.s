@@ -1,19 +1,24 @@
 
 .export     disassemble
+.export     decodeopcode
+.export     prtinst
 
 .import     CHROUT
 .import     PRINT
 .import     getaddr
-.import     prtsp
-.import     prhex8s
-.import     prhex8
+.import     prthex8s
+.import     prthex8
 .import     newopcode
+.import     prt3sp
+.import     prtxsp
 
 .importzp   ADDR0
 .importzp   ADDR1
 .importzp   ADDR2
-.importzp   TMP8
+.importzp   MODE
 .importzp   TMP16
+.importzp   FORMAT
+.importzp   LENGTH
 
 .import     MNEM
 .import     FMT1
@@ -47,17 +52,6 @@
 LMNEM    := TMP16+1
 RMNEM    := TMP16+0
 
-FORMAT   := $e8         ;{addr/1}   ;temp for opcode decode
-LENGTH   := $e9         ;{addr/1}   ;temp for opcode decode
-
-prt3sp:
-   ldx   #$03
-prtxsp:
-   jsr   prtsp
-   dex
-   bne   prtxsp
-   rts
-
 disassemble:
    jsr   getaddr
    ldy   #$14
@@ -74,8 +68,6 @@ disassemble:
 .else
    phy
 .endif
-   jsr   PRINT
-   .byte 10," > ",0
    jsr   prtinst
    lda   ADDR1+0
    sec
@@ -93,19 +85,11 @@ disassemble:
    dey
    bne   @next
 
+   lda   #'>'
+   sta   MODE
    rts
 
-prtinst:
-   ; print address
-   lda   ADDR1+1
-   jsr   prhex8
-   lda   ADDR1+0
-   jsr   prhex8
-
-   jsr   prt3sp         ;followed by 3 spaces (will set X=$00)
-
-   ; X=0 expected
-   lda   (ADDR1,x)        ;GET OPCODE
+decodeopcode:
    tay                  ;LABLE moved down 1
    lsr                  ;EVEN/ODD TEST
    bcc   @ieven
@@ -161,14 +145,30 @@ prtinst:
    dey
    bne   @mntcv1
 @foundnew:
+   asl                  ; adjust for 16-bit words table
+   rts
+
+prtinst:
+   jsr   PRINT
+   .byte 10," > ",0
+   ; print address
+   lda   ADDR1+1
+   jsr   prthex8
+   lda   ADDR1+0
+   jsr   prthex8
+
+   jsr   prt3sp         ;followed by 3 spaces (will set X=$00)
+
+   lda   (ADDR1,x)      ;GET OPCODE (X=$00 expected)
+   jsr   decodeopcode
 
    pha                  ;SAVE MNEMONIC TABLE INDEX
 @top:
    lda   (ADDR1),y
-   jsr   prhex8s
+   jsr   prthex8
    ldx   #$01           ;print a single space
 @skipoutput:
-   jsr   prtxsp         ; also sets X=0
+   jsr   prtxsp
    cpy   LENGTH         ;PRINT INST (1-3 BYTES)
    iny                  ;IN A 12 CHR FIELD
    bcc   @top
@@ -177,7 +177,6 @@ prtinst:
    bcc   @skipoutput
 
    pla                  ;RECOVER MNEMONIC INDEX
-   asl
    tay
    lda   MNEM+1,y
    sta   LMNEM          ;FETCH 3-CHAR MNEMONIC
@@ -218,7 +217,7 @@ prtinst:
 @pradr4:
    dey
    bmi   @pradr2
-   jsr   prhex8s
+   jsr   prthex8s
 @pradr5:
    lda   FORMAT
    cmp   #$E8           ;HANDLE REL ADR MODE
@@ -231,9 +230,9 @@ prtinst:
    iny
 :
    tya
-   jsr   prhex8
+   jsr   prthex8
    txa                  ;  OF BRANCH AND RETURN
-   jmp   prhex8
+   jmp   prthex8
 
 @pcadj3:
    ldy   ADDR1+1

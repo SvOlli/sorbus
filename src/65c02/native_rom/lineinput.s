@@ -66,15 +66,23 @@ inputline:
    bcc   :-
    bcs   getloop
 
-bs:
-   tya               ; cpx #$00
-   beq   getloop
-   lda   #$08
-   jsr   CHROUT
+delete:
+   ; implemented as "go right + backspace"
+   cpy   ASAVE       ; is cursor at end?
+   bcs   getloop     ; yes -> nothing to delete
+   inc   PSAVE       ; internally stepping one to the right
+   bcc   delcont     ; skip moving cursor
 
-   lda   #VT_SAVE
-   jsr   vtprint
+bs:
+   tya               ; is cursor at start? (tya does cpy #$00)
+   beq   getloop     ; yes -> nothing to backspace
+   lda   #$08
+   jsr   CHROUT      ; move cursor one to the left
    dey
+
+delcont:
+   lda   #VT_SAVE    ; save cursor position, so after printing
+   jsr   vtprint     ; cursor is at same place
 :
    iny
    lda   (TMP16),y
@@ -85,7 +93,7 @@ bs:
    cpy   ASAVE
    bcc   :-
    dec   PSAVE
-   lda   #' '
+   lda   #' '        ; print space to delete last character
    jsr   CHROUT
    lda   #VT_UNSAVE
    jsr   vtprint
@@ -175,23 +183,36 @@ cleft:
    tya               ; cpy #$00
    beq   getloop
    dec   PSAVE
+.if 1
+   lda   #$08
+   jsr   CHROUT
+.else
    lda   #VT_LEFT
    jsr   vtprint
+.endif
    bpl   getloop    ; always true
 
 cright:
    lda   (TMP16),y
    beq   getloop
    inc   PSAVE
+.if 1
+   jsr   CHROUT
+.else
    lda   #VT_RIGHT
    jsr   vtprint
+.endif
    bpl   getloop    ; always true
 
 chome:
+   tya
+   beq   @done
+:
    lda   #$08
    jsr   CHROUT
    dey
-   bne   chome
+   bne   :-
+@done:
    sty   PSAVE
    jmp   getloop
 
@@ -242,11 +263,11 @@ rts0:
    rts
 
 keys:
-   ;     RET  ^C ESC  BS DEL  ^A  ^E  ^K
-   .byte $0d,$03,ESC,$08,$7f,$01,$05,$0b
+   ;     RET  ^C ESC  BS DEL  ^A  ^E  ^K  ^D
+   .byte $0d,$03,ESC,$08,$7f,$01,$05,$0b,$04
 
-   ;      UP DOWN RIGHT LEFT END HOME
-   .byte $c1, $c2,  $c3, $c4,$c6, $c8
+   ;     DELETE UP DOWN RIGHT LEFT END HOME
+   .byte $b3,  $c1, $c2,  $c3, $c4,$c6, $c8
 
 funcs:
 .ifp02
@@ -258,6 +279,8 @@ funcs:
    .word chome-1     ;^A
    .word cend-1      ;^E
    .word deltoend-1  ;^K
+   .word delete-1    ;^D
+   .word delete-1    ;DELETE
    .word leave-1     ;UP
    .word leave-1     ;DOWN
    .word cright-1    ;RIGHT
@@ -273,6 +296,8 @@ funcs:
    .word chome       ;^A
    .word cend        ;^E
    .word deltoend    ;^K
+   .word delete      ;^D
+   .word delete      ;DELETE
    .word leave       ;UP
    .word leave       ;DOWN
    .word cright      ;RIGHT

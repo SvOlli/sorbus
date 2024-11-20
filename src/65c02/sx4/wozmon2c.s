@@ -10,7 +10,7 @@
 ;     (TODO: check why C code locks up when start and end are swapped)
 ; [X] memory show uses 16 instead of 8 bytes
 ; [ ] memory show also displays ASCII
-; [ ] BRK with parameter
+; [X] BRK with parameter
 ; [X] switch input to "int lineimput"
 ; [X] remove unnecessary code
 ; [ ] support bankswitch $DF00
@@ -81,7 +81,7 @@ LENGTH          :=     $e9    ;{addr/1}   ;temp for opcode decode
 INPUTSIZE       :=     $ea    ;{addr/1}   ;storing screen with for input line
 PROMPT          :=     $eb    ;{addr/1}   ;prompt characater
 YSAV            :=     $ec    ;{addr/1}   ;position in Monitor command
-YSAV1           :=     $ed    ;{addr/1}   ;temp for Y register
+XSAV            :=     $ed    ;{addr/1}   ;temp for misc stuff
 
 PCL             :=     $ee    ;{addr/1}   ;temp for program counter
 PCH             :=     $ef    ;{addr/1}
@@ -277,12 +277,12 @@ AMOD3:
    rol   A5L               ;shift bit into format
    cpx   #$03
    bne   AMOD6
-   jsr   GETNUM
+   jsr   GETNUM            ;returns X=1 if argument, X=0 if none
    lda   A2H               ;get high byte of address
    beq   AMOD5             ;=>
    inx
 AMOD5:
-   stx   YSAV1
+   stx   XSAV
    ldx   #$03
    dey
 AMOD6:
@@ -329,10 +329,9 @@ MOV1:
 ;
 ; Display information
 ;
-   ;jsr   PRBLNK            ;print blanks to make ProDOS work
-   ; print cursor up twice
    jsr   PRINT
    .byte $1b,"[2A",0
+
    jsr   showinst          ;Display line & get next instruction
 ; Get the next instruction
 GETINST1:
@@ -378,7 +377,7 @@ NXTOP:
    dec   A1H               ;else try next opcode
    bne   GETOP             ;=>go try it
    inc   A5L               ;else try next format
-   dec   YSAV1
+   dec   XSAV
    beq   GETOP             ;=>go try next foramt
 ;
 ; Point to the error with a caret, beep, and fall
@@ -389,11 +388,15 @@ MINIERR:
 ERR2:
    tya
    tax
+   inx
    jsr   PRBL2
    lda   #$DE              ;^ to point to error
    jsr   cout
    bne   GETINST1          ;(always) try again
 
+; *********************************
+; assemble with address starts here
+; *********************************
 GETI1:
    jsr   GETNUM            ;prase hexadecimal input
    cmp   #$93              ;look for "ADDR:"
@@ -403,6 +406,9 @@ GOERR2:
    beq   ERR2              ;no "ADDR", display error
 ;
    jsr   A1PCLP            ;move address to PC
+; ************************************
+; assemble without address starts here
+; ************************************
 DOLIN:
    lda   #$03              ;get starting opcode
    sta   A1H               ;and save
@@ -429,19 +435,31 @@ NXTMN:
    bpl   NXTCH
    ldx   #5                ;index into address mode tables
    jsr   AMOD1             ;do this elsewhere
+.if 0
+   jsr   PRINT
+   .byte 10,"ID:",0
+   lda   A4L
+   int   PRHEX8
+   lda   A4H
+   int   PRHEX8
+   lda   A5L
+   int   PRHEX8
+   lda   XSAV
+   int   PRHEX8
+.endif
    lda   A5L               ;get format
    asl
    asl
-   ora   YSAV1
+   ora   XSAV
    cmp   #$20
    bcs   AMOD7
-   ldx   YSAV1             ;get our format
+   ldx   XSAV              ;get our format
    beq   AMOD7
    ora   #$80
 AMOD7:
    sta   A5L               ;update format
    sty   YSAV              ;update position
-   lda   $0200,y           ;get next character
+   lda   IN,y              ;get next character
    cmp   #$BB              ;is it a ";"?
    beq   AMOD8             ;=>yes, skip comment
    cmp   #$8D              ;is it a carriage return
@@ -480,20 +498,6 @@ GETINDX:
    lda   INDX,x            ;lookup index for mnemonic
    ldy   #0                ;exit with BEQ
    rts
-
-
-.if 0
-;******************************************************************************
-SCRN2:
-   bcc   RTMSKZ            ;IF EVEN, USE LO H
-   lsr
-   lsr
-   lsr                     ;SHIFT HIGH HALF BYTE DOWN
-   lsr
-RTMSKZ:
-   and   #$0F              ;MASK 4-BITS
-   rts
-.endif
 
 
 ;******************************************************************************
@@ -540,9 +544,6 @@ IEVEN:
 .else
    lda   FMT1,x
 .endif
-.if 0
-   jsr   SCRN2             ;R/L H-BYTE ON CARRY
-.else
    ; taken from SCRN2
    bcc   RTMSKZ            ;IF EVEN, USE LO H
    lsr
@@ -551,7 +552,6 @@ IEVEN:
    lsr
 RTMSKZ:
    and   #$0F              ;MASK 4-BITS
-.endif
    bne   GETFMT
 ERR:
    ldy   #$FC              ;SBSTITUTE $FC FOR INVALID OPS

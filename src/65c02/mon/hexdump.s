@@ -2,11 +2,12 @@
 .export     hexenter
 .export     hexupdown
 .export     memorydump
-.export     prhex4
-.export     prhex8
-.export     prhex8s
+.export     prthex4
+.export     prthex8
+.export     prthex8s
 .export     inbufhex4
 .export     inbufhex8
+.export     inbufaddr1
 .export     inbufsp
 .export     inbufa
 
@@ -85,10 +86,10 @@ memorydumpline:
 
    lda   ADDR1+1
    sta   ADDR2+1
-   jsr   prhex8
+   jsr   prthex8
    lda   ADDR1+0
    sta   ADDR2+0
-   jsr   prhex8
+   jsr   prthex8
    jsr   prtsp
 
    ldy   #$00
@@ -100,7 +101,7 @@ memorydumpline:
    jsr   prtsp
 
    lda   (ADDR1),y
-   jsr   prhex8
+   jsr   prthex8
 
    iny
    cpy   #$10
@@ -127,21 +128,21 @@ memorydumpline:
    sta   MODE
    rts
 
-prhex8s:
+prthex8s:
    pha
-   jsr   prhex8
+   jsr   prthex8
    pla
    rts
 
-prhex8:
+prthex8:
    pha
    lsr
    lsr
    lsr
    lsr
-   jsr   prhex4
+   jsr   prthex4
    pla
-prhex4:
+prthex4:
    and   #$0f
    ora   #'0'
    cmp   #':'
@@ -170,13 +171,8 @@ updownaddr:
    cmp   #' '
    beq   :-
    jsr   asc2hex
-   bmi   @lastprinted
+   bcs   @lastprinted
    jsr   getaddr
-.if 0
-   bcc   :+
-   ;sta   TRAP
-:
-.endif
    lda   ADDR0+1
    sta   ADDR1+1
    lda   ADDR0+0
@@ -244,10 +240,7 @@ hexupdown:
 
    lda   #':'
    jsr   inbufa
-   lda   ADDR1+1
-   jsr   inbufhex8
-   lda   ADDR1+0
-   jsr   inbufhex8
+   jsr   inbufaddr1
 
    ldy   #$00
 :
@@ -258,8 +251,14 @@ hexupdown:
    iny
    cpy   #$10
    bcc   :-
+   lda   #$00
+   jsr   inbufa
    rts
-   
+
+inbufaddr1:
+   lda   ADDR1+1
+   jsr   inbufhex8
+   lda   ADDR1+0
 inbufhex8:
    pha
    lsr
