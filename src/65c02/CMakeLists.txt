@@ -145,11 +145,18 @@ target_type(native_tools native_kernel)
 
 add_executable(native_nmos6502_bootblock
    nmos6502/kernel.s
-   native_rom/woz.s
-#   nmos6502/minimon.s
    native_rom/lineinput.s
    native_rom/vt100.s
    nmos6502/bios.s
+
+   mon/main.s
+   mon/asciihex.s
+   mon/assembler.s
+   mon/disassembler.s
+   mon/hexdump.s
+   mon/papertape.s
+   mon/registers.s
+   mon/table6502.s
    )
 target_compile_options(native_nmos6502_bootblock
    PUBLIC --cpu 6502

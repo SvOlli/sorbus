@@ -4,6 +4,7 @@
 .export     regedit
 .export     regsave
 .export     regupdown
+.export     inthandler
 
 .import     CHROUT
 .import     PRINT
@@ -14,6 +15,7 @@
 .import     inbufa
 .import     getaddr
 .import     getbyte
+.import     newenter
 .import     start
 
 .importzp   R_PC
@@ -64,6 +66,7 @@ exitsetmode:
    rts
 
 regsave:
+   ; needs to be called via JSR from top level
    php
    sta   R_A
    stx   R_X
@@ -75,6 +78,66 @@ regsave:
    inx
    stx   R_SP
    rts
+
+inthandler:
+.ifp02
+   ; on NMOS 6502
+   ; - called directly via IRQ vector @ $fffe/$ffff
+   ; - adjust interrupt address for 1-byte BRK
+   cld
+   sta   R_A
+   stx   R_X
+   sty   R_Y
+   pla
+   sta   R_P
+   pla
+   tax                 ; X:PCL
+   pla
+   tay                 ; Y:PCH
+   lda   R_P
+   and   #$10
+   beq   @nobrk
+   txa                 ; cpx #$00
+   bne   :+            ; no hibyte decrement needed
+   dey
+:
+   dex
+   stx   R_PC+0
+   sty   R_PC+1
+@nobrk:
+   tsx
+   stx   R_SP
+   jmp   start
+.else
+   ; on CMOS 6502
+   ; - called via BRK routine in kernel
+   ; - BRK adjust is never required
+   ; - stack offset is totally different
+   ; now there are 7 extra bytes on the stack, when run with G
+   ; - SP
+   ; - return address lo from BIOS jumping into kernel (needs to be dropped)
+   ; - return address hi from BIOS jumping into kernel (needs to be dropped)
+   ; - P register from BRK
+   ; - return address lo from BRK
+   ; - return address hi from BRK
+   ; - return address lo for RTS from "G"
+   ; - return address hi for RTS from "G"
+   cld
+   sta   R_A
+   stx   R_X
+   sty   R_Y
+   pla
+   pla
+   pla
+   sta   R_P
+   pla
+   sta   R_PC+0
+   pla
+   sta   R_PC+1
+   tsx
+   stx   R_SP
+   jmp   start
+.endif
 
 regupdown:
    ldx   #$00
@@ -157,9 +220,9 @@ go:
    ldx   R_SP
    txs
    ; set return address for RTS in code executed
-   lda   #>(start-1)
+   lda   #>(newenter-1)
    pha
-   lda   #<(start-1)
+   lda   #<(newenter-1)
    pha
    ; set start address to execute
    lda   R_PC+1

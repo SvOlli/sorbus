@@ -51,7 +51,7 @@ newopcode:
    ldy   #0                ;exit with BEQ
    rts
 
-.segment "RODATA"
+.segment "DATA"
 
 ;******************************************************************************
 MNEM:

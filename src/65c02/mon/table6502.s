@@ -33,7 +33,7 @@
 .error This table is for NMOS 6502 only
 .endif
 
-.segment "RODATA"
+.segment "DATA"
 
 ;******************************************************************************
 MNEM:
@@ -116,7 +116,7 @@ MNEM:
 ;                   (X=INDEX)
 ;
 FMT1:
-   .byte $01               ; was $0F -> now BRK is BRK #$00
+   .byte $0F               ; $xF=BRK without argument (makes more sense on NMOS)
    .byte $22
    .byte $FF
    .byte $33

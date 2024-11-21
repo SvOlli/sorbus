@@ -1,5 +1,4 @@
 
-.export     uppercase
 .export     getaddr
 .export     getbyte
 .export     gethex8
@@ -16,6 +15,10 @@
 
 .segment "CODE"
 
+; whole block will be removed when moved into kernel
+.ifp02
+.else
+.export     uppercase
 uppercase:
    cmp   #'a'
    bcc   :+
@@ -24,6 +27,7 @@ uppercase:
    and   #$df
 :
    rts
+.endif
 
 getaddr:
    jsr   skipspace

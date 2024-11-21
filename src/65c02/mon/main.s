@@ -12,23 +12,27 @@
 ; [X] (d) disassemble
 ; [X] (a) assemble
 ; [ ] reorganize zeropage memory usage
-; [ ] BRK handler
+; [X] BRK handler
+; [ ] native ROM integration
+; [X] NMOS 6502 toolkit integration
+; [ ] merge code?
+; --- release build
 ; [ ] (s) cpmfs save
 ; [ ] (l) cpmfs load
+; [ ] use .define FEATURE instead of .ifp02
+; --- sugarcoating starts here
 ; [ ] (h) find/hunt
 ; [ ] (c) compare
 ; [ ] (f) fill
 ; [ ] (t) transfer
 
-.ifp02
-; configuration for NMOS 6502 toolkit
-.define LOADSAVE      0
-.define BRKADJUST     1
-.else
-; configuration for CMOS native rom
-.define LOADSAVE      0
-.define BRKADJUST     0
-.endif
+.define PROMPT       '>'
+.define LOADSAVE     0
+; TODO: replace in code
+.define HEXPREFIX    ':'
+.define PPTPREFIX    ';'
+.define ASSPREFIX    '>'
+.define REGPREFIX    '~'
 
 ; also in use (temporary only), provided by kernel (4 bytes)
 ;TMP16       := $04
@@ -59,6 +63,7 @@ TMP8        := $ef
 INBUF       := $0200
 INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 
+.export     mon
 .export     start
 .export     CHROUT
 .export     PRINT
@@ -69,6 +74,8 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .export     prtxsp
 .export     skipspace
 .export     newedit
+.export     clrenter
+.export     newenter
 
 .export     INBUF
 .exportzp   ASAVE
@@ -87,6 +94,12 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .exportzp   TMP16
 .exportzp   FORMAT
 .exportzp   LENGTH
+
+; from kernel
+.ifp02
+.import     inputline
+.import     vt100
+.endif
 
 ; from asciihex.s
 .import     uppercase
@@ -112,16 +125,33 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .import     regedit
 .import     regsave
 .import     regupdown
+.import     inthandler
 
 
 .segment "CODE"
 
-   jsr   regsave
-   lda   #$f2
-   sta   R_PC+0
-   lda   #$ff
-   sta   R_PC+1
+mon:
+   jsr   PRINT
+   .byte 10,"Sorbus Monitor",0
+   ldx   #$06
+:
+   lda   defregs,x
+   sta   R_PC,x
+   dex
+   bpl   :-
    jmp   start
+
+.segment "DATA"
+   ; cold start registers
+defregs:
+   .word $fff2           ; PC
+   .byte $00             ; AC
+   .byte $00             ; XR
+   .byte $00             ; YR
+   .byte $ff             ; SP
+   .byte $26             ; Processor status: nv-bdIZc
+
+.segment "CODE"
 
 prterr:
    ;sta   $DF01
@@ -169,42 +199,43 @@ skipspace:
    beq   :-
    rts
 
-start:
-   jsr   PRINT
-   .byte 10,"Sorbus Monitor",0
-   jsr   regdump
+restart:
+   jsr   regsave
 
-newenter:
-   lda   #$0a
-   jsr   CHROUT
-   bit   MODE
-   bvc   :+
-   lda   MODE
-   and   #$bf           ; clear $40
-   sta   MODE
-   clv
-   bne   newedit
-:
+start:
+   jsr   regdump
+clrenter:
 .ifp02
    lda   #$00
    sta   INBUF
 .else
    stz   INBUF
 .endif
+newenter:
+   lda   #$0a
+   jsr   CHROUT
 newedit:
    ldy   #VT100_CPOS_SOL
+.ifp02
+   jsr   vt100
+.else
    int   VT100
-   lda   #'.'           ; prompt char
+.endif
+   lda   #PROMPT
    jsr   CHROUT
 
    lda   #<INBUF
    ldx   #>INBUF
    ldy   #INBUF_SIZE
+.ifp02
+   jsr   inputline
+.else
    int   LINEINPUT
+.endif
 
    beq   @enter
    cmp   #$03           ; CTRL+C
-   beq   newenter
+   beq   clrenter
    cmp   #$c1
    beq   @updown
    cmp   #$c2
@@ -214,7 +245,7 @@ newedit:
    jmp   newedit
 @enter:
    jsr   handleenter
-   jmp   newenter
+   jmp   clrenter
 
 
 handleenter:
@@ -227,7 +258,9 @@ handleenter:
    dey
    bpl   :-
    ; no command was found
-   bmi   newenter
+   lda   #'?'
+   jsr   CHROUT
+   bpl   newenter
 
 @cmdfound:
    ; since X is used as index in input buffer can't use it here
@@ -246,7 +279,11 @@ handleenter:
    rts
 
 @cmds:
-   .byte ":;>~ADGMRZ"
+   .byte ":;>~ADGMR"
+.ifp02
+.else
+   .byte "Z"
+.endif
 .if LOADSAVE
    .byte "LS"
 .endif
@@ -260,7 +297,10 @@ handleenter:
    .word go-1           ; G
    .word memorydump-1   ; M
    .word regdump-1      ; R
+.ifp02
+.else
    .word test-1         ; Z
+.endif
 .if LOADSAVE
    .word load-1         ; L
    .word save-1         ; S
@@ -287,7 +327,14 @@ assembleedit:
    stx   $DF01
    rts
 
+.ifp02
+.else
 test:
+   lda   #<inthandler
+   sta   UVBRK+0
+   lda   #>inthandler
+   sta   UVBRK+1
+   rts
    lda   #<gotest
    sta   R_PC+0
    lda   #>gotest
@@ -295,12 +342,34 @@ test:
    rts
 
 gotest:
-   lda   #$0a
-   jsr   CHROUT
+   php
+   jsr   PRINT
+   .byte 10,"A:",0
+   int   PRHEX8
+
+   txa
+   jsr   PRINT
+   .byte " X:",0
+   int   PRHEX8
+
+   tya
+   jsr   PRINT
+   .byte " Y:",0
+   int   PRHEX8
+
+   jsr   PRINT
+   .byte " S:",0
    tsx
    inx                  ; correct JSR offset
    inx
    txa
    int   PRHEX8
+
+   pla
+   jsr   PRINT
+   .byte " P:",0
+   int   PRHEX8
+
    lda   #$0a
    jmp   CHROUT
+.endif

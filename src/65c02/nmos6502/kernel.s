@@ -6,14 +6,15 @@
 
 .define INPUT_DEBUG 0
 
-.import wozstart
-.import Monitor
-.import getkey
+.import     getkey
+.import     mon
 
-.export prhex16
-.export prhex4
-.export prhex8
-.export prhex8s
+.export     prhex16
+.export     prhex4
+.export     prhex8
+.export     prhex8s
+
+.import     inthandler
 
 ESC      := $1b
 VT_LEFT  := 'D'
@@ -26,9 +27,7 @@ reset:
    jmp   start
    .byte "SBC23"
 
-   jmp   inputtest
    jmp   getkeytest
-;   jmp   Monitor
 
 knownids:
    .byte $00,$01,$02,$06,$0E,$12,$21
@@ -43,15 +42,9 @@ cpunames:
 
 vectab:
    .word $0000          ; UVBRK: (unused) IRQ handler dispatches BRK
-   .word uvnmi          ; UVNMI: hardware NMI handler
+   .word inthandler     ; UVNMI: hardware NMI handler
    .word $0000          ; UVNBI: (unused) IRQ handler dispatches non-BRK
-   .word uvirq          ; UVIRQ: hardware IRQ handler
-
-uvnmi:
-uvirq:
-   cld
-   sta   TRAP
-   rti
+   .word inthandler     ; UVIRQ: hardware IRQ handler
 
 start:
    cld
@@ -119,13 +112,9 @@ start:
    bne   :-
 :
 
-woz:
    lda   #$0a           ; start WozMon port
    jsr   CHROUT
-:  ; workaround for WozMon not handling RTS when executing external code
-   jsr   wozstart
-   ; will be reached if own code run within WozMon exits using rts
-   jmp   :-             ; no bra here: NMOS 6502 fallback mode
+   jmp   mon
 
 chrinuc:
    ; wait for character from UART and make it uppercase
@@ -170,16 +159,6 @@ prhex4:
    adc   #$06           ; adjust offset for letters A-F
 :
    jmp   CHROUT
-
-inputtest:
-   jsr   PRINT
-   .byte 10,"prompt> ",0
-   lda   #$00
-   sta   $0200
-   ldx   #$02
-   ldy   #$0f
-   jsr   inputline
-   jmp   $e000
 
 getkeytest:
    jsr   getkey

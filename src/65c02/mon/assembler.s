@@ -20,6 +20,7 @@
 .import     inbufa
 .import     inbufaddr1
 .import     uppercase
+.import     newenter
 
 .importzp   ADDR0       ; acts as address parameter
 .importzp   ADDR1       ; acts as PC
@@ -302,11 +303,16 @@ movinst:
    jsr   inbufa
    jsr   inbufaddr1
    lda   #' '
+:
    jsr   inbufa
+   cpx   #$15
+   bcc   :-
 .ifp02
    lda   #$00
    jsr   inbufa
 .else
    stz   INBUF,x
 .endif
-   rts
+   pla                  ; remove return address from stack
+   pla                  ; to prevent clearing of input buffer
+   jmp   newenter       ; and jump to editing prepared input

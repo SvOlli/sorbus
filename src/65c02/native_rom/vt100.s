@@ -171,6 +171,8 @@ vt100_getreply:
 vt100_done:
    lda   #$84           ; restore page $0200
    sta   XRAMSW
+   ldx   BRK_SX         ; since we can be also called via JSR
+   lda   BRK_SA         ; restore registers here as well
    rts
 
 bin2ascii:

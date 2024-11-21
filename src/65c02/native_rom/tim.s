@@ -226,10 +226,10 @@ S2:
 ERROPR:
    lda   #'?'           ; operator err, type '?', restart
    jsr   CHROUT
-.ifpc02
-   bra   start
+.ifp02
+   bpl   start          ; jmp   START (CHROUT returns n=0)
 .else
-   bcc   start          ; jmp   START (wroc returns cy=0)
+   bra   start
 .endif
 
 DCMP:
@@ -272,10 +272,10 @@ BYTE:
    beq   BY2
    pla                  ; err, clear jsr adr in stack
    pla
-.ifpc02
-   bra   ERROPR
-.else
+.ifp02
    jmp   ERROPR
+.else
+   bra   ERROPR
 .endif
 
 BY2:
@@ -629,18 +629,7 @@ T2T21:
    rts
 
 ;increment (TMP0,TMP0+1) by 1
-.ifpc02
-   ; technically not 65C02 code, but this version uses 2 bytes less of ROM
-INCTMP:
-   inc   TMP0+0         ; low byte
-   bne   INCT1
-   inc   TMP0+1         ; high byte
-   bne   INCT1
-   inc   WRAP           ; pointer has wrapped around - set flag
-   rts
-INCT1:
-   rts
-.else
+.ifp02
 INCTMP:
    inc   TMP0           ; low byte
    beq   INCT1
@@ -653,6 +642,17 @@ INCT1:
 
 SETWRP:
    inc   WRAP           ; pointer has wrapped around - set flag
+   rts
+.else
+   ; technically not 65C02 code, but this version uses 2 bytes less of ROM
+INCTMP:
+   inc   TMP0+0         ; low byte
+   bne   INCT1
+   inc   TMP0+1         ; high byte
+   bne   INCT1
+   inc   WRAP           ; pointer has wrapped around - set flag
+   rts
+INCT1:
    rts
 .endif
 
@@ -676,11 +676,11 @@ RDEXIT:
 ;    Y reg is preserved
 
 RDOB:
-.ifpc02
-   phy
-.else
+.ifp02
    tya                  ; save Y
    pha
+.else
+   phy
 .endif
    lda   #$00           ; set data = 0
    sta   ACMD
@@ -714,14 +714,14 @@ RDOB3:
    ora   ACMD
    sec                  ; CY=1
 RDOB4:
-.ifpc02
-   ply                  ; restore Y
-   tax                  ; set Z & N flags for return
-.else
+.ifp02
    tax
    pla                  ; restore Y
    tay
    txa                  ; set Z & N flags for return
+.else
+   ply                  ; restore Y
+   tax                  ; set Z & N flags for return
 .endif
    rts
 
