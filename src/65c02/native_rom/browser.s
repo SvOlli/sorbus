@@ -25,6 +25,7 @@ IOBUFFER    := $DF80
 
 ; TODO
 ; [ ] check copy
+; [ ] check delete (after delete file 17 of 17, screen was garbled)
 ; [ ] load BASIC code
 ; [ ] type
 ; [ ] hexdump

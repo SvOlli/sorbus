@@ -287,9 +287,13 @@ BY3:
 
 SETR:
    lda   #FLGS          ; set to access regs
-   sta   TMP0
+   sta   TMP0+0
+.ifp02
    lda   #$00
    sta   TMP0+1
+.else
+   stz   TMP0+1
+.endif
    lda   #$05
    rts
 
@@ -309,7 +313,7 @@ DSPLYR:
 DSPLYM:
    jsr   RDOA           ; read mem adr into TMPC
    bcc   ERROPR         ; err if no addr
-   lda   #$08
+   lda   #$08           ; 8 bytes to display
 M0:
    sta   TMPC
    ldy   #$00
@@ -372,7 +376,7 @@ VRFY:
    jmp   start
 
 LH:
-   jsr   RDOC          ; read second cmd char -> and ignore
+   jsr   RDOC          ; read second cmd char -> and ignore, 'L' is always 'LH'
    jsr   CRLF
 LH1:
    jsr   RDOC
@@ -585,6 +589,13 @@ WRTWO:
 
 RDOC:
    jsr   chrinuc
+   cmp   #$0D           ; return
+   beq   :+             ; -> accept
+   cmp   #$20           ; other control character
+   bcc   RDOC           ; -> reject
+   cmp   #$7f           ; del
+   beq   RDOC           ; -> reject
+:
    jmp   CHROUT
 
 ASCII:

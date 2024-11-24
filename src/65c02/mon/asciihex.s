@@ -19,17 +19,21 @@ getaddr:
    jsr   skipspace
    lda   #$04           ; up to 4 digits
    sta   TMP8
+.ifp02
    lda   #$00
    sta   ADDR0+0
    sta   ADDR0+1
+.else
+   stz   ADDR0+0
+   stz   ADDR0+1
+.endif
 @loop:
    lda   INBUF,x
    beq   @checkfail
    cmp   #' '
    beq   @exit
    jsr   asc2hex
-   bcs   @checkfail
-   inx
+   bcs   @fail
    asl
    asl
    asl
@@ -41,7 +45,8 @@ getaddr:
    rol   ADDR0+1
    dey
    bne   :-
-   dec   TMP8
+   inx
+   dec   TMP8           ; one digit processed
    bne   @loop
 @exit:
    ; for convenience copy result to A/Y (lo/hi)
@@ -51,7 +56,7 @@ getaddr:
    rts
 @checkfail:
    lda   TMP8
-   cmp   #$04
+   cmp   #$04           ; check if at least one digit was read
    bcc   @exit
 @fail:
    rts
@@ -101,7 +106,11 @@ gethex8:
 
 gethex4:
    lda   INBUF,x
+   jsr   asc2hex
+   bcs   :+
    inx
+:
+   rts
 asc2hex:
    cmp   #'0'
    bcc   @fail
@@ -121,5 +130,4 @@ asc2hex:
 
 @fail:
    sec
-   lda   #$00
    rts

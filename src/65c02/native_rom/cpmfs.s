@@ -160,7 +160,8 @@ cpmname:
    inx
    cpx   #$0c
    bcc   @loop
-@done:
+   clc
+   rts
 cpmexiterr:
    sec
    rts

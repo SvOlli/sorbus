@@ -9,6 +9,7 @@
 .export     regsave
 .export     regupdown
 
+.import     prterr
 .import     prthex8
 .import     prtsp
 .import     inbufhex8
@@ -253,14 +254,14 @@ regupdown:
 
 regedit:
    jsr   getaddr        ; get PC
-   bcs   @done
+   bcs   @error
    sta   R_PC+0
    sty   R_PC+1
 
    ldy   #REGSTART
 @regloop:
    jsr   getbyte        ; get A,X,Y,SP
-   bcs   @done
+   bcs   @error
    sta   R_BK,y
    iny
    cpy   #NUMREGS
@@ -270,11 +271,11 @@ regedit:
    ldy   #$08           ; need to be at least 8 binary digits
 @ploop:
    lda   INBUF,x
-   beq   @done
+   beq   @error
    cmp   #'0'
    beq   :+
    cmp   #'1'
-   bne   @done
+   bne   @error
 :
    lsr                  ; shift the lowest bit of '0' or '1' to carry
    rol   MODE           ; rotate this one in
@@ -285,9 +286,11 @@ regedit:
    ; successfully converted bits to byte
    lda   MODE
    sta   R_P
-
 @done:
    jmp   exitsetmode
+@error:
+   jsr   exitsetmode
+   jmp   prterr
 
 go:
    ; check if there is an address as parameter

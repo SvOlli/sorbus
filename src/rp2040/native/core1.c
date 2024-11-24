@@ -706,6 +706,7 @@ void debug_memorydump()
       printf( "\n" );
       if( addr < 0 )
       {
+         lastaddr -= show_size;
          return;
       }
       // TODO: switch this somehow to get_memory()

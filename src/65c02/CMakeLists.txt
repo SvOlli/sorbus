@@ -123,8 +123,10 @@ add_executable(native_kernel
    mon/assembler.s
    mon/disassembler.s
    mon/hexdump.s
+   mon/interndrive.s
    mon/papertape.s
    mon/registers.s
+   mon/storage.s
    mon/table65sc02.s
    )
 target_compile_options(native_kernel
@@ -163,6 +165,7 @@ add_executable(native_nmos6502_bootblock
    mon/assembler.s
    mon/disassembler.s
    mon/hexdump.s
+   mon/interndrive.s
    mon/papertape.s
    mon/registers.s
    mon/table6502.s

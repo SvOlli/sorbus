@@ -18,8 +18,8 @@
 ; [ ] merge code?
 ; --- release build
 ; [ ] read respects bank register
-; [ ] (s) cpmfs save
-; [ ] (l) cpmfs load
+; [X] (s) cpmfs save
+; [X] (l) cpmfs load
 ; [ ] use .define FEATURE(s) instead of .ifp02
 ; --- sugarcoating starts here
 ; [ ] (h) find/hunt
@@ -28,7 +28,11 @@
 ; [ ] (t) transfer
 
 .define PROMPT       '>'
+.ifp02
 .define LOADSAVE     0
+.else
+.define LOADSAVE     1
+.endif
 ; TODO: replace in code
 .define HEXPREFIX    ':'
 .define PPTPREFIX    ';'
@@ -125,6 +129,9 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .import     memorydump
 .import     prthex8
 
+; from interndrive.s
+.import     blockrw
+
 ; from papertape.s
 .import     papertape
 
@@ -136,6 +143,13 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .import     regupdown
 .import     inthandler
 
+.ifp02
+.else
+; from storages.s
+.import     directory
+.import     loadfile
+.import     savefile
+.endif
 
 .segment "CODE"
 
@@ -153,25 +167,12 @@ bankread:
 .endif
 
 prterr:
-   ;sta   $DF01
    lda   #$0a
    jsr   CHROUT
-.ifp02
-   txa
-   pha
-.else
-   phx
-.endif
-   inx
+   inx                  ; add one for the prompt
    jsr   prtxsp
    lda   #'^'
    jsr   CHROUT
-.ifp02
-   pla
-   tax
-.else
-   plx
-.endif
    pla
    pla
    jmp   newenter
@@ -272,22 +273,24 @@ handleenter:
    rts
 
 @cmds:
-   .byte ":;~ADGMR"
+   .byte ":;~ABDGMR"
 .if LOADSAVE
-   .byte "LS"
+   .byte "$LS"
 .endif
 @funcs:
    .word hexenter-1     ; :
    .word papertape-1    ; ;
    .word regedit-1      ; ~
    .word assemble-1     ; A
+   .word blockrw-1      ; B
    .word disassemble-1  ; D
    .word go-1           ; G
    .word memorydump-1   ; M
    .word regdump-1      ; R
 .if LOADSAVE
-   .word load-1         ; L
-   .word save-1         ; S
+   .word directory-1    ; $
+   .word loadfile-1     ; L
+   .word savefile-1     ; S
 .endif
 
 handleupdown:

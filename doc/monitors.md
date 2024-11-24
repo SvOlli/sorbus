@@ -17,19 +17,51 @@ different versions to invoke:
   the reset menu or by invoking BRK #$0e (or BRK #$00, if user vector UVBRK
   wasn't changed)
 
-Supported commands:
+When the System Monitor is started it looks like this:
+```
+Sorbus System Monitor via menu
+   PC  BK AC XR YR SP NV-BDIZC
+ ~FFF2 01 00 00 00 FF 00100110
+>
+```
+Note how it tells you that it was launched via the menu. This can be also
+an IRQ, NMI or BRK, if the vectors for those were not changed from the
+system default. The line starting with "PC" is just information on what is
+shown below:
 
-| CMD | Function                             |
-| --- | ------------------------------------ |
-| R   | dump shadow registers                |
-| G   | go                                   |
-| ~   | edit shadow registers                |
-| M   | dump memory                          |
-| :   | edit memory                          |
-| D   | disassemble                          |
-| A   | assemble                             |
-| ;   | handle papertape input               |
-| >   | (edit disassmbly not used right now) |
+| Entry    | Meaning                                                                           |
+| -------- | --------------------------------------------------------------------------------- |
+| PC       | Program Counter                                                                   |
+| BK       | BanK (not a CPU register but a system register) (not available on NMOS version)   |
+| AC       | ACcumulator                                                                       |
+| XR       | X index Register                                                                  |
+| YR       | Y index Register                                                                  |
+| SP       | Stack Pointer                                                                     |
+| NV-BDIZC | processor flags: Negative, oVerflow, Brk, Decimal, Interrupt disable, Zero, Carry |
+
+Those registers are not the actual CPU registers, but shadow registers to
+which the data was copied upon startup. When leaving the monitor with the
+go (`G`) command, the data will be written back to those registers. The
+tilde (`~`) just denotes that the following line contains registers. The
+greater-than-sign (`>`) is the entry prompt.
+
+These commands supported commands are:
+
+| Command | Function                                                          |
+| ------- | ----------------------------------------------------------------- |
+| R       | dump shadow registers                                             |
+| G       | go                                                                |
+| ~       | edit shadow registers                                             |
+| M       | dump memory                                                       |
+| :       | edit memory                                                       |
+| D       | disassemble                                                       |
+| A       | assemble                                                          |
+| ;       | handle papertape input                                            |
+| BR      | read block from internal drive                                    |
+| BW      | write block to internal drive                                     |
+| L       | load file from CP/M filesystem (not available on NMOS version)    |
+| S       | save file to CP/M filesystem (not available on NMOS version)      |
+| $       | show directory of CP/M filesystem (not available on NMOS version) |
 
 Differences between 65SC02 in ROM and NMOS 6502 toolkit versions
 
@@ -40,6 +72,10 @@ Differences between 65SC02 in ROM and NMOS 6502 toolkit versions
 | storage | save to/load from CP/M-fs           | not supported                     |
 | IRQ     | handled via kernel to check for BRK | passed almost directly to monitor |
 | banking | bank shadow register used           | bank shadow register ignored      |
+
+If the bank register is set to $00, then using "G" command will copy the
+BIOS from ROM to RAM in process. Without it the code for executing would
+not work.
 
 WozMon
 ------
@@ -162,7 +198,8 @@ understanding the output below:
 - Y: index register Y
 - S: stack pointer (full stack pointer value is $01xx)
 
-The following dot is the input prompt.
+The following dot (`.`) is the input prompt. Note that there is no backspace
+available. The input needs to be canceled and then start anew.
 
 Available commands:
 
@@ -171,6 +208,7 @@ Available commands:
 - `:`: change the former output data
 - `G`: go to the address shown in ADDR
 - `L`, `W`, `H`: these are related to paper tape
+- `V`: enables/disables verify for the `LH` command
 
 So jumping to a specific address is handled by first running `R`, then changing
 the ADDR with `:` (you can skip the rest by pressing return), and finally jump

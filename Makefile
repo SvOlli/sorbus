@@ -133,7 +133,7 @@ $(RELEASE_ARCHIVE): $(CC65_SDK_DIR) all
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done
 	cp doc/README_release.txt README.txt
 	$(RM) $@
-	7z a -mx=9 -bd -sdel $@ README.txt *.uf2
+	7z a -mx=9 -bd -sdel $@ README.txt doc/apple1.md doc/monitors.md doc/native.rst *.uf2
 	make -C $(CC65_SDK_DIR) clean
 	7z a -mx=9 -bd $@ $(CC65_SDK_DIR)
 
