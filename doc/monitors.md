@@ -7,6 +7,40 @@ the content of memory. And most of the times, more.
 On Target
 =========
 
+Sorbus System Monitor
+---------------------
+
+This is intended to be the "go-to" system monitor to use. There are two
+different versions to invoke:
+- NMOS 6502 version in Bootsector 2, as part of "NMOS 6502 toolkit".
+- the standard version included in ROM and invoked either by pressing "m" in
+  the reset menu or by invoking BRK #$0e (or BRK #$00, if user vector UVBRK
+  wasn't changed)
+
+Supported commands:
+
+| CMD | Function                             |
+| --- | ------------------------------------ |
+| R   | dump shadow registers                |
+| G   | go                                   |
+| ~   | edit shadow registers                |
+| M   | dump memory                          |
+| :   | edit memory                          |
+| D   | disassemble                          |
+| A   | assemble                             |
+| ;   | handle papertape input               |
+| >   | (edit disassmbly not used right now) |
+
+Differences between 65SC02 in ROM and NMOS 6502 toolkit versions
+
+| Topic   | Native ROM                          | NMOS 6502 toolkit                 |
+| ------- | ----------------------------------- | --------------------------------- |
+| opcodes | CMOS 65SC02 opcodes                 | NMOS 6502 opcodes                 |
+| BRK     | CPU correct 2-Byte BRK #$xx         | adjusted to historical 1-Byte BRK |
+| storage | save to/load from CP/M-fs           | not supported                     |
+| IRQ     | handled via kernel to check for BRK | passed almost directly to monitor |
+| banking | bank shadow register used           | bank shadow register ignored      |
+
 WozMon
 ------
 

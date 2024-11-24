@@ -95,7 +95,6 @@ IRQCHECK:
    lda   $0102,x        ; get the return address from stack
    sta   TMP16+0        ; and write it to temp vector
 
-   ;lda   TMP16+0        ; decrease it by one to get the BRK operand
    bne   :+
    dec   TMP16+1
 :
@@ -107,38 +106,46 @@ IRQCHECK:
    stx   BANK           ; switch to first ROM bank
    jsr   brkjump        ; to call the subroutine selector
 
+bankrti:
    php
    ldy   BRK_SY         ; get stored Y
    pla
-   sta   BRK_SY         ; use stored Y for now storing P
+   sta   BRK_SY         ; use stored Y now for storing P
    ldx   BRK_SX         ; get stored X
    lda   BRK_SB         ; get stored BANK
    sta   BANK           ; restore saved bank
-   pla                  ; drop P from stack
+   pla                  ; drop old P from stack
    lda   BRK_SY         ; get P from store
    pha                  ; put it on the stack, so flags can be returned
    lda   BRK_SA         ; get stored accumulator
    rti                  ; return to calling code
+_biosend:
 
-.out "   ============================="
-.out .sprintf( "   BIOS size: $%04x ($%04x free)", * - BIOS, $FA - (* - BIOS) )
-.out "   ============================="
-
-.segment "VECTORS"
+.segment "FIXEND"
+_fixstart:
 NMI:
    jmp   (UVNMI)        ; user vector for NMI ($DF7A)
 IRQ:
    jmp   (UVIRQ)        ; user vector for BRK/IRQ ($DF7E) -> irqcheck (default)
 RESET:
-   ; reset routine that also works when copied to RAM
+   ; reset routine that also has to work when copied to RAM
    lda   #$01
    sta   BANK           ; set banking to first ROM bank (kernel)
    jmp   reset          ; jump to reset routine
+_fixend:
 
+.segment "VECTORS"
+_vectors:
    .word NMI
    .word RESET
    .word IRQ
 
-.assert  CHRIN  = _chrin,  error, "CHRIN at wrong address"
-.assert  CHROUT = _chrout, error, "CHROUT at wrong address"
-.assert  PRINT  = _print,  error, "PRINT at wrong address"
+_biossize = (_biosend-BIOS) + (_fixend-_fixstart)
+.out "   ============================="
+.out .sprintf( "   BIOS size: $%04x ($%04x free)", _biossize, $FA - (_biossize) )
+.out "   ============================="
+
+.assert  CHRIN   = _chrin,   error, "CHRIN at wrong address"
+.assert  CHROUT  = _chrout,  error, "CHROUT at wrong address"
+.assert  PRINT   = _print,   error, "PRINT at wrong address"
+.assert  _fixend = _vectors, error, "FIXEND segment not at end of memory"

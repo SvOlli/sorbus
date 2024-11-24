@@ -1,14 +1,11 @@
 
 .include "../native_bios.inc"
+.include "../native.inc"
 
 .export     assemble
 
 .import     newedit
 
-.if 0
-.import     CHROUT
-.import     PRINT
-.endif
 .import     prtxsp
 .import     prthex8s
 .import     prthex8
@@ -26,8 +23,6 @@
 .importzp   ADDR1       ; acts as PC
 .importzp   ADDR2       ; acts as storage for 16bit MNEM
 .importzp   MODE
-.importzp   TMP8
-.importzp   TMP16
 .importzp   FORMAT
 .importzp   LENGTH
 
@@ -62,21 +57,14 @@
 ;* however those routines were heavily modified to fit the Sorbus Computer    *
 ;******************************************************************************
 
-tmp1     = $e8
-tmp2     = $e9
-tmp3     = $ea
-tmp4     = $eb
-tmp5     = $ec
-tmp6     = $ed
-
 A1H      = MODE
-A5L      = tmp2
-XSAV     = tmp5
-YSAV     = tmp6
+A5L      = BRK_SA
+XSAV     = BRK_SX
+YSAV     = BRK_SY
 
 ; A1H, ADDR0+0, ADDR0+1 form the buffer for the instruction
 ; --> ADDR0+0/H = ADDR0 (used from 2nd call to getaddr)
-; --> A1H   = ADDR0-1 (must be byte before, TMP8?)
+; --> A1H   = ADDR0-1 (must be byte before, MODE)
 .assert A1H = ADDR0-1, error, "A1H must be followed by ADDR0 in memory"
 
 getaddr1:
@@ -116,7 +104,7 @@ assemble:
    ;clc                 ; implicit, because skipspace returns ascii
    sbc   #$BD
    cmp   #$C2
-.if 0
+.if 1
    bcc   @goprterr
 .else
    bcs   :+
@@ -184,7 +172,7 @@ assemble:
    lda   A5L            ;found opcode, check address mode
    ldy   FORMAT         ;get addr. mode format for that opcode
    cpy   #$9D           ;is it relative?
-.if 0
+.if 1
    beq   rel            ;=>yes, calc relative address
 .else
    bne   :+
@@ -192,7 +180,7 @@ assemble:
 :
 .endif
    cmp   FORMAT         ;does mode match?
-.if 0
+.if 1
    beq   movinst        ;=>yes, move instruction to memory
 .else
    bne   :+
@@ -206,6 +194,7 @@ assemble:
    dec   XSAV
    beq   @getop         ;=>go try next foramt
 @goprterr:
+   ldx   XSAV
    jmp   prterr
 
 @amod1:
@@ -226,10 +215,10 @@ assemble:
 @amod4:
    dex
 @amod3:
-   rol   A5L               ;shift bit into format
+   rol   A5L            ;shift bit into format
    cpy   #$03
    bne   @amod6
-   jsr   getaddr1        ; get 16-bit value into addr0
+   jsr   getaddr1       ; get 16-bit value into addr0
    lda   ADDR0+1        ;get high byte of address
    beq   @amod5         ;=>
    iny
@@ -265,8 +254,8 @@ rel:
 :
    tya                  ;get page
    sbc   ADDR1+1        ;check page
-@goerr:
    beq   :+
+@goerr:
    ldx   XSAV
    jmp   prterr
 :
@@ -276,14 +265,14 @@ rel:
 movinst:
    ldy   LENGTH         ;get instruction length (0-2)
 :
-   lda   A1H,y          ;get a byte (write TMP8, ADDR0+0, ADDR0+1 to address in ADDR1)
+   lda   A1H,y          ;get a byte (write MODE, ADDR0+0, ADDR0+1 to address in ADDR1)
    sta   (ADDR1),y
    dey
    bpl   :-
 ;
 ; Display information
 ;
-   lda   #'>' + $40     ; restore mode which was misused for A1H
+   lda   #'>'           ; restore mode which was misused for A1H
    sta   MODE
    jsr   PRINT
    .byte $1b,"[A",0

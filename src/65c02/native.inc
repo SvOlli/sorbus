@@ -64,6 +64,15 @@ BRK_SX = IRQSVB+$2 ; X index
 BRK_SY = IRQSVB+$3 ; Y index
 ; this is just RAM space used by the kernel BRK routine
 
+MONREG = $DF30
+MON_PC = MONREG+$0
+MON_BK = MONREG+$2
+MON_A  = MONREG+$3
+MON_X  = MONREG+$4
+MON_Y  = MONREG+$5
+MON_SP = MONREG+$6
+MON_P  = MONREG+$7
+
 IDBASE = $DF70
 IDLBAL = IDBASE+$0 ; LBA low
 IDLBAH = IDBASE+$1 ; LBA high

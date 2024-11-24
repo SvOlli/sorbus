@@ -3,7 +3,7 @@
 ;
 ; This ROM for the native mode is in very early development.
 
-.define VERSION "0.3"
+.define VERSION "0.4"
 .segment "CODE"
 
 ; zeropage addresses used by this part of ROM
@@ -70,7 +70,7 @@ reset:
 
 @no65c02loop:
    jsr   PRINT
-   .byte 13, "NMOS 6502 not supported, key to boot sector 1 ", 0
+   .byte 13, "NMOS 6502 not supported, key to boot sector 2 ", 0
 :
    iny
    bne   :-
@@ -81,15 +81,6 @@ reset:
 
    lda   #$01
    jmp   boota
-   ; slip through
-
-woz:
-   lda   #$0a           ; start WozMon port
-   jsr   CHROUT
-:  ; workaround for WozMon not handling RTS when executing external code
-   jsr   wozstart
-   ; will be reached if own code run within WozMon exits using rts
-   jmp   :-             ; no bra here: NMOS 6502 fallback mode
 
 nmosirq:
    ;cld                  ; would be useful with NMOS, if doing more than return
@@ -101,63 +92,58 @@ nmosirq:
 cmos6502:
    txs                  ; fix for 65816's phk
 @iloop:
-   jsr   PRINT
-   ;         123456789012345678
-   .byte 10,"Sorbus Native V", VERSION ;    5         6         7         8
-   ;         90123456789012345678901234567890123456789012345678901234567890
-   .byte ": 1-4)Bootsector, F)ilebrowser, B)ASIC, T)IM, W)ozMon? ", 0
+   jsr   PRINT          ;       2         3         4         5         6         7         8
+   ;         12345678901234567890123456789012345678901234567890123456789012345678901234567890
+   .byte 10,"Sorbus Native V", VERSION
+   .byte                       ": 1-4)Bootsector, 0)Exec RAM @ $E000,"
+   .byte 10,"F)ilebrowser, B)ASIC, System M)onitor, T)IM, W)ozMon?",10,0
 :
    jsr   chrinuc        ; wait for keypress and make it uppercase
    bcs   :-
 
-   cmp   #'W'
-   beq   woz
+   ldx   #<(@jmps-@keys-1)
+:
+   cmp   @keys,x
+   beq   @found
+   dex
+   bpl   :-
+   jmp   @iloop
+@found:
+   pha                  ; save selected option by input
+   txa
+   asl
+   tax
+   pla
+   jmp   (@jmps,x)
 
-   cmp   #'1'           ; is it a boot block number?
-   bcc   :+
-   cmp   #'5'
-   bcs   :+
-
-   dec
-   and   #$03
-   jmp   boota
-
-:
-   cmp   #'R'           ; hidden CP/M debugging feature
-   bne   :+
-   jmp   execram        ; execute RAM bank @ $E000
-:
-   cmp   #'B'
-   bne   :+
-   lda   #$03
-@execrom2:
-   jmp   execrom        ; execute 3rd ROM bank @ $E000
-:
-   cmp   #'F'
-   bne   :+
-   lda   #$02           ; bank 2
-   ldx   #$00           ; jmp vector 0: file browser
-   bra   @execrom2      ; execute 2nd ROM bank @ $E000
-:
-   cmp   #'T'
-   bne   :+
-   jmp   timstart       ; start 6530-004 (TIM) monitor port
-:
-.if 0
-   ; for speed measurement, debug only
-   cmp   #'S'
-   beq   :-
-.endif
-
-   cmp   #'I'           ; developer info: print out core info string
-   bne   @iloop2
+@keys:
+   .byte "01234BFIMTW"
+@jmps:
+   .word execram        ; 0
+   .word boot           ; 1
+   .word boot           ; 2
+   .word boot           ; 3
+   .word boot           ; 4
+   .word @basic         ; B
+   .word @filebrowser   ; F
+   .word @info          ; I
+   .word mon_init       ; M
+   .word timstart       ; T
+   .word woz            ; W
+@filebrowser:
+   ldx   #$00           ; tools bank starts with jmp ($e003,x)
+   lda   #$02           ; select tools bank
+   .byte $2c
+@basic:
+   lda   #$03           ; select BASIC bank
+   jmp   execrom
 
 @info:
    lda   #$0a
    jsr   CHROUT
 
 :
-   lda   TRAP
+   lda   TRAP           ; find start of data stream after $00 byte
    bne   :-
 :
    lda   TRAP
@@ -170,33 +156,12 @@ cmos6502:
    jsr   CHROUT
    bra   :-
 
-uirq:
-   ; dummy IRQ handler: prints out IRQ and checks source
-   ;stz   TRAP
-   jsr   PRINT
-   .byte 10,"IRQ",10,0
-   bit   TMICRL
-   bmi   sbtimer
-   rti
-
-unmi:
-   ; dummy NMI handler: prints out IRQ and checks source
-   ;stz   TRAP
-   jsr   PRINT
-   .byte 10,"NMI",10,0
-   bit   TMICRL
-   bpl   notimer
-sbtimer:
-   jsr   PRINT
-   .byte "triggered by sorbus timer",10,0
-notimer:
-   rti
-
 boot:
-   lda   #$00           ; load first boot block (not used since user input)
+   dec
 boota:
    ; boottrack is 32k, memory at $E000 is 8k
    ; starting at boota can load other 8k offsets from internal drive
+   ; this code can be run by NMOS 6502
    jsr   PRINT ; preserves all registers... spooky.
    .byte 10,"Checking bootblock ",0
    and   #$03
@@ -220,14 +185,8 @@ boota:
    sta   IDREAD
 
    lda   IDREAD
-   beq   @checksig
+   bne   bootfailed
 
-@notfound:
-   jsr   PRINT
-   .byte ": failed, dropping to WozMon",10,0
-   jmp   woz
-
-@checksig:
    dec   ID_LBA+0       ; reset LBA for re-reading to $E000
 .if SECTOR_BUFFER <> $DF80
    ; when SECTOR_BUFFER is $DF80, then it's advanced to $E000 already
@@ -240,7 +199,7 @@ boota:
 :
    lda   SECTOR_BUFFER+3,x
    cmp   signature,x    ; verify if signature matches
-   bne   @notfound      ; throw error if not
+   bne   bootfailed     ; throw error if not
    dex
    bpl   :-
 
@@ -279,6 +238,19 @@ execrom:                ; has to be called with A=bank to switch to
    jmp   $E000
 @trampolineend:
 
+bootfailed:
+   jsr   PRINT
+   .byte ": failed, dropping to WozMon",10,0
+
+woz:
+   lda   #$0a           ; start WozMon port
+   jsr   CHROUT
+:  ; workaround for WozMon not handling RTS when executing external code
+   jsr   wozstart
+   ; will be reached if own code run within WozMon exits using rts
+   jmp   :-             ; no bra here: NMOS 6502 fallback mode
+
+
 copybios:
    ; copy the BIOS page to RAM
    ldx   #$00
@@ -304,7 +276,7 @@ brkjump:
    pha
    tsx
    lda   $0105,x        ; get processor state from stack
-   pha                  ; and save it for later rti
+   pha                  ; and save it for rti below
    ldx   BRK_SX         ; get stored X
    lda   BRK_SA         ; get stored A
    rti                  ; jump to handling subroutine
@@ -313,9 +285,9 @@ brkjump:
    jmp   (UVBRK)
 
 @jumptable:
-   .word @user, chrinuc, chrcfg, prhex8, prhex16
-   .word cpmname, cpmload, cpmsave, cpmerase, cpmdir
-   .word vt100, copybios, xinputline, gensine
+   .word @user, chrinuc, chrcfg, prhex8, prhex16       ; $00-$04
+   .word cpmname, cpmload, cpmsave, cpmerase, cpmdir   ; $05-$09
+   .word vt100, copybios, xinputline, gensine, mon_brk ; $0a-$0e
 @jumptableend:
 
 signature:
@@ -388,16 +360,8 @@ xinputline:
 :
    jmp   inputline      ; replace this with inputlinecfg, once implemented
 
-brktrap:
-   ; make some stuff visible for backtrace
-   cmp   (TMP16)        ; read BRK operand
-   stx   UARTRD         ; store X (read-only I/O register $DF0C)
-   sty   UARTRS         ; store Y (read-only I/O register $DF0D)
-   sta   TRAP           ; store A (TRAP strobe register   $DF01)
-   rts                  ; return, if system continues after TRAP
-
 vectab:
-   .word brktrap        ; UVBRK: IRQ handler dispatches BRK
-   .word unmi           ; UVNMI: hardware NMI handler
-   .word uirq           ; UVNBI: IRQ handler dispatches non-BRK
+   .word mon_brk        ; UVBRK: IRQ handler dispatches BRK
+   .word mon_nmi        ; UVNMI: hardware NMI handler
+   .word mon_irq        ; UVNBI: IRQ handler dispatches non-BRK
    .word IRQCHECK       ; UVIRQ: hardware IRQ handler

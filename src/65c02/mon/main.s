@@ -11,15 +11,16 @@
 ; [X] (;) papertape load
 ; [X] (d) disassemble
 ; [X] (a) assemble
-; [ ] reorganize zeropage memory usage
+; [X] reorganize zeropage memory usage
 ; [X] BRK handler
-; [ ] native ROM integration
+; [X] native ROM integration
 ; [X] NMOS 6502 toolkit integration
 ; [ ] merge code?
 ; --- release build
+; [ ] read respects bank register
 ; [ ] (s) cpmfs save
 ; [ ] (l) cpmfs load
-; [ ] use .define FEATURE instead of .ifp02
+; [ ] use .define FEATURE(s) instead of .ifp02
 ; --- sugarcoating starts here
 ; [ ] (h) find/hunt
 ; [ ] (c) compare
@@ -39,16 +40,39 @@
 ;PSAVE       := $06
 ;ASAVE       := $07
 
-; shadow registers for CPU (7 bytes)
-R_PC        := $f0
-R_A         := R_PC + 2
-R_X         := R_PC + 3
-R_Y         := R_PC + 4
-R_SP        := R_PC + 5
-R_P         := R_PC + 6
+; memory addresses used
+;          a2h ass dis hex ppt reg
+; $04 T16L
+; $05 T16H
+; $06 PSAV
+; $07 ASAV
+; $f6 TMP8
+; $f7 MOD
+; $f8 A0L
+; $f9 A0H
+; $fa A1L
+; $fb A1H
+; $fc A2L
+; $fd A2H
+; $fe FOR
+; $ff LEN
+
+; BRK_SA
+; BRK_SX
+; BRK_SY
+
+; R_PC+0
+; R_PC+1
+; R_BK
+; R_A
+; R_X
+; R_Y
+; R_SP
+; R_P
 
 ; used for internal functions
-MODE        := R_PC + 7
+TMP8        := $f6
+MODE        := $f7
 ADDR0       := $f8      ; the last one entered, must be after MODE
 ADDR1       := ADDR0+2  ; the one typically used
 ADDR2       := ADDR0+4  ; the last one used (indicator for "clean" up/down)
@@ -56,17 +80,11 @@ ADDR2       := ADDR0+4  ; the last one used (indicator for "clean" up/down)
 FORMAT      := ADDR0+6  ;{addr/1}   ;temp for opcode decode
 LENGTH      := ADDR0+7  ;{addr/1}   ;temp for opcode decode
 
-TMP8        := $ef
-
 ; handling addresses (from input, traverse, etc)
 
 INBUF       := $0200
 INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 
-.export     mon
-.export     start
-.export     CHROUT
-.export     PRINT
 .export     getfirstnonspace
 .export     prterr
 .export     prtsp
@@ -78,20 +96,11 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .export     newenter
 
 .export     INBUF
-.exportzp   ASAVE
-.exportzp   PSAVE
 .exportzp   MODE
 .exportzp   ADDR0
 .exportzp   ADDR1
 .exportzp   ADDR2
-.exportzp   R_PC
-.exportzp   R_A
-.exportzp   R_X
-.exportzp   R_Y
-.exportzp   R_SP
-.exportzp   R_P
 .exportzp   TMP8
-.exportzp   TMP16
 .exportzp   FORMAT
 .exportzp   LENGTH
 
@@ -130,28 +139,18 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 
 .segment "CODE"
 
-mon:
-   jsr   PRINT
-   .byte 10,"Sorbus Monitor",0
-   ldx   #$06
-:
-   lda   defregs,x
-   sta   R_PC,x
-   dex
-   bpl   :-
-   jmp   start
-
-.segment "DATA"
-   ; cold start registers
-defregs:
-   .word $fff2           ; PC
-   .byte $00             ; AC
-   .byte $00             ; XR
-   .byte $00             ; YR
-   .byte $ff             ; SP
-   .byte $26             ; Processor status: nv-bdIZc
-
-.segment "CODE"
+.if 0
+bankread:
+   lda   BRK_SB
+   sta   @restore+1
+   lda   (TMP16),y
+   pha
+@restore:
+   lda   #$00
+   sta   BRK_SB
+   pla
+   rts
+.endif
 
 prterr:
    ;sta   $DF01
@@ -173,8 +172,9 @@ prterr:
 .else
    plx
 .endif
-   ; TODO: check if rts is okay, of if pla:pla:jmp will be better
-   rts
+   pla
+   pla
+   jmp   newenter
 
 prtsp:
    lda   #' '
@@ -199,11 +199,6 @@ skipspace:
    beq   :-
    rts
 
-restart:
-   jsr   regsave
-
-start:
-   jsr   regdump
 clrenter:
 .ifp02
    lda   #$00
@@ -258,9 +253,7 @@ handleenter:
    dey
    bpl   :-
    ; no command was found
-   lda   #'?'
-   jsr   CHROUT
-   bpl   newenter
+   jmp   prterr
 
 @cmdfound:
    ; since X is used as index in input buffer can't use it here
@@ -279,28 +272,19 @@ handleenter:
    rts
 
 @cmds:
-   .byte ":;>~ADGMR"
-.ifp02
-.else
-   .byte "Z"
-.endif
+   .byte ":;~ADGMR"
 .if LOADSAVE
    .byte "LS"
 .endif
 @funcs:
    .word hexenter-1     ; :
    .word papertape-1    ; ;
-   .word assembleedit-1 ; >
    .word regedit-1      ; ~
    .word assemble-1     ; A
    .word disassemble-1  ; D
    .word go-1           ; G
    .word memorydump-1   ; M
    .word regdump-1      ; R
-.ifp02
-.else
-   .word test-1         ; Z
-.endif
 .if LOADSAVE
    .word load-1         ; L
    .word save-1         ; S
@@ -322,54 +306,3 @@ handleupdown:
    jmp   regupdown
 :
    rts
-
-assembleedit:
-   stx   $DF01
-   rts
-
-.ifp02
-.else
-test:
-   lda   #<inthandler
-   sta   UVBRK+0
-   lda   #>inthandler
-   sta   UVBRK+1
-   rts
-   lda   #<gotest
-   sta   R_PC+0
-   lda   #>gotest
-   sta   R_PC+1
-   rts
-
-gotest:
-   php
-   jsr   PRINT
-   .byte 10,"A:",0
-   int   PRHEX8
-
-   txa
-   jsr   PRINT
-   .byte " X:",0
-   int   PRHEX8
-
-   tya
-   jsr   PRINT
-   .byte " Y:",0
-   int   PRHEX8
-
-   jsr   PRINT
-   .byte " S:",0
-   tsx
-   inx                  ; correct JSR offset
-   inx
-   txa
-   int   PRHEX8
-
-   pla
-   jsr   PRINT
-   .byte " P:",0
-   int   PRHEX8
-
-   lda   #$0a
-   jmp   CHROUT
-.endif

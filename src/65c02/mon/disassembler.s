@@ -1,10 +1,11 @@
 
+.include "../native_bios.inc"
+.include "../native.inc"
+
 .export     disassemble
 .export     decodeopcode
 .export     prtinst
 
-.import     CHROUT
-.import     PRINT
 .import     getaddr
 .import     prthex8s
 .import     prthex8
@@ -16,7 +17,6 @@
 .importzp   ADDR1
 .importzp   ADDR2
 .importzp   MODE
-.importzp   TMP16
 .importzp   FORMAT
 .importzp   LENGTH
 
@@ -53,21 +53,49 @@ LMNEM    := TMP16+1
 RMNEM    := TMP16+0
 
 disassemble:
-   jsr   getaddr
-   ldy   #$14
-   bcs   @next
+   jsr   getaddr        ; check for start addr
+   bcs   @next          ; non given, continue
    lda   ADDR0+0
    sta   ADDR1+0
    lda   ADDR0+1
    sta   ADDR1+1
 
+   jsr   getaddr        ; check for start addr
+   bcs   @next          ; non given, disassemble 20 lines
+:
+   jsr   prtinst1
+   lda   ADDR1+1
+   cmp   ADDR0+1
+   bcc   :-
+   lda   ADDR1+0
+   cmp   ADDR0+0
+   bcc   :-
+   bcs   @done
+
 @next:
+   ldy   #$14           ; disassemble 20 instructions / lines
 .ifp02
    tya
    pha
 .else
    phy
 .endif
+   jsr   prtinst1
+.ifp02
+   pla
+   tay
+.else
+   ply
+.endif
+   dey
+   bne   @next+2        ; skip the initial ldy #$14
+
+@done:
+   lda   #'>'
+   sta   MODE
+   rts
+
+prtinst1:
    jsr   prtinst
    lda   ADDR1+0
    sec
@@ -76,17 +104,6 @@ disassemble:
    bcc   :+
    inc   ADDR1+1
 :
-.ifp02
-   pla
-   tay
-.else
-   ply
-.endif
-   dey
-   bne   @next
-
-   lda   #'>'
-   sta   MODE
    rts
 
 decodeopcode:
@@ -110,7 +127,11 @@ decodeopcode:
    and   #$0F           ;MASK 4-BITS
    bne   :+
 @error:
-   ldy   #$FC           ;SBSTITUTE $FC FOR INVALID OPS
+.ifp02
+   ldy   #$80           ;SUBSTITUTE $80 FOR INVALID OPS
+.else
+   ldy   #$FC           ;SUBSTITUTE $FC FOR INVALID OPS
+.endif
    lda   #$00           ;SET PRINT FORMAT INDEX TO 0
 :
    tax
@@ -121,9 +142,10 @@ decodeopcode:
    sta   LENGTH
 .ifp02
    ; no need for a 65c02 custom subroutine
+   tya
 .else
-   jsr   newopcode      ;get index for new opcodes
-   beq   @foundnew      ;found a new op (or no op)
+   jsr   newopcode      ; get index for new opcodes
+   beq   @foundnew      ; found a new op (or no op)
 .endif
    and   #$8F           ;MASK FOR 1XXX1010 TEST
    tax                  ; SAVE IT

@@ -15,20 +15,6 @@
 
 .segment "CODE"
 
-; whole block will be removed when moved into kernel
-.ifp02
-.else
-.export     uppercase
-uppercase:
-   cmp   #'a'
-   bcc   :+
-   cmp   #'z'+1
-   bcs   :+
-   and   #$df
-:
-   rts
-.endif
-
 getaddr:
    jsr   skipspace
    lda   #$04           ; up to 4 digits
@@ -74,7 +60,7 @@ getaddr:
 getbyte:
    jsr   skipspace
    jsr   gethex4        ; get first hex digit
-   bmi   @error
+   bcs   @done          ; also C=1 on exit
    asl
    asl
    asl
@@ -90,33 +76,27 @@ getbyte:
    lsr
    lsr
    lsr
-   bcc   @retsingle     ; always true due to asls above
+   bcc   @done          ; always true due to asls above, also C=0 on exit
 @notsingle:
    jsr   gethex4
-   bmi   @error
+   bcs   @done          ; also C=1 on exit
    ora   TMP8
-@retsingle:
-   clc                  ; report okay
-   rts
-@error:
-   sec                  ; report fail
+@done:
    rts
 
+; replace with getbyte in papertape code?
 gethex8:
    jsr   gethex4
-   bmi   @error
+   bcs   @error
    asl
    asl
    asl
    asl
    sta   TMP8
    jsr   gethex4
-   bmi   @error
+   bcs   @error
    ora   TMP8
-   clc
-   rts
 @error:
-   sec
    rts
 
 gethex4:
@@ -136,7 +116,7 @@ asc2hex:
    adc   #$09           ; 'A' = $41 + 9 = $4A
 :
    and   #$0f
-   clc
+   ;clc
    rts
 
 @fail:

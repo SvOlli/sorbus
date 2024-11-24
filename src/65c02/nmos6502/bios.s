@@ -69,16 +69,33 @@ chrin:
    clc
    rts
 
-
 IRQCHECK:
-   sta   TRAP
+   sta   BRK_SA         ; let's figure out the source of the IRQ
+   pla                  ; get processor status from stack
+   pha                  ; and put it back
+   and   #$10           ; check for BRK bit
+   bne   @isbrk
+   lda   BRK_SA         ; restore saved accumulator
+   jmp   (UVNBI)        ; user vector for non-BRK IRQ ($DF7C)
+@isbrk:
+   jmp   (UVBRK)        ; user vector for BRK IRQ ($DF7E)
+
+bankrti:
+   ; this version is stripped down -> no bank restored, would break NMOS 6502
+   php
+   ldy   BRK_SY         ; get stored Y
+   pla
+   sta   BRK_SY         ; use stored Y now for storing P
+   ldx   BRK_SX         ; get stored X
+   pla                  ; drop old P from stack
+   lda   BRK_SY         ; get P from store
+   pha                  ; put it on the stack, so flags can be returned
+   lda   BRK_SA         ; get stored accumulator
    rti                  ; return to calling code
+_biosend:
 
-.out "   =================================="
-.out .sprintf( "   NMOS BIOS size: $%04x ($%04x free)", * - BIOS, $FA - (* - BIOS) )
-.out "   =================================="
-
-.segment "VECTORS"
+.segment "FIXEND"
+_fixstart:
 NMI:
    jmp   (UVNMI)        ; user vector for NMI ($DF7A)
 IRQ:
@@ -88,11 +105,20 @@ RESET:
    lda   #$01
    sta   BANK           ; set banking to first ROM bank (kernel)
    jmp   reset          ; jump to reset routine
+_fixend:
 
+.segment "VECTORS"
+_vectors:
    .word NMI
    .word RESET
    .word IRQ
 
-.assert  CHRIN  = _chrin,  error, "CHRIN at wrong address"
-.assert  CHROUT = _chrout, error, "CHROUT at wrong address"
-.assert  PRINT  = _print,  error, "PRINT at wrong address"
+_biossize = (_biosend-BIOS) + (_fixend-_fixstart)
+.out "   ============================="
+.out .sprintf( "   BIOS size: $%04x ($%04x free)", _biossize, $FA - (_biossize) )
+.out "   ============================="
+
+.assert  CHRIN   = _chrin,   error, "CHRIN at wrong address"
+.assert  CHROUT  = _chrout,  error, "CHROUT at wrong address"
+.assert  PRINT   = _print,   error, "PRINT at wrong address"
+.assert  _fixend = _vectors, error, "FIXEND segment not at end of memory"

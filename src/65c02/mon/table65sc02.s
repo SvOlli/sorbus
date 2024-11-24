@@ -11,19 +11,16 @@
 ;******************************************************************************
 ;*                                                                            *
 ;*  Apple //c                                                                 *
-;*  Video Firmware and                                                        *
 ;*  Monitor ROM Source                                                        *
 ;*                                                                            *
-;*  COPYRIGHT 1977-1983 BY                                                    *
-;*  APPLE COMPUTER, INC.                                                      *
+;*  Copyright 1977-1983 by Apple Computer, Inc.                               *
+;*  All Rights Reserved                                                       *
 ;*                                                                            *
-;*  ALL RIGHTS RESERVED                                                       *
-;*                                                                            *
-;*  S. WOZNIAK           1977                                                 *
-;*  A. BAUM              1977                                                 *
-;*  JOHN A           NOV 1978                                                 *
-;*  R. AURICCHIO     SEP 1982                                                 *
-;*  E. BEERNINK          1983                                                 *
+;*  S. Wozniak           1977                                                 *
+;*  A. Baum              1977                                                 *
+;*  John A           NOV 1978                                                 *
+;*  R. Auricchio     SEP 1982                                                 *
+;*  E. Beernink          1983                                                 *
 ;*                                                                            *
 ;******************************************************************************
 ;* however those routines were heavily modified to fit the Sorbus Computer    *

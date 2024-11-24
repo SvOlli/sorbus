@@ -6,26 +6,20 @@
 .export     CHAR2
 
 ;******************************************************************************
-;* the routines and data used in this file are based upon:                    *
+;* the data used in this file are based upon:                                 *
 ;******************************************************************************
 ;*                                                                            *
-;*  Apple //c                                                                 *
-;*  Video Firmware and                                                        *
-;*  Monitor ROM Source                                                        *
+;*  Apple II                                                                  *
+;*  System Monitor                                                            *
 ;*                                                                            *
-;*  COPYRIGHT 1977-1983 BY                                                    *
-;*  APPLE COMPUTER, INC.                                                      *
+;*  Copyright 1977 by Apple Computer, Inc.                                    *
+;*  All Rights Reserved                                                       *
 ;*                                                                            *
-;*  ALL RIGHTS RESERVED                                                       *
-;*                                                                            *
-;*  S. WOZNIAK           1977                                                 *
-;*  A. BAUM              1977                                                 *
-;*  JOHN A           NOV 1978                                                 *
-;*  R. AURICCHIO     SEP 1982                                                 *
-;*  E. BEERNINK          1983                                                 *
+;*  S. Wozniak                                                                *
+;*  A. Baum                                                                   *
 ;*                                                                            *
 ;******************************************************************************
-;* however those routines were heavily modified to fit the Sorbus Computer    *
+;* however the data was significantly modified to fit the Sorbus Computer     *
 ;******************************************************************************
 
 .ifp02
@@ -109,110 +103,102 @@ MNEM:
    .word $23A2             ; $3E:"CMP"
    .word $A0C8             ; $3F:"SBC"
 
-;******************************************************************************
-; FMT1 BYTES:    XXXXXXY0 INSTRS
-; IF Y=0         THEN RIGHT HALF BYTE
-; IF Y=1         THEN LEFT HALF BYTE
-;                   (X=INDEX)
-;
 FMT1:
-   .byte $0F               ; $xF=BRK without argument (makes more sense on NMOS)
-   .byte $22
-   .byte $FF
-   .byte $33
-   .byte $CB
-   .byte $62
-   .byte $FF
-   .byte $73
+   .byte $04
+   .byte $20
+   .byte $54
+   .byte $30
+   .byte $0d
+   .byte $80
+   .byte $04
+   .byte $90
    .byte $03
    .byte $22
-   .byte $FF
+   .byte $54
    .byte $33
-   .byte $CB
-   .byte $66
-   .byte $FF
-   .byte $77
-   .byte $0F
+   .byte $0d
+   .byte $80
+   .byte $04
+   .byte $90
+   .byte $04
    .byte $20
-   .byte $FF
+   .byte $54
    .byte $33
-   .byte $CB
-   .byte $60
-   .byte $FF
-   .byte $70
-   .byte $0F
+   .byte $0d
+   .byte $80
+   .byte $04
+   .byte $90
+   .byte $04
+   .byte $20
+   .byte $54
+   .byte $3b
+   .byte $0d
+   .byte $80
+   .byte $04
+   .byte $90
+   .byte $00
    .byte $22
-   .byte $FF
-   .byte $39
-   .byte $CB
-   .byte $66
-   .byte $FF
-   .byte $7D
-   .byte $0B
-   .byte $22
-   .byte $FF
+   .byte $44
    .byte $33
-   .byte $CB
-   .byte $A6
-   .byte $FF
-   .byte $73
+   .byte $0d
+   .byte $c8
+   .byte $44
+   .byte $00
    .byte $11
    .byte $22
-   .byte $FF
+   .byte $44
    .byte $33
-   .byte $CB
-   .byte $A6
-   .byte $FF
-   .byte $87
+   .byte $0d
+   .byte $c8
+   .byte $44
+   .byte $a9
    .byte $01
    .byte $22
-   .byte $FF
+   .byte $44
    .byte $33
-   .byte $CB
-   .byte $60
-   .byte $FF
-   .byte $70
+   .byte $0d
+   .byte $80
+   .byte $04
+   .byte $90
    .byte $01
    .byte $22
-   .byte $FF
+   .byte $44
    .byte $33
-   .byte $CB
-   .byte $60
-   .byte $FF
-   .byte $70
-   .byte $24
+   .byte $0d
+   .byte $80
+   .byte $04
+   .byte $90
+   .byte $26
    .byte $31
-   .byte $65
-   .byte $78
-; ZZXXXY01 INSTR'S
+   .byte $87
+   .byte $9a
+; ZZXXXY01 instr's
 FMT2:
-   .byte $00               ; $00: ERR
-   .byte $21               ; $01: #IMM
-   .byte $81               ; $02: Z-PAGE
-   .byte $82               ; $03: ABS
-   .byte $59               ; $04: (ZPAG,X)
-   .byte $4D               ; $05: (ZPAG),Y
-   .byte $91               ; $06: ZPAG,X
-   .byte $92               ; $07: ABS,X
-   .byte $86               ; $08: ABS,Y
-   .byte $4A               ; $09: (ABS)
-   .byte $85               ; $0a: ZPAG,Y
-   .byte $9D               ; $0b: RELATIVE
-   .byte $49               ; $0c: (ZPAG)      (new)
-   .byte $5A               ; $0d: (ABS,X)     (new)
-;
-CHAR2:   ; table had originally bit 7 set on all non-zero values
-   .byte $59               ;'Y'
-   .byte $00               ; $0f: implied (of FMT2)
-   .byte $58               ;'X'
-   .byte $24               ;'$'
-   .byte $24               ;'$'
+   .byte $00             ;err
+   .byte $21             ;imm
+   .byte $81             ;z-page
+   .byte $82             ;abs
+   .byte $00             ;implied
+   .byte $00             ;accumulator
+   .byte $59             ;(zpag,x)
+   .byte $4d             ;(zpag),y
+   .byte $91             ;zpag,x
+   .byte $92             ;abs,x
+   .byte $86             ;abs,y
+   .byte $4a             ;(abs)
+   .byte $85             ;zpag,y
+   .byte $9d             ;relative
+CHAR1:
+   .byte ","
+   .byte ")"
+   .byte ","
+   .byte "#"
+   .byte "("
+   .byte "$"
+CHAR2:
+   .byte "Y"
    .byte $00
-;
-CHAR1:   ; table had originally bit 7 set on all values
-   .byte $2C               ;','
-   .byte $29               ;')'
-   .byte $2C               ;','
-   .byte $23               ;'#'
-   .byte $28               ;'('
-   .byte $24               ;'$'
+   .byte "X"
+   .byte "$"
+   .byte "$"
+   .byte $00

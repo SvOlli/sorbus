@@ -30,6 +30,9 @@ PRIMM    := PRINT
 ; non-API addresses required for BIOS <-> kernel calls
 .global  BIOS
 .global  IRQCHECK
+.global  bankrti        ; used in kernel and mon only, to jump to another bank
+                        ; - target address needs to be on the stack
+                        ; - also dummy processor status, like BRK
 .global  brkjump        ; kernel only, doesn't matter in other banks
 .global  reset          ; kernel only, doesn't matter in other banks
 
@@ -56,7 +59,9 @@ PRIMM    := PRINT
 .endif
 
 ; will jump using vector UVBRK ($DF78/$DF79)
-; default configuration is trap
+; will also be triggered by any undefined BRK
+; (for own extensions, interrupts >=$80 are reserved)
+; default configuration is system monitor
 ; in/out: depends on user implementation
 .define INTUSER   $00
 
@@ -190,3 +195,7 @@ PRIMM    := PRINT
 ; Y=offset ($00-$03)
 ;   adding $04 also writes the decimal parts to following page
 .define GENSINE   $0D
+
+; jump into system monitor
+; this is also configured as the default for INTUSER
+.define MONITOR   $0E

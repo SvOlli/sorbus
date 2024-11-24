@@ -22,3 +22,9 @@
 .global  inputline
 .global  ramio
 .global  ramio_cmd
+
+; entry points for the monitor
+.global  mon_init       ; called from reset menu / clean init
+.global  mon_irq        ; called via IRQ (either UVNBI or raw on NMOS)
+.global  mon_nmi        ; called via NMI
+.global  mon_brk        ; called via BRK handler (UVBRK or int MON)

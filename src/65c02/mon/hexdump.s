@@ -1,4 +1,7 @@
 
+.include "../native_bios.inc"
+.include "../native.inc"
+
 .export     hexenter
 .export     hexupdown
 .export     memorydump
@@ -11,21 +14,18 @@
 .export     inbufsp
 .export     inbufa
 
-.import     CHROUT
-.import     PRINT
 .import     asc2hex
 .import     getaddr
 .import     getbyte
 .import     getfirstnonspace
 .import     prtsp
+.import     prterr
 
 .import     INBUF
-.import     TRAP
 .importzp   MODE
 .importzp   ADDR0
 .importzp   ADDR1
 .importzp   ADDR2
-.importzp   PSAVE
 
 
 .segment "CODE"
@@ -199,12 +199,11 @@ hexenter:
    bcs   @fail
    sta   (ADDR0),y
    iny
-   bne   :-
-
+   bne   :-             ; will always branch
 @done:
-   clc
-@fail:
    rts
+@fail:
+   jmp   prterr
 
 hexupdown:
    sty   PSAVE          ; PSAVE = $c1 (up), $c2 (down)
@@ -234,7 +233,7 @@ hexupdown:
    bcs   :+
    dec   ADDR1+1
 :
-   
+
 @updownsetup:
    ldx   #$00
 

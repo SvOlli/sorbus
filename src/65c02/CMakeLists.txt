@@ -117,6 +117,15 @@ add_executable(native_kernel
    native_rom/lineinput.s
    native_rom/functions.s
    native_rom/bios.s
+
+   mon/main.s
+   mon/asciihex.s
+   mon/assembler.s
+   mon/disassembler.s
+   mon/hexdump.s
+   mon/papertape.s
+   mon/registers.s
+   mon/table65sc02.s
    )
 target_compile_options(native_kernel
    PUBLIC --cpu 65sc02
@@ -200,6 +209,11 @@ add_executable(bcdcheck
    )
 target_type(bcdcheck sx4)
 
+add_executable(brk-test
+   sx4/brk-test.s
+   )
+target_type(brk-test sx4)
+
 add_executable(int-test
    sx4/int-test.s
    )
@@ -220,22 +234,15 @@ add_executable(memcheck
    )
 target_type(memcheck sx4)
 
-add_executable(mon
-   mon/main.s
-   mon/asciihex.s
-   mon/assembler.s
-   mon/disassembler.s
-   mon/hexdump.s
-   mon/papertape.s
-   mon/registers.s
-   mon/table65sc02.s
-   )
-target_type(mon sx4)
-
 add_executable(sx4speed
    sx4/speed.s
    )
 target_type(sx4speed sx4)
+
+add_executable(opcodes
+   sx4/opcodes.s
+   )
+target_type(opcodes sx4)
 
 add_executable(wozmon2c
    sx4/wozmon2c.s

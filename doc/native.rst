@@ -205,6 +205,21 @@ Variables Used By Kernel ($DF2C-$DF2F)
 
 This are just variables used during handling an interrupt service call
 
+Variables Used By System Monitor ($DF30-$DF3F)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This area of I/O is just used as conventional RAM to store data away from
+the area used by conventional programs.
+
+-  $DF30: saved PC lo
+-  $DF31: saved PC hi
+-  $DF32: bank
+-  $DF33: accumulator
+-  $DF34: X index register
+-  $DF35: Y index register
+-  $DF36: stack pointer
+-  $DF37: processor status
+
 Internal Drive ($DF70-$DF77)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -214,15 +229,15 @@ LBA: block index, allowed $0000-$7FFF
      (4MB for OS, additional blocks not used by OS)
 DMA memory: allowed $0004-$CF80, $DF80-$FF80 for start address
 
-- base address: $DF70
-- base address + $0: LBA low
-- base address + $1: LBA high
-- base address + $2: DMA memory low
-- base address + $3: DMA memory high
-- base address + $4: (S) read sector (strobe, adjusts DMA memory and LBA)
-- base address + $5: (S) write sector (strobe, also adjusts)
-- base address + $6: (unused)
-- base address + $7: (S) flash discard
+-  base address: $DF70
+-  base address + $0: LBA low
+-  base address + $1: LBA high
+-  base address + $2: DMA memory low
+-  base address + $3: DMA memory high
+-  base address + $4: (S) read sector (strobe, adjusts DMA memory and LBA)
+-  base address + $5: (S) write sector (strobe, also adjusts)
+-  base address + $6: (unused)
+-  base address + $7: (S) flash discard
 
 Each transfer stops CPU until transfer is completed. Reading from strobe
 registers return result of last access. (Bit 7 set indicates error.)

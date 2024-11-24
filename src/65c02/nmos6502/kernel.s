@@ -14,8 +14,6 @@
 .export     prhex8
 .export     prhex8s
 
-.import     inthandler
-
 ESC      := $1b
 VT_LEFT  := 'D'
 VT_RIGHT := 'C'
@@ -28,23 +26,6 @@ reset:
    .byte "SBC23"
 
    jmp   getkeytest
-
-knownids:
-   .byte $00,$01,$02,$06,$0E,$12,$21
-cpunames:
-   .byte "??",0,0
-   .byte "02",0,0
-   .byte "SC02"
-   .byte "C02",0
-   .byte "CE02"
-   .byte "816",0
-   .byte "65RA"
-
-vectab:
-   .word $0000          ; UVBRK: (unused) IRQ handler dispatches BRK
-   .word inthandler     ; UVNMI: hardware NMI handler
-   .word $0000          ; UVNBI: (unused) IRQ handler dispatches non-BRK
-   .word inthandler     ; UVIRQ: hardware IRQ handler
 
 start:
    cld
@@ -114,7 +95,7 @@ start:
 
    lda   #$0a           ; start WozMon port
    jsr   CHROUT
-   jmp   mon
+   jmp   mon_init
 
 chrinuc:
    ; wait for character from UART and make it uppercase
@@ -166,3 +147,22 @@ getkeytest:
    lda   #' '
    jsr   CHROUT
    jmp   getkeytest
+
+.segment "DATA"
+
+knownids:
+   .byte $00,$01,$02,$06,$0E,$12,$21
+cpunames:
+   .byte "??",0,0
+   .byte "02",0,0
+   .byte "SC02"
+   .byte "C02",0
+   .byte "CE02"
+   .byte "816",0
+   .byte "02RA"
+
+vectab:
+   .word mon_brk        ; UVBRK: IRQ handler dispatches BRK (NO argument)
+   .word mon_nmi        ; UVNMI: hardware NMI handler
+   .word mon_irq        ; UVNBI: IRQ handler dispatches non-BRK
+   .word IRQCHECK       ; UVIRQ: hardware IRQ handler

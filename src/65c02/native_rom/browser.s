@@ -24,9 +24,10 @@ OLDFILE     := FNBUFFER+$10
 IOBUFFER    := $DF80
 
 ; TODO
-; - copy
-; - type
-; - hexdump
+; [ ] check copy
+; [ ] load BASIC code
+; [ ] type
+; [ ] hexdump
 
    jmp   (@jmptab,x)
 
@@ -239,11 +240,7 @@ init:
    lda   #$0a           ; use application partition to start
    sta   user
 
-   lda   #$fe           ; set cursor to max bottom right
-   tax
-   ldy   #VT100_CPOS_SET
-   int   VT100
-   ldy   #VT100_CPOS_GET
+   ldy   #VT100_SCRN_SIZ
    int   VT100          ; now get cursor position to get screen size
                         ; -> X: columns of screen
                         ; -> A: rows of screen
@@ -254,6 +251,7 @@ init:
    bcs   :+
 
 @toosmall:
+   sta   TRAP
    jsr   PRINT
    .byte " Screen needs to be at least 72x22",0
    jmp   ($fffc)

@@ -1,12 +1,16 @@
 
+.include "../native_bios.inc"
+
 .export     papertape
 
-.import     CHROUT
 .import     gethex8
+.import     prterr
 
 .importzp   MODE
 .importzp   ADDR0
 .importzp   ADDR1
+
+.import     INBUF
 
 
 .segment "CODE"
@@ -28,7 +32,11 @@ papertape:
    beq   @okay          ; end marker ";00" (no data) clears error flag
 
    bit   MODE           ; stop papertape access after error
-   bmi   @error          ; until any successful command
+   bpl   :+             ; until any successful command
+
+   ldx   #$02
+   bne   @error
+:
 
    sta   MODE           ; use MODE for counter, will be cleared at end
    sta   ADDR0+0        ; init checksum
@@ -65,13 +73,18 @@ papertape:
 
 @okay:
    lda   #';'
-   bne   @setmode
-
-@error:
-   lda   #'?'
-   jsr   CHROUT
-
-   lda   #';' + $80     ; $80 indicates error
-@setmode:
    sta   MODE
    rts
+
+@error:
+   lda   #';' + $80     ; $80 indicates error
+   sta   MODE
+   ; typically a false error keeps INBUF to correct typo -> not here!
+.ifp02
+   lda   #$00
+   sta   INBUF
+.else
+   stz   INBUF
+.endif
+   dex
+   jmp   prterr
