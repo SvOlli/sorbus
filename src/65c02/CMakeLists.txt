@@ -217,6 +217,11 @@ add_executable(brk-test
    )
 target_type(brk-test sx4)
 
+add_executable(cpmfsck
+   sx4/cpmfsck.s
+   )
+target_type(cpmfsck sx4)
+
 add_executable(int-test
    sx4/int-test.s
    )

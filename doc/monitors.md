@@ -45,6 +45,22 @@ go (`G`) command, the data will be written back to those registers. The
 tilde (`~`) just denotes that the following line contains registers. The
 greater-than-sign (`>`) is the entry prompt.
 
+The line input is capable of minimal command line editing
+
+| Key       | Function                                |
+| --------- | --------------------------------------- |
+| Home      | go to start of input                    |
+| Ctrl+A    | go to start of input                    |
+| End       | go to end of input                      |
+| Ctrl+E    | go to end of input                      |
+| Backspace | delete character left of cursor         |
+| Delete    | delete character under the cursor       |
+| Ctrl+D    | delete character under the cursor       |
+| Ctrl+K    | delete everything right from the cursor |
+| Ctrl+C    | cancel input                            |
+
+(This is a kernel function that also works with OSI BASIC for example.)
+
 These commands supported commands are:
 
 | Command | Function                                                          |
@@ -62,6 +78,75 @@ These commands supported commands are:
 | L       | load file from CP/M filesystem (not available on NMOS version)    |
 | S       | save file to CP/M filesystem (not available on NMOS version)      |
 | $       | show directory of CP/M filesystem (not available on NMOS version) |
+
+Command examples:
+
+Dumping memory:
+```
+>M 0400 0480
+>m 0400 0480
+>m04000480
+>m 400 480
+```
+Those command all are equivalent and show the memory from 0400 to 047f:
+```
+ :0400  A2 00 A0 00 B9 31 04 9D  00 02 C8 C0 0B 90 02 A0  .....1..........
+ :0410  00 E8 D0 F0 A9 E2 20 03  FF A9 94 20 03 FF AE 02  ...... .... ....
+ :0420  DF BD 00 02 20 03 FF 20  00 FF C9 03 D0 E6 6C FC  .... .. ......l.
+ :0430  FF 80 82 8C 90 94 98 9C  A4 AC B4 BC 00 00 00 00  ................
+ :0440  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+ :0450  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+ :0460  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+ :0470  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+```
+So spaces are optional as long as you use 4 digits for addresses and 2 digits
+for data. After running this you can scroll up/down through memory by
+pressing up/down on the keyboard:
+```
+>:0470 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+```
+ASCII output is missing here. Memory can be edited here.
+
+Assembling:
+```
+>a 0400 jmp (fffc)
+```
+It will turn to this for a successful assembly:
+```
+ > 0400   6C FC FF    JMP   ($FFFC)
+>A 0403               _  <-- cursor
+```
+See how the assembler has already prepared the next line for entering.
+
+Block Read/Write:
+```
+>br 0040 0400
+>br 40 400
+```
+Will read a 128 bytes block from the internal drive to memory. In this
+case the first sector of the second bootblock containing the NMOS 6502
+toolkit. This internal drive has a capacity of 4MB in 32768 sectors from
+$0000 to $7fff.
+
+CP/M Filesystem Load/Save:
+```
+>la asmprint.sx4 0400
+>l a asmprint.sx4 0400
+```
+Loads the file "asmprint.sx4" to memory location $0400 from the user-id
+$A (or 10 decimal). For save you also need to add an end address. This is
+in "Commodore Format", so "0400 0800" saves the memory from $0400 to $07ff.
+Note that the filesystem implementation always works on full sectors, so
+even a save like "0400 0401" will only save a single byte (also noted as
+this in the directory), it will actually save (and load) the area from
+$0400 to $047f.
+
+Directory:
+```
+$A
+```
+Will show contents of the directory of the user partition $A.
+
 
 Differences between 65SC02 in ROM and NMOS 6502 toolkit versions
 
