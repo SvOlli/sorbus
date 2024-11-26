@@ -35,6 +35,16 @@ vt100:
    ldy   #VT100_CPOS_GET   ; step 3: write cursor position to return values
    jsr   vt100
    ldy   #VT100_CPOS_RST   ; step 4: restore cursor position
+   ; slip through
+:
+   cpy   #VT100_SCRN_CL0
+   bne   :+
+   ldy   #VT100_SCRN_CLR   ; step 1: clear screen
+   jsr   vt100
+   lda   #$01
+   tax
+   ldy   #VT100_CPOS_SET   ; step 2: set cursor to top left position
+   ; slip through
 :
    pha
    lda   #$44           ; save page $0200

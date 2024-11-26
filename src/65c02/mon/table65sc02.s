@@ -204,7 +204,7 @@ FMT1:
    .byte $31
    .byte $65
    .byte $78
-; ZZXXXY01 INSTR'S
+; ZZXXXY01 instr's
 FMT2:
    .byte $00               ; $00: ERR
    .byte $21               ; $01: #IMM
@@ -291,6 +291,6 @@ INDX:
    .byte $40               ;STZ ABS
    .byte $40               ;STZ ABS,X
    .byte $3D               ;LDA (ZPAG)
-   .byte $3E               ;CMP (ZPAG) ;??? (the unknown opcode)
+   .byte $3E               ;CMP (ZPAG)
    .byte $3F               ;SBC (ZPAG)
    .byte $44               ;???

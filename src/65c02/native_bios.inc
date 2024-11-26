@@ -172,6 +172,7 @@ PRIMM    := PRINT
 
 .define VT100_CPOS_SOL $FE ; combined functions CPOS_*: goto start of line
 .define VT100_SCRN_SIZ $FF ; combined functions CPOS_*: get size of screen
+.define VT100_SCRN_CL0 $FD ; combined functions SCRN_CLR: and going to top left
 
 ; copy the BIOS ($FF00-$FFFF) from ROM to RAM, so $E000-$FFFF can be banked
 ; to RAM without losing the functionality of the kernel

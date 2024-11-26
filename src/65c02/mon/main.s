@@ -187,6 +187,7 @@ prtxsp:
    jsr   prtsp
    dex
    bne   :-
+empty:
    rts
 
 getfirstnonspace:
@@ -273,11 +274,12 @@ handleenter:
    rts
 
 @cmds:
-   .byte ":;~ABDGMR"
+   .byte 0,":;~ABDGMR"
 .if LOADSAVE
    .byte "$LS"
 .endif
 @funcs:
+   .word empty-1        ; $00
    .word hexenter-1     ; :
    .word papertape-1    ; ;
    .word regedit-1      ; ~

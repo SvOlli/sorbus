@@ -9,7 +9,6 @@
 .import     getaddr
 .import     prthex8s
 .import     prthex8
-.import     newopcode
 .import     prt3sp
 .import     prtxsp
 
@@ -144,6 +143,7 @@ decodeopcode:
    ; no need for a 65c02 custom subroutine
    tya
 .else
+.import     newopcode
    jsr   newopcode      ; get index for new opcodes
    beq   @foundnew      ; found a new op (or no op)
 .endif

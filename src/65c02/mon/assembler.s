@@ -25,6 +25,7 @@
 .importzp   MODE
 .importzp   FORMAT
 .importzp   LENGTH
+.importzp   TMP8
 
 .import     INBUF
 
@@ -67,15 +68,27 @@ YSAV     = BRK_SY
 ; --> A1H   = ADDR0-1 (must be byte before, MODE)
 .assert A1H = ADDR0-1, error, "A1H must be followed by ADDR0 in memory"
 
+; this wrapper is getting on my nerves, I have to check and doublecheck
+; just to make sure it provides what the rest requires
 getaddr1:
    lda   INBUF,x
-   beq   :+
+   beq   @fail
    jsr   getaddr
-   bcs   :+
+   ; this whole checking will be obsoleted by checking #nibbles
+;   bcc   @ok
+;   cmp   #')'           ; could be (zp),y
+;   beq   @check
+;   cmp   #','+1         ; could be zp,x
+;   bne   @fail
+;@check:
+   lda   TMP8
+   cmp   #$04           ; check if any digit was processed
+   bcs   @fail
+@ok:
    inx                  ; compensate GETNUM
    ldy   #$01
    rts
-:
+@fail:
    lda   #$00
    sta   ADDR0+0
    sta   ADDR0+1

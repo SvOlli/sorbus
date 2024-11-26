@@ -45,7 +45,7 @@ txt_brk:
 .ifp02
    .byte "BRK",0
 .else
-   .byte "BRK $",0
+   .byte "BRK #$",0
 .endif
 txt_init:
 .ifp02
@@ -294,8 +294,13 @@ regedit:
 
 go:
    ; check if there is an address as parameter
+   jsr   skipspace
+   tay                  ; check if end of line
+   beq   @noarg
    jsr   getaddr
-   bcs   @noarg
+   bcc   :+
+   jmp   prterr
+:
    sta   R_PC+0
    sty   R_PC+1
 @noarg:

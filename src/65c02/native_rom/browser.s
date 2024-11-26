@@ -252,16 +252,12 @@ init:
    bcs   :+
 
 @toosmall:
-   sta   TRAP
    jsr   PRINT
    .byte " Screen needs to be at least 72x22",0
    jmp   ($fffc)
 
 :
-   lda   #$01
-   jsr   setline
-
-   ldy   #VT100_SCRN_CLR
+   ldy   #VT100_SCRN_CL0
    int   VT100
 
    jsr   PRINT
