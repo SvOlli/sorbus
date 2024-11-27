@@ -2,6 +2,8 @@
 .include "../native.inc"
 .include "../native_bios.inc"
 
+; A testsuite for different interrupt service routines
+
 TMPVEC = $fe
 
 SIN_XR = $fc
@@ -36,13 +38,17 @@ start:
    .byte 10,"d) $0c: line input (enter)"
    .byte 10,"e) $0c: line input (edit)"
    .byte 10,"f) $0d: generate sine"
-   .byte 10,"`) quit"
+   .byte 10,"Ctrl+C) quit"
    .byte 10,0
 
 menuloop:
    jsr   CHRIN
+   cmp   #$03
+   bne   :+
+   jmp   ($FFFC)
+:
    sec
-   sbc   #'`'
+   sbc   #'a'
    cmp   #<(jmpend-jmptab)/2
    bcs   menuloop
    asl
@@ -58,7 +64,6 @@ done:
    jmp   start
 
 jmptab:
-   .word quit
    .word user
    .word dir
    .word vt100
@@ -285,9 +290,6 @@ lineinput:
    jsr   hexdumppage
 
    jmp   done
-
-quit:
-   jmp   ($FFFC)
 
 hexdumppage:
    stz   TMPVEC+0

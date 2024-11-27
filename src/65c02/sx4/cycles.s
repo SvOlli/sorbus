@@ -2,6 +2,8 @@
 .include "../native.inc"
 .include "../native_bios.inc"
 
+; subroutines to count and evaluate processor cycles
+
 .export savebuffer, diffbuffer, printbuffer
 
 savebuffer:

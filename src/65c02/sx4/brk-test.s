@@ -2,6 +2,9 @@
 .include "../native_bios.inc"
 .include "../native.inc"
 
+; short program that will allow to follow the flow of the
+; user BRK vector to determine behaviour details and speed
+
 start:
    stz   BANK
    lda   UVBRK+0

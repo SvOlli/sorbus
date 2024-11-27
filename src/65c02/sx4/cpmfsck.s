@@ -2,6 +2,9 @@
 .include "../native_bios.inc"
 .include "../native.inc"
 
+; A program for verifying and displaying data structures of the
+; CP/M filesystem stored on the internal drive
+
 .define DEBUG 0
 
 dirmem   := $1000

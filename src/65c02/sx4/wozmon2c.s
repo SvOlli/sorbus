@@ -435,7 +435,7 @@ NXTMN:
    bpl   NXTCH
    ldx   #5                ;index into address mode tables
    jsr   AMOD1             ;do this elsewhere
-.if 0
+.if CONFIG_OPCODE_DEBUG
    jsr   PRINT
    .byte 10,"ID:",0
    lda   A4L

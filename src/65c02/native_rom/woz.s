@@ -12,6 +12,8 @@
 ; - replaced code for I/O with Sorbus kernel calls
 ; - adapted some of the code from 6502 to 65C02 assembler
 ;-------------------------------------------------------------------------
+; Code needs to reside in bank 1, since it's run from NMOS 6502 as well
+;-------------------------------------------------------------------------
 
 .include "../native_bios.inc"
 .include "../native_kernel.inc"

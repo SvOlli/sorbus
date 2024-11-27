@@ -1,6 +1,9 @@
 
 .include "../native_bios.inc"
 
+; A very small program that just prints out every key received
+; as hex values. Sequences are printed as individual keys
+
 main:
    jsr   CHRIN
    bcs   main

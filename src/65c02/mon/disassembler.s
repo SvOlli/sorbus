@@ -76,14 +76,12 @@ disassemble:
 .ifp02
    tya
    pha
-.else
-   phy
-.endif
    jsr   prtinst1
-.ifp02
    pla
    tay
 .else
+   phy
+   jsr   prtinst1
    ply
 .endif
    dey
@@ -198,8 +196,12 @@ prtinst:
    cpy   #$04
    bcc   @skipoutput
 
+.ifp02
    pla                  ;RECOVER MNEMONIC INDEX
    tay
+.else
+   ply                  ; recover mnemonic index
+.endif
    lda   MNEM+1,y
    sta   LMNEM          ;FETCH 3-CHAR MNEMONIC
    lda   MNEM+0,y       ;  (PACKED INTO 2-BYTES)
@@ -239,7 +241,7 @@ prtinst:
 @pradr4:
    dey
    bmi   @pradr2
-   jsr   prthex8s
+   jsr   prthex8        ; was prthex8s
 @pradr5:
    lda   FORMAT
    cmp   #$E8           ;HANDLE REL ADR MODE

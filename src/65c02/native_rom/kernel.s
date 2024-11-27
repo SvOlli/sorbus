@@ -360,6 +360,8 @@ xinputline:
 :
    jmp   inputline      ; replace this with inputlinecfg, once implemented
 
+
+.segment "DATA"
 vectab:
    .word mon_brk        ; UVBRK: IRQ handler dispatches BRK
    .word mon_nmi        ; UVNMI: hardware NMI handler

@@ -49,6 +49,10 @@
 
 ; replace NULL token with SYS
 .define USE_SYS 1
+; SYS 0 will call monitor
+.define USE_SYS_0 1
+; SYS will use SHADOW_A,X,Y to load/save register
+.define USE_SYS_SHADOW 1
 ; replace custom input routine with Sorbus kernel
 .define USE_LINEINPUT 1
 ; disable line wrapping code
@@ -63,6 +67,10 @@
 .define CONFIG_LIST_LOWERCASE 0
 ; fix bug FRE(0) being negative
 .define USE_FIX_FREE 1
+; allow keep a preloaded program
+; - a magic value needs to be passed on startup
+; - CPMFS_EADDR needs to be set accordingly
+.define USE_PRELOADED 0
 
 .debuginfo +
 
@@ -80,10 +88,10 @@ ZP_START  = $10
 ;ZP_START4 = $75
 
 ;extra ZP variables
-USR             := $000A  ; 3 bytes
-SHADOW_A        := $000D
-SHADOW_X        := $000E
-SHADOW_Y        := $000F
+USR             := $000A   ; 3 bytes
+SHADOW_A        := $000D   ; MON_A ?
+SHADOW_X        := $000E   ; MON_X ?
+SHADOW_Y        := $000F   ; MON_Y ?
 
 ; constants
 STACK_TOP       := $FC
@@ -436,6 +444,11 @@ L4192:
    ldy   #>STROUT
    sta   GOSTROUT+1
    sty   GOSTROUT+2
+.if USE_PRELOADED
+   lda   FILE_LOADED_MAGIC
+   cmp   #FILE_LOADED_MAGIC_ON
+   beq   LOADED
+.endif
    jsr   SCRTCH
 .if USE_RESTART_VECTOR
    lda   #<RESTART
@@ -535,14 +548,15 @@ LOAD:
    jmp   ERROR
 
 @loadok:
+   lda   #<QT_LOADED
+   ldy   #>QT_LOADED
+   jsr   GOSTROUT
+
+LOADED:
    lda   CPM_EADDR+0
    sta   VARTAB+0
    lda   CPM_EADDR+1
    sta   VARTAB+1
-
-   lda   #<QT_LOADED
-   ldy   #>QT_LOADED
-   jsr   GOSTROUT
    jmp   FIX_LINKS
 
 SAVE:
@@ -988,6 +1002,12 @@ L2351:
    jsr   INLIN
    bcc   :+
    ; Ctrl-C pressed, cancel input
+.if 0
+   lda   #'^'
+   jsr   CHROUT
+   lda   #'C'
+   jsr   CHROUT
+.endif
    lda   #$0a
    jsr   CHROUT
    bra   RESTART
@@ -1779,7 +1799,15 @@ RET1:
 SYS:
    jsr   FRMNUM
    jsr   GETADR
-.if 1
+.if USE_SYS_0
+   lda   LINNUM+0
+   ora   LINNUM+1
+   bne   :+
+   int   MONITOR
+   rts
+:
+.endif
+.if USE_SYS_SHADOW
    lda   SHADOW_A
    ldx   SHADOW_X
    ldy   SHADOW_Y

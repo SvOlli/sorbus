@@ -2,6 +2,9 @@
 .include "../native_bios.inc"
 .include "../native.inc"
 
+; A small program that implements printing a maze-like structure.
+; Implementations in C and BASIC exists also.
+
 .define  TABLE $0200
 
 .segment "CODE"

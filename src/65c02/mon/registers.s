@@ -24,6 +24,7 @@
 .importzp   MODE
 .import     INBUF
 
+; don't change order in memory
 R_PC     = MON_PC
 R_BK     = MON_BK
 R_A      = MON_A
@@ -33,9 +34,16 @@ R_SP     = MON_SP
 R_P      = MON_P
 
 .ifp02
-.define REGSTART $01    ; Start regdump at accumulator
+.define CONFIG_SORBUS_BANK       0
+.define CONFIG_BRK_HAS_PARAMETER 0
 .else
+.define CONFIG_SORBUS_BANK       1
+.define CONFIG_BRK_HAS_PARAMETER 1
+.endif
+.if CONFIG_SORBUS_BANK
 .define REGSTART $00    ; Start regdump at bank
+.else
+.define REGSTART $01    ; Start regdump at accumulator
 .endif
 .define NUMREGS <(R_SP-R_BK+1)
 
@@ -71,11 +79,24 @@ mon_brk:
    lda   #<(txt_brk-txt_brk)
    ; R_A is already saved, now save the rest
    sta   MODE           ; save index for source
+   lda   BRK_SB
+   sta   R_BK
    lda   BRK_SA
    sta   R_A
    stx   R_X
    sty   R_Y
-.ifp02
+.if CONFIG_BRK_HAS_PARAMETER
+   ; on CMOS, BRK is implemented via handler using JSR -> remove RTS
+   pla
+   pla
+   pla
+   sta   R_P
+   ; on CMOS, BRK is implemented as 2-byte -> no adjust required
+   pla
+   sta   R_PC+0
+   pla
+   sta   R_PC+1
+.else
    ; on NMOS, BRK is implemented as 1-byte -> adjust return value
    pla
    sta   R_P
@@ -94,17 +115,6 @@ mon_brk:
 @nobrk:
    stx   R_PC+0
    sty   R_PC+1
-.else
-   ; on CMOS, BRK is implemented via handler using JSR -> remove RTS
-   pla
-   pla
-   pla
-   sta   R_P
-   ; on CMOS, BRK is implemented as 2-byte -> no adjust required
-   pla
-   sta   R_PC+0
-   pla
-   sta   R_PC+1
 .endif
    tsx
    stx   R_SP

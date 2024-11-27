@@ -2,6 +2,11 @@
 .include "../native_bios.inc"
 .include "../native.inc"
 
+; this program will write all opcodes from $00 to $ff to memory
+; followed by $EA/nop, so a clean disassembly is possible
+; intended to generate normalized disassemblies from
+; System Monitor
+
 .segment "CODE"
    ldx   #$00
    stx   TMP16+0
@@ -31,8 +36,10 @@
    bne   :-
 
    jsr   PRINT
-   .byte 10,"all opcodes have been written to $1000-$13ff",0
+   .byte 10,"all opcodes have been written to $1000-$13ff"
+   .byte 10,"now run ",$22,"d 1000 1400",$22," to run test",0
 
+   int   MONITOR
    jmp   ($fffc)
 
 writebyte:

@@ -17,7 +17,7 @@
 ; [X] NMOS 6502 toolkit integration
 ; [ ] merge code?
 ; --- release build
-; [ ] read respects bank register
+; [ ] memory read/write respects bank register
 ; [X] (s) cpmfs save
 ; [X] (l) cpmfs load
 ; [ ] use .define FEATURE(s) instead of .ifp02
