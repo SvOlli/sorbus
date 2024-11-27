@@ -75,7 +75,7 @@ uint     buslog_index               = 0;
 uint32_t watchdog_cycles_total      = 0;
 
 uint16_t dhara_flash_size = 0;
-#define DHARA_SYNC_DELAY (20000)
+#define DHARA_SYNC_DELAY (100000)
 
 // identification
 const uint8_t sorbus_id[] = { 'S', 'B', 'C', '2', '3', 1, 1, 0 };

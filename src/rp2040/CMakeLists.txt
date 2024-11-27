@@ -140,6 +140,7 @@ target_link_libraries(native_alpha
    pico_rand
    )
 setup_target(native_alpha)
+#pico_set_binary_type(native_alpha copy_to_ram)
 # firmware for Native core
 add_custom_target(native_firmware ALL
    DEPENDS native_alpha_picotool native_rom

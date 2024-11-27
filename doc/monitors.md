@@ -73,8 +73,8 @@ These commands supported commands are:
 | D       | disassemble                                                       |
 | A       | assemble                                                          |
 | ;       | handle papertape input                                            |
-| BR      | read block from internal drive                                    |
-| BW      | write block to internal drive                                     |
+| BR      | read sector from internal drive                                   |
+| BW      | write sector to internal drive                                    |
 | L       | load file from CP/M filesystem (not available on NMOS version)    |
 | S       | save file to CP/M filesystem (not available on NMOS version)      |
 | $       | show directory of CP/M filesystem (not available on NMOS version) |
@@ -123,10 +123,15 @@ Block Read/Write:
 >br 0040 0400
 >br 40 400
 ```
-Will read a 128 bytes block from the internal drive to memory. In this
+Will read a 128 bytes sector from the internal drive to memory. In this
 case the first sector of the second bootblock containing the NMOS 6502
 toolkit. This internal drive has a capacity of 4MB in 32768 sectors from
 $0000 to $7fff.
+
+Technically we're using sectors of 128 bytes here, not blocks combining
+16 sectors (2048 bytes) to a single block. But the `S` is already assigned
+to "Save". (See below.) Also, the commands `BR` and `BW` were used by the
+monitor of the Action Replay Cartridge as well.
 
 CP/M Filesystem Load/Save:
 ```
@@ -139,7 +144,9 @@ in "Commodore Format", so "0400 0800" saves the memory from $0400 to $07ff.
 Note that the filesystem implementation always works on full sectors, so
 even a save like "0400 0401" will only save a single byte (also noted as
 this in the directory), it will actually save (and load) the area from
-$0400 to $047f.
+$0400 to $047f. Also note, while spaces are typically optional in the
+monitor, to separate the filename from the rest of the input, they are
+essential.
 
 Directory:
 ```
@@ -302,6 +309,35 @@ the `BRK $00` opcode, `RTS` will not work here, like it did in WozMon.
 
 A more detailed documentation is at the start of the
 [TIM source code](../src/65c02/native_rom/tim.s).
+
+
+Loading Software Via Papertape
+------------------------------
+
+Papertape was a common way of getting data into the first microcomputers.
+Typically you set the machine into some kind of receiving mode and then
+switched the input to the papertape. For the machine it was like someone
+was typing in the data really fast.
+
+Format of papertape data is:
+```
+;CCAAAADD[DD..]SSSS
+```
+Every character (except for the semicolon) stands for a hex digit.
+
+| Byte | Function                                                               |
+| ---- | ---------------------------------------------------------------------- |
+| ;    | indication of papertape data                                           |
+| CC   | number of databytes sent later on, 00 indicates end of transmission    |
+| AAAA | address to write to                                                    |
+| DD   | a byte of data, number of bytes must match the number specified as CC  |
+| SSSS | checksum, every byte CC, AA (2 bytes), DD gets added up and must match |
+
+The implementation is in TIM is rather fast. When using 32 bytes chunks
+of data, you can load about 2kB per second. Since the implementation of
+the System Monitor is not processing the data on the fly, but reading it
+first in the command buffer and parsing it later, it will be significantly
+slower.
 
 
 On Meta-Mode
