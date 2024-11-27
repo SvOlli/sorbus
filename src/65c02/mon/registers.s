@@ -10,7 +10,6 @@
 .export     regupdown
 
 .import     prterr
-.import     prthex8
 .import     prtsp
 .import     inbufhex8
 .import     inbufsp
@@ -22,6 +21,7 @@
 .import     skipspace
 
 .importzp   MODE
+.importzp   ADDR1
 .import     INBUF
 
 ; don't change order in memory
@@ -130,6 +130,9 @@ mon_init:
    sta   R_PC,x
    dex
    bpl   :-
+   sta   ADDR1+0
+   lda   R_PC+1
+   sta   ADDR1+1
 
 mon_hello:
    sei                  ; sanitize
@@ -155,7 +158,7 @@ mon_hello:
    pla
    ply
    bne   :+
-   jsr   prthex8
+   jsr   prhex8
 :
 .endif
    jsr   regdump
@@ -185,15 +188,15 @@ regdump:
 .endif
    .byte 10," ~",0
    lda   R_PC+1
-   jsr   prthex8
+   jsr   prhex8
    lda   R_PC+0
-   jsr   prthex8
+   jsr   prhex8
 
    ldx   #REGSTART
 :
    jsr   prtsp
    lda   R_BK,x
-   jsr   prthex8
+   jsr   prhex8
    inx
    cpx   #NUMREGS
    bcc   :-
@@ -270,6 +273,8 @@ regedit:
 
    ldy   #REGSTART
 @regloop:
+   lda   INBUF,x
+   beq   @done
    jsr   getbyte        ; get A,X,Y,SP
    bcs   @error
    sta   R_BK,y

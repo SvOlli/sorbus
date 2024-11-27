@@ -1,13 +1,11 @@
 
 .include "../native_bios.inc"
 .include "../native.inc"
+.include "../native_kernel.inc"
 
 .export     hexenter
 .export     hexupdown
 .export     memorydump
-.export     prthex4
-.export     prthex8
-.export     prthex8s
 .export     inbufhex4
 .export     inbufhex8
 .export     inbufaddr1
@@ -32,7 +30,7 @@
 
 memorydump:
    jsr   getaddr
-   bcs   @next
+   bcs   memorydumpline
    lda   ADDR0+0
    sta   ADDR1+0
    lda   ADDR0+1
@@ -70,26 +68,16 @@ memorydump:
 @done:
    rts
 
-@next:
-   lda   ADDR1+0
-   clc
-   adc   #$10
-   sta   ADDR1+0
-   bcc   :+
-   inc   ADDR1+1
-:
-   ;slip through
-
 memorydumpline:
    jsr   PRINT
    .byte 10," :",0
 
    lda   ADDR1+1
    sta   ADDR2+1
-   jsr   prthex8
+   jsr   prhex8
    lda   ADDR1+0
    sta   ADDR2+0
-   jsr   prthex8
+   jsr   prhex8
    jsr   prtsp
 
    ldy   #$00
@@ -101,7 +89,7 @@ memorydumpline:
    jsr   prtsp
 
    lda   (ADDR1),y
-   jsr   prthex8
+   jsr   prhex8
 
    iny
    cpy   #$10
@@ -124,33 +112,17 @@ memorydumpline:
    iny
    cpy   #$10
    bcc   @asciiloop
+
+   lda   ADDR1+0
+   clc
+   adc   #$10
+   sta   ADDR1+0
+   bcc   :+
+   inc   ADDR1+1
+:
    lda   #':'
    sta   MODE
    rts
-
-prthex8s:
-   pha
-   jsr   prthex8
-   pla
-   rts
-
-prthex8:
-   pha
-   lsr
-   lsr
-   lsr
-   lsr
-   jsr   prthex4
-   pla
-prthex4:
-   and   #$0f
-   ora   #'0'
-   cmp   #':'
-   bcc   :+
-   adc   #$06
-:
-   jmp   CHROUT
-
 
 updownaddr:
    lda   INBUF

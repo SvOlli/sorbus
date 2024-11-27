@@ -15,6 +15,7 @@
 ; [X] BRK handler
 ; [X] native ROM integration
 ; [X] NMOS 6502 toolkit integration
+; [ ] consistent current address pointer for 'm', 'd', set upon init to PC
 ; [ ] merge code?
 ; --- release build
 ; [ ] memory read/write respects bank register
@@ -127,7 +128,6 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 .import     hexenter
 .import     hexupdown
 .import     memorydump
-.import     prthex8
 
 ; from interndrive.s
 .import     blockrw

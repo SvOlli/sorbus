@@ -589,13 +589,15 @@ WRTWO:
 
 RDOC:
    jsr   chrinuc
+   cmp   #$7f           ; del
+   beq   RDOC           ; -> reject
+.if 0
    cmp   #$0D           ; return
    beq   :+             ; -> accept
    cmp   #$20           ; other control character
    bcc   RDOC           ; -> reject
-   cmp   #$7f           ; del
-   beq   RDOC           ; -> reject
 :
+.endif
    jmp   CHROUT
 
 ASCII:

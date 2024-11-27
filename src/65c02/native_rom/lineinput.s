@@ -21,7 +21,6 @@
 
 .export  inputline
 .export  getkey
-.import  uppercase
 
 .define  INPUT_DEBUG 0
 
@@ -365,7 +364,15 @@ getkey:
 @done:
    plp               ; restore carry flag
    bcc   rts0        ; clear -> no uppercase
-   jmp   uppercase
+
+uppercase:
+   cmp   #'a'
+   bcc   :+
+   cmp   #'z'+1
+   bcs   :+
+   and   #$df
+:
+   rts
 
 vtprint:
    pha

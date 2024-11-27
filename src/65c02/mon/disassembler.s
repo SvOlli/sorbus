@@ -1,14 +1,13 @@
 
 .include "../native_bios.inc"
 .include "../native.inc"
+.include "../native_kernel.inc"
 
 .export     disassemble
 .export     decodeopcode
 .export     prtinst
 
 .import     getaddr
-.import     prthex8s
-.import     prthex8
 .import     prt3sp
 .import     prtxsp
 
@@ -30,19 +29,16 @@
 ;******************************************************************************
 ;*                                                                            *
 ;*  Apple //c                                                                 *
-;*  Video Firmware and                                                        *
 ;*  Monitor ROM Source                                                        *
 ;*                                                                            *
-;*  COPYRIGHT 1977-1983 BY                                                    *
-;*  APPLE COMPUTER, INC.                                                      *
+;*  Copyright 1977-1983 by Apple Computer, Inc.                               *
+;*  All Rights Reserved                                                       *
 ;*                                                                            *
-;*  ALL RIGHTS RESERVED                                                       *
-;*                                                                            *
-;*  S. WOZNIAK           1977                                                 *
-;*  A. BAUM              1977                                                 *
-;*  JOHN A           NOV 1978                                                 *
-;*  R. AURICCHIO     SEP 1982                                                 *
-;*  E. BEERNINK          1983                                                 *
+;*  S. Wozniak           1977                                                 *
+;*  A. Baum              1977                                                 *
+;*  John A           NOV 1978                                                 *
+;*  R. Auricchio     SEP 1982                                                 *
+;*  E. Beernink          1983                                                 *
 ;*                                                                            *
 ;******************************************************************************
 ;* however those routines were heavily modified to fit the Sorbus Computer    *
@@ -173,9 +169,9 @@ prtinst:
    .byte 10," > ",0
    ; print address
    lda   ADDR1+1
-   jsr   prthex8
+   jsr   prhex8
    lda   ADDR1+0
-   jsr   prthex8
+   jsr   prhex8
 
    jsr   prt3sp         ;followed by 3 spaces (will set X=$00)
 
@@ -185,7 +181,7 @@ prtinst:
    pha                  ;SAVE MNEMONIC TABLE INDEX
 @top:
    lda   (ADDR1),y
-   jsr   prthex8
+   jsr   prhex8
    ldx   #$01           ;print a single space
 @skipoutput:
    jsr   prtxsp
@@ -241,7 +237,7 @@ prtinst:
 @pradr4:
    dey
    bmi   @pradr2
-   jsr   prthex8        ; was prthex8s
+   jsr   prhex8
 @pradr5:
    lda   FORMAT
    cmp   #$E8           ;HANDLE REL ADR MODE
@@ -254,9 +250,9 @@ prtinst:
    iny
 :
    tya
-   jsr   prthex8
+   jsr   prhex8
    txa                  ;  OF BRANCH AND RETURN
-   jmp   prthex8
+   jmp   prhex8
 
 @pcadj3:
    ldy   ADDR1+1

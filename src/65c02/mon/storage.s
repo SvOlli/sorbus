@@ -4,16 +4,13 @@
 .export     directory
 .export     loadfile
 .export     savefile
-.export     iofailed
-
-;.import     iofailed
 
 .import     getaddr
 .import     gethex4
 .import     skipspace
 .import     prterr
-.import     prthex8
 .import     newenter
+.import     iofailed
 
 .import     INBUF
 .importzp   MODE
@@ -105,22 +102,6 @@ skipspace0:
    pla
    bra   error
 
-printfromto:
-   jsr   PRINT
-   .byte " from ",0
-
-   lda   CPM_SADDR+0
-   ldx   CPM_SADDR+1
-   int   PRHEX16
-
-   jsr   PRINT
-   .byte " to ",0
-
-   lda   CPM_EADDR+0
-   ldx   CPM_EADDR+1
-   int   PRHEX16
-   rts
-
 directory:
    jsr   gethex4
    bcs   error
@@ -136,21 +117,29 @@ loadfile:
    int   CPMLOAD
    jsr   PRINT
    .byte 10,"load",0
-   bcs   iofailed
-   jmp   printfromto
+   bcc   printfromto
+   jmp   iofailed
 
 savefile:
    jsr   parsefilename
    int   CPMSAVE
    jsr   PRINT
    .byte 10,"save",0
-   bcs   iofailed
-   jmp   printfromto
+   bcc   printfromto
+   jmp   iofailed
 
-; redundant
-iofailed:
-   pla
-   pla
+printfromto:
    jsr   PRINT
-   .byte " failed",0
-   jmp   newenter       ; return to newenter instead of loop
+   .byte " from ",0
+
+   lda   CPM_SADDR+0
+   ldx   CPM_SADDR+1
+   int   PRHEX16
+
+   jsr   PRINT
+   .byte " to ",0
+
+   lda   CPM_EADDR+0
+   ldx   CPM_EADDR+1
+   int   PRHEX16
+   rts

@@ -7,6 +7,7 @@
 .global  timstart
 .global  wozstart
 .global  print
+.global  prhex4
 .global  prhex8
 .global  prhex16
 .global  copybios

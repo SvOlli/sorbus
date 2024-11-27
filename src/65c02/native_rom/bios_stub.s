@@ -5,4 +5,4 @@
 ; in bank 1 (kernel), but this stub is for every other bank.
 
 reset    = $e000
-brkjump  = $e19e
+brkjump  = $fff2

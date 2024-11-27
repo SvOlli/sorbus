@@ -3,17 +3,13 @@
 .include "../native.inc"
 
 .export     blockrw
+.export     iofailed
 
 .import     getaddr
 .import     skipspace
 .import     prterr
-.import     prthex8
 .import     newenter
 .import     uppercase
-.ifp02
-.else
-.import     iofailed
-.endif
 
 .importzp   FORMAT
 
@@ -57,17 +53,14 @@ blockrw:
    bne   :+
    jsr   PRINT
    .byte "read",0
-   beq   :++
+   beq   iofailed
 :
    jsr   PRINT
    .byte "write",0
-:
-.ifp02
+
+iofailed:
    pla
    pla
    jsr   PRINT
    .byte " failed",0
    jmp   newenter       ; return to newenter instead of loop
-.else
-   jmp   iofailed
-.endif

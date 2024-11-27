@@ -1,9 +1,7 @@
 
 .include "../native.inc"
-.include "../native_kernel.inc"
-.include "../native_bios.inc"
 
-.define INPUT_DEBUG 0
+.export     gensine
 
 valuei := PSAVE      ; value integer part
 valued := ASAVE      ; value decimal places
@@ -34,6 +32,7 @@ gensine:
    ; save previous values on the stack
 
    stz   ovec+0
+   lda   BRK_SA
    sta   ovec+1
    ldx   #(savend-savest-1)
 :

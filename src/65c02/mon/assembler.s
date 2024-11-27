@@ -7,8 +7,6 @@
 .import     newedit
 
 .import     prtxsp
-.import     prthex8s
-.import     prthex8
 .import     decodeopcode
 .import     prterr
 .import     skipspace
@@ -71,13 +69,7 @@ getaddr1:
    lda   INBUF,x
    beq   @fail
    jsr   getaddr
-   ; this whole checking will be obsoleted by checking #nibbles
-;   bcc   @ok
-;   cmp   #')'           ; could be (zp),y
-;   beq   @check
-;   cmp   #','+1         ; could be zp,x
-;   bne   @fail
-;@check:
+   ; do some very different error checking here
    lda   TMP8
    cmp   #$04           ; check if any digit was processed
    bcs   @fail
@@ -100,7 +92,6 @@ skipspace1:
 assemble:
    jsr   getaddr        ; get addr to assemble to
    bcc   :+
-   ;sta   $DF01
    rts                  ; on error just leave for now
 :
    sta   ADDR1+0        ; getaddr will be used again, save to other

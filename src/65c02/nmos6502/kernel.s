@@ -101,14 +101,7 @@ chrinuc:
    ; wait for character from UART and make it uppercase
    jsr   CHRIN
    bcs   chrinuc
-uppercase:
-   cmp   #'a'
-   bcc   :+
-   cmp   #'z'+1
-   bcs   :+
-   and   #$df
-:
-   rts
+   jmp   uppercase
 
 prhex8s:
    ; print hex byte in A without modifying A (required by WozMon2)

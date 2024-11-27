@@ -3,6 +3,8 @@
 .include "../native_bios.inc"
 .include "../native_cpmfs.inc"
 
+.import     gensine
+
 .segment "CODE"
 
 readp    = $20
@@ -34,6 +36,7 @@ IOBUFFER    := $DF80
 
 @jmptab:
    .word init
+   .word gensine
 
 ; list of chars not allowed in a filename
 ; (space is used for padding at the end)

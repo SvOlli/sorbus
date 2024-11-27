@@ -115,7 +115,6 @@ add_executable(native_kernel
    native_rom/woz.s
    native_rom/vt100.s
    native_rom/lineinput.s
-   native_rom/functions.s
    native_rom/bios.s
 
    mon/main.s
@@ -146,6 +145,7 @@ target_type(native_basic native_kernel)
 
 add_executable(native_tools
    native_rom/browser.s
+   native_rom/gensine.s
    native_rom/bios.s
    native_rom/bios_stub.s
    )

@@ -124,19 +124,12 @@ cmos6502:
    .word boot           ; 2
    .word boot           ; 3
    .word boot           ; 4
-   .word @basic         ; B
-   .word @filebrowser   ; F
+   .word basic          ; B
+   .word filebrowser    ; F
    .word @info          ; I
    .word mon_init       ; M
    .word timstart       ; T
    .word woz            ; W
-@filebrowser:
-   ldx   #$00           ; tools bank starts with jmp ($e003,x)
-   lda   #$02           ; select tools bank
-   .byte $2c
-@basic:
-   lda   #$03           ; select BASIC bank
-   jmp   execrom
 
 @info:
    lda   #$0a
@@ -214,6 +207,16 @@ boota:
 
    jsr   PRINT
    .byte "Go",10,0
+xgensine:
+   ldx   #$02           ; tools bank starts with jmp ($e003,x)
+   .byte $2c
+filebrowser:
+   ldx   #$00           ; tools bank starts with jmp ($e003,x)
+   lda   #$02           ; select tools bank
+   .byte $2c
+basic:
+   lda   #$03           ; select BASIC bank
+   .byte $2c
 execram:
    ; execute loaded boot block in RAM at $E000
    lda   #$00
@@ -262,13 +265,11 @@ copybios:
    rts
 
 brkjump:
-   asl                  ; make it word offset
-   bcs   @overflow      ; sanity check: BRK operand >= $80
-   cmp   #<(@jumptableend - @jumptable)
+   cmp   #<((@jumptableend - @jumptable)/2)
    bcc   @okay          ; sanity check: if BRK operand out of scope
-@overflow:
    lda   #$00           ; reset, user BRK can lda (TMP16) to get BRK operand
 @okay:
+   asl                  ; BRK >=$80 will always be =$00
    tax
    lda   @jumptable+1,x ; get address from jump table
    pha
@@ -285,9 +286,9 @@ brkjump:
    jmp   (UVBRK)
 
 @jumptable:
-   .word @user, chrinuc, chrcfg, prhex8, prhex16       ; $00-$04
-   .word cpmname, cpmload, cpmsave, cpmerase, cpmdir   ; $05-$09
-   .word vt100, copybios, xinputline, gensine, mon_brk ; $0a-$0e
+   .word @user, chrinuc, chrcfg, prhex8, prhex16         ; $00-$04
+   .word cpmname, cpmload, cpmsave, cpmerase, cpmdir     ; $05-$09
+   .word vt100, copybios, xinputline, xgensine, mon_brk  ; $0a-$0e
 @jumptableend:
 
 signature:
@@ -300,15 +301,6 @@ chrinuc:
    bcs   chrinuc
    jsr   uppercase
    sta   BRK_SA         ; when called via BRK, this is required
-   rts
-
-uppercase:
-   cmp   #'a'
-   bcc   :+
-   cmp   #'z'+1
-   bcs   :+
-   and   #$df
-:
    rts
 
 chrcfg:
