@@ -70,7 +70,7 @@ reset:
 
 @no65c02loop:
    jsr   PRINT
-   .byte 13, "NMOS 6502 not supported, key to boot sector 2 ", 0
+   .byte 13, "NMOS 6502 not supported, 2) for NMOS toolkit ", 0
 :
    iny
    bne   :-
@@ -209,7 +209,7 @@ boota:
    .byte "Go",10,0
    beq   execram        ; will be run using NMOS 6502
 
-xgensine:
+b2gensine:
    ldx   #$02           ; tools bank starts with jmp ($e003,x)
    .byte $2c
 filebrowser:
@@ -290,7 +290,7 @@ brkjump:
 @jumptable:
    .word @user, chrinuc, chrcfg, prhex8, prhex16         ; $00-$04
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir     ; $05-$09
-   .word vt100, copybios, xinputline, xgensine, mon_brk  ; $0a-$0e
+   .word vt100, copybios, xinputline, b2gensine, mon_brk ; $0a-$0e
 @jumptableend:
 
 signature:

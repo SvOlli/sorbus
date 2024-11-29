@@ -15,7 +15,7 @@
 ; [X] BRK handler
 ; [X] native ROM integration
 ; [X] NMOS 6502 toolkit integration
-; [ ] consistent current address pointer for 'm', 'd', set upon init to PC
+; [X] consistent current address pointer for 'm', 'd', set upon init to PC
 ; [ ] merge code?
 ; --- release build
 ; [ ] memory read/write respects bank register
@@ -31,8 +31,10 @@
 .define PROMPT       '>'
 .ifp02
 .define LOADSAVE     0
+.define PAPERTAPE    1
 .else
 .define LOADSAVE     1
+.define PAPERTAPE    0
 .endif
 ; TODO: replace in code
 .define HEXPREFIX    ':'
@@ -132,8 +134,10 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 ; from interndrive.s
 .import     blockrw
 
+.if PAPERTAPE
 ; from papertape.s
 .import     papertape
+.endif
 
 ; from registers.s
 .import     go
@@ -274,14 +278,20 @@ handleenter:
    rts
 
 @cmds:
-   .byte 0,":;~ABDGMR"
+   .byte 0,":"
+.if PAPERTAPE
+   .byte ";"
+.endif
+   .byte "~ABDGMR"
 .if LOADSAVE
    .byte "$LS"
 .endif
 @funcs:
    .word empty-1        ; $00
    .word hexenter-1     ; :
+.if PAPERTAPE
    .word papertape-1    ; ;
+.endif
    .word regedit-1      ; ~
    .word assemble-1     ; A
    .word blockrw-1      ; B

@@ -138,9 +138,10 @@ mon_hello:
    sei                  ; sanitize
    cld                  ; sanitize
 .ifp02
+   ; on NMOS no need to store interrupt number
 .else
+   phy                  ; save index for later check on BRK
    lda   (TMP16)
-   phy
    pha
 .endif
    jsr   PRINT
@@ -153,10 +154,11 @@ mon_hello:
    bne   :-
 :
 .ifp02
+   ; on NMOS doesn't use interrupt numbers
 .else
    ; on CMOS get interrupt number
    pla
-   ply
+   ply                  ; load index just for zero flag = BRK
    bne   :+
    jsr   prhex8
 :
@@ -181,10 +183,10 @@ regdump:
    jsr   PRINT
 .if REGSTART
    .byte 10,"   PC  AC XR YR SP NV-BDIZC"
-   ;           FFF2 14 43 45 FF 00100110
+   ;          ~FFF2 53 56 4F FF 00100110
 .else
    .byte 10,"   PC  BK AC XR YR SP NV-BDIZC"
-   ;           FFF2 00 14 43 45 FF 00100110
+   ;          ~FFF2 00 53 56 4F FF 00100110
 .endif
    .byte 10," ~",0
    lda   R_PC+1

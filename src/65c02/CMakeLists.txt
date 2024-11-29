@@ -123,7 +123,6 @@ add_executable(native_kernel
    mon/disassembler.s
    mon/hexdump.s
    mon/interndrive.s
-   mon/papertape.s
    mon/registers.s
    mon/storage.s
    mon/table65sc02.s

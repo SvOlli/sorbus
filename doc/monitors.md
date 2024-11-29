@@ -72,11 +72,11 @@ These commands supported commands are:
 | :       | edit memory                                                       |
 | D       | disassemble                                                       |
 | A       | assemble                                                          |
-| ;       | handle papertape input                                            |
+| ;       | handle papertape input            (not available on CMOS version) |
 | BR      | read sector from internal drive                                   |
 | BW      | write sector to internal drive                                    |
-| L       | load file from CP/M filesystem (not available on NMOS version)    |
-| S       | save file to CP/M filesystem (not available on NMOS version)      |
+| L       | load file from CP/M filesystem    (not available on NMOS version) |
+| S       | save file to CP/M filesystem      (not available on NMOS version) |
 | $       | show directory of CP/M filesystem (not available on NMOS version) |
 
 Command examples:
