@@ -13,6 +13,8 @@
 
 .importzp   FORMAT
 
+error:
+   jmp   prterr
 blockrw:
    jsr   skipspace
    jsr   uppercase
@@ -25,26 +27,25 @@ blockrw:
 :
    sta   FORMAT
    inx
+
    jsr   getaddr
-   bcc   :+
-   jmp   prterr
-:
+   bcs   error
    sta   ID_LBA+0
    sty   ID_LBA+1
+
    jsr   getaddr
-   bcc   :+
-   jmp   prterr
-:
+   bcs   error
    sta   ID_MEM+0
    sty   ID_MEM+1
+
    lda   FORMAT
    cmp   #'W'
    lda   #$00
-   rol
+   rol                  ; Y=0, unless A>='W' -> Y=1
    tay
    sta   IDREAD,y       ; with Y=1 it's IDWRIT
    lda   IDREAD,y
-   bne   :+
+   bne   :+             ; i/o error occured
    rts
 :
    jsr   PRINT

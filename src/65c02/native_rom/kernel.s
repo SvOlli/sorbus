@@ -207,7 +207,7 @@ boota:
 
    jsr   PRINT
    .byte "Go",10,0
-   bra   execram
+   beq   execram        ; will be run using NMOS 6502
 
 xgensine:
    ldx   #$02           ; tools bank starts with jmp ($e003,x)
