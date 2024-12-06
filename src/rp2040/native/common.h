@@ -18,6 +18,7 @@ extern queue_t queue_uart_write;
 void console_type_set( console_type_t type );
 void console_run();
 void console_set_crlf( bool enable );
+void console_set_flowcontrol( bool enable );
 void cpu_halt( bool stop );
 
 // Core1: handle 65c02 bus

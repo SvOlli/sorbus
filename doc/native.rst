@@ -85,14 +85,14 @@ BASIC.
    SAVE erases a previous file with the same name before writing.
 -  BASIC starts at $0400, as the area $0200-$03ff is used by the Sorbus
    kernel for accessing the internal drive. ($0200-$02ff is only used
-   for saving.)
+   for saving, and also "swapped out", so data is restored after SAVE.)
 -  The LOAD and SAVE work totally different as stated in the manuals.
 -  LOAD"$" is added to display the directory on screen.
 -  No need to enter size of memory size (compiled in)
 -  terminal width and auto-newline has totally been removed and should
    be now handled by the terminal software used
--  Opcode order is kept the same, so most original OSI BASIC code
-   should work on the Sorbus variant as well
+-  Token order is kept the same, so most original OSI BASIC code should
+   work on the Sorbus variant as well
 -  code for RND(0) has been changed, so sequence will not be the same,
    actually being random
 
@@ -151,6 +151,7 @@ Miscellaneous ($DF00-$DF0F)
 -  $DF05-$DF0A: reserved for future use
 -  $DF0A: 65CE02: userspace workaround to save Z for BRK (might change)
 -  $DF0B: UART config: bit 0=enable crlf conversion
+                       bit 1=enable flow control
 -  $DF0C: (R) UART in queue read
 -  $DF0D: (R) serial in queue size (up to 240, 255: error)
 -  $DF0E: (W) serial out queue write
@@ -273,7 +274,7 @@ Interrupt Handling
 4) if IRQ -> jmp ($DF7C)
 5) if BRK get operand after BRK
 6) if operand is known, perform kernel action
-7) if operand is out of scope -> jmp ($DF78)
+7) if operand is out of scope -> jmp ($DF78) (default: System Monitor)
 
 Note: as this handling is rather complex it takes about 100 cycles to
 run a software interrupt to call a function. This is the trade-in for

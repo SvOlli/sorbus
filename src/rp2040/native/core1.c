@@ -440,6 +440,7 @@ static inline void system_reset()
 
    // setup serial console
    console_set_crlf( true );
+   console_set_flowcontrol( false );
    // this needs to be set, as core0 cannot access RAM
    ram[MEM_ADDR_UART_CONTROL] = 0x01;
    // reset Sorbus ID pointer
@@ -983,6 +984,7 @@ static inline void handle_io()
             break;
          case 0x0B: // UART read: enable crlf conversion
             console_set_crlf( data & 1 );
+            console_set_flowcontrol( data & 2 );
             handle_ramrom(); // make sure register is mirrored to RAM for read
             break;
          case 0x0E: // console UART write

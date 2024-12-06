@@ -50,10 +50,10 @@ R_P      = MON_P
 .segment "DATA"
 
 txt_brk:
-.ifp02
-   .byte "BRK",0
-.else
+.if CONFIG_BRK_HAS_PARAMETER
    .byte "BRK #$",0
+.else
+   .byte "BRK",0
 .endif
 txt_init:
 .ifp02
@@ -137,12 +137,10 @@ mon_init:
 mon_hello:
    sei                  ; sanitize
    cld                  ; sanitize
-.ifp02
-   ; on NMOS no need to store interrupt number
-.else
+.if CONFIG_BRK_HAS_PARAMETER
    phy                  ; save index for later check on BRK
-   lda   (TMP16)
-   pha
+   lda   (TMP16)        ; TMP16 also used by PRINT
+   pha                  ; save BRK parameter for later
 .endif
    jsr   PRINT
    .byte 10,"Sorbus System Monitor via ",0
@@ -153,13 +151,11 @@ mon_hello:
    iny
    bne   :-
 :
-.ifp02
-   ; on NMOS doesn't use interrupt numbers
-.else
+.if CONFIG_BRK_HAS_PARAMETER
    ; on CMOS get interrupt number
-   pla
+   pla                  ; get BRK parameter in case it needs to be printed
    ply                  ; load index just for zero flag = BRK
-   bne   :+
+   bne   :+             ; Y=0 -> print BRK parameter
    jsr   prhex8
 :
 .endif
@@ -336,8 +332,7 @@ go:
    dex
    bpl   :-
 
-.ifp02
-.else
+.if CONFIG_SORBUS_BANK
    ; in ROM only: check if target bank is $00
    tax                  ; check if akku (last read R_BK) is $00
    bne   :+

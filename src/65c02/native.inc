@@ -29,6 +29,7 @@ CPUID  = $DF04     ; (R) CPU features:
                    ; $01 6502, $02 65SC02, $06 65C02, $0E 65CE02, $12 65816
                    ; $21 6502 Rev.A (no ROR)
 UARTCF = $DF0B     ; config: bit 0: turn on/off crlf conversion
+                   ;         bit 1: turn on/off flow control
 UARTRD = $DF0C     ; (R) read from serial input queue (read only)
 UARTRS = $DF0D     ; (R) get serial input queue size (read only, up to 127, >127: error)
 UARTWR = $DF0E     ; (W) write to serial output queue (write only)

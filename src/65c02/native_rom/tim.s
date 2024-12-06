@@ -192,6 +192,9 @@ bintcom:
    bne   S0             ;   immediate alter following breakpoint.
 
 start:
+   lda   UARTCF
+   and   #$fd           ; disable flow control
+   sta   UARTCF
    lda   #$00           ; next command from user
    sta   WRAP           ; clear address wrap-around flag
    jsr   CRLF
@@ -376,36 +379,39 @@ VRFY:
    jmp   start
 
 LH:
-   jsr   RDOC          ; read second cmd char -> and ignore, 'L' is always 'LH'
+   lda   UARTCF
+   ora   #$02           ; enable flow control
+   sta   UARTCF
+   jsr   RDOC           ; read second cmd char -> and ignore, 'L' is always 'LH'
    jsr   CRLF
 LH1:
    jsr   RDOC
-   and   #$fe          ; SORBUS: addition because the output if WH is ';'
-   cmp   #':'          ; find next bcd mark (:)
-   bne   LH1           ; loop until found
+   and   #$fe           ; SORBUS: addition because the output of WH is ';'
+   cmp   #':'           ; find next bcd mark (:)
+   bne   LH1            ; loop until found
 
    ldx   #$04
-   jsr   ZTMP          ; clear cksum regs TMP4
-   jsr   RDOB          ; read hex value -> length
-   bne   LH2           ; data remain
+   jsr   ZTMP           ; clear cksum regs TMP4
+   jsr   RDOB           ; read hex value -> length
+   bne   LH2            ; data remain
 
-   beq   BEQS1         ; finished
+   beq   BEQS1          ; finished
 
 LH2:
-   sta   RCNT          ; RCNT -> save counter
-   jsr   CADD          ; bcd lngh to cksum ; add to chksum
-   jsr   RDOB          ; sa ho to TMP0+1 (sa=startaddress)
+   sta   RCNT           ; RCNT -> save counter
+   jsr   CADD           ; bcd lngh to cksum ; add to chksum
+   jsr   RDOB           ; sa ho to TMP0+1 (sa=startaddress)
    sta   TMP0+1
-   jsr   CADD          ; add to cksum
-   jsr   RDOB          ; sa lo to TMP0
+   jsr   CADD           ; add to cksum
+   jsr   RDOB           ; sa lo to TMP0
    sta   TMP0+0
-   jsr   CADD          ; add to cksum
+   jsr   CADD           ; add to cksum
 
 LH3:
-   jsr   BYTE          ; byte sub/r decrs rcnt on exit
+   jsr   BYTE           ; byte sub/r decrs rcnt on exit
    bne   LH3
-   jsr   RDOA          ; cksum from hex bcd to TMP0
-   lda   TMP4+0        ; TMP4 to TMP2 for DCMP
+   jsr   RDOA           ; cksum from hex bcd to TMP0
+   lda   TMP4+0         ; TMP4 to TMP2 for DCMP
    sta   TMP2+0
    lda   TMP4+1
    sta   TMP2+1

@@ -23,6 +23,7 @@ extern void system_trap();
 
 console_type_t console_type;
 bool console_crlf_enabled;
+bool console_flowcontrol_enabled;
 
 bool console_wants_stop = false;
 bool bus_wants_stop     = false;
@@ -47,6 +48,12 @@ void console_cpu_pause( bool stop )
       console_wants_stop = false;
       bus_wants_stop     = false;
    }
+}
+
+
+void console_set_flowcontrol( bool enable )
+{
+   console_flowcontrol_enabled = enable;
 }
 
 
@@ -164,9 +171,18 @@ void console_65c02()
    }
    if( in != PICO_ERROR_TIMEOUT )
    {
-      if( queue_try_add( &queue_uart_read, &in ) )
+      if( console_flowcontrol_enabled )
       {
-         // need to handle overflow?
+         // wait until everything queue is empty
+         while( queue_get_level( &queue_uart_read ) )
+         {
+         }
+         queue_add_blocking( &queue_uart_read, &in );
+      }
+      else
+      {
+         // no flow control: hope for the best
+         (void)queue_try_add( &queue_uart_read, &in );
       }
    }
 
