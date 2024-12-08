@@ -38,6 +38,7 @@ start:
    .byte 10,"d) $0c: line input (enter)"
    .byte 10,"e) $0c: line input (edit)"
    .byte 10,"f) $0d: generate sine"
+   .byte 10,"g) $0e: system monitor"
    .byte 10,"Ctrl+C) quit"
    .byte 10,0
 
@@ -70,6 +71,7 @@ jmptab:
    .word lineinput0
    .word lineinput
    .word gensine
+   .word sysmon
 jmpend:
 
 dec8:  ; print A as a decimal value
@@ -167,6 +169,12 @@ user:
 
    lda   #$0a
    jsr   CHROUT
+   jmp   done
+
+sysmon:
+   jsr   PRINT
+   .byte 10,"You can use ",$22,"G",$22," to return",0
+   int   MONITOR
    jmp   done
 
 userbrk:

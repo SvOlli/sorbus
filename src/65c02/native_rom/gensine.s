@@ -41,7 +41,7 @@ gensine:
    dex
    bpl   :-
 
-   tya
+   lda   BRK_SY
    ror
    ror
    ror

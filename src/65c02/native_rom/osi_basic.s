@@ -1,7 +1,7 @@
 ; changes todo
 ; [ ] implement auto-load + run from file manager
 ; [ ] entering "10"+crsr up will pull line 10 in input buffer
-; [ ] runtime switch for token case in LIST
+; [X] runtime switch for token case in LIST (POKE9,0/32)
 ; [X] fix fre(0)
 ; [X] remove SCRWIDTH, POSWARP, POSX
 ; [X] Change useless NULL instruction to SYS to align tokens
@@ -81,13 +81,7 @@
 
 ; zero page
 ZP_START  = $10
-
-;ZP_START1 = $10
-;ZP_START2 = $1D
-;ZP_START3 = $6B
-;ZP_START4 = $75
-
-;extra ZP variables
+TOKENCASE       := $0009   ; POKE9,32 for lowercase
 USR             := $000A   ; 3 bytes
 SHADOW_A        := $000D   ; MON_A ?
 SHADOW_X        := $000E   ; MON_X ?
@@ -376,6 +370,7 @@ L4098:
    lda   #$03
    sta   DSCLEN
    lda   #$2C
+   sta   TOKENCASE
    sta   LINNUM+1
    jsr   CRDO
    ldx   #TEMPST
@@ -1563,6 +1558,7 @@ L25FD:
    lda   TOKEN_NAME_TABLE,y
 .else
    lda   #$20 ; lowercase token
+   and   TOKENCASE
    ora   TOKEN_NAME_TABLE,y
 .endif
    bmi   L25CA

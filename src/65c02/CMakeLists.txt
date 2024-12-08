@@ -190,11 +190,6 @@ add_executable(native_cpm_bootblock
 #   )
 target_type(native_cpm_bootblock native_kernel)
 
-add_executable(native_writeboot
-   native_writeboot.s
-   )
-target_type_addr(native_writeboot native 0xC000)
-
 # SX4 executables
 add_executable(1sthello
    sx4/a1hello.s
@@ -255,5 +250,10 @@ add_executable(wozmon2c
    sx4/wozmon2c.s
    )
 target_type(wozmon2c sx4)
+
+add_executable(wrtboot
+   sx4/wrtboot.s
+   )
+target_type(wrtboot sx4)
 
 gencpmfs(native_cpmfs.img)
