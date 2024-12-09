@@ -36,7 +36,7 @@ _print:
                         ; NMOS 6502 or 65CE02
    beq   @out           ; $00 bytes indicates end of text
    jsr   chrout         ; output the character
-   bpl   @loop          ; get next char (65C02 only opcode, jmp also works)
+   bpl   @loop          ; always true
 @out:
    pla
    tay                  ; restore save Y register

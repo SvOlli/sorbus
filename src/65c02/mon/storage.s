@@ -9,6 +9,7 @@
 .import     gethex4
 .import     skipspace
 .import     prterr
+.import     prtnl
 .import     newenter
 .import     iofailed
 
@@ -107,8 +108,7 @@ directory:
    bcs   error
    tay
    stz   CPM_SADDR+1
-   lda   #$0a
-   jsr   CHROUT
+   jsr   prtnl
    int   CPMDIR
    rts
 

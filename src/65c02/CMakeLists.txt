@@ -123,6 +123,7 @@ add_executable(native_kernel
    mon/disassembler.s
    mon/hexdump.s
    mon/interndrive.s
+   mon/memory.s
    mon/registers.s
    mon/storage.s
    mon/table65sc02.s
@@ -143,6 +144,7 @@ target_compile_options(native_basic
 target_type(native_basic native_kernel)
 
 add_executable(native_tools
+   native_rom/tools.s
    native_rom/browser.s
    native_rom/gensine.s
    native_rom/bios.s
@@ -165,6 +167,7 @@ add_executable(native_nmos6502_bootblock
    mon/disassembler.s
    mon/hexdump.s
    mon/interndrive.s
+   mon/memory.s
    mon/papertape.s
    mon/registers.s
    mon/table6502.s

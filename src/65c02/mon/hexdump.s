@@ -31,39 +31,39 @@
 memorydump:
    jsr   getaddr
    bcs   memorydumpline
-   lda   ADDR0+0
+   ;and   #$f0           ; align output to 16 bytes
    sta   ADDR1+0
-   lda   ADDR0+1
-   sta   ADDR1+1
+   sty   ADDR1+1
    jsr   getaddr
    bcs   memorydumpline
+
+   ; calcuate number of bytes to be printed (2s complement)
+   sec
+   lda   ADDR1+0
+   sbc   ADDR0+0
+   sta   ADDR0+0
+   lda   ADDR1+1
+   sbc   ADDR0+1
+   sta   ADDR0+1
+
+   ; divide by 16 and we've got the number of lines (still 2s complement)
+   ldy   #$04
+:
+   sec
+   ror   ADDR0+1
+   ror   ADDR0+0
+   dey
+   bne   :-
 
 @addrloop:
    jsr   memorydumpline
 
-   lda   #$10
-   clc
-   adc   ADDR1+0
-   sta   ADDR1+0
-   bcc   :+
-   inc   ADDR1+1
-   ; high byte flipped...
-   bne   :+
-   ; ...to zero: check if address is <= $000F (end of memory)
-   lda   ADDR1+0
-   cmp   #$0f
-   bcc   @done
-:
-   ; now check if end has been reached or surpassed
-   lda   ADDR1+1
-   cmp   ADDR0+1
-   bcc   @addrloop
-   beq   @checklower
-   bcs   @done
-@checklower:
-   lda   ADDR1+0
-   cmp   ADDR0+0
-   bcc   @addrloop
+   ; now check if end has been reached
+   ; (2s complement for easier handling of wrapping)
+   inc   ADDR0+0
+   bne   @addrloop
+   inc   ADDR0+1
+   bne   @addrloop
 
 @done:
    rts

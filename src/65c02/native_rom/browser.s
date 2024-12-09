@@ -3,7 +3,7 @@
 .include "../native_bios.inc"
 .include "../native_cpmfs.inc"
 
-.import     gensine
+.export     browser
 
 .segment "CODE"
 
@@ -31,12 +31,6 @@ IOBUFFER    := $DF80
 ; [ ] load BASIC code
 ; [ ] type
 ; [ ] hexdump
-
-   jmp   (@jmptab,x)
-
-@jmptab:
-   .word init
-   .word gensine
 
 ; list of chars not allowed in a filename
 ; (space is used for padding at the end)
@@ -234,7 +228,7 @@ changeentry:
    jmp   readbuffer
 
 
-init:
+browser:
    ldx   #$00
 :
    stz   readp,x        ; clear out used zero page memory

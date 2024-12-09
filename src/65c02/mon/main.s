@@ -16,17 +16,17 @@
 ; [X] native ROM integration
 ; [X] NMOS 6502 toolkit integration
 ; [X] consistent current address pointer for 'm', 'd', set upon init to PC
-; [ ] merge code?
+; [-] merge code?
 ; --- release build
 ; [ ] memory read/write respects bank register
 ; [X] (s) cpmfs save
 ; [X] (l) cpmfs load
-; [ ] use .define FEATURE(s) instead of .ifp02
+; [/] use .define FEATURE(s) instead of .ifp02
 ; --- sugarcoating starts here
-; [ ] (h) find/hunt
-; [ ] (c) compare
-; [ ] (f) fill
-; [ ] (t) transfer
+; [X] (h) find/hunt
+; [X] (c) compare
+; [X] (f) fill
+; [X] (t) transfer
 
 .define PROMPT       '>'
 .ifp02
@@ -94,6 +94,7 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 
 .export     getfirstnonspace
 .export     prterr
+.export     prtnl
 .export     prtsp
 .export     prt3sp
 .export     prtxsp
@@ -134,6 +135,12 @@ INBUF_SIZE  := $4e      ; 78 characters to fit 80 char screen width
 ; from interndrive.s
 .import     blockrw
 
+; from memory.s
+.import     compare
+.import     fill
+.import     hunt
+.import     transfer
+
 .if PAPERTAPE
 ; from papertape.s
 .import     papertape
@@ -171,8 +178,7 @@ bankread:
 .endif
 
 prterr:
-   lda   #$0a
-   jsr   CHROUT
+   jsr   prtnl
    inx                  ; add one for the prompt
    jsr   prtxsp
    lda   #'^'
@@ -181,6 +187,9 @@ prterr:
    pla
    jmp   newenter
 
+prtnl:
+   lda   #$0a
+   .byte $2c
 prtsp:
    lda   #' '
    jmp   CHROUT
@@ -213,8 +222,7 @@ clrenter:
    stz   INBUF
 .endif
 newenter:
-   lda   #$0a
-   jsr   CHROUT
+   jsr   prtnl
 newedit:
    ldy   #VT100_CPOS_SOL
 .ifp02
@@ -286,6 +294,7 @@ handleenter:
 .if LOADSAVE
    .byte "$LS"
 .endif
+   .byte "CFHT"
 @funcs:
    .word empty-1        ; $00
    .word hexenter-1     ; :
@@ -304,6 +313,10 @@ handleenter:
    .word loadfile-1     ; L
    .word savefile-1     ; S
 .endif
+   .word compare-1      ; C
+   .word fill-1         ; F
+   .word hunt-1         ; H
+   .word transfer-1     ; T
 
 handleupdown:
    tay                  ; save up/down key in Y

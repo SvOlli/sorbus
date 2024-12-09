@@ -23,6 +23,8 @@
 #include "native/common.h"
 #include "native/event_queue.h"
 
+#define SWITCH_CORES 0
+
 
 bi_decl(bi_program_name("Sorbus Computer Native Core"))
 bi_decl(bi_program_description("implement an own home computer flavor"))
@@ -55,11 +57,20 @@ int main()
    // setup mutex for event queue
    queue_event_init();
 
+#if SWITCH_CORES
+   // run interactive console in core1
+   multicore_launch_core1( console_run );
+
+   // setup the bus and run the bus in core0
+   bus_run();
+#else
    // setup the bus and run the bus core
    multicore_launch_core1( bus_run );
 
    // run interactive console -> should never return
    console_run();
+#endif
 
+   // keep the compiler happy
    return 0;
 }
