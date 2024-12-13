@@ -10,7 +10,7 @@ pico_sdk_init()
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wunused-variable")
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto")
-set(FIRMWARE_BASE "${CMAKE_CURRENT_BINARY_DIR}/native_firmware")
+set(FIRMWARE_BASE "${CMAKE_CURRENT_BINARY_DIR}/jam_firmware")
 
 function(bin2h h_file bin_file label)
    add_custom_command(OUTPUT ${h_file}
@@ -40,10 +40,10 @@ function(dharawrite out_file in_file)
    )
 endfunction()
 
-function(genfirmware firmware native_rom cpm_rom cpm_dhara)
+function(genfirmware firmware jam_rom cpm_rom cpm_dhara)
    add_custom_command(OUTPUT ${firmware}
-      COMMAND $<TARGET_FILE:binjoin> "${firmware}" $<TARGET_FILE:${native_rom}> "${cpm_rom}" $<TARGET_FILE:${cpm_dhara}>
-      DEPENDS ${native_rom} ${cpm_rom} ${cpmfs} ${BINJOIN}
+      COMMAND $<TARGET_FILE:binjoin> "${firmware}" $<TARGET_FILE:${jam_rom}> "${cpm_rom}" $<TARGET_FILE:${cpm_dhara}>
+      DEPENDS ${jam_rom} ${cpm_rom} ${cpmfs} ${BINJOIN}
    )
 endfunction()
 
@@ -58,11 +58,16 @@ function(uf2join output)
    )
 endfunction()
 
-function(setup_target targetname)
+function(setup_target targetname incdir)
    pico_enable_stdio_usb(${targetname} 1)
    pico_enable_stdio_uart(${targetname} 0)
    pico_add_extra_outputs(${targetname})
-   target_include_directories(${targetname} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+   target_include_directories(${targetname} PRIVATE
+      ${incdir}
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}/common
+      ${CMAKE_CURRENT_BINARY_DIR}
+   )
 endfunction()
 
 bin2h(krusader.h ${CMAKE_HOME_DIRECTORY}/bin/krusader_65C02.bin krusader_e000)
@@ -72,94 +77,93 @@ src2h(cpudetect.h cpudetect cpudetect)
 src2h(payload_mcp.h payload_mcp payload_mcp)
 src2h(a1hello.h a1hello a1hello_0800)
 src2h(cpudetect_65.h cpudetect_65 cpudetect_code)
-src2h(native_rom.h native_rom native_rom)
+src2h(jam_rom.h jam_rom jam_rom)
 
 # getaline_test: test core to test getaline input functionality
 add_executable(getaline_test
-   getaline_test.c
-   getaline.c
+   common/getaline_test.c
+   common/getaline.c
    )
 target_link_libraries(getaline_test
    pico_stdlib
    pico_multicore
    )
-setup_target(getaline_test)
+setup_target(getaline_test "mcp")
 
 # Monitor Command Prompt: core for watching the 65C02 work
 add_executable(mcp
-   bus_rp2040_purple.c
    cpudetect.h
-   cpu_detect.c
-#   cpustate.h
-   disassemble.c
-   disassemble_historian.c
-   generic_helper.c
    payload_mcp.h
-   system_mcp.c
-   getaline.c
+   common/bus_rp2040_purple.c
+   common/cpu_detect.c
+   common/disassemble.c
+   common/disassemble_historian.c
+   common/generic_helper.c
+   common/getaline.c
+   mcp/main.c
    )
 target_link_libraries(mcp
    pico_stdlib
    pico_multicore
    )
-setup_target(mcp)
+setup_target(mcp "mcp")
 
 # Apple 1: core for mimicking the Apple 1 Computer
 add_executable(apple1
    krusader.h
    cpudetect_apple1.h
    a1hello.h
-   bus_rp2040_purple.c
-   system_apple1.c
+   common/bus_rp2040_purple.c
+   apple1/main.c
    )
 target_link_libraries(apple1
    pico_stdlib
    pico_multicore
    )
-setup_target(apple1)
+setup_target(apple1 "apple1")
 
 # Native: core for implementing a custom Sorbus system
-add_executable(native_alpha
-   bus_rp2040_purple.c
-   cpu_detect.c
-   disassemble.c
-   disassemble_historian.c
-   generic_helper.c
-   system_native.c
+add_executable(jam_alpha
+   common/bus_rp2040_purple.c
+   common/cpu_detect.c
+   common/disassemble.c
+   common/disassemble_historian.c
+   common/generic_helper.c
    dhara/error.c
    dhara/journal.c
    dhara/map.c
-   native/core0.c
-   native/core1.c
-   native/dhara_flash.c
-   native/event_queue.c
+   jam/main.c
+   jam/console.c
+   jam/bus.c
+   jam/dhara_flash.c
+   jam/event_queue.c
    )
-target_link_libraries(native_alpha
+target_link_libraries(jam_alpha
    pico_stdlib
    pico_multicore
    pico_rand
    )
-setup_target(native_alpha)
-#pico_set_binary_type(native_alpha copy_to_ram)
-# firmware for Native core
-add_custom_target(native_firmware ALL
-   DEPENDS native_alpha_picotool native_rom
+setup_target(jam_alpha "jam")
+#pico_set_binary_type(jam_alpha copy_to_ram)
+# firmware for JAM core
+add_custom_target(jam_firmware ALL
+   DEPENDS jam_alpha_picotool jam_rom
 )
 
 # building firmware .uf2 file containing all ROMs
-add_custom_target(native_rom ALL
-   $<TARGET_FILE:bin2uf2> "native_rom.uf2"
+add_custom_target(jam_rom ALL
+   $<TARGET_FILE:bin2uf2> "jam_rom.uf2"
       0x103FA000
-      $<TARGET_FILE:native_kernel>
-      $<TARGET_FILE:native_tools>
-      $<TARGET_FILE:native_basic>
-   DEPENDS native_kernel native_tools native_basic ${BIN2UF2}
+      $<TARGET_FILE:jam_kernel>
+      $<TARGET_FILE:jam_tools>
+      $<TARGET_FILE:jam_basic>
+   DEPENDS jam_kernel jam_tools jam_basic ${BIN2UF2}
 )
 
-bin2uf2(native_cpmfs 0x10400000 native_cpmfs.dhara)
-uf2join(native_alpha_picotool
-   native_rom
-   native_cpmfs
-   native_alpha
+bin2uf2(jam_cpmfs 0x10400000 jam_cpmfs.dhara)
+uf2join(jam_alpha_picotool
+   jam_rom
+   jam_cpmfs
+   jam_alpha
 )
-dharawrite(native_cpmfs.dhara native_cpmfs.img)
+dharawrite(jam_cpmfs.dhara jam_cpmfs.img)

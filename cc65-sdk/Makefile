@@ -15,11 +15,11 @@ SYS_FLAGS      ?= --cpu 65sc02 -t none --cfg-path $(CFG_DIR) -C sorbus.cfg
 EXPORT_DIR     ?= bin
 CFG_DIR        ?= cfg
 
-SRCS           ?= $(wildcard examples/*.c owncode/*.c)
+SRCS           ?= $(wildcard examples/*.c owncode/*.c owncode/*.s)
 
 SORBUS_LIB     ?= lib/sorbus.lib
 INCLUDE_DIR    ?= include
-INCLUDES       ?= native.inc native_bios.inc
+INCLUDES       ?= jam.inc jam_bios.inc
 
 targets        :=
 
@@ -52,7 +52,7 @@ $(SORBUS_LIB): $(wildcard lib/*.s) $(wildcard lib/*.c)
 
 $(foreach target,$(SRCS),$(eval $(call sx4build,$(target))))
 ifneq ($(SORBUS_65C02_DIR),)
-$(addprefix $(INCLUDE_DIR)/,$(INCLUDES)): $(addprefix $(SORBUS_65C02_DIR)/,$(INCLUDES))
+$(addprefix $(INCLUDE_DIR)/,$(INCLUDES)): $(addprefix $(SORBUS_65C02_DIR)/jam/,$(INCLUDES))
 	$(MKDIR) -p $(INCLUDE_DIR)/
 	$(CP) $^ $(INCLUDE_DIR)/
 endif

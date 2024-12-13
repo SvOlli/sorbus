@@ -14,7 +14,7 @@
         .importzp       ptr1, ptr2, ptr3
 
         .macpack        generic
-        .include        "native_bios.inc"
+        .include        "jam_bios.inc"
 
 .proc   _read
         cpx     #$01

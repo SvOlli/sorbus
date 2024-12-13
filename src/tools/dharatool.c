@@ -25,7 +25,7 @@
 #include "../rp2040/dhara/map.h"
 #include "../rp2040/dhara/nand.h"
 #define XIP_BASE (0x10000000)
-#include "../rp2040/native/flash_config.h"
+#include "../rp2040/jam/flash_config.h"
 
 
 static const uint32_t flashsize = FLASH_DRIVE_END - FLASH_DRIVE_START;

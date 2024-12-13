@@ -11,7 +11,7 @@ cd ..
 
 readonly target_dir="${PWD}/cpm65"
 readonly repository_url="https://github.com/davidgiven/cpm65.git"
-readonly buildtarget="sorbus.zip"
+readonly buildtarget="images/sorbus.zip"
 readonly distdir="${basedir}/src/bin/cpm"
 
 for i in ${PWD}/llvm-mos-sdk /usr /usr/local /opt/llvm-mos; do

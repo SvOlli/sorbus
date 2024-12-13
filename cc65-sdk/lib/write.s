@@ -12,7 +12,7 @@
         .import         popax, popptr1
         .importzp       ptr1, ptr2, ptr3, tmp1
 
-        .include        "native_bios.inc"
+        .include        "jam_bios.inc"
 
 .proc   _write
 

@@ -55,9 +55,9 @@ const bus_config_t bus_config = {
 #define BUS_CONFIG_shift_data    (16)
 #define BUS_CONFIG_shift_address (0)
 
-#include "../rp2040/generic_helper.c"
-#include "../rp2040/disassemble.c"
-#include "../rp2040/disassemble_historian.c"
+#include "../rp2040/common/generic_helper.c"
+#include "../rp2040/common/disassemble.c"
+#include "../rp2040/common/disassemble_historian.c"
 
 
 cputype_t getcputype( const char *argi )

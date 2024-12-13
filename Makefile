@@ -14,7 +14,7 @@ RM           = rm -rf
 LS           = ls -l
 GIT_CHECKOUT = git clone --depth 1 --recurse-submodules --shallow-submodules
 
-CC65_SDK_INCLUDES = native.inc native_bios.inc
+CC65_SDK_INCLUDES = jam.inc jam_bios.inc
 CC65_SDK_TOOLS    = wozcat.c timcat.c
 
 $(info # This Makefile is not required and for convenience only)
@@ -59,7 +59,7 @@ cc65_sdk_deps :=
 
 define cc65_sdk_include
 my_dest := $$(CC65_SDK_DIR)/include/$(1)
-my_src  := src/65c02/$(1)
+my_src  := src/65c02/jam/$(1)
 cc65_sdk_deps += $$(my_dest)
 $$(my_dest): $$(my_src)
 	$(INSTALL) -D -m0644 $$< $$@
@@ -96,7 +96,7 @@ clean:
 
 distclean:
 	$(RM) $(RELEASE_ARCHIVE) $(BUILD_DIR) make.log cmake.log $(cc65_sdk_deps)
-	make -C $(CC65_SDK_DIR) clean
+	make -C $(CC65_SDK_DIR) EXPORT_DIR=../src/bin/cpm/10 clean
 
 $(PICO_SDK_PATH)/README.md:
 	$(MKDIR) $(PICO_SDK_PATH)
@@ -133,9 +133,9 @@ $(RELEASE_ARCHIVE): $(CC65_SDK_DIR) all
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done
 	cp doc/README_release.txt README.txt
 	$(RM) $@
-	7z a -mx=9 -bd -sdel $@ README.txt doc/apple1.md doc/monitors.md doc/native.rst *.uf2
+	7z a -mx=9 -bd -sdel $@ README.txt *.uf2
 	make -C $(CC65_SDK_DIR) clean
-	7z a -mx=9 -bd $@ $(CC65_SDK_DIR)
+	7z a -mx=9 -bd $@ $(CC65_SDK_DIR) doc/apple1.md doc/monitors.md doc/sysmon.md doc/jam.rst
 
 release: $(RELEASE_ARCHIVE)
 

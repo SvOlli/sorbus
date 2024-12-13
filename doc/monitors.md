@@ -151,7 +151,7 @@ using `G`. However, to return to the monitor you have to invoke it again using
 the `BRK $00` opcode, `RTS` will not work here, like it did in WozMon.
 
 A more detailed documentation is at the start of the
-[TIM source code](../src/65c02/native_rom/tim.s).
+[TIM source code](../src/65c02/jam/rom/tim.s).
 
 
 Loading Software Via Papertape

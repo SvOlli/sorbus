@@ -1,5 +1,5 @@
-CC65 SDK for the Sorbus Native Core
-===================================
+CC65 SDK for the Sorbus JAM Core
+================================
 
 This is a very simple SDK to build C programs for the Sorbus Computer
 Native Core.
@@ -7,7 +7,7 @@ Native Core.
 It builds its own `sorbus.lib` and comes with a few examples.
 
 If you like to build your own programs create a directory `owncode`.
-Every file.c found there will be compiled to an SX4 executable.
+Every file.c and file.s found there will be compiled to an SX4 executable.
 
 The files from the `example` direcotry are already installed onto the
 filesystem when building a release, and can be run using the filebrowser.
@@ -24,5 +24,14 @@ The parameters are:
 - R: run program after transfer (optional)
 - /dev/ttySorbus: tty the sorbus is connected to, typically /dev/ttyACM0
 - program.sx4: the program to transfer
+
+As a faster alternative, `timcat` has been added as well in the `tools`
+directory. Usage is:
+
+```
+timcat >/dev/ttySorbus 0x400 program.sx4
+```
+
+Parameters are the same as above.
 
 Have fun!

@@ -2,13 +2,21 @@
 
 set -e
 
+# If something breaks during compiling from source (required when building on
+# non-X86_64 architectures), you can uncomment these hashes and try again.
+#llvm_mos_hash="2f5f0aca548bd4157633cf7d562e15875a8147f4"
+#llvm_mos_sdk_hash="675461c3c095488b87c42d9a55df76210ed43e10"
+
+# Force number of jobs in case RAM is not sufficient
+#jobs=4
+
 cd "$(dirname "${0}")/../.."
 
 cd ..
 
 readonly target_dir="${PWD}/llvm-mos-sdk"
 readonly build_dir="${target_dir}-build"
-jobs="$(nproc || echo 4)"
+[ -n "${jobs}" ] || jobs="$(nproc || echo 4)"
 
 readonly machinetype="$(uname -m)"
 readonly systype="$(uname -s)"
@@ -45,6 +53,32 @@ download()
    fi
 }
 
+git_get()
+{
+   repo="${1}"
+   dir="${2}"
+   hash="${3}"
+
+   if [ -d "${dir}" ]; then
+      cd "${dir}"
+      git pull
+      if [ -n "${hash}" ]; then
+         echo "using hash: ${hash}"
+         git checkout "${hash}"
+      fi
+      cd - >/dev/null
+   else
+      git clone --depth=1 --recurse-submodules --shallow-submodules \
+         "https://github.com/llvm-mos/${repo}.git" "${dir}"
+      if [ -n "${hash}" ]; then
+         cd "${dir}"
+         echo "using hash: ${hash}"
+         git checkout "${hash}"
+         cd - >/dev/null
+      fi
+   fi
+}
+
 source()
 {
    # verify that ninja is available
@@ -53,26 +87,16 @@ source()
    mkdir -p "${build_dir}"
    cd "${build_dir}"
 
-   echo "downloading source distribution"
+   echo "downloading source distribution from git"
 
    setversion
 
-   local llvm_archive="${PWD}/llvm-mos-linux-debug.tar.gz"
-   local sdk_archive="${PWD}/${version}.tar.gz"
-   local llvm_dir="llvm-mos-llvm-mos-linux-debug"
-   local sdk_dir="llvm-mos-sdk-$(echo ${version} | cut -c2-)"
+   local llvm_dir="llvm-mos"
+   local sdk_dir="llvm-mos-sdk"
 
-   download \
-      https://github.com/llvm-mos/llvm-mos/archive/refs/tags/llvm-mos-linux-debug.tar.gz \
-      "downloading llvm-mos source code (~200MB)"
-   download \
-      https://github.com/llvm-mos/llvm-mos-sdk/archive/refs/tags/${version}.tar.gz \
-      "downloading llvm-mos-sdk source code (~0.5MB)"
+   git_get llvm-mos     "${llvm_dir}" "${llvm_mos_hash}"
+   git_get llvm-mos-sdk "${sdk_dir}"  "${llvm_mos_sdk_hash}"
 
-   if [ ! -d "${llvm_dir}" ]; then
-      echo "unpacking llvm"
-      tar xf "${llvm_archive}"
-   fi
    cmake -C "${llvm_dir}/clang/cmake/caches/MOS.cmake" -G Ninja \
       -S "${llvm_dir}/llvm" -B "build-llvm" \
       -DCMAKE_INSTALL_PREFIX="${target_dir}" \
@@ -82,15 +106,6 @@ source()
 
    # verify that mos-clang is executable
    type mos-clang
-
-   if [ ! -d "${sdk_dir}" ]; then
-      echo "unpacking sdk"
-      tar xf "${sdk_archive}"
-   fi
-
-   # this break compilation with v19.1.0
-   sed -e 's/typedef unsigned size_t;/typedef __SIZE_TYPE__ size_t;/' \
-       -i "${sdk_dir}/mos-platform/common/include/unistd.h"
 
    cmake -S "${sdk_dir}" -B build-llvm-sdk -G Ninja \
       -DCMAKE_INSTALL_PREFIX="${target_dir}" \
@@ -130,6 +145,9 @@ source_*|_*) source;;
 Usage: $0 (clean) (source|binary)
 
 No argument uses binary distribution on x86_64, source in any other case.
+
+If building from source fails, take a look at top of this script for
+additional hardcoded parameters.
 
 EOM
 exit 0

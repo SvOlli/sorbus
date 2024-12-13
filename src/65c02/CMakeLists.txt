@@ -15,7 +15,7 @@ function(runmake target in_dir)
    file(GLOB SRC_FILES "${in_dir}/*")
    add_custom_target(${target} ALL
       COMMAND make -C "${CMAKE_CURRENT_SOURCE_DIR}/${in_dir}" "OUTDIR=${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/${target}.bin"
-      DEPENDS ${SRC_FILES} native_kernel)
+      DEPENDS ${SRC_FILES} jam_kernel)
 endfunction()
 
 function(gencpmfs target)
@@ -30,10 +30,10 @@ function(gencpmfs target)
    add_custom_target(${target} ALL
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../tools/mkcpmfsimage.sh"
          "${target}"
-         $<TARGET_FILE:native_cpm_bootblock>:$<TARGET_FILE:native_nmos6502_bootblock>
+         $<TARGET_FILE:jam_cpm_bootblock>:$<TARGET_FILE:jam_nmos6502_bootblock>
          "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm"
          ${extra_files}
-      DEPENDS ${native_cpm_bootblock} ${native_nmos6502_bootblock} ${native_browser} ${CPM_FILES} ${CPMFS_EXTRA_TARGETS}
+      DEPENDS ${jam_cpm_bootblock} ${jam_nmos6502_bootblock} ${jam_browser} ${CPM_FILES} ${CPMFS_EXTRA_TARGETS}
    )
 endfunction()
 
@@ -48,12 +48,24 @@ function(target_type target system)
       target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/rawram.ld")
    elseif( "${system}" STREQUAL "mcp" )
       target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/rawram.ld")
-   elseif( "${system}" STREQUAL "native_kernel" )
-      target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/native_kernel.ld")
-   elseif( "${system}" STREQUAL "native" )
-      target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/rawram.ld")
+   elseif( "${system}" STREQUAL "jam_kernel" )
+      target_include_directories(${target} PRIVATE
+         "${CMAKE_CURRENT_SOURCE_DIR}/jam"
+      )
+      target_compile_options(${target} PRIVATE
+         # this structure prevents de-duplication in case more than one include is needed
+         "SHELL:--asm-include-dir ${CMAKE_CURRENT_SOURCE_DIR}/jam"
+      )
+      target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/jam_kernel.ld")
    elseif( "${system}" STREQUAL "sx4" )
-      target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/native_sx4.ld")
+      target_include_directories(${target} PRIVATE
+         "${CMAKE_CURRENT_SOURCE_DIR}/jam"
+      )
+      target_compile_options(${target} PRIVATE
+         # this structure prevents de-duplication in case more than one include is needed
+         "SHELL:--asm-include-dir ${CMAKE_CURRENT_SOURCE_DIR}/jam"
+      )
+      target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/jam_sx4.ld")
       set(CPMFS_EXTRA_TARGETS ${target} ${CPMFS_EXTRA_TARGETS} PARENT_SCOPE)
       set_target_properties(${target} PROPERTIES PREFIX "10.")
       set_target_properties(${target} PROPERTIES SUFFIX ".sx4")
@@ -63,7 +75,7 @@ function(target_type target system)
 endfunction()
 
 function(target_type_sx4 target)
-   target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/native_sx4.ld")
+   target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/jam_sx4.ld")
    set(SX4_FILES ${SX4_FILES} "${CMAKE_CURRENT_BINARY_DIR}/${target}.bin")
 endfunction()
 
@@ -79,25 +91,19 @@ add_executable(cpudetect
    )
 target_type_addr(cpudetect mcp 0x0000)
 
+###########
+# Apple I #
+###########
+
 add_executable(cpudetect_apple1
    apple1/cpudetect.s
    )
 target_type_addr(cpudetect_apple1 apple1 0x0280)
 
-#add_executable(cpustate
-#   cpustate.s
-#   )
-#target_type_addr(cpustate mcp 0x0000)
-
 add_executable(wozmon
    apple1/wozmon.s
    )
 target_type_addr(wozmon apple1 0xFF00)
-
-add_executable(payload_mcp
-   payload_mcp.s
-   )
-target_type_addr(payload_mcp mcp 0x0400)
 
 add_executable(a1hello
    apple1/a1hello.s
@@ -108,155 +114,175 @@ target_compile_options(a1hello
 target_type_addr(a1hello apple1 0x0800)
 src2hex(a1hello.hex a1hello 0x0800)
 
-add_executable(native_kernel
-   native_rom/kernel.s
-   native_rom/cpmfs.s
-   native_rom/tim.s
-   native_rom/woz.s
-   native_rom/vt100.s
-   native_rom/lineinput.s
-   native_rom/bios.s
+#######
+# MCP #
+#######
 
-   mon/main.s
-   mon/asciihex.s
-   mon/assembler.s
-   mon/disassembler.s
-   mon/hexdump.s
-   mon/interndrive.s
-   mon/memory.s
-   mon/registers.s
-   mon/storage.s
-   mon/table65sc02.s
+add_executable(payload_mcp
+   mcp/payload.s
    )
-target_compile_options(native_kernel
+target_type_addr(payload_mcp mcp 0x0400)
+
+##############
+# JAM kernel #
+##############
+
+add_executable(jam_kernel
+   jam/rom/kernel.s
+   jam/rom/cpmfs.s
+   jam/rom/tim.s
+   jam/rom/woz.s
+   jam/rom/vt100.s
+   jam/rom/lineinput.s
+
+   jam/mon/main.s
+   jam/mon/asciihex.s
+   jam/mon/assembler.s
+   jam/mon/disassembler.s
+   jam/mon/hexdump.s
+   jam/mon/interndrive.s
+   jam/mon/memory.s
+   jam/mon/registers.s
+   jam/mon/storage.s
+   jam/mon/table65sc02.s
+
+   jam/rom/bios.s
+   )
+target_compile_options(jam_kernel
    PUBLIC --cpu 65sc02
 )
-target_type(native_kernel native_kernel)
+target_type(jam_kernel jam_kernel)
 
-add_executable(native_basic
-   native_rom/osi_basic.s
-   native_rom/bios.s
-   native_rom/bios_stub.s
+add_executable(jam_tools
+   jam/rom/tools.s
+   jam/rom/browser.s
+   jam/rom/gensine.s
+   jam/rom/bios.s
+   jam/rom/bios_stub.s
    )
-target_compile_options(native_basic
+target_compile_options(jam_tools
    PUBLIC --cpu 65sc02
 )
-target_type(native_basic native_kernel)
+target_type(jam_tools jam_kernel)
 
-add_executable(native_tools
-   native_rom/tools.s
-   native_rom/browser.s
-   native_rom/gensine.s
-   native_rom/bios.s
-   native_rom/bios_stub.s
+add_executable(jam_basic
+   jam/rom/osi_basic.s
+   jam/rom/bios.s
+   jam/rom/bios_stub.s
    )
-target_compile_options(native_tools
+target_compile_options(jam_basic
    PUBLIC --cpu 65sc02
 )
-target_type(native_tools native_kernel)
+target_type(jam_basic jam_kernel)
 
-add_executable(native_nmos6502_bootblock
-   nmos6502/kernel.s
-   native_rom/lineinput.s
-   native_rom/vt100.s
-   nmos6502/bios.s
+##################
+# JAM bootblocks #
+##################
 
-   mon/main.s
-   mon/asciihex.s
-   mon/assembler.s
-   mon/disassembler.s
-   mon/hexdump.s
-   mon/interndrive.s
-   mon/memory.s
-   mon/papertape.s
-   mon/registers.s
-   mon/table6502.s
-   )
-target_compile_options(native_nmos6502_bootblock
-   PUBLIC --cpu 6502
-)
-target_type(native_nmos6502_bootblock native_kernel)
-
-add_executable(native_cpm_bootblock
-   linkcpm.s
+add_executable(jam_cpm_bootblock
+   cpm/linkcpm.s
    ../bin/cpm/CPM
    ../bin/cpm/BDOS
-   native_rom/bios.s
-   native_rom/bios_stub.s
+   jam/rom/bios.s
+   jam/rom/bios_stub.s
    )
-# This doesn't work, as the glorious CMake de-duplicates the
-# "--large-alignment" option, which needs to be passed twice.
-# Since it only disables warnings, so be it.
-#target_link_options(native_cpm_bootblock PUBLIC
-#   --asm-args --large-alignment
-#   --ld-args --large-alignment
-#   )
-target_type(native_cpm_bootblock native_kernel)
+target_link_options(jam_cpm_bootblock PUBLIC
+    # this structure prevents de-duplication
+    "SHELL:--asm-args --large-alignment"
+    "SHELL:--ld-args --large-alignment"
+   )
+target_type(jam_cpm_bootblock jam_kernel)
 
-# SX4 executables
+add_executable(jam_nmos6502_bootblock
+   jam/nmos6502/kernel.s
+   jam/rom/lineinput.s
+   jam/rom/vt100.s
+
+   jam/mon/main.s
+   jam/mon/asciihex.s
+   jam/mon/assembler.s
+   jam/mon/disassembler.s
+   jam/mon/hexdump.s
+   jam/mon/interndrive.s
+   jam/mon/papertape.s
+   jam/mon/memory.s
+   jam/mon/registers.s
+   jam/mon/table6502.s
+
+   jam/nmos6502/bios.s
+   )
+target_compile_options(jam_nmos6502_bootblock
+   PUBLIC --cpu 6502
+)
+target_type(jam_nmos6502_bootblock jam_kernel)
+
+#######################
+# JAM SX4 executables #
+#######################
+
 add_executable(1sthello
-   sx4/a1hello.s
+   jam/sx4/a1hello.s
    )
 target_type(1sthello sx4)
 
 add_executable(asmprint
-   sx4/asmprint.s
+   jam/sx4/asmprint.s
    )
 target_type(asmprint sx4)
 
 add_executable(bcdcheck
-   sx4/bcdcheck.s
+   jam/sx4/bcdcheck.s
    )
 target_type(bcdcheck sx4)
 
 add_executable(brk-test
-   sx4/brk-test.s
+   jam/sx4/brk-test.s
    )
 target_type(brk-test sx4)
 
 add_executable(cpmfsck
-   sx4/cpmfsck.s
+   jam/sx4/cpmfsck.s
    )
 target_type(cpmfsck sx4)
 
 add_executable(int-test
-   sx4/int-test.s
+   jam/sx4/int-test.s
    )
 target_type(int-test sx4)
 
 add_executable(inst-ass
-   sx4/inst-ass.s
+   jam/sx4/inst-ass.s
    )
 target_type(inst-ass sx4)
 
 add_executable(keycode
-   sx4/keycode.s
+   jam/sx4/keycode.s
    )
 target_type(keycode sx4)
 
 add_executable(memcheck
-   sx4/memcheck.s
+   jam/sx4/memcheck.s
    )
 target_type(memcheck sx4)
 
 add_executable(sx4speed
-   sx4/speed.s
+   jam/sx4/speed.s
    )
 target_type(sx4speed sx4)
 
 add_executable(opcodes
-   sx4/opcodes.s
+   jam/sx4/opcodes.s
    )
 target_type(opcodes sx4)
 
 add_executable(wozmon2c
-   sx4/wozmon2c.s
+   jam/sx4/wozmon2c.s
    )
 target_type(wozmon2c sx4)
 
 add_executable(wrtboot
-   sx4/wrtboot.s
+   jam/sx4/wrtboot.s
    )
 target_type(wrtboot sx4)
 
-gencpmfs(native_cpmfs.img)
+gencpmfs(jam_cpmfs.img)

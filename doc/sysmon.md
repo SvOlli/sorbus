@@ -175,7 +175,7 @@ the first area will be used.
 #### Fill
 
 ```txt
->t 1000 2000 bd
+>f 1000 2000 bd
 ```
 
 Fills the memory from $1000 to $1fff with the value of $bd.
@@ -229,7 +229,7 @@ monitor of the Action Replay Cartridge as well.
 >la asmprint.sx4 0400
 >l a asmprint.sx4 0400
 >s2 memory.bin 1000 2000
->l 2 memory.bin 1000 2000
+>s 2 memory.bin 1000 2000
 ```
 
 Loads the file "asmprint.sx4" to memory location $0400 from the user-id
