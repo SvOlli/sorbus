@@ -12,8 +12,8 @@ set -ex
 cd "${mydir}"
 make -C "${topdir}"
 if [ -z "${file}" ]; then
-   cat "${mydir}/../../build/rp2040/native_alpha.uf2" "${mydir}/../../build/rp2040/native_rom.uf2" > "${mydir}/../../build/rp2040/native_test.uf2"
-   file="$(readlink -f "${mydir}/../../build/rp2040/native_test.uf2")"
+   cat "${mydir}/../../build/rp2040/jam_alpha.uf2" "${mydir}/../../build/rp2040/jam_rom.uf2" > "${mydir}/../../build/rp2040/jam_test.uf2"
+   file="$(readlink -f "${mydir}/../../build/rp2040/jam_test.uf2")"
 fi
 picotool info "${file}" -a || :
 picotool load "${file}" -f

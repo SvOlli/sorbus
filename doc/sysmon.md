@@ -260,7 +260,7 @@ Will show contents of the directory of the user partition $A.
 
 ## Differences between 65SC02 in ROM and NMOS 6502 toolkit versions
 
-| Topic   | Native ROM                          | NMOS 6502 toolkit                 |
+| Topic   | JAM ROM                             | NMOS 6502 toolkit                 |
 | ------- | ----------------------------------- | --------------------------------- |
 | opcodes | CMOS 65SC02 opcodes                 | NMOS 6502 opcodes                 |
 | BRK     | CPU correct 2-Byte BRK #$xx         | adjusted to historical 1-Byte BRK |

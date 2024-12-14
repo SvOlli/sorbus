@@ -11,7 +11,7 @@ to a certain degree. (Not all pins are connected due to a limited amount
 of 30 GPIO pins on the RP2040.)
 
 However, it is interesting to know which CPU the system is running on.
-The "Native Core" is the one with the most features, but does use
+The "JAM Core" is the one with the most features, but does use
 opcodes and features that are not available or buggy on an (old) NMOS
 6502. This means that a 65C02 or any other CMOS variant is required.
 So, it should be a good idea to detect the NMOS 6502 and print an error
@@ -41,7 +41,7 @@ Partial Detection
 -----------------
 
 A very easy way to tell apart an NMOS 6502 CPU from it's CMOS
-successors it done like this in the Sorbus Native kernel.
+successors it done like this in the Sorbus JAM kernel.
 
 ```
 ;  65C02       ; NMOS 6502
@@ -56,7 +56,7 @@ zero-flag, it will be cleared by the `DEC` opcode, but not by the "illegal"
 `NOP` opcode. This also works the same with the `INC` ($1A) Opcode as well.
 So, this is a short and efficiant way to tell NMOS and CMOS variants apart,
 as all CMOS variants share the same INC/DEC instructions. This is the
-detection the "Native Core" kernel uses for locking out the NMOS 6502.
+detection the "JAM Core" kernel uses for locking out the NMOS 6502.
 
 On the internet, I found a solution on how to detect the three major CPUs:
 NMOS 6502, CMOS 65C02 and the 65816, the variant with 16 bit extensions.
@@ -133,7 +133,7 @@ defined computer: you can use a special environment for detection and
 then switch over to a generic one.
 
 The "runtime environment" is - as all other runtime environments like
-the previous mentioned MCP and Native Cores - written in C. It provides
+the previous mentioned MCP and JAM Cores - written in C. It provides
 everything up to the memory and clock signal. The running code to detect
 the CPU should write an identifier to the last byte of memory. If this
 value changes from the default one, the processing will be stopped.
@@ -152,7 +152,7 @@ by the runtime environment, otherwise a zero indicates a failure.
 
 The "runtime environment" also comes with another feature. Since it's
 well encapsulated, it can be used just as a subroutine in differenct
-cores. As of now, it is used within the MCP and the Native Core.
+cores. As of now, it is used within the MCP and the JAM Core.
 
 
 Every Byte Is Sacred

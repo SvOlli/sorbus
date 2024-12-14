@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
- * This program implements Just Another Machine, a custom Sorbus core
+ * This program implements JAM (Just Another Machine), a custom Sorbus core
  * for the Sorbus Computer
  */
 

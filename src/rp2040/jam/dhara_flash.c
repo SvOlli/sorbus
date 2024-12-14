@@ -47,7 +47,7 @@ static struct dhara_map dhara;
 
 
 /*
- * frontend functions: sorbus native uses these
+ * frontend functions: Sorbus JAM (Just Another Machine) uses these
  */
 
 

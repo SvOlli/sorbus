@@ -573,7 +573,7 @@ xmodem_receive:
 
    lda   #0
    ldx   #>PAYLOAD_SIZE_1K
-  
+
 @contsz:
    sta   firstpagebytes
    stx   pagectr

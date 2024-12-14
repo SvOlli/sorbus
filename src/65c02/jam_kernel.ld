@@ -1,4 +1,4 @@
-# CC65 configuration for sorbus native variant (kernal rom)
+# CC65 configuration for sorbus JAM variant (kernal rom)
 # based upon C64-asm.cfg
 
 MEMORY {

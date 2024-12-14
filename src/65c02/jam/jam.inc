@@ -3,7 +3,7 @@
 ; Distributed unter the terms: GPL-3.0-or-later
 ;
 
-; Registers of Native Core I/O
+; Registers of JAM Core I/O
 ;
 ; (V): vector
 ; (R): read-only

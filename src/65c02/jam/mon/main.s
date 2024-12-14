@@ -13,7 +13,7 @@
 ; [X] (a) assemble
 ; [X] reorganize zeropage memory usage
 ; [X] BRK handler
-; [X] native ROM integration
+; [X] JAM ROM integration
 ; [X] NMOS 6502 toolkit integration
 ; [X] consistent current address pointer for 'm', 'd', set upon init to PC
 ; [-] merge code?

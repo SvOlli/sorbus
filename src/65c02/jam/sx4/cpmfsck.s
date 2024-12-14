@@ -54,7 +54,7 @@ start:
    ldx   dirpos+1
    int   PRHEX16
 .endif
-   
+
    ldy   #$10
 @entryloop:
    iny
@@ -109,11 +109,11 @@ start:
    sta   dirpos+1
    cmp   #$90
    bcc   @dirloop
-   
-   
+
+
    jsr   dumpmap
    jmp   ($fffc)
-   
+
 
 clearmap:
    ldy   #$00

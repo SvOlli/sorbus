@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
- * This program implements a Native custom platform
+ * This program implements a JAM (Just Another Machine) custom platform
  * for the Sorbus Computer
  */
 

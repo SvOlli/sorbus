@@ -8,7 +8,7 @@
  * Thanks to David Given for pointing me out to his code.
  *
  * However it has been modified a lot and taylored for the use with the
- * Sorbus Computer's Native Core
+ * Sorbus Computer's JAM Core
  */
 
 #include <stdio.h>

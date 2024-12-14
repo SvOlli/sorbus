@@ -113,6 +113,9 @@ source()
       -DLLVM_MOS_BOOTSTRAP_COMPILER="OFF"
    cmake --build build-llvm-sdk --config Release --target all -- -j ${jobs}
    cmake --build build-llvm-sdk --config Release --target install
+
+   echo
+   echo "${build_dir} can now be deleted"
 }
 
 binary_linux()

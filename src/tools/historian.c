@@ -198,7 +198,7 @@ int main( int argc, char *argv[] )
    {
       help( progname, 1 );
    }
-   
+
    f = fopen( filename, "rb" );
    if( !f )
    {

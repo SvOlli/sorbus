@@ -1,6 +1,6 @@
 This project uses software that was developed under non-free licenses.
 
-src/65c02/native_rom/osi_basic.s:
+src/65c02/jam/rom/osi_basic.s:
 This is OSI BASIC V1.0 REV 3.2
 Written by Richard W. Weiland
 Copyright 1977 Microsoft Co.
@@ -8,16 +8,16 @@ It has been used with computers manufactured by Ohio Scientific Inc.
 Reverse engineering was started by Michael Steil
 Source code is based on version by Grant Searle for his simple 6502 computer.
 
-src/65c02/native_rom/tim.s:
+src/65c02/jam/rom/tim.s:
 This is the Terminal Interface Monitor (TIM) of the MOS 6530-004.
 Copyright 1976 MOS Technology
 
-src/65c02/native_rom/woz.s:
+src/65c02/jam/rom/woz.s:
 This is WozMon of the Apple 1 Computer
 Written by Steve Wozniak
 Copyright 1976 Apple Computer Company
 
-src/65c02/native_sx4/inst-ass.s:
+src/65c02/jam/sx4/inst-ass.s:
 This is Instant 6502 Assembler for KIM-1
 Written by Alan Cashin
 Released as public domain

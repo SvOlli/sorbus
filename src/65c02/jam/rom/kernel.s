@@ -3,7 +3,7 @@
 ;
 ; This ROM for the native mode is in very early development.
 
-.define VERSION "0.4"
+.define VERSION "0.5"
 .segment "CODE"
 
 ; zeropage addresses used by this part of ROM
@@ -94,8 +94,8 @@ cmos6502:
 @iloop:
    jsr   PRINT          ;       2         3         4         5         6         7         8
    ;         12345678901234567890123456789012345678901234567890123456789012345678901234567890
-   .byte 10,"Sorbus Native V", VERSION
-   .byte                       ": 1-4)Bootsector, 0)Exec RAM @ $E000,"
+   .byte 10,"Sorbus JAM V", VERSION
+   .byte                   ": 1-4)Bootsector, 0)Exec RAM @ $E000,"
    .byte 10,"F)ilebrowser, B)ASIC, System M)onitor, T)IM, W)ozMon?",10,0
 :
    jsr   chrinuc        ; wait for keypress and make it uppercase

@@ -97,7 +97,7 @@ running. Now the user input is evaluated like:
 - an empty input returns to the "asterisk input"
 
 The supported instruction set is of the 65SC02. The BRK instruction is not
-supporing an operand here, as it is used with the Sorbus Native kernel.
+supporing an operand here, as it is used with the Sorbus JAM kernel.
 
 
 TIM
@@ -113,7 +113,7 @@ routines, besides mentioning them.
 
 Output: upon start you are typically greeted with
 ```
-    ADDR P  A  X  Y  S 
+    ADDR P  A  X  Y  S
  *  E619 33 28 00 00 FF
 .
 ```

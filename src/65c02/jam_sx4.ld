@@ -1,4 +1,4 @@
-# CC65 configuration for Sorbus native "SX4" executable
+# CC65 configuration for Sorbus JAM "SX4" executable
 # SX4 = Sorbus eXecutable at address $0400
 
 MEMORY {
