@@ -48,13 +48,13 @@ reset:
 
    txs                  ; initialize stack to $FF
 
-   lda   #$00
    ; multi purpose routine
    ; - set Z=$00 on 65CE02 in soft reset
    ; - detect 6502 from CMOS variants
+   lda   #$00
    .byte $4b            ; 65CE02: taz -> make sure, sta (zp),z works like sta (zp)
                         ; 65C02: nop
-                        ; 65816: phk (push program bank) -> like nop, but destroys byte on stack
+                        ; 65816: phk (push program bank) -> like nop, but moves SP
                         ; 6502: ALR #im
 
    dec                  ; 65C02 opcode that on 6502 is an argument of $4b/ALR

@@ -67,16 +67,29 @@ function(target_type target system)
       )
       target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/jam_sx4.ld")
       set(CPMFS_EXTRA_TARGETS ${target} ${CPMFS_EXTRA_TARGETS} PARENT_SCOPE)
-      set_target_properties(${target} PROPERTIES PREFIX "10.")
+      if( "${ARGV2}" STREQUAL "" )
+         set_target_properties(${target} PROPERTIES PREFIX "10.")
+      else()
+         set_target_properties(${target} PROPERTIES PREFIX "${ARGV2}")
+      endif()
       set_target_properties(${target} PROPERTIES SUFFIX ".sx4")
    else()
       message(FATAL_ERROR "unknown target_type: ${system}")
    endif()
 endfunction()
 
-function(target_type_sx4 target)
-   target_link_options(${target} PUBLIC "-C${CMAKE_CURRENT_SOURCE_DIR}/jam_sx4.ld")
-   set(SX4_FILES ${SX4_FILES} "${CMAKE_CURRENT_BINARY_DIR}/${target}.bin")
+function(quick_sx4 name)
+   add_executable(${name}
+      jam/sx4/${name}.s
+      )
+   target_type(${name} sx4)
+endfunction()
+
+function(quick_6502asm name)
+   add_executable(${name}
+      jam/6502asm/${name}.s
+      )
+   target_type(${name} sx4 "9.")
 endfunction()
 
 function(target_type_addr target system startaddr)
@@ -225,64 +238,25 @@ add_executable(1sthello
    )
 target_type(1sthello sx4)
 
-add_executable(asmprint
-   jam/sx4/asmprint.s
-   )
-target_type(asmprint sx4)
-
-add_executable(bcdcheck
-   jam/sx4/bcdcheck.s
-   )
-target_type(bcdcheck sx4)
-
-add_executable(brk-test
-   jam/sx4/brk-test.s
-   )
-target_type(brk-test sx4)
-
-add_executable(cpmfsck
-   jam/sx4/cpmfsck.s
-   )
-target_type(cpmfsck sx4)
-
-add_executable(int-test
-   jam/sx4/int-test.s
-   )
-target_type(int-test sx4)
-
-add_executable(inst-ass
-   jam/sx4/inst-ass.s
-   )
-target_type(inst-ass sx4)
-
-add_executable(keycode
-   jam/sx4/keycode.s
-   )
-target_type(keycode sx4)
-
-add_executable(memcheck
-   jam/sx4/memcheck.s
-   )
-target_type(memcheck sx4)
-
 add_executable(sx4speed
    jam/sx4/speed.s
    )
 target_type(sx4speed sx4)
 
-add_executable(opcodes
-   jam/sx4/opcodes.s
-   )
-target_type(opcodes sx4)
+quick_sx4(asmprint)
+quick_sx4(bcdcheck)
+quick_sx4(brk-test)
+quick_sx4(cpmfsck)
+quick_sx4(int-test)
+quick_sx4(inst-ass)
+quick_sx4(keycode)
+quick_sx4(memcheck)
+quick_sx4(opcodes)
+quick_sx4(wozmon2c)
+quick_sx4(wrtboot)
 
-add_executable(wozmon2c
-   jam/sx4/wozmon2c.s
-   )
-target_type(wozmon2c sx4)
-
-add_executable(wrtboot
-   jam/sx4/wrtboot.s
-   )
-target_type(wrtboot sx4)
+quick_6502asm(demoscen)
+quick_6502asm(random)
+quick_6502asm(santa)
 
 gencpmfs(jam_cpmfs.img)

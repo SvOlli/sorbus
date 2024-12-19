@@ -44,6 +44,11 @@ add_executable(timcat
    timcat.c
    )
 
+# tool to convert binary data to TIM paper tape format
+add_executable(translation_matrix
+   translation_matrix.c
+   )
+
 # tool to convert binary data to WozMon input
 add_executable(wozcat
    wozcat.c

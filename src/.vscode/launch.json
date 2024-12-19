@@ -16,6 +16,9 @@
                 "adapter speed 5000"
             ],
             "configFiles": [
+                // Using a Raspberry Pi
+                //"interface/raspberrypi-swd.cfg",
+                // Using a debug probe or additional Pico
                 "interface/cmsis-dap.cfg",
                 "target/rp2040.cfg"
             ],

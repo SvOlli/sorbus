@@ -73,7 +73,6 @@ endfunction()
 bin2h(krusader.h ${CMAKE_HOME_DIRECTORY}/bin/krusader_65C02.bin krusader_e000)
 src2h(cpudetect_apple1.h cpudetect_apple1 cpudetect_0280)
 src2h(cpudetect.h cpudetect cpudetect)
-#src2h(cpustate.h cpustate cpustate)
 src2h(payload_mcp.h payload_mcp payload_mcp)
 src2h(a1hello.h a1hello a1hello_0800)
 src2h(cpudetect_65.h cpudetect_65 cpudetect_code)
@@ -124,6 +123,7 @@ setup_target(apple1 "apple1")
 
 # Native: core for implementing a custom Sorbus system
 add_executable(jam_alpha
+   cpudetect.h
    common/bus_rp2040_purple.c
    common/cpu_detect.c
    common/disassemble.c
@@ -167,3 +167,25 @@ uf2join(jam_alpha_picotool
    jam_alpha
 )
 dharawrite(jam_cpmfs.dhara jam_cpmfs.img)
+
+add_executable(32x32ws2812)
+pico_generate_pio_header(32x32ws2812
+   ${CMAKE_CURRENT_LIST_DIR}/32x32leds/ws2812.pio
+   OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
+)
+pico_generate_pio_header(32x32ws2812
+   ${CMAKE_CURRENT_LIST_DIR}/32x32leds/bus.pio
+   OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
+)
+target_sources(32x32ws2812 PRIVATE
+   32x32leds/main.c
+   32x32leds/ws2812.c
+   32x32leds/translation_matrix_1.c
+)
+target_link_libraries(32x32ws2812 PRIVATE
+   pico_stdlib
+   pico_multicore
+   hardware_pio
+)
+pico_set_binary_type(32x32ws2812 copy_to_ram)
+setup_target(32x32ws2812 "32x32leds")

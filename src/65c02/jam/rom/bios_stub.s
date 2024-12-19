@@ -1,8 +1,8 @@
 
 .include "jam_bios.inc"
 
-; these addresses are not really required, since those are only executed
-; in bank 1 (kernel), but this stub is for every other bank.
+; These addresses are not really required, since those are only accessed
+; after switching to bank 1 for kernel. This stub is for every other bank.
 
 reset    = $e000
 brkjump  = $fff2

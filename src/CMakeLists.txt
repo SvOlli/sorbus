@@ -4,6 +4,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
    message(FATAL_ERROR "In-source build detected!")
 endif()
 
+option(PICO_PLATFORM "Platform to compile for (rp2040,rp2350,rp2350-riscv)" "rp2040")
 option(CPM65_PATH "directory of CP/M 65 source code")
 
 # initialize the SDK based on PICO_SDK_PATH and BOARD config

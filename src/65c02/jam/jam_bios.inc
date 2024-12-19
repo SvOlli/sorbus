@@ -33,22 +33,22 @@ PRIMM    := PRINT
 .global  bankrti        ; used in kernel and mon only, to jump to another bank
                         ; - target address needs to be on the stack
                         ; - also dummy processor status, like BRK
-.global  brkjump        ; kernel only, doesn't matter in other banks
-.global  reset          ; kernel only, doesn't matter in other banks
+.global  brkjump        ; kernel only, does not matter in other banks
+.global  reset          ; kernel only, does not matter in other banks
 
 .ifp02
  .macro int arg
-  .error trying to use software interrupt which is not supported on MOS 6502
+  .error trying to use software interrupt which is not supported on NMOS 6502
  .endmacro
 .else
  .ifp4510
   .macro int arg
-   stz   $DF0A          ; save Z register that can't be written to stack
-                        ; address might change
+   stz   $DF76          ; save Z register that cannot be written to stack
+                        ; address might change (unused internal drive register)
    ldz   #$00           ; clear Z register to be compatible to 65(S)C02
    .byte $00,arg        ; BRK with operand
    php                  ; ldz changes processor status register
-   ldz   $DF0A          ; restore Z register
+   ldz   $DF76          ; restore Z register
    plp                  ; restore processor status
   .endmacro
  .else

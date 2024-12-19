@@ -1,0 +1,41 @@
+.pio_version 0
+
+.program bus_wait
+
+.wrap_target
+loop:
+   wait 0 gpio 24       ; first wait for r/w to go low
+   wait 1 gpio 25  [20] ; now wait for clock to go high (and a bit more)
+   mov isr, pins        ; just pull all GPIOs to output
+   push
+   wait 0 gpio 25       ; and wait for clock to go low again
+                        ; to prevent too fast reentering
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void bus_wait_program_init( PIO pio, uint sm, uint offset )
+{
+   // do not mess with these!
+   const uint startpin = 0;
+   const uint numpins  = 24;
+
+   pio_gpio_init( pio, startpin );
+
+   // setup pins
+   // listen on the pins 0-25 of the bus
+   pio_sm_config c = bus_wait_program_get_default_config( offset );
+   sm_config_set_in_pin_base( &c, startpin );
+   sm_config_set_in_pins( &c, 32 ); // just transfer full word
+   pio_sm_set_consecutive_pindirs( pio, sm, startpin, 32, false );
+
+   sm_config_set_fifo_join( &c, PIO_FIFO_JOIN_RX );
+   sm_config_set_in_shift( &c, true, false, 0 ); // address+data bus
+
+   sm_config_set_clkdiv_int_frac8( &c, 1, 0 );
+
+   pio_sm_init( pio, sm, offset, &c );
+   pio_sm_set_enabled( pio, sm, true );
+}
+%}
