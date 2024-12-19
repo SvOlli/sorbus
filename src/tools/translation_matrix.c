@@ -27,7 +27,7 @@ void mktlm1( const char *filename )
    FILE *f = fopen( filename, "wb" );
    if( !f )
    {
-      fprintf( stderr, "cannot create '%s', running from wrong directory?\n" );
+      fprintf( stderr, "cannot create '%s', running from wrong directory?\n", filename );
       return;
    }
    int a = 0;
@@ -60,7 +60,7 @@ void mktlm1( const char *filename )
       t[m[a]] = a;
    }
 
-   fprintf( f, "unsigned int translation_matrix[0x0400] = {" );
+   fprintf( f, "const unsigned int translation_matrix[0x0400] = {" );
    for( y = 0; y <= 31; ++y )
    {
       fprintf( f, "\n   " );

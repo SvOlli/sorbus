@@ -78,19 +78,19 @@ function(target_type target system)
    endif()
 endfunction()
 
-function(quick_sx4 name)
-   add_executable(${name}
-      jam/sx4/${name}.s
+macro(quick_sx4 target)
+   add_executable(${target}
+      jam/sx4/${target}.s
       )
-   target_type(${name} sx4)
-endfunction()
+   target_type(${target} sx4)
+endmacro()
 
-function(quick_6502asm name)
-   add_executable(${name}
-      jam/6502asm/${name}.s
+macro(quick_6502asm target)
+   add_executable(${target}
+      jam/6502asm/${target}.s
       )
-   target_type(${name} sx4 "9.")
-endfunction()
+   target_type(${target} sx4 "9.")
+endmacro()
 
 function(target_type_addr target system startaddr)
    target_type(${target} ${system})

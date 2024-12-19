@@ -102,7 +102,6 @@ void led_handler()
 
 int main()
 {
-   int in = PICO_ERROR_TIMEOUT;
    // setup UART
    stdio_init_all();
 

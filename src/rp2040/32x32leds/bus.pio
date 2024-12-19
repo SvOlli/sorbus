@@ -27,8 +27,8 @@ static inline void bus_wait_program_init( PIO pio, uint sm, uint offset )
    // listen on the pins 0-25 of the bus
    pio_sm_config c = bus_wait_program_get_default_config( offset );
    sm_config_set_in_pin_base( &c, startpin );
-   sm_config_set_in_pins( &c, 32 ); // just transfer full word
-   pio_sm_set_consecutive_pindirs( pio, sm, startpin, 32, false );
+   sm_config_set_in_pins( &c, 32 ); // with < 32 it doesn't work... why?
+   pio_sm_set_consecutive_pindirs( pio, sm, startpin, numpins+2, false );
 
    sm_config_set_fifo_join( &c, PIO_FIFO_JOIN_RX );
    sm_config_set_in_shift( &c, true, false, 0 ); // address+data bus

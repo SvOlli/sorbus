@@ -17,7 +17,7 @@
 
 uint8_t led_framebuffer[0x400];
 uint32_t colortab[0x100];
-extern unsigned int translation_matrix[0x400];
+extern const unsigned int translation_matrix[0x400];
 
 uint32_t andvalues[4] = {
    0x7f7f7f7f, 0x3f3f3f3f, 0x1f1f1f1f, 0x0f0f0f0f
