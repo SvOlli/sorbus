@@ -177,6 +177,33 @@ void queue_event_cancel( queue_event_handler_t handler )
 }
 
 
+void queue_event_cancel_data( queue_event_handler_t handler, void *data )
+{
+   queue_event_t *current  = 0;
+   queue_event_t *previous = 0;
+
+   for( current = _queue_next_event; current; current = current->next )
+   {
+      if( (current->handler == handler) && (current->data == data) )
+      {
+         if( previous )
+         {
+            previous->next = current->next;
+         }
+         else
+         {
+            _queue_next_event = _queue_next_event->next;
+         }
+
+         queue_event_drop( current );
+
+         break;
+      }
+      previous = current;
+   }
+}
+
+
 bool queue_event_contains( queue_event_handler_t handler )
 {
    bool retval = false;

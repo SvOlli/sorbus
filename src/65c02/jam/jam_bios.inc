@@ -191,10 +191,10 @@ PRIMM    := PRINT
 .define LINEINPUT $0C
 
 ; generate a sine table
-; A=page to write table to
-; X=amplitude ($01-$10)
-; Y=offset ($00-$03)
-;   adding $04 also writes the decimal parts to following page
+; A=page for table
+; X=bits 0-4: size ($01-$10)
+;   bit    5: write decimal parts to following page
+;   bits 6-7: variant (offset in 90 degrees)
 .define GENSINE   $0D
 
 ; jump into system monitor

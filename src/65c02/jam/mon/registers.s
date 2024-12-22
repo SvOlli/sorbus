@@ -79,24 +79,31 @@ mon_brk:
    lda   #<(txt_brk-txt_brk)
    ; R_A is already saved, now save the rest
    sta   MODE           ; save index for source
+.if CONFIG_BRK_HAS_PARAMETER
+   ; on CMOS, BRK is implemented via handler using JSR -> remove RTS
+   bne   :+
+   pla                  ; pull JSR from stack
+   pla
+:
+   pla
+   sta   R_P
+   pla
+   sta   R_PC+0
+   pla
+   sta   R_PC+1
    lda   BRK_SB
    sta   R_BK
    lda   BRK_SA
    sta   R_A
    stx   R_X
    sty   R_Y
-.if CONFIG_BRK_HAS_PARAMETER
-   ; on CMOS, BRK is implemented via handler using JSR -> remove RTS
-   pla
-   pla
-   pla
-   sta   R_P
-   ; on CMOS, BRK is implemented as 2-byte -> no adjust required
-   pla
-   sta   R_PC+0
-   pla
-   sta   R_PC+1
 .else
+   lda   BRK_SB
+   sta   R_BK
+   lda   BRK_SA
+   sta   R_A
+   stx   R_X
+   sty   R_Y
    ; on NMOS, BRK is implemented as 1-byte -> adjust return value
    pla
    sta   R_P

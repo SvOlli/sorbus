@@ -6,8 +6,8 @@
 
 TMPVEC = $fe
 
-SIN_XR = $fc
-SIN_YR = $fd
+SIN_AMPLITUDE = $fc
+SIN_OFFSET = $fd
 
 D_BUF  = $fb ; 3 bytes
 
@@ -368,9 +368,9 @@ gensine:
    ldy   #VT100_SCRN_CLR
    int   VT100
    lda   #$10
-   sta   SIN_XR
+   sta   SIN_AMPLITUDE
    lda   #$00
-   sta   SIN_YR
+   sta   SIN_OFFSET
 
 @inputloop:
    lda   #$01
@@ -379,15 +379,10 @@ gensine:
    int   VT100
 
    jsr   PRINT
-   .byte "amplitude:",0
+   .byte "parameter:",0
 
-   lda   SIN_XR
-   int   PRHEX8
-
-   jsr   PRINT
-   .byte " variant:",0
-
-   lda   SIN_YR
+   lda   SIN_AMPLITUDE
+   ora   SIN_OFFSET
    int   PRHEX8
 
    lda   #$0a
@@ -426,10 +421,13 @@ gensine:
    bra   @keyloop
 
 @offset:
-   and   #$0f    ; now is at $9-$c
-   sec
-   sbc   #$09
-   sta   SIN_YR
+   and   #$07           ; $01-$04
+   dec                  ; $00-$03
+   ror
+   ror
+   ror                  ; $00,$40,$80,$c0
+   pha
+   sta   SIN_OFFSET
    bra   @calcsine
 
 @ampaf:
@@ -440,15 +438,17 @@ gensine:
    bne   :+
    lda   #$10    ; 0 is interpreted as $10
 :
-   sta   SIN_XR
+   sta   SIN_AMPLITUDE
 
 @calcsine:
-; A: page for table
-; X: size ($01-$10)
-; Y: variant ($00-$03)
+; A=page for table
+; X=bits 0-4: size ($01-$10)
+;   bit    5: write decimal parts to following page
+;   bits 6-7: variant (offset in 90 degrees)
+   lda   SIN_AMPLITUDE
+   ora   SIN_OFFSET
+   tax
    lda   #$CF
-   ldx   SIN_XR
-   ldy   SIN_YR
    int   GENSINE
 
    jmp   @inputloop

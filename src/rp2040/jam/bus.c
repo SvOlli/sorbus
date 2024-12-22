@@ -56,12 +56,12 @@ uint32_t address;
 // measure time used for processing one million clock cycles (mcc)
 uint64_t time_per_mcc          = 1; // in case a division is done
 
-// no need to volatile these, as they are only used within bus_run loop
-uint32_t timer_irq_total       = 0;
-uint32_t timer_nmi_total       = 0;
+struct repeating_timer timer_ms[2];
+uint32_t timer_cycle_total[2]  = { 0, 0 };
+bool timer_cycle_triggered[2]  = { false, false };
+bool timer_ms_triggered[2]     = { false, false };
+const uint32_t timer_mask[2]   = { BUS_CONFIG_mask_irq, BUS_CONFIG_mask_nmi };
 
-bool nmi_timer_triggered       = false;
-bool irq_timer_triggered       = false;
 bool cpu_running               = false;
 bool cpu_running_request       = true;
 
@@ -78,7 +78,7 @@ uint16_t dhara_flash_size = 0;
 #define DHARA_SYNC_DELAY (100000)
 
 // identification
-const uint8_t sorbus_id[] = { 'S', 'B', 'C', '2', '3', 1, 1, 0 };
+const uint8_t sorbus_id[] = { 'S', 'B', 'C', '2', '3', 1, 2, 0 };
 const uint8_t *sorbus_id_p;
 cputype_t cputype = CPU_UNDEF;
 const static uint8_t cpufeatures[] =
@@ -230,9 +230,9 @@ static inline void event_watchdog( __unused void *data )
 }
 
 
-static inline void watchdog_setup( uint8_t value, uint8_t config )
+static inline void watchdog_setup( uint8_t value )
 {
-   config &= 0x03;
+   uint8_t config = address & 0x03;
    if( config )
    {
       if( queue_event_contains( event_watchdog ) )
@@ -262,136 +262,120 @@ static inline void watchdog_setup( uint8_t value, uint8_t config )
 }
 
 
-static inline void event_timer_nmi( __unused void *data )
+static inline void event_timer_cycle( void *data )
 {
-   // event handler for timer nmi
-   // this event is max 1 time in queue
+   // data is 32 bit value of 0=IRQ or 1=NMI
+   int offset = (int)data;
 
-   // trigger NMI
-   gpio_clr_mask( bus_config.mask_nmi );
+   // trigger interrupt
+   gpio_clr_mask( timer_mask[offset] );
 
    // set state for reading
-   nmi_timer_triggered = true;
+   timer_cycle_triggered[offset] = true;
 
-   // restart time if requested
-   if( timer_nmi_total )
+   // restart if requested
+   if( timer_cycle_total[offset] )
    {
-      queue_event_add( timer_nmi_total, event_timer_nmi, 0 );
+      queue_event_add( timer_cycle_total[offset], event_timer_cycle, (void*)offset );
    }
 }
 
 
-static bool callback_timer_nmi( __unused struct repeating_timer *t )
+static inline void timer_cycle_setup( uint8_t value )
 {
-   if( ram[0xDF0B] & 80 ) // bit 7 = NMI timer enabled
-   {
-      // trigger NMI
-      gpio_clr_mask( bus_config.mask_nmi );
-
-      // set state for reading
-      nmi_timer_triggered = true;
-
-      // repeat
-      return true;
-   }
-   else
-   {
-      // disabled
-      return false;
-   }
-}
-
-
-static inline void event_timer_irq( __unused void *data )
-{
-   // event handler for timer irq
-   // this event is max 1 time in queue
-
-   // trigger IRQ
-   gpio_clr_mask( bus_config.mask_irq );
-
-   // set state for reading
-   irq_timer_triggered = true;
-
-   // restart time if requested
-   if( timer_irq_total )
-   {
-      queue_event_add( timer_irq_total, event_timer_irq, 0 );
-   }
-}
-
-
-static bool callback_timer_irq( __unused struct repeating_timer *t )
-{
-   if( ram[0xDF0B] & 40 ) // bit 6 = IRQ timer enabled
-   {
-      // trigger IRQ
-      gpio_clr_mask( bus_config.mask_irq );
-
-      // set state for reading
-      irq_timer_triggered = true;
-
-      // repeat
-      return true;
-   }
-   else
-   {
-      // disabled
-      return false;
-   }
-}
-
-
-static inline void timer_setup( uint8_t value, uint8_t config )
-{
-   config &= 0x07;
+   uint8_t config = address & 0x07;
    // config bits (decoded from address)
    //           0        1
    // bit 0: lobyte   hibyte
    // bit 1: repeat   oneshot
    // bit 2: irq      nmi
+   uint32_t offset = (config & 4) >> 2;
 
-   // check timer to use
-   if( config & (1<<2) )
+   if( config & (1<<0) )
    {
-      // nmi
-      if( config & (1<<0) )
+      // highbyte: store and start timer
+      timer_cycle_total[offset] |= value << 8;
+      queue_event_add( timer_cycle_total[offset], event_timer_cycle, (void*)offset );
+      if( config & (1<<1) )
       {
-         // highbyte: store and start timer
-         timer_nmi_total |= value << 8;
-         queue_event_add( timer_nmi_total, event_timer_nmi, 0 );
-         if( config & (1<<1) )
-         {
-            // oneshot
-            timer_nmi_total = 0;
-         }
-      }
-      else
-      {
-         // lowbyte: store and stop timer
-         queue_event_cancel( event_timer_nmi );
-         timer_nmi_total = value;
+         // oneshot
+         timer_cycle_total[offset] = 0;
       }
    }
    else
    {
-      // irq
-      if( config & (1<<0) )
+      // lowbyte: store and stop timer
+      queue_event_cancel_data( event_timer_cycle, (void*)offset );
+      timer_cycle_total[offset] = value;
+   }
+}
+
+
+static inline void timer_cycle_ack()
+{
+   // identift interrupt to work with
+   uint32_t offset = (address & 4) >> 2;
+   // set bit 7 if interrupt was triggered
+   bus_data_write( timer_cycle_triggered[offset] ? 0x80 : 0x00 );
+
+   if( timer_cycle_triggered[offset] )
+   {
+      timer_cycle_triggered[offset] = false;
+      // check if all other interrupt source prevents release
+      if( !timer_ms_triggered[offset] )
       {
-         // highbyte: store and start timer
-         timer_irq_total |= value << 8;
-         queue_event_add( timer_irq_total, event_timer_irq, 0 );
-         if( config & (1<<1) )
-         {
-            // oneshot
-            timer_irq_total = 0;
-         }
+         gpio_set_mask( bus_config.mask_nmi );
       }
-      else
+   }
+}
+
+
+static bool callback_timer_ms( struct repeating_timer *t )
+{
+   uint32_t offset = (uint32_t)t->user_data;
+
+   timer_ms_triggered[offset] = true;
+   gpio_clr_mask( timer_mask[offset] );
+
+   return true;
+}
+
+
+static inline void timer_ms_setup( uint8_t value )
+{
+   uint8_t config = address & 0x03;
+
+   uint32_t offset = ((config & 2) >> 1);
+   struct repeating_timer *t = &timer_ms[offset];
+   uint16_t *tv = (uint16_t*)&ram[address & 0xFFFE];
+
+   // using RAM to store config
+   handle_ramrom();
+
+   cancel_repeating_timer( t );
+
+   if( *tv )
+   {
+      add_repeating_timer_us( -100 * (*tv), callback_timer_ms, (void*)offset, t );
+   }
+}
+
+
+static inline void timer_ms_ack()
+{
+   uint8_t config = address & 0x03;
+   // identift interrupt to work with
+   uint32_t offset = ((config & 2) >> 1);
+   // set bit 7 if interrupt was triggered
+   bus_data_write( timer_ms_triggered[offset] ? 0x80 : 0x00 );
+
+   if( timer_ms_triggered[offset] )
+   {
+      timer_ms_triggered[offset] = false;
+      // check if all other interrupt source prevents release
+      if( !timer_cycle_triggered[offset] )
       {
-         // lowbyte: store and stop timer
-         queue_event_cancel( event_timer_irq );
-         timer_irq_total = value;
+         gpio_set_mask( timer_mask[offset] );
       }
    }
 }
@@ -405,7 +389,7 @@ static inline void event_clear_reset( __unused void *data )
 
 static inline void system_reset()
 {
-   int dummy;
+   int i;
 
    if( queue_event_contains( event_clear_reset ) )
    {
@@ -414,10 +398,17 @@ static inline void system_reset()
    }
 
    // clear some internal states
-   timer_nmi_total       = 0;
-   nmi_timer_triggered   = false;
-   timer_irq_total       = 0;
-   irq_timer_triggered   = false;
+   for( i = 0; i < 2; ++i )
+   {
+      timer_cycle_total[i]     = 0;
+      timer_cycle_triggered[i] = false;
+      timer_ms_triggered[i]    = false;
+      // stop ms timers
+      (void)cancel_repeating_timer( &timer_ms[i] );
+      // clear out ms timer registers
+      ram[0xDF18+(i>>1)]       = 0;
+      ram[0xDF19+(i>>1)]       = 0;
+   }
    watchdog_cycles_total = 0;
 
    // clear event queue and setup end of reset event
@@ -429,11 +420,11 @@ static inline void system_reset()
    // setup bank
    set_bank( 1 );
 
-   while( queue_try_remove( &queue_uart_read, &dummy ) )
+   while( queue_try_remove( &queue_uart_read, &i ) )
    {
       // just loop until queue is empty
    }
-   while( queue_try_remove( &queue_uart_write, &dummy ) )
+   while( queue_try_remove( &queue_uart_write, &i ) )
    {
       // just loop until queue is empty
    }
@@ -441,7 +432,8 @@ static inline void system_reset()
    // setup serial console
    console_set_crlf( true );
    console_set_flowcontrol( false );
-   // this needs to be set, as core0 cannot access RAM
+   // reflect changes from above in control register
+   // this needs to be set here, as console_set_* cannot access RAM
    ram[MEM_ADDR_UART_CONTROL] = 0x01;
    // reset Sorbus ID pointer
    sorbus_id_p = sorbus_id;
@@ -764,13 +756,9 @@ const char* debug_handler_name( queue_event_handler_t h )
    {
       return "event_flash_sync";
    }
-   if( h == event_timer_irq )
+   if( h == event_timer_cycle )
    {
-      return "event_timer_irq";
-   }
-   if( h == event_timer_nmi )
-   {
-      return "event_timer_nmi";
+      return "event_timer_cycle";
    }
    if( h == event_watchdog )
    {
@@ -793,7 +781,12 @@ void debug_queue_event( const char *text )
               debug_handler_name( event->handler ),
               event->data );
    }
-   printf( "done.\n" );
+   for( i = 0; i < 2; ++i )
+   {
+      printf( "timer%d (%s): id=%d us=%lld d=%u\n", i, i ? "NMI" : "IRQ",
+              timer_ms[i].alarm_id, timer_ms[i].delay_us,
+              (uint32_t)timer_ms[i].user_data );
+   }
 }
 
 void debug_clocks()
@@ -893,7 +886,7 @@ static inline void handle_io()
       uint8_t  reg[4];
    } shadow_cycle_count;
 
-   uint8_t data = state >> bus_config.shift_data;
+   uint8_t data = gpio_get_all() >> bus_config.shift_data;
    bool success;
 
    if( state & bus_config.mask_rw )
@@ -928,21 +921,21 @@ static inline void handle_io()
          case 0x0F: // console UART write queue
             bus_data_write( queue_get_level( &queue_uart_write )  );
             break;
-         case 0x10: // is timer for IRQ running
+         case 0x10: // cycle timer for IRQ running
          case 0x11:
          case 0x12:
-         case 0x13: // fall throughs are intended
-            bus_data_write( irq_timer_triggered ? 0x80 : 0x00 );
-            irq_timer_triggered = false;
-            gpio_set_mask( bus_config.mask_irq );
-            break;
-         case 0x14: // is timer for NMI running
+         case 0x13:
+         case 0x14: // cycle timer for NMI running
          case 0x15:
          case 0x16:
          case 0x17: // fall throughs are intended
-            bus_data_write( nmi_timer_triggered ? 0x80 : 0x00 );
-            nmi_timer_triggered = false;
-            gpio_set_mask( bus_config.mask_nmi );
+            timer_cycle_ack();
+            break;
+         case 0x18: // ms timer for IRQ running
+         case 0x19:
+         case 0x1A: // ms timer for NMI running
+         case 0x1B: // fall throughs are intended
+            timer_ms_ack();
             break;
          case 0x20: // is timer for watchdog running
          case 0x21:
@@ -964,7 +957,6 @@ static inline void handle_io()
             handle_ramrom();
             break;
       }
-      ram[address] = bus_data_read(); /* untested: get data back from bus */
    }
    else
    {
@@ -990,21 +982,27 @@ static inline void handle_io()
          case 0x0E: // console UART write
             queue_try_add( &queue_uart_write, &data );
             break;
-         case 0x10: // setup timer for IRQ or NMI
+         case 0x10: // setup cycle timer for IRQ
          case 0x11:
          case 0x12:
          case 0x13:
-         case 0x14:
+         case 0x14: // setup cycle timer for NMI
          case 0x15:
          case 0x16:
          case 0x17: // fall throughs are intended
-            timer_setup( data, address & 0x07 );
+            timer_ms_setup( data );
+            break;
+         case 0x18: // setup ms timer for IRQ
+         case 0x19:
+         case 0x1A: // setup ms timer for NMI
+         case 0x1B: // fall throughs are intended
+            timer_ms_setup( data );
             break;
          case 0x20: // setup timer for watchdog
          case 0x21:
          case 0x22:
          case 0x23: // fall throughs are intended
-            watchdog_setup( data, address & 0x03 );
+            watchdog_setup( data );
             break;
          /* 0x2C-0x2F used as RAM for BRK routine */
          case 0x74: // dma read from flash disk

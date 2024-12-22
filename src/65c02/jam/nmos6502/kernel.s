@@ -40,36 +40,7 @@ start:
    txs                  ; initialize stack to $FF
 
    jsr   PRINT
-   .byte 10,"NMOS 6502 toolkit",10,10,"CPU features: ",0
-
-   lda   CPUID
-   lsr
-   bcc   :+
-   jsr   PRINT
-   .byte "NMOS ",0
-:
-   lsr
-   bcc   :+
-   jsr   PRINT
-   .byte "CMOS ",0
-:
-   lsr
-   bcc   :+
-   jsr   PRINT
-   .byte "BBSR ",0
-:
-   lsr
-   bcc   :+
-   jsr   PRINT
-   .byte "Z-Reg ",0
-:
-   lsr
-   bcc   :+
-   jsr   PRINT
-   .byte "16bit ",0
-:
-   jsr   PRINT
-   .byte "=> 65",0
+   .byte 10,"NMOS 6502 toolkit",10,10,"65",0
 
    lda   CPUID
    ldx   #<(cpunames-knownids)
@@ -91,6 +62,36 @@ start:
    inx
    dey
    bne   :-
+:
+
+   jsr   PRINT
+   .byte " CPU features:",0
+
+   lda   CPUID
+   lsr
+   bcc   :+
+   jsr   PRINT
+   .byte " NMOS",0
+:
+   lsr
+   bcc   :+
+   jsr   PRINT
+   .byte " CMOS",0
+:
+   lsr
+   bcc   :+
+   jsr   PRINT
+   .byte " BBSR",0
+:
+   lsr
+   bcc   :+
+   jsr   PRINT
+   .byte " Z-Reg",0
+:
+   lsr
+   bcc   :+
+   jsr   PRINT
+   .byte " 16bit",0
 :
 
    lda   #$0a           ; start WozMon port

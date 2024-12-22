@@ -26,6 +26,11 @@ Available Boot Options
 Those are ports of the original software which for example make use of
 the additional opcodes of the 65C02.
 
+-  System Monitor
+
+This is a native implementation of a monitor as known from the Commodore
+machines. It has got its [own documentation file](sysmon.md).
+
 -  Filebrowser
 
 This is a simple file loader. It loads files with the extension “.SX4”
@@ -53,8 +58,9 @@ The firmware of this core does not support an NMOS 6502, and shows an
 appropriate message upon startup. However, is it possible to drop into
 WozMon. This can be used for some rudimentary work. It is also possible
 to run Instant Assembler within WozMon using the tool ``wozcat``.
-Furthermore, it is planned to have a more sophisticated monitor
-included in the future.
+Furthermore, before dropping into WozMon it is tried to boot partition 2,
+which in default installation contains a System Monitor customized for
+NMOS 6502 usage.
 
 
 CP/M 65 Usage
@@ -64,7 +70,7 @@ Upon startup, ``CCP.SYS``, the command interpreter, is loaded. It knows
 the built-in commands ``DIR``, ``ERA``, ``REN``, ``TYPE``, ``USER`` and
 ``FREE``.
 
-`Repository of CP/M 65 <https://github.com/davidgiven/cpm65>`__
+`Repository of CP/M 65 <https://github.com/davidgiven/cpm65>`_
 
 OSI BASIC V1.0 REV 3.2 Usage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,6 +123,7 @@ Memory map
 -  $0008-$00FF: zeropage RAM for generic use
    -  $0008-$000F: zeropage RAM used by WozMon
    -  $00E3-$00FF: zeropage RAM used by TIM
+   -  $00F6-$00FF: zeropage RAM used by System Monitor
 -  $0100-$01FF: stack
 -  $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs, VT100)
 -  $0400-$CFFF: RAM for generic use
@@ -161,13 +168,18 @@ Timer ($DF10-$DF1F)
 ~~~~~~~~~~~~~~~~~~~
 
 -  two 16 bit timers triggering either IRQ or NMI
--  base address IRQ timer: $DF10
--  base address NMI timer: $DF14
+-  base address IRQ clockcycle timer: $DF10
+-  base address NMI clockcycle timer: $DF14
 -  base address + 0 = set low counter for repeating timer, stops timer
 -  base address + 1 = set high counter for repeating timer, starts timer
 -  base address + 2 = set low counter for single shot timer, stops timer
--  base address + 3 = set high counter for single shot timer, starts
-   timer
+-  base address + 3 = set high counter for single shot timer, starts timer
+-  reading any register return $80 if timer was triggered, $00 otherwise
+-  reading clears flag and also resets IRQ or NMI line back to high
+-  base address IRQ milliseconds timer: $DF18
+-  base address NMI milliseconds timer: $DF1A
+-  base address + 0 = set lowbyte of milliseconds ($0000 turns off)
+-  base address + 1 = set highbyte of milliseconds
 -  reading any register return $80 if timer was triggered, $00 otherwise
 -  reading clears flag and also resets IRQ or NMI line back to high
 -  IMPORTANT: this might change, if 16-bit counters are not sufficiant
@@ -180,8 +192,7 @@ Watchdog ($DF20-$DF23)
 -  base address + 0: turn off
 -  base address + 1: set low counter, write resets watchdog when running
 -  base address + 2: set mid counter, write resets watchdog when running
--  base address + 3: set high counter, stars watchdog, reset when
-   running
+-  base address + 3: set high counter, stars watchdog, reset when running
 -  read on any address shows watchdog active
 -  triggered watchdog handled similar to trap ($DF01)
 -  todo(?): can be triggered by number of nmis or irqs
@@ -198,13 +209,13 @@ Cyclecount ($DF24-$DF27)
 Variables Used By Kernel ($DF2C-$DF2F)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  $DF2B: Z index register (65CE02 only, this might change)
 -  $DF2C: bank
 -  $DF2D: accumulator
 -  $DF2E: X index register
 -  $DF2F: Y index register
+-  $DF76: Z index register (65CE02 userland only, this might change)
 
-This are just variables used during handling an interrupt service call
+This are just variables used during handling an interrupt service call.
 
 Variables Used By System Monitor ($DF30-$DF3F)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -289,17 +300,16 @@ Kernel Interrupts
 -  $02: chrcfg: set UART configuration parameters
 -  $03: prhex8: output accumulator as 2 digit hex value
 -  $04: prhex16: output X and accumulator as 4 digit hex value
--  $05: CP/M-fs set filename: convert filename (pointer in X/A),
-        Y=userid
+-  $05: CP/M-fs set filename: convert filename (pointer in X/A), Y=userid
 -  $06: CP/M-fs load: load file to address in ($030c/d)
 -  $07: CP/M-fs save: save file from address in ($030c/d) to ($030e/f)
 -  $08: CP/M-fs erase: delete file
--  $09: CP/M-fs directory: load directory to address in ($030c/d) or
-        console ($030d=$00)
+-  $09: CP/M-fs directory: load directory to address in ($030c/d) or console ($030d=$00)
 -  $0A: VT100: several screen functions: Y=specify function (see below)
 -  $0B: copy BIOS from ROM to RAM
--  $0C: input a text line from console (pointer in X/A,
-        Y: size of input ($00-$7F), add $80 for only upper case)
+-  $0C: input a text line from console (pointer in X/A, Y: size of input ($00-$7F), add $80 for only upper case)
+-  $0D: fill a page of RAM with sine data (X: bits 7,6 offset, 5 fractions, 4-0 amplitude ($01-$10), A: page)
+-  $0E: jump to System Monitor
 
 For an own interrupt handler invoked via $DF78/9, it is recommended to
 use interrupt arguments starting with $80, as those won't be used by the
@@ -387,10 +397,10 @@ queue, and in most cases, a new event from the same source replaces the
 old one.
 
 However: again due to performance the queue is not thread safe! So only
-core 1 is allowed to interact with it.
+the core handling the bus is allowed to interact with it.
 
-Core 0 on the other hand is allowed to do two things on the hardware
-side:
+The core handling the console on the other hand is allowed to do two
+things on the hardware side:
 
 -  pull the RDY line low (to stop the CPU) and back high (to let the CPU
    continue)
@@ -398,6 +408,6 @@ side:
    only done if the RDY line is high, or immediately pulled high after
    the reset line was pulled low (immediately = in the next code line!)
 
-If core 1 should want to use the RDY line for some reason, this should
-be implemented using “queue_uart_write” with characters > 0xFF. For
-performance/latency reasons it also does pull RDY low itself as well.
+If core running the bus should want to use the RDY line for some reason,
+this should be implemented using “queue_uart_write” with characters > 0xFF.
+For performance/latency reasons it also does pull RDY low itself as well.

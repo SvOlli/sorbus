@@ -25,8 +25,10 @@ ovec   := TMP16
 
 gensine:
 ; A: page for table
-; X: size ($01-$10), taken from BRK_SX
-; Y: variant ($00-$03), add $04 to write decimal parts to following page
+; X: (taken from BRK_SX):
+;    bits 0-4: size ($01-$10)
+;    bit    5: write decimal parts to following page
+;    bits 6-7: variant (offset in 90 degrees)
 
    ; we need quite some zeropage variables
    ; save previous values on the stack
@@ -41,11 +43,8 @@ gensine:
    dex
    bpl   :-
 
-   lda   BRK_SY
-   ror
-   ror
-   ror
-   and   #$c0        ; move start
+   lda   BRK_SX
+   and   #$c0        ; get start angle
    sta   index0
    clc
    adc   #$7f
@@ -72,7 +71,7 @@ gensine:
    adc   deltai
    sta   valuei
 
-   lda   BRK_SX
+   lda   BRK_SX      ; get increment
    asl
    asl
    asl
@@ -84,11 +83,11 @@ gensine:
    ldx   valuei
    jsr   @store4q
 
-   lda   BRK_SY
-   and   #$04
+   lda   BRK_SX
+   and   #$20
    beq   :+
 
-   ; bit 2 is set -> store decimal part in following page
+   ; bit 5 is set -> store decimal part in following page
    lda   valued
    inc   ovec+1
    lda   #$ff
@@ -100,8 +99,9 @@ gensine:
 :
 
    clc
-   lda   deltad
-   adc   BRK_SX
+   lda   BRK_SX         ; get increment
+   and   #$1f
+   adc   deltad
    sta   deltad
    bcc   :+
    inc   deltai

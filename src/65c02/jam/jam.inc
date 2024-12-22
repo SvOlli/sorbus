@@ -35,7 +35,7 @@ UARTRS = $DF0D     ; (R) get serial input queue size (read only, up to 127, >127
 UARTWR = $DF0E     ; (W) write to serial output queue (write only)
 UARTWS = $DF0F     ; (R) get serial output queue size (read only, up to 127, >127: error)
 
-TMBASE = $DF10
+TMBASE = $DF10     ; timers
 TMICRL = TMBASE+$0 ; repeating IRQ timer low, also stops timer
 TMICRH = TMBASE+$1 ; repeating IRQ timer high, also starts timer
 TMICSL = TMBASE+$2 ; single short IRQ timer low, also stops timer
@@ -46,8 +46,12 @@ TMNCRH = TMBASE+$5 ; repeating NMI timer high, also starts timer
 TMNCSL = TMBASE+$6 ; single short NMI timer low, also stops timer
 TMNCSH = TMBASE+$7 ; single short NMI timer high, also starts timer
 ; reading TMNxxx indicates if NMI was triggered by timer ($80), also clears
+TMIMRL = TMBASE+$8 ; repeating IRQ timer low
+TMIMRH = TMBASE+$9 ; repeating IRQ timer high, both $00 stop timer
+TMNMRL = TMBASE+$A ; repeating NMI timer low
+TMNMRH = TMBASE+$B ; repeating NMI timer high, both $00 stop timer
 
-WDBASE = $DF20
+WDBASE = $DF20     ; watchdog
 WDOFF  = WDBASE+$0 ; stops timer
 WDCL   = WDBASE+$1 ; set low counter, write resets watchdog when running
 WDCM   = WDBASE+$2 ; set mid counter, write resets watchdog when running
@@ -58,23 +62,23 @@ CYCNTR = $DF24     ; PRELIMINARY!
 ; read only 32 bit value little endian up to $DF27
 ; reading $DF24 copies value to shadow register from which is read
 
-IRQSVB = $DF2C     ; PRELIMINARY!
+IRQSVB = $DF2C     ; shadow registers for IRQ/BRK handling PRELIMINARY!
 BRK_SB = IRQSVB+$0 ; bank
 BRK_SA = IRQSVB+$1 ; accumulator
 BRK_SX = IRQSVB+$2 ; X index
 BRK_SY = IRQSVB+$3 ; Y index
 ; this is just RAM space used by the kernel BRK routine
 
-MONREG = $DF30
-MON_PC = MONREG+$0
-MON_BK = MONREG+$2
-MON_A  = MONREG+$3
-MON_X  = MONREG+$4
-MON_Y  = MONREG+$5
-MON_SP = MONREG+$6
-MON_P  = MONREG+$7
+MONREG = $DF30     ; system monitor shadow registers
+MON_PC = MONREG+$0 ; program counter
+MON_BK = MONREG+$2 ; bank (shadow of $DF01)
+MON_A  = MONREG+$3 ; accumulator
+MON_X  = MONREG+$4 ; X register
+MON_Y  = MONREG+$5 ; Y register
+MON_SP = MONREG+$6 ; stack pointer
+MON_P  = MONREG+$7 ; processor status
 
-IDBASE = $DF70
+IDBASE = $DF70     ; internal drive
 IDLBAL = IDBASE+$0 ; LBA low
 IDLBAH = IDBASE+$1 ; LBA high
 ID_LBA = IDBASE+$0 ; alternative notation: ID_LBA+0/ID_LBA+1

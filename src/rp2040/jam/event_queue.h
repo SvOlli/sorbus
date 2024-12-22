@@ -61,6 +61,9 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
 // remove event from queue, identified by the handler
 void queue_event_cancel( queue_event_handler_t handler );
 
+// remove event from queue, identified by the handler and data
+void queue_event_cancel_data( queue_event_handler_t handler, void *data );
+
 // check if the event queue contains a specific event
 bool queue_event_contains( queue_event_handler_t handler );
 
