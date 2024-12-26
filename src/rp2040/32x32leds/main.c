@@ -41,8 +41,9 @@ bi_decl(bi_pin_mask_with_name(BUS_CONFIG_mask_reset,   "WS2812_DATA"));
 
 void bus_init()
 {
+   const float freq = 1075000;
    uint offset = pio_add_program( pio1, &bus_wait_program );
-   bus_wait_program_init( pio1, 0, offset );
+   bus_wait_program_init( pio1, 0, offset, freq );
 }
 
 
@@ -115,7 +116,7 @@ int main()
    bus_init();
    led_init();
    // switch to RGB palette
-   led_setcolors( 0, 2 );
+   led_setcolors( 0, 3 );
    for( int c0 = 0; c0 < 0x100; ++c0 )
    {
       int c1 = ((c0 & 0x3C) << 2) | ((c0 & 0xC0) >> 4) | (c0 & 0x03);

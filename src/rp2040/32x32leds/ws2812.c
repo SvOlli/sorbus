@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
@@ -16,6 +17,7 @@
 #define WS2812_PIN 29
 
 uint8_t led_framebuffer[0x400];
+static uint8_t led_transferbuffer[0x400];
 uint32_t colortab[0x100];
 extern const unsigned int translation_matrix[0x400];
 
@@ -51,6 +53,7 @@ void led_init()
    int sm = 0;
    uint offset = pio_add_program(pio, &ws2812_program);
 
+   // slightly "overclocking" WS2812, works for me
    ws2812_program_init(pio, sm, offset, WS2812_PIN, 1000000, false);
 }
 
@@ -123,8 +126,9 @@ void led_setcolors( uint8_t tab, uint8_t bright )
 void led_flush()
 {
    int i;
+   memcpy( led_transferbuffer, led_framebuffer, sizeof(led_transferbuffer) );
    for( i = 0; i < 0x400; ++i )
    {
-      pio_sm_put_blocking(pio0, 0, colortab[led_framebuffer[translation_matrix[i]]]);
+      pio_sm_put_blocking(pio0, 0, colortab[led_transferbuffer[translation_matrix[i]]]);
    }
 }

@@ -1,10 +1,21 @@
 
+.define DELAY 400
+
 start:
+   sei
    ldx #0
    lda #$86             ; set colorpalette
    sta $df04
    lda #$93             ; set brightness
    sta $df04
+   lda #<loop
+   sta $df7c
+   lda #>loop
+   sta $df7d
+   lda #<DELAY
+   sta $df18
+   lda #>DELAY
+   sta $df19
 cs:
    stz $cc00,x
    stz $cd00,x
@@ -15,8 +26,19 @@ cs:
    bne cs
 
    stx $20
+   cli
+:
+   jsr $ff00
+   cmp #$03
+   bne :-
+   stz $df18
+   stz $df19
+   jmp ($fffc)
 
 loop:
+   pha
+   phx
+   phy
 
    inc $20
    lda $20
@@ -55,15 +77,12 @@ d:
    bne d
 
    stz $df04
-   ldy #$e0
-:
-   inx
-   bne :-
-   iny
-   bne :-
-   jsr $ff00
-   bcs loop
-   jmp ($fffc)
+   lda $df18
+
+   ply
+   plx
+   pla
+   rti
 
    ; 32 ($20) long
 sinus:

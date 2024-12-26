@@ -5,7 +5,7 @@
 .wrap_target
 loop:
    wait 0 gpio 24       ; first wait for r/w to go low
-   wait 1 gpio 25  [20] ; now wait for clock to go high (and a bit more)
+   wait 1 gpio 25   [2] ; now wait for clock to go high (and a bit more)
    mov isr, pins        ; just pull all GPIOs to output
    push
    wait 0 gpio 25       ; and wait for clock to go low again
@@ -15,7 +15,7 @@ loop:
 % c-sdk {
 #include "hardware/clocks.h"
 
-static inline void bus_wait_program_init( PIO pio, uint sm, uint offset )
+static inline void bus_wait_program_init( PIO pio, uint sm, uint offset, float freq )
 {
    // do not mess with these!
    const uint startpin = 0;
@@ -33,7 +33,8 @@ static inline void bus_wait_program_init( PIO pio, uint sm, uint offset )
    sm_config_set_fifo_join( &c, PIO_FIFO_JOIN_RX );
    sm_config_set_in_shift( &c, true, false, 0 ); // address+data bus
 
-   sm_config_set_clkdiv_int_frac8( &c, 1, 0 );
+   float div = clock_get_hz(clk_sys) / (freq * 20);
+   sm_config_set_clkdiv(&c, div);
 
    pio_sm_init( pio, sm, offset, &c );
    pio_sm_set_enabled( pio, sm, true );

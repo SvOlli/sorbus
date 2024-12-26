@@ -1,20 +1,38 @@
-      lda #$80
-      sta $df04
-      lda #$93
-      sta $df04
-loop: lda $df02     ; A=rnd
-      sta $10       ; ZP(0)=A
-      lda $df02
-      and #$03      ; A=A&3
-      ora #$cc      ; A+=2
-      sta $11       ; ZP(1)=A
-      lda $df02     ; A=rnd
-      sta ($10)     ; ZP(0),ZP(1)=y
-      inx
-      bne :+
-      iny
-      bne :+
-      ldy #$fd
-      stz $df04
-:
-      jmp loop
+
+.include "jam.inc"
+
+.define DELAY 400
+
+start:
+   lda   #$80
+   sta   $df04
+   lda   #$93
+   sta   $df04
+
+   sei
+   lda   #<irqhandler
+   sta   UVNBI+0
+   lda   #>irqhandler
+   sta   UVNBI+1
+
+   lda   #<DELAY
+   sta   TMIMRL
+   lda   #>DELAY
+   sta   TMIMRH
+   cli
+
+loop:
+   lda   RANDOM
+   sta   $10
+   lda   RANDOM
+   and   #$03
+   ora   #$cc
+   sta   $11
+   lda   RANDOM
+   sta   ($10)
+   jmp   loop
+
+irqhandler:
+   bit   TMIMRL
+   stz   $df04
+   rti

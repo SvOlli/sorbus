@@ -256,7 +256,9 @@ quick_sx4(opcodes)
 quick_sx4(wozmon2c)
 quick_sx4(wrtboot)
 
-quick_6502asm(demoscen)
+quick_6502asm(amiga)
+quick_6502asm(depth)
+quick_6502asm(intro1)
 quick_6502asm(random)
 quick_6502asm(santa)
 
