@@ -1063,12 +1063,14 @@ void bus_run()
       address = ((state & bus_config.mask_address) >> bus_config.shift_address);
 
       // setup data
-      if( (address & 0xFF00) == 0xDF00 )
+      //if( (address & 0xFF00) == 0xDF00 )
+      if( (address >> 8) == 0xDF ) // this is faster
       {
          // internal I/O
          handle_io();
       }
-      else if( (address <= 0x0003) || ((address & 0xF000) == 0xD000) )
+      //else if( (address <= 0x0003) || ((address & 0xF000) == 0xD000) )
+      else if( (address <= 0x0003) || ((address >> 12) == 0xD) )
       {
          // external i/o: keep hands off the bus
          gpio_set_dir_in_masked( bus_config.mask_data );
