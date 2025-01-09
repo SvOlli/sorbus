@@ -262,4 +262,9 @@ quick_6502asm(intro1)
 quick_6502asm(random)
 quick_6502asm(santa)
 
+add_executable(8bit_dp
+   jam/sx4/8bit_dance_party.s
+)
+target_type(8bit_dp sx4 "1.")
+
 gencpmfs(jam_cpmfs.img)
