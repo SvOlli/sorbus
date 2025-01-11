@@ -255,6 +255,7 @@ quick_sx4(memcheck)
 quick_sx4(opcodes)
 quick_sx4(wozmon2c)
 quick_sx4(wrtboot)
+quick_sx4(soundpl)
 
 quick_6502asm(amiga)
 quick_6502asm(depth)
