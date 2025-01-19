@@ -91,6 +91,12 @@ nmosirq:
 
 cmos6502:
    txs                  ; fix for 65816's phk
+   ; reset fb32x32
+   lda   #$00
+   ldx   #$CC
+   tay
+   jsr   fb32x32        ; set framebuffer to $CC00-$CFFF
+
 @iloop:
    jsr   PRINT          ;       2         3         4         5         6         7         8
    ;         12345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -291,11 +297,8 @@ brkjump:
    .word @user, chrinuc, chrcfg, prhex8, prhex16         ; $00-$04
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir     ; $05-$09
    .word vt100, copybios, xinputline, b2gensine, mon_brk ; $0a-$0e
+   .word fb32x32                                         ; $0f
 @jumptableend:
-
-signature:
-   .byte "SBC23"
-signatureend:
 
 chrinuc:
    ; wait for character from UART and make it uppercase
@@ -354,8 +357,48 @@ xinputline:
 :
    jmp   inputline      ; replace this with inputlinecfg, once implemented
 
+fb32x32:
+   cpy   #$02
+   bcs   @noinit
+   sta   $D302
+   sta   TMP16+0        ; might be required for clear
+   stx   $D303
+   stx   TMP16+1        ; might be required for clear
+   ldx   #(fb32x32defaultsend-fb32x32defaults)
+:
+   lda   fb32x32defaults,x
+   sta   $D306,x
+   dex
+   bpl   :-
+   tya                  ; cpy #$00
+   beq   @noclear
+   dey                  ; Y=$00
+   tya                  ; A=$00
+   ldx   #$04
+:
+   sta   (TMP16),y
+   iny
+   bne   :-
+   inc   TMP16+1
+   dex
+   bne   :-
+@noclear:
+   rts
+
+@noinit:
+   rts
+
 
 .segment "DATA"
+
+fb32x32defaults:
+   .byte $00,$00,$1f,$1f,$1f,$00,$00 ; fbX,fbY,width,height,step,tcol,colmap
+fb32x32defaultsend:
+
+signature:
+   .byte "SBC23"
+signatureend:
+
 vectab:
    .word mon_brk        ; UVBRK: IRQ handler dispatches BRK
    .word mon_nmi        ; UVNMI: hardware NMI handler

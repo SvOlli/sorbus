@@ -200,3 +200,8 @@ PRIMM    := PRINT
 ; jump into system monitor
 ; this is also configured as the default for INTUSER
 .define MONITOR   $0E
+
+; set 32x32 pixels framebuffer registers
+; Y=$00 reset LED registers to framebuffer @ X/A
+; Y=$01 as $00, but also clear framebuffer with $00
+.define FB32X32   $0F

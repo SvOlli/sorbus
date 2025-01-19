@@ -1,32 +1,38 @@
 ; super mega amiga emulator :) :) :)
 ; (c)by Thorex
 
+.include "fb32x32.inc"
+
+.define FRAMEBUFFER $cc00
+
 .define DELAY 10000
 
   sei
-  lda #$86
-  sta $df04
-  lda #$93
-  sta $df04
+  lda #<FRAMEBUFFER
+  ldx #>FRAMEBUFFER
+  ldy #$00
+  int FB32X32
+  lda #FB32X32_CMAP_C64
+  sta FB32X32_COLMAP
   ldx #$00
 :
-  stz $cc00,x
-  stz $cd00,x
-  stz $ce00,x
-  stz $cf00,x
+  stz FRAMEBUFFER+$000,x
+  stz FRAMEBUFFER+$100,x
+  stz FRAMEBUFFER+$200,x
+  stz FRAMEBUFFER+$300,x
   inx
   bne :-
-  stz $df04
+  stz FB32X32_COPY
 
   lda #<irqhandler
-  sta $df7c
+  sta UVNBI+0
   lda #>irqhandler
-  sta $df7d
+  sta UVNBI+1
 
   lda #<DELAY
-  sta $df18
+  sta TMIMRL
   lda #>DELAY
-  sta $df19
+  sta TMIMRH
   cli
 
   ldy #$04
@@ -34,8 +40,8 @@
   cpy #$00
   bne :-
   sei
-  stz $df18
-  stz $df19
+  stz TMIMRL
+  stz TMIMRH
   jmp ($fffc)
 
 irqhandler:
@@ -45,10 +51,10 @@ irqhandler:
 
   ldx #0
 :
-  sta $cc00,x
-  sta $cd00,x
-  sta $ce00,x
-  sta $cf00,x
+  sta FRAMEBUFFER+$000,x
+  sta FRAMEBUFFER+$100,x
+  sta FRAMEBUFFER+$200,x
+  sta FRAMEBUFFER+$300,x
   dex
   bne :-
   beq irqdone
@@ -57,19 +63,19 @@ floppy:
   ldx #0
 :
   lda pic1,x
-  sta $cc00,x
+  sta FRAMEBUFFER+$000,x
   lda pic2,x
-  sta $cd00,x
+  sta FRAMEBUFFER+$100,x
   lda pic3,x
-  sta $ce00,x
+  sta FRAMEBUFFER+$200,x
   lda pic4,x
-  sta $cf00,x
+  sta FRAMEBUFFER+$300,x
   dex
   bne :-
 
 irqdone:
-  stz $df04
-  lda $df18
+  stz FB32X32_COPY
+  lda TMIMRL
   rti
 
 coltab:

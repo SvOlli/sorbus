@@ -1,13 +1,18 @@
 
+.include "fb32x32.inc"
+
 .define DELAY 400
 
 start:
    sei
+   lda #$00
+   ldx #$cc
+   ldy #$01
+   int FB32X32
+   lda #FB32X32_CMAP_C64
+   sta FB32X32_COLMAP
+
    ldx #0
-   lda #$86             ; set colorpalette
-   sta $df04
-   lda #$93             ; set brightness
-   sta $df04
    lda #<loop
    sta $df7c
    lda #>loop
@@ -17,9 +22,9 @@ start:
    lda #>DELAY
    sta $df19
 cs:
-   stz $cc00,x
-   stz $cd00,x
-   stz $ce00,x
+   ;stz $cc00,x
+   ;stz $cd00,x
+   ;stz $ce00,x
    lda scenery,x
    sta $cf00,x
    dex
@@ -76,7 +81,7 @@ d:
    and #$1f
    bne d
 
-   stz $df04
+   stz FB32X32_COPY
    lda $df18
 
    ply

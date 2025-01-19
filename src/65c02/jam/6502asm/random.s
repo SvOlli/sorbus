@@ -1,13 +1,13 @@
 
-.include "jam.inc"
+.include "fb32x32.inc"
 
 .define DELAY 400
 
 start:
-   lda   #$80
-   sta   $df04
-   lda   #$93
-   sta   $df04
+   lda   #$00
+   ldx   #$cc
+   ldy   #$01
+   int   FB32X32
 
    sei
    lda   #<irqhandler
@@ -34,5 +34,5 @@ loop:
 
 irqhandler:
    bit   TMIMRL
-   stz   $df04
+   stz   FB32X32_COPY
    rti

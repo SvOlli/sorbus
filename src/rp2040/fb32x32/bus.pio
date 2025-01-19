@@ -1,3 +1,10 @@
+; Copyright (c) 2025 Sven Oliver "SvOlli" Moll
+;
+; SPDX-License-Identifier: GPL-3.0-or-later
+;
+; This program implements a 32x32 pixel framebuffer
+; for the Sorbus Computer
+;
 .pio_version 0
 
 .program bus_wait
@@ -33,6 +40,7 @@ static inline void bus_wait_program_init( PIO pio, uint sm, uint offset, float f
    sm_config_set_fifo_join( &c, PIO_FIFO_JOIN_RX );
    sm_config_set_in_shift( &c, true, false, 0 ); // address+data bus
 
+   // running the PIO state machine 20 times as fast as expected CPU freq
    float div = clock_get_hz(clk_sys) / (freq * 20);
    sm_config_set_clkdiv(&c, div);
 

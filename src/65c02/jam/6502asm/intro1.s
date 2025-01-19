@@ -1,6 +1,5 @@
 
-.include "jam.inc"
-.include "jam_bios.inc"
+.include "fb32x32.inc"
 
 .define DELAY 200
 .define LEDREG $DF04
@@ -10,34 +9,34 @@ tmp8   = $12
 sinbuf = $cb00
 idxbuf = $cac0
 copbuf = $caa0
+FRAMEBUFFER := $cc00
 
 frmcnt = $13
 
-   lda   #$80
-   sta   LEDREG
-   lda   #$93
-   sta   LEDREG
+   sei
+   lda   #<FRAMEBUFFER
+   ldx   #>FRAMEBUFFER
+   sta   vector+0
+   stx   vector+1
+   ldy   #$00
+   int   FB32X32
 
-   ldx   #$00
-   stx   vector+0
-   lda   #$cc
-   sta   vector+1
-   
+   ;ldy   #$00
 :
    clc
    lda   vector+0
-   sta   idxbuf+$00,x
+   sta   idxbuf+$00,y
    adc   #$20
    sta   vector+0
    lda   vector+1
-   sta   idxbuf+$20,x
+   sta   idxbuf+$20,y
    adc   #$00
    sta   vector+1
-   inx
-   cpx   #$20
+   iny
+   cpy   #$20
    bcc   :-
 
-   lda   #$cb
+   lda   #>sinbuf
    ldx   #$42
    int   GENSINE
    ldx   #$00
@@ -56,9 +55,9 @@ frmcnt = $13
    jmp   start
 
 xbm:
-   lda   #$00
+   lda   #<FRAMEBUFFER
    sta   vector+0
-   lda   #$cc
+   lda   #>FRAMEBUFFER
    sta   vector+1
 
    ldx   #$00
@@ -119,10 +118,10 @@ xbmoverlay:
 clear:
    ldx   #$00
 :
-   stz   $cc00,x
-   stz   $cd00,x
-   stz   $ce00,x
-   stz   $cf00,x
+   stz   FRAMEBUFFER+$000,x
+   stz   FRAMEBUFFER+$100,x
+   stz   FRAMEBUFFER+$200,x
+   stz   FRAMEBUFFER+$300,x
    inx
    bne   :-
    rts
@@ -294,7 +293,7 @@ start:
    stz   TMIMRL
    stz   TMIMRH
    jsr   clear
-   stz   $df04
+   stz   FB32X32_COPY
 
    jmp   ($fffc)
 
@@ -316,7 +315,7 @@ irqhandler:
    ply
    plx
    pla
-   stz   $df04
+   stz   FB32X32_COPY
    bit   TMIMRL
    inc   frmcnt
    inc   frmcnt

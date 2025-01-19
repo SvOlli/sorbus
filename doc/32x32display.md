@@ -11,19 +11,21 @@ only sniffes the bus and never actively drives it.
 
 - $D300: DMA into framebuffer and flush (strobe register)
 - $D301: DMA into framebuffer without flush (strobe register)
-- $D302: transparency DMA info framebuffer and flush (strobe register)
-- $D303: transparency DMA info framebuffer without flush (strobe register)
-- $D304/5: start address of RAM source
-- $D306/7: startpixel of framebuffer target (10 bit, absolute address)
-- $D308/9: startpixel of framebuffer X/Y format (5 bit each)
-- $D30A: width of DMA in pixels-1 (5 bit, $00=one pixel, $1f sets a full line)
-- $D30B: height of DMA in pixels-1 (5 bit, $00=one line, $1f sets full height)
-- $D30C: linestep of source in pixels-1 (8 bit)
-- $D30D: transparency color for $D302/3
-- $D30E: colormap / brightness (bits 7-6)
-- $D30F: custom colormap data stream
+- $D302/3: start address of RAM source
+- $D304/5: startpixel of framebuffer target (10 bit, absolute address)
+- $D306/7: startpixel of framebuffer X/Y format (5 bit each)
+- $D308: width of DMA in pixels-1 (5 bit, $00=one pixel, $1f sets a full line)
+- $D309: height of DMA in pixels-1 (5 bit, $00=one line, $1f sets full height)
+- $D30A: linestep of source in pixels-1 (8 bit)
+- $D30B: transparency color for $D302/3
+- $D30C: colormap / brightness? (bits 7-6)
+- $D30D: custom colormap data stream
 
-(defaults are starting at $d304: $00,$cc,$00,$00,$00,$00,$1f,$1f,$1f,$00,$00)
+(defaults are starting at $d302: $00,$cc,$00,$00,$00,$00,$1f,$1f,$1f,$00,$00)
+
+Value written do $D300/1 indecades mode:
+$00: plain copy
+$01: transparency
 
 If not all bits of a register are required, those will be masked out/ignored.
 

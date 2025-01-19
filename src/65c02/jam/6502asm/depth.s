@@ -1,18 +1,15 @@
 
-.include "jam.inc"
-.include "jam_bios.inc"
+.include "fb32x32.inc"
 
 start:
+  lda #$00
+  ldx #$cc
+  ldy #$01
+  int FB32X32
+  lda #FB32X32_CMAP_C64
+  sta FB32X32_COLMAP
+
   ldx #0
-:
-  stz $cc00,x
-  stz $cd00,x
-  stz $ce00,x
-  stz $cf00,x
-  inx
-  bne :-
-  lda #$86
-  sta $df04
 :
   lda bottombar,x
   cmp #$ff
@@ -30,7 +27,7 @@ loop:
   jsr drawMain
   jsr scrollarea
   jsr putfont
-  stz $df04
+  stz FB32X32_COPY
   ldy #$e0
 :
   inx

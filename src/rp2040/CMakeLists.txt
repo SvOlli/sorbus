@@ -168,24 +168,26 @@ uf2join(jam_alpha_picotool
 )
 dharawrite(jam_cpmfs.dhara jam_cpmfs.img)
 
-add_executable(32x32ws2812)
-pico_generate_pio_header(32x32ws2812
-   ${CMAKE_CURRENT_LIST_DIR}/32x32leds/ws2812.pio
+add_executable(fb32x32ws2812)
+pico_generate_pio_header(fb32x32ws2812
+   ${CMAKE_CURRENT_LIST_DIR}/fb32x32/ws2812.pio
    OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
 )
-pico_generate_pio_header(32x32ws2812
-   ${CMAKE_CURRENT_LIST_DIR}/32x32leds/bus.pio
+pico_generate_pio_header(fb32x32ws2812
+   ${CMAKE_CURRENT_LIST_DIR}/fb32x32/bus.pio
    OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
 )
-target_sources(32x32ws2812 PRIVATE
-   32x32leds/main.c
-   32x32leds/ws2812.c
-   32x32leds/translation_matrix_1.c
+target_sources(fb32x32ws2812 PRIVATE
+   fb32x32/main.c
+   fb32x32/bus.c
+   fb32x32/control.c
+   fb32x32/hardware_ws2812.c
+   fb32x32/translation_matrix_1.c
 )
-target_link_libraries(32x32ws2812 PRIVATE
+target_link_libraries(fb32x32ws2812 PRIVATE
    pico_stdlib
    pico_multicore
    hardware_pio
 )
-pico_set_binary_type(32x32ws2812 copy_to_ram)
-setup_target(32x32ws2812 "32x32leds")
+pico_set_binary_type(fb32x32ws2812 copy_to_ram)
+setup_target(fb32x32ws2812 "fb32x32")
