@@ -130,6 +130,7 @@ Memory map
 -  $D000-$DEFF: I/O provided by external boards
 -  $D000-$D3FF: scratch RAM that can by exchanged with $0000-$03FF
    by writing to $DF03 (not accessable directly from 65C02)
+-  $D300-$D3FF: I/O area suggested to be used by 32x32 framebuffer
 -  $DE00-$DEFF: internal temporary buffer (not accessable from 65C02)
 -  $DF00-$DFFF: I/O provided by main RP2040 board
 -  $E000-$FFFF: bank 0 (RAM, used to load CP/M 65)

@@ -382,6 +382,7 @@ fb32x32:
    inc   TMP16+1
    dex
    bne   :-
+   stz   $D301          ; clear also target framebuffer
 @noclear:
    rts
 

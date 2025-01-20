@@ -34,7 +34,10 @@ loop:
   bne :-
   iny
   bne :-
-  jmp loop
+  jsr CHRIN
+  cmp #$03
+  bne loop
+  jmp ($fffc)
 
 scrollarea:
   ldx #0

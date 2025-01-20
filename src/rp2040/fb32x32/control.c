@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include <pico/multicore.h>
+#include <pico/platform.h>
 
 #include "common/bus.h"
 #include "fb32x32.h"
@@ -43,26 +44,59 @@ uint16_t pal_c16[128] = {
    0xffc, 0xffa, 0xff9, 0xfef, 0xcff, 0xdff, 0xfef, 0xefa
 };
 
-static void dmacopy( uint8_t *dest, uint8_t *src,
-                     uint8_t width, uint8_t height,
-                     uint8_t step )
+uint16_t pal_a800[256] = {
+   0x000, 0x111, 0x222, 0x333, 0x444, 0x555, 0x666, 0x777,
+   0x888, 0x999, 0xaaa, 0xbbb, 0xccc, 0xddd, 0xeee, 0xfff,
+   0x100, 0x210, 0x320, 0x430, 0x540, 0x650, 0x860, 0x970,
+   0xa91, 0xba2, 0xcb3, 0xdc4, 0xed5, 0xfe7, 0xff8, 0xff9,
+   0x300, 0x400, 0x510, 0x620, 0x730, 0x840, 0x950, 0xa61,
+   0xb72, 0xc83, 0xda4, 0xeb6, 0xfc7, 0xfd8, 0xfe9, 0xffb,
+   0x400, 0x500, 0x600, 0x710, 0x820, 0x931, 0xa43, 0xb54,
+   0xc65, 0xd86, 0xe97, 0xfa8, 0xfb9, 0xfca, 0xfdc, 0xfed,
+   0x400, 0x501, 0x601, 0x712, 0x823, 0x934, 0xa45, 0xb57,
+   0xc68, 0xd79, 0xe8a, 0xf9b, 0xfac, 0xfbd, 0xfcf, 0xfdf,
+   0x303, 0x404, 0x504, 0x605, 0x716, 0x827, 0x949, 0xa5a,
+   0xb6b, 0xc7c, 0xd8d, 0xe9e, 0xfae, 0xfbe, 0xfce, 0xfdf,
+   0x105, 0x206, 0x407, 0x518, 0x629, 0x73a, 0x84b, 0x95c,
+   0xa6d, 0xb7e, 0xc8e, 0xd9e, 0xeae, 0xfbe, 0xfcf, 0xfef,
+   0x007, 0x107, 0x208, 0x319, 0x42a, 0x53c, 0x65d, 0x76e,
+   0x87f, 0x98f, 0xa9f, 0xbaf, 0xcbf, 0xecf, 0xfdf, 0xfef,
+   0x006, 0x007, 0x019, 0x12a, 0x23b, 0x34c, 0x46d, 0x57e,
+   0x68f, 0x89f, 0x9af, 0xabf, 0xbcf, 0xcdf, 0xdef, 0xeff,
+   0x004, 0x016, 0x027, 0x039, 0x14a, 0x26b, 0x37c, 0x48d,
+   0x59e, 0x6af, 0x7bf, 0x8cf, 0x9df, 0xaef, 0xbff, 0xcff,
+   0x012, 0x023, 0x035, 0x046, 0x057, 0x178, 0x289, 0x39b,
+   0x4ac, 0x5bd, 0x6ce, 0x7df, 0x8ef, 0xaff, 0xbff, 0xcff,
+   0x020, 0x031, 0x042, 0x053, 0x064, 0x175, 0x287, 0x398,
+   0x4a9, 0x5ba, 0x6cb, 0x7ec, 0x8fd, 0x9fe, 0xbff, 0xcff,
+   0x020, 0x031, 0x041, 0x051, 0x161, 0x272, 0x383, 0x494,
+   0x5b6, 0x6c7, 0x7d8, 0x8e9, 0x9fa, 0xafb, 0xbfc, 0xcfc,
+   0x020, 0x031, 0x041, 0x151, 0x261, 0x371, 0x481, 0x592,
+   0x6a3, 0x7b4, 0x8c5, 0x9d6, 0xaf7, 0xcf8, 0xdf9, 0xefa,
+   0x010, 0x020, 0x230, 0x340, 0x450, 0x560, 0x670, 0x780,
+   0x8a1, 0x9b3, 0xac4, 0xbd5, 0xce6, 0xdf7, 0xef8, 0xff8,
+   0x100, 0x210, 0x320, 0x430, 0x640, 0x750, 0x870, 0x980,
+   0xa91, 0xba2, 0xcb3, 0xdc4, 0xed6, 0xfe7, 0xff8, 0xff9
+};
+
+static inline void dmacopy( uint8_t *dest, uint8_t *src,
+                            uint8_t width, uint8_t height,
+                            uint8_t step )
 {
+   // adjust api parameters
+   // range:   $00-$1f
+   // meaning: $01-$20
+   ++width;
+   ++height;
+   // range:   $00-$ff
+   // meaning: $01-$100
+   ++step;
+
    uint8_t x, y;
    uint8_t *d = dest;
    uint8_t *s = src;
-
-   ++height;
-   ++width;
-   ++step;
-
    uint8_t sline = step - width;
    uint8_t dline = 32   - width;
-
-#if 0
-   // normalized at set parameter
-   width  &= 0x1f;
-   height &= 0x1f;
-#endif
 
    for( y = 0; y < height; ++y )
    {
@@ -76,39 +110,64 @@ static void dmacopy( uint8_t *dest, uint8_t *src,
 }
 
 
-static void dmacopytrans( uint8_t *dest, uint8_t *src,
-                          uint8_t width, uint8_t height,
-                          uint8_t step, uint8_t mode, uint8_t tcol )
+static inline void dmacopytrans( uint8_t *dest, uint8_t *src,
+                                 uint8_t width, uint8_t height,
+                                 uint8_t step, uint8_t mode, uint8_t tcol )
 {
+   // adjust api parameters
+   // range:   $00-$1f
+   // meaning: $01-$20
+   ++width;
+   ++height;
+   // range:   $00-$ff
+   // meaning: $01-$100
+   ++step;
+
    uint8_t x, y;
    uint8_t *d = dest;
    uint8_t *s = src;
-
-   ++height;
-   ++width;
-   ++step;
-
    uint8_t sline = step - width;
    uint8_t dline = 32   - width;
 
-#if 0
-   // normalized at set parameter
-   width  &= 0x1f;
-   height &= 0x1f;
-#endif
-
-   for( y = 0; y <= height; ++y )
+   for( y = 0; y < height; ++y )
    {
-      for( x = 0; x <= width; ++x )
+      for( x = 0; x < width; ++x )
       {
-         if( (*d == tcol) || (*s == tcol) )
+         // do not replace tcol on source
+         if( (mode & 0x01) && (*s == tcol) ) continue;
+         switch( mode & 0x06 )
          {
-            continue;
+            case 0x02:
+               // do not replace tcol on destination
+               if( *d == tcol ) continue;
+               break;
+            case 0x04:
+               // only replace tcol on destination
+               if( *d != tcol ) continue;
+               break;
+            default: // 0x00, 0x06
+               // skip, do nothing
+               break;
          }
          (*d++) = (*s++);
       }
       s += sline;
       d += dline;
+   }
+}
+
+
+static inline void setpalette( uint16_t *palette, uint16_t elements )
+{
+   uint16_t c;
+   uint8_t r, g, b;
+
+   for( c = 0; c < 0x100; ++c )
+   {
+      r = (palette[c & (elements-1)] & 0xf00) >> 8;
+      g = (palette[c & (elements-1)] & 0x0f0) >> 4;
+      b = (palette[c & (elements-1)] & 0x00f) >> 0;
+      hardware_setcolor( c, r, g, b );
    }
 }
 
@@ -124,48 +183,28 @@ static inline void setcolormap( uint8_t data )
          for( c = 0; c < 0x100; ++c )
          {
             // convert 0bRRGGBBII to 0b0000RRII0000GGII0000BBII
-
-#if 1
             r = (c >> 6);
             g = (c >> 4) & 3;
             b = (c >> 2) & 3;
             i = (c     ) & 3;
-#else
-            r = (c & 0xc0) >> 6;
-            g = (c & 0x30) >> 4;
-            b = (c & 0x0c) >> 2;
-            i = (c & 0x03) >> 0;
-#endif
-
             hardware_setcolor( c, (r << 2) | i, (g << 2) | i, (b << 2) | i );
          }
          break;
       case 1:
+         // implement custom color palette here...
          break;
       case 4:
-         for( c = 0; c < 0x100; ++c )
-         {
-            r = (pal_c64[c & 0x0f] & 0xf00) >> 8;
-            g = (pal_c64[c & 0x0f] & 0x0f0) >> 4;
-            b = (pal_c64[c & 0x0f] & 0x00f) >> 0;
-
-            hardware_setcolor( c, r, g, b );
-         }
+         setpalette( &pal_c64[0], count_of(pal_c64) );
          break;
       case 5:
-         for( c = 0; c < 0x100; ++c )
-         {
-            r = (pal_c16[c & 0x7f] & 0xf00) >> 8;
-            g = (pal_c16[c & 0x7f] & 0x0f0) >> 4;
-            b = (pal_c16[c & 0x7f] & 0x00f) >> 0;
-
-            hardware_setcolor( c, r, g, b );
-         }
+         setpalette( &pal_c16[0], count_of(pal_c16) );
+         break;
+      case 6:
+         setpalette( &pal_a800[0], count_of(pal_a800) );
          break;
       default:
          break;
    }
-
 }
 
 
@@ -200,22 +239,26 @@ void control_loop()
          case 0x00:
             if( data )
             {
-               dmacopytrans( &framebuffer[destaddr], &mem_cache[srcaddr], width, height, step, data, tcol );
+               dmacopytrans( &framebuffer[destaddr], &mem_cache[srcaddr],
+                                width, height, step, data, tcol );
             }
             else
             {
-               dmacopy( &framebuffer[destaddr], &mem_cache[srcaddr], width, height, step );
+               dmacopy( &framebuffer[destaddr], &mem_cache[srcaddr],
+                           width, height, step );
             }
             hardware_flush();
             break;
          case 0x01:
             if( data )
             {
-               dmacopytrans( &framebuffer[destaddr], &mem_cache[srcaddr], width, height, step, data, tcol );
+               dmacopytrans( &framebuffer[destaddr], &mem_cache[srcaddr],
+                                width, height, step, data, tcol );
             }
             else
             {
-               dmacopy( &framebuffer[destaddr], &mem_cache[srcaddr], width, height, step );
+               dmacopy( &framebuffer[destaddr], &mem_cache[srcaddr],
+                           width, height, step );
             }
             break;
          case 0x02:

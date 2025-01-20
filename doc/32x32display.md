@@ -17,17 +17,28 @@ only sniffes the bus and never actively drives it.
 - $D308: width of DMA in pixels-1 (5 bit, $00=one pixel, $1f sets a full line)
 - $D309: height of DMA in pixels-1 (5 bit, $00=one line, $1f sets full height)
 - $D30A: linestep of source in pixels-1 (8 bit)
-- $D30B: transparency color for $D302/3
+- $D30B: transparency color
 - $D30C: colormap / brightness? (bits 7-6)
 - $D30D: custom colormap data stream
 
 (defaults are starting at $d302: $00,$cc,$00,$00,$00,$00,$1f,$1f,$1f,$00,$00)
 
-Value written do $D300/1 indecades mode:
-$00: plain copy
-$01: transparency
-
 If not all bits of a register are required, those will be masked out/ignored.
+
+Value written do $D300/1 indicades mode (can be or'ed together):
+$00: plain copy
+$01: transparency: no copy when source color = transparent
+$02: transparency: no copy when destination color = transparent
+$04: transparency: only copy when destination color = transparent
+$06: no nothing
+
+Color palettes:
+$00: Insane's RGBI2222
+$01: Custom
+$04: C64-like
+$05: C16-like
+
+Custom defined color palettes are always specified in RGB444.
 
 Since the board just sniffes the bus, DMA from internal drive is not
 detected.
