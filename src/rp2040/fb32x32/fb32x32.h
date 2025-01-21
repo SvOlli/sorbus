@@ -46,7 +46,7 @@ void control_loop();
 /* rgb values are (lower) 4 bit only */
 void hardware_setcolor( uint8_t index, uint8_t r, uint8_t g, uint8_t b );
 
-/* write framebuffer to LEDs */
-void hardware_flush();
+/* write framebuffer to LEDs, colormap needs to have 0x100 entries */
+void hardware_flush( /* uint32_t *colormap */ );
 
 #endif

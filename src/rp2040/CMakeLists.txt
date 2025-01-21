@@ -191,3 +191,20 @@ target_link_libraries(fb32x32ws2812 PRIVATE
 )
 pico_set_binary_type(fb32x32ws2812 copy_to_ram)
 setup_target(fb32x32ws2812 "fb32x32")
+
+add_executable(fb32x32usbuart)
+# depends on bus.pio
+add_dependencies(fb32x32usbuart fb32x32ws2812)
+target_sources(fb32x32usbuart PRIVATE
+   fb32x32/main.c
+   fb32x32/bus.c
+   fb32x32/control.c
+   fb32x32/hardware_uart.c
+)
+target_link_libraries(fb32x32usbuart PRIVATE
+   pico_stdlib
+   pico_multicore
+   hardware_pio
+)
+pico_set_binary_type(fb32x32usbuart copy_to_ram)
+setup_target(fb32x32usbuart "fb32x32")

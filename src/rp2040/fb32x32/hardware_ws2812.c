@@ -58,8 +58,6 @@ void hardware_flush()
    int i;
    for( i = 0; i < 0x400; ++i )
    {
-      //printf( "%02x%c", framebuffer[i], ((i & 0x1f) == 0x1f) ? '\n' : ' ' );
       pio_sm_put_blocking( pio0, 0, colortab[framebuffer[translation_matrix[i]]] );
    }
 }
-

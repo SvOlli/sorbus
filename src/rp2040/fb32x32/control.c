@@ -7,6 +7,11 @@
  * for the Sorbus Computer
  */
 
+/*
+ * TODO:
+ * - double buffer colormap
+ */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -19,6 +24,8 @@
 
 
 uint8_t framebuffer[0x800];
+
+uint16_t pal_custom[3][256] = { 0 };
 
 uint16_t pal_c64[16] = {
    0x000, 0xfff, 0xb12, 0x3ec, 0xb1e, 0x1d1, 0x21a, 0xdf0,
@@ -191,7 +198,9 @@ static inline void setcolormap( uint8_t data )
          }
          break;
       case 1:
-         // implement custom color palette here...
+      case 2:
+      case 3:
+         setpalette( &pal_custom[data-1][0], 0x100 );
          break;
       case 4:
          setpalette( &pal_c64[0], count_of(pal_c64) );
@@ -201,6 +210,26 @@ static inline void setcolormap( uint8_t data )
          break;
       case 6:
          setpalette( &pal_a800[0], count_of(pal_a800) );
+         break;
+      default:
+         break;
+   }
+}
+
+
+static inline void setcustomcolor( uint8_t id, uint8_t rgb,
+                                   uint8_t pos, uint8_t value )
+{
+   switch( rgb )
+   {
+      case 0: // r
+         pal_custom[id][pos] = pal_custom[id-1][pos] & 0x0FF | ((value & 0x0F) << 8);
+         break;
+      case 1: // g
+         pal_custom[id][pos] = pal_custom[id-1][pos] & 0xF0F | ((value & 0x0F) << 4);
+         break;
+      case 2: // b
+         pal_custom[id][pos] = pal_custom[id-1][pos] & 0xFF0 |  (value & 0x0F);
          break;
       default:
          break;
@@ -227,6 +256,8 @@ void control_loop()
    uint8_t  height   = 0x1F;    // range 0x00..0x1F only
    uint8_t  step     = 0x1F;
    uint8_t  tcol     = 0x00;
+   uint8_t  customid = 0x01;
+   uint16_t colidx[3]= { 0, 0, 0 };
 
    for(;;)
    {
@@ -234,7 +265,7 @@ void control_loop()
       address = bus >> BUS_CONFIG_shift_address;
       data    = bus >> BUS_CONFIG_shift_data;
 
-      switch( address & 0x0f )
+      switch( address & 0x1f )
       {
          case 0x00:
             if( data )
@@ -294,9 +325,26 @@ void control_loop()
          case 0x0c:
             setcolormap( data );
             break;
+         case 0x0d:
+            if( (data > 0) && (data < 4) )
+            {
+               colidx[0] = 0;
+               colidx[1] = 0;
+               colidx[2] = 0;
+               customid  = (data > 3) ? 0 : data;
+            }
+            break;
+         case 0x10:
+         case 0x11:
+         case 0x12:
+            if( customid && (colidx[address&3] < 0x100) )
+            {
+               setcustomcolor( customid-1, address&3,
+                               colidx[address&3]++, data );
+            }
+            break;
          default:
             break;
       }
    }
 }
-
