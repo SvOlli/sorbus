@@ -14,7 +14,7 @@ RM           = rm -rf
 LS           = ls -l
 GIT_CHECKOUT = git clone --depth 1 --recurse-submodules --shallow-submodules
 
-CC65_SDK_INCLUDES = jam.inc jam_bios.inc
+CC65_SDK_INCLUDES = jam.inc jam_bios.inc fb32x32.inc
 CC65_SDK_TOOLS    = wozcat.c timcat.c
 
 $(info # This Makefile is not required and for convenience only)

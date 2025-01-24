@@ -102,8 +102,8 @@ static inline void dmacopy( uint8_t *dest, uint8_t *src,
    uint8_t x, y;
    uint8_t *d = dest;
    uint8_t *s = src;
-   uint8_t sline = step - width;
-   uint8_t dline = 32   - width;
+   uint8_t sextra = step - width;
+   uint8_t dextra = 32   - width;
 
    for( y = 0; y < height; ++y )
    {
@@ -111,8 +111,8 @@ static inline void dmacopy( uint8_t *dest, uint8_t *src,
       {
          (*d++) = (*s++);
       }
-      s += sline;
-      d += dline;
+      s += sextra;
+      d += dextra;
    }
 }
 
@@ -133,12 +133,12 @@ static inline void dmacopytrans( uint8_t *dest, uint8_t *src,
    uint8_t x, y;
    uint8_t *d = dest;
    uint8_t *s = src;
-   uint8_t sline = step - width;
-   uint8_t dline = 32   - width;
+   uint8_t sextra = step - width;
+   uint8_t dextra = 32   - width;
 
    for( y = 0; y < height; ++y )
    {
-      for( x = 0; x < width; ++x )
+      for( x = 0; x < width; ++x, ++s, ++d )
       {
          // do not replace tcol on source
          if( (mode & 0x01) && (*s == tcol) ) continue;
@@ -156,10 +156,11 @@ static inline void dmacopytrans( uint8_t *dest, uint8_t *src,
                // skip, do nothing
                break;
          }
-         (*d++) = (*s++);
+         // no more exceptions, let's copy
+         *d = *s;
       }
-      s += sline;
-      d += dline;
+      s += sextra;
+      d += dextra;
    }
 }
 

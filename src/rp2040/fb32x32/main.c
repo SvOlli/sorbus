@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include <pico/binary_info.h>
 #include <pico/multicore.h>

@@ -1,25 +1,8 @@
 
-CP             ?= cp
-MKDIR          ?= mkdir -p
-CC65_BASE_DIR  ?= $(dir $(shell cl65 --print-target-path))
+include Makefile.cfg
 
-AR65           ?= ar65
-CA65           ?= ca65
-CC65           ?= cc65
-CL65           ?= cl65
-LD65           ?= ld65
-
-CC65_FLAGS     ?= -O
-SYS_FLAGS      ?= --cpu 65sc02 -t none --cfg-path $(CFG_DIR) -C sorbus.cfg
-
-EXPORT_DIR     ?= bin
-CFG_DIR        ?= cfg
-
+INCLUDES       ?= jam.inc jam_bios.inc fb32x32.inc
 SRCS           ?= $(wildcard examples/*.c owncode/*.c owncode/*.s)
-
-SORBUS_LIB     ?= lib/sorbus.lib
-INCLUDE_DIR    ?= include
-INCLUDES       ?= jam.inc jam_bios.inc
 
 targets        :=
 
