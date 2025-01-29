@@ -169,10 +169,12 @@ boota:
    adc   #$01
    jsr   prhex4
    pla
-   clc
-   ror
-   ror
-   ror
+   asl
+   asl
+   asl
+   asl
+   asl
+   asl
    sta   ID_LBA+0
    lda   #$00
    sta   ID_LBA+1

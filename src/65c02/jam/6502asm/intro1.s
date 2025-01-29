@@ -1,7 +1,7 @@
 
 .include "fb32x32.inc"
 
-.define DELAY 200
+.define DELAY 500
 .define LEDREG $DF04
 
 vector = $10
@@ -15,8 +15,8 @@ frmcnt = $13
 
    sei
    lda   #<FRAMEBUFFER
-   ldx   #>FRAMEBUFFER
    sta   vector+0
+   ldx   #>FRAMEBUFFER
    stx   vector+1
    ldy   #$00
    int   FB32X32
@@ -52,7 +52,37 @@ frmcnt = $13
    inx
    bne   :-
 
-   jmp   start
+   jsr   xbm
+
+   sei
+   lda   #<irqhandler
+   sta   UVNBI+0
+   lda   #>irqhandler
+   sta   UVNBI+1
+   lda   #<DELAY
+   sta   TMIMRL
+   lda   #>DELAY
+   sta   TMIMRH
+   cli
+
+:
+   jsr   CHRIN
+   cmp   #$03
+   bne   :-
+
+:
+   inx
+   bne   :-
+   iny
+   bne   :-
+
+   stz   TMIMRL
+   stz   TMIMRH
+   jsr   xbm
+   stz   FB32X32_COPY
+
+   jmp   ($fffc)
+
 
 xbm:
    lda   #<FRAMEBUFFER
@@ -82,48 +112,6 @@ xbm:
    bne   @imgloop
 
    stz   LEDREG
-   rts
-
-xbmoverlay:
-   lda   #$00
-   sta   vector+0
-   lda   #$cc
-   sta   vector+1
-
-   ldx   #$00
-@imgloop:
-   lda   sorbus,x
-   sta   tmp8
-
-   ldy   #$08
-@bitloop:
-   lda   #$00
-   ror   tmp8
-   bcc   :+
-   lda   #$ff ; white
-   sta   (vector)
-:
-   inc   vector+0
-   bne   :+
-   inc   vector+1
-:
-   dey
-   bne   @bitloop
-   inx
-   bne   @imgloop
-
-   stz   LEDREG
-   rts
-
-clear:
-   ldx   #$00
-:
-   stz   FRAMEBUFFER+$000,x
-   stz   FRAMEBUFFER+$100,x
-   stz   FRAMEBUFFER+$200,x
-   stz   FRAMEBUFFER+$300,x
-   inx
-   bne   :-
    rts
 
 
@@ -186,142 +174,53 @@ coppercalc:
    bpl   :-
    rts
 
-black2copper:
-   ldx   #$00
-   ldy   #$00
-   sty   vector+0
-   lda   #$cc
-   sta   vector+1
-@loop:
-   lda   (vector),y
-   bne   @noblack
-   lda   copbuf,x
-   sta   (vector),y
-@noblack:
-   tya
-   inc
-   and   #$1f
-   bne   :+
-   inx
-:
-   iny
-   bne   @loop
-   inc   vector+1
-   lda   vector+1
-   cmp   #$d0
-   bne   @loop
-;   int   MONITOR
-   rts
 
 copperfill:
+   stz   FB32X32_WIDTH
+   stz   FB32X32_STEP
+   stz   FB32X32_DEST_Y
+   lda   #<copbuf
+   sta   FB32X32_SRC+0
+   lda   #>copbuf
+   sta   FB32X32_SRC+1
    ldx   #$00
+:
+   stx   FB32X32_DEST_X
+   stz   FB32X32_COPYN
+   inx
+   cpx   #$20
+   bne   :-
+   rts
+
+
+xbmoverlay:
+   lda   #<FRAMEBUFFER
+   ldx   #>FRAMEBUFFER
    ldy   #$00
-   sty   vector+0
-   lda   #$cc
-   sta   vector+1
-@loop:
-   lda   copbuf,x
-   sta   (vector),y
-   tya
-   inc
-   and   #$1f
-   bne   :+
-   inx
-:
-   iny
-   bne   @loop
-   inc   vector+1
-   lda   vector+1
-   cmp   #$d0
-   bne   @loop
-;   int   MONITOR
+   int   FB32X32
+
+   lda   #$01              ; transparent color is $00 by default
+   sta   FB32X32_COPY
    rts
 
-coplay:
-   ldx   #$00
-   stx   vector+0
-   lda   #$cc
-   sta   vector+1
-
-   ldx   #$1f
-@loop:
-   ldy   #$1f
-@line:
-   lda   (vector),y
-   bne   :+
-   lda   copbuf,x
-   sta   (vector),y
-:
-   dey
-   bpl   @line
-
-   clc
-   lda   vector+0
-   adc   #$20
-   sta   vector+0
-   bcc   :+
-   inc   vector+1
-:
-   dex
-   bpl   @loop
-delay12:
-   rts
-
-start:
-   sei
-   lda   #<irqhandler
-   sta   UVNBI+0
-   lda   #>irqhandler
-   sta   UVNBI+1
-   lda   #<DELAY
-   sta   TMIMRL
-   lda   #>DELAY
-   sta   TMIMRH
-   cli
-
-:
-   jsr   CHRIN
-   cmp   #$03
-   bne   :-
-
-:
-   inx
-   bne   :-
-   iny
-   bne   :-
-
-   stz   TMIMRL
-   stz   TMIMRH
-   jsr   clear
-   stz   FB32X32_COPY
-
-   jmp   ($fffc)
 
 irqhandler:
    pha
    phx
    phy
 
-.if 0
-   jsr   xbm
-   jsr   coppercalc
-   jsr   black2copper ;coplay
-.else
    jsr   coppercalc
    jsr   copperfill
    jsr   xbmoverlay
-.endif
 
-   ply
-   plx
-   pla
-   stz   FB32X32_COPY
    bit   TMIMRL
    inc   frmcnt
    inc   frmcnt
    inc   frmcnt
-   inc   frmcnt
-   inc   frmcnt
+
+   ply
+   plx
+   pla
    rti
 
 

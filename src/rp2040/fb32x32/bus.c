@@ -49,10 +49,15 @@ void bus_loop()
       // handle control registers
       if( (address >> 8) == 0xD3 )
       {
+#if 1
+         // letting it block would fill up the pio cue before overflow
+         multicore_fifo_push_blocking( bus );
+#else
          if( multicore_fifo_wready() )
          {
             multicore_fifo_push_blocking( bus );
          }
+#endif
       }
    }
 }
