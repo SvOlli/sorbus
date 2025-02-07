@@ -8,18 +8,18 @@
 #include <pico/binary_info.h>
 
 const bus_config_t bus_config = {
-   .mask_address  = 0x0000FFFF,  // input:  16 contiguous bits
-   .mask_data     = 0x00FF0000,  // both:   8 contiguous bits
-   .mask_rw       = 0x01000000,  // input:  1 bit
-   .mask_clock    = 0x02000000,  // output: 1 bit
-   .mask_rdy      = 0x04000000,  // output: 1 bit (could be also input in the future)
-   .mask_irq      = 0x08000000,  // output: 1 bit (could be also input in the future)
-   .mask_nmi      = 0x10000000,  // output: 1 bit (could be also input in the future)
-   .mask_reset    = 0x20000000,  // output: 1 bit (could be also input in the future)
-   .mask_input    = 0x01FFFFFF,  // convenience
-   .mask_output   = 0x3EFF0000,  // convenience
-   .shift_data    = 16,
-   .shift_address = 0
+   .mask_address  = BUS_CONFIG_mask_address, // input:  16 contiguous bits
+   .mask_data     = BUS_CONFIG_mask_data,    // both:   8 contiguous bits
+   .mask_rw       = BUS_CONFIG_mask_rw,      // input:  1 bit
+   .mask_clock    = BUS_CONFIG_mask_clock,   // output: 1 bit
+   .mask_rdy      = BUS_CONFIG_mask_rdy,     // output: 1 bit (could be also input in the future)
+   .mask_irq      = BUS_CONFIG_mask_irq,     // output: 1 bit (could be also input in the future)
+   .mask_nmi      = BUS_CONFIG_mask_nmi,     // output: 1 bit (could be also input in the future)
+   .mask_reset    = BUS_CONFIG_mask_reset,   // output: 1 bit (could be also input in the future)
+   .mask_input    = BUS_CONFIG_mask_input,   // convenience
+   .mask_output   = BUS_CONFIG_mask_output,  // convenience
+   .shift_data    = BUS_CONFIG_shift_data,
+   .shift_address = BUS_CONFIG_shift_address
 };
 
 bi_decl(bi_pin_mask_with_name(bus_config.mask_address, "A0-A15"));

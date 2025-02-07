@@ -35,8 +35,10 @@
 #endif
 
 // --- LED ---
+#if RP2040_PURPLE_USE_LED
 #ifndef PICO_DEFAULT_LED_PIN
 #define PICO_DEFAULT_LED_PIN 25
+#endif
 #endif
 
 // --- I2C ---
