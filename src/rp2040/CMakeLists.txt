@@ -208,3 +208,6 @@ target_link_libraries(fb32x32usbuart PRIVATE
 )
 pico_set_binary_type(fb32x32usbuart copy_to_ram)
 setup_target(fb32x32usbuart "fb32x32")
+
+# Build binaries for SorbusSound 
+add_subdirectory(soundcore)

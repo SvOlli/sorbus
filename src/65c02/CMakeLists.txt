@@ -3,12 +3,20 @@ project(sorbus_65c02)
 
 include(65c02-toolchain.cmake)
 
+option(DONT_GENERATE_CPMFS "Skip CPMFS generation" OFF ) # Default is to genarate
+
+if (DONT_GENERATE_CPMFS STREQUAL "ON")
+   message("Dont generate CPMFS")   
+else()
+
 if( CPM65_PATH )
    message(STATUS "CPM65 detected at '${CPM65_PATH}', adding build command")
    add_custom_target(cpm ALL
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cpm/build.sh" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/0" "${CPM65_PATH}"
       )
 endif()
+endif()
+unset (DONT_GENERATE_CPMFS CACHE) 
 
 function(runmake target in_dir)
    message(STATUS "running Makefile in ${in_dir}")
@@ -268,4 +276,6 @@ add_executable(8bit_dp
 )
 target_type(8bit_dp sx4 "2.")
 
+
 gencpmfs(jam_cpmfs.img)
+
