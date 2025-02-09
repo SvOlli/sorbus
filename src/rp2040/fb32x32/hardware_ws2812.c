@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <pico/binary_info.h>
 #include <pico/multicore.h>
@@ -19,6 +20,8 @@
 
 #define WS2812_PIN 29
 
+#define COLORTAB_SIZE (0x100)
+
 bi_decl(bi_program_name("Sorbus Computer 32x32 WS2812"))
 bi_decl(bi_program_description("Driver for a 6502asm style LED matrix"))
 
@@ -26,7 +29,7 @@ bi_decl(bi_1pin_with_name(WS2812_PIN, "WS2812_DATA"));
 
 extern const unsigned int translation_matrix[0x400];
 
-uint32_t colortab[0x100];
+uint32_t colortab[COLORTAB_SIZE];
 
 static uint8_t brightness = 0;
 
@@ -46,16 +49,18 @@ void hardware_init()
 {
    PIO pio = pio0;
    int sm = 0;
-   uint offset = pio_add_program(pio, &ws2812_program);
+   uint offset = pio_add_program( pio, &ws2812_program );
 
    // slightly "overclocking" WS2812 from .8MHz to 1MHz, works for me
-   ws2812_program_init(pio, sm, offset, WS2812_PIN, 1000000, false);
+   ws2812_program_init( pio, sm, offset, WS2812_PIN, 1000000, false );
 }
 
 
 void hardware_flush()
 {
    int i;
+   uint32_t colortab_local[COLORTAB_SIZE];
+   memcpy( &colortab_local[0], &colortab[0], sizeof(colortab) );
    for( i = 0; i < 0x400; ++i )
    {
       pio_sm_put_blocking( pio0, 0, colortab[framebuffer[translation_matrix[i]]] );

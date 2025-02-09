@@ -27,10 +27,10 @@ extern uint8_t framebuffer[0x800];
 
 /* functions */
 
-/*  */
+/* initialize PIO machine for listening on the bus */
 void bus_init();
 
-/*  */
+/* initialize control data */
 void control_init();
 
 /* initialize PIO machine, must be run after bus_init() */
@@ -47,6 +47,6 @@ void control_loop();
 void hardware_setcolor( uint8_t index, uint8_t r, uint8_t g, uint8_t b );
 
 /* write framebuffer to LEDs, colormap needs to have 0x100 entries */
-void hardware_flush( /* uint32_t *colormap */ );
+void hardware_flush();
 
 #endif

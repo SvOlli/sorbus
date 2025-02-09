@@ -63,7 +63,7 @@ static inline void uart_tx_program_puts( PIO pio, uint sm, const char *s )
 {
    while( *s )
    {
-       uart_tx_program_putc( pio, sm, *(s++) );
+      uart_tx_program_putc( pio, sm, *(s++) );
    }
 }
 
