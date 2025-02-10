@@ -72,12 +72,7 @@
 #endif
 extern uint8_t FM_ENABLE;
 
-#ifdef USE_RGB_LED
-#undef FLASH_LED
-#include "ws2812.pio.h"
-static int32_t r_ = 0, g_ = 0, b_ = 0;
-#endif
- 
+
 const volatile uint8_t __in_flash() busTimings[ 8 ] = { 11, 15, 1, 2, 3, 4, 5, 6 };
 //const volatile uint8_t __in_flash() busTimings[ 8 ] = { 5, 7, 1, 2, 3, 4, 5, 6 };
 uint8_t DELAY_READ_BUS, DELAY_PHI2;
@@ -123,12 +118,6 @@ extern void outputReSID( int16_t *left, int16_t *right );
 extern void readRegs( uint8_t *p1, uint8_t *p2 );
 
 
-#ifdef USE_POT
-#define POTX		( 10 )
-#define POTY		( 11 )
-#define bPOTX		( 1 << POTX )
-#define bPOTY		( 1 << POTY )
-#endif
 #define bRESET		( 1 << RESET )
 #define bCS1		( 1 << CS1 )
 #define bnCS2	    ( 1 << nCS2 )
@@ -140,11 +129,6 @@ extern void readRegs( uint8_t *p1, uint8_t *p2 );
 #define AUDIO_I2S_DATA_PIN	SND_DOUT		 //ok
 
 #define DAC_BITS	( ( 3 << AUDIO_I2S_CLOCK_PIN_BASE ) | ( 1 << AUDIO_I2S_DATA_PIN ) )
-#ifdef USE_POT
-#define bPWN_POT	( ( 1 << AUDIO_PIN ) | bPOTX | bPOTY | DAC_BITS )
-#else
-#define bPWN_POT	( ( 1 << AUDIO_PIN ) | DAC_BITS )
-#endif
 
 #define VIC_HALF_CYCLE( g )	( !( (g) & bPHI ) )
 #define CPU_HALF_CYCLE( g )	(  ( (g) & bPHI ) )
@@ -200,42 +184,11 @@ void initGPIOs()
     gpio_set_dir(SND_DEMP, GPIO_OUT);
     gpio_put(SND_DEMP,0);  // no De-Emphasis
 
-
-#ifdef USE_POT
-	gpio_set_dir_all_bits( bOE | bPWN_POT | ( 1 << LED_BUILTIN ) | ( 1 << 23 ) );
-#else
 	gpio_set_dir_all_bits( bOE | ( 1 << LED_BUILTIN ) | ( 1 << 23 ) );
-#endif	
 }
 
 extern uint8_t config[ 64 ];
 
-#ifdef USE_POT
-
-void initPotGPIOs()
-{
-	if ( config[ 57 ] )
-	{
-		adc_init();
-		adc_gpio_init( POTY + 0 );
-		adc_select_input( POTY - 26 );
-		adc_run( true );
-
-		gpio_init( POTX );
-		sio_hw->gpio_clr = bPOTX | bPOTY;
-		gpio_set_pulls( POTX, false, false );
-		gpio_set_pulls( POTY, false, false );
-	} else
-	{
-		adc_hw->cs = adc_hw->cs & !ADC_CS_EN_BITS;
-		gpio_init( POTX );
-		gpio_init( POTY );
-		sio_hw->gpio_clr = bPOTX | bPOTY;
-		gpio_set_pulls( POTX, false, false ); 
-		gpio_set_pulls( POTY, false, false ); 
-	}
-}
-#endif
 
 #ifdef USE_DAC
 
@@ -342,42 +295,15 @@ uint8_t	 sampleValue[ 3 ] = { 0 };
 
 extern void outputDigi( uint8_t voice, int32_t value );
 
-extern uint8_t POT_FILTER_global;
-uint8_t paddleFilterMode = 0;
 uint8_t SID2_IOx;
-uint8_t potXExtrema[ 2 ], potYExtrema[ 2 ];
 
 volatile uint8_t doReset = 0;
 
 void updateEmulationParameters()
 {
-#ifdef USE_POT
-	extern uint8_t POT_SET_PULLDOWN;
-	gpio_set_pulls( POTY, false, POT_SET_PULLDOWN > 0 ); 
-	gpio_set_pulls( POTX, false, POT_SET_PULLDOWN > 0 ); 
-
-	paddleFilterMode = POT_FILTER_global;
-	if ( paddleFilterMode == 3 )
-	{
-		potXExtrema[ 0 ] = potYExtrema[ 0 ] = 128 - 30;
-		potXExtrema[ 1 ] = potYExtrema[ 1 ] = 128 + 30;
-	} else
-	{
-		potXExtrema[ 0 ] = potYExtrema[ 0 ] = 0;
-		potXExtrema[ 1 ] = potYExtrema[ 1 ] = 255;
-	}
-#endif
 	SID2_IOx = SID2_IOx_global;
 }
 
-#define RGB24( r, g, b ) ( ( (uint32_t)(r)<<8 ) | ( (uint32_t)(g)<<16 ) | (uint32_t)(b) )
-
-#ifdef USE_POT
-uint8_t smoothPotValues = 0;
-uint8_t newPotXCandidate = 128, newPotYCandidate = 128;
-uint8_t newPotXCandidate2S = 128, newPotYCandidate2S = 128;
-uint8_t skipSmoothing = 0;
-#endif
 inline uint8_t median( uint8_t *x )
 {
 	int sum, minV, maxV;
@@ -431,13 +357,6 @@ void runEmulation()
 	gpio_put( PIN_DCDC_PSM_CTRL, 1 );
 	#endif
 
-	#ifdef USE_RGB_LED
-	initProgramWS2812();
-	extern int32_t voiceOutAcc[ 3 ], nSamplesAcc;
-	voiceOutAcc[ 0 ] = voiceOutAcc[ 1 ] = voiceOutAcc[ 2 ] = 0;
-	r_ = g_ = b_ = 0;
-	#endif
-
 	initReSID();
 	
 #ifdef FMOPL_ENABLED
@@ -461,9 +380,6 @@ void runEmulation()
 	#ifdef USE_SPDIF
 	ap = initSPDIF();
 	#endif
-	#ifdef USE_RGB_LED
-	pio_sm_put( pio0, 1, 0 );
-	#endif
 
 	#ifdef SID_DAC_MODE_SUPPORT
 	int32_t DAC_L = 0, DAC_R = 0;
@@ -476,86 +392,9 @@ void runEmulation()
 	int32_t  lastS = 0;
 
 	uint64_t lastD418Cycle = 0;
-	#ifdef USE_RGB_LED
-	uint8_t  digiD418Visualization = 0;
-	#endif
-#ifdef USE_POT
-	uint8_t potXHistory[ 3 ], potYHistory[ 3 ], potHistoryCnt = 0;
-	int32_t paddleXSmooth = 128 << 8;
-	int32_t paddleYSmooth = 128 << 8;
-	int32_t paddleXRange, paddleYRange, newX, newY, oldX, oldY;
-#endif	
 
 	while ( 1 )
 	{
-		// paddle/mouse-smoothing 
-#ifdef USE_POT		
-	#define EMA	6
-		if ( paddleFilterMode >= 1 && smoothPotValues )
-		{
-			potXHistory[ potHistoryCnt ] = newPotXCandidate2S;
-			potYHistory[ potHistoryCnt ] = newPotYCandidate2S;
-			potHistoryCnt ++;
-			if ( potHistoryCnt >= 3 )
-				potHistoryCnt = 0;
-
-			uint8_t newPotXCand = median( potXHistory );
-			uint8_t newPotYCand = median( potYHistory );
-
-			if ( paddleFilterMode == 1 )
-			{
-				outRegisters[ 25 ] = newPotXCand;
-				outRegisters[ 26 ] = newPotYCand;
-				goto bla;
-			}
-			if ( !skipSmoothing )
-			{
-				if ( paddleFilterMode == 3 )
-				{
-					// only for mouse, not paddles
-					potXExtrema[ 0 ] = potYExtrema[ 0 ] = 128 - 58;
-					potXExtrema[ 1 ] = potYExtrema[ 1 ] = 128 + 58;
-					paddleXRange = (int)( potXExtrema[ 1 ] - potXExtrema[ 0 ] ) << 8;
-					paddleYRange = (int)( potYExtrema[ 1 ] - potYExtrema[ 0 ] ) << 8; 
-
-				} else
-					paddleXRange = paddleYRange = 256 << 8;
-
-				// starting from here it's the same for mouse and paddles (for the latter extrema are always [0;255])
-				newX = (int)( newPotXCand - potXExtrema[ 0 ] ) << 8;
-				oldX = paddleXSmooth - ( (int)potXExtrema[ 0 ] << 8 );
-
-				newY = (int)( newPotYCand - potYExtrema[ 0 ] ) << 8;
-				oldY = paddleYSmooth - ( (int)potYExtrema[ 0 ] << 8 );
-
-				if ( ( newX - oldX ) > paddleXRange / 2 )
-					oldX += paddleXRange; else
-				if ( ( oldX - newX ) > paddleXRange / 2 )
-					newX += paddleXRange;
-
-				if ( ( newY - oldY ) > paddleYRange / 2 )
-					oldY += paddleYRange; else
-				if ( ( oldY - newY ) > paddleYRange / 2 )
-					newY += paddleYRange;
-
-				
-				newX = ( oldX * ( 256 - EMA ) + newX * EMA ) >> 8;
-				if ( newX >= paddleXRange ) newX -= paddleXRange;
-				
-				newY = ( oldY * ( 256 - EMA ) + newY * EMA ) >> 8;
-				if ( newY >= paddleYRange ) newY -= paddleYRange;
-			}
-			if ( paddleFilterMode > 1 && !skipSmoothing )
-			{
-				paddleXSmooth = newX + ( (int)potXExtrema[ 0 ] << 8 );
-				outRegisters[ 25 ] = paddleXSmooth >> 8;
-				paddleYSmooth = newY + ( (int)potYExtrema[ 0 ] << 8 );
-				outRegisters[ 26 ] = paddleYSmooth >> 8;
-			}
-			bla:
-			smoothPotValues = 0;
-		}
-#endif
 		if ( doReset )
 		{
 			watchdog_reboot( 0, 0, 0 );
@@ -611,25 +450,6 @@ void runEmulation()
 			} else
 			{
 				uint8_t reg = cmd >> 8;
-
-				#ifdef USE_RGB_LED
-				if ( reg == 0x18 )
-				{
-					if ( ( targetEmulationCycle - lastD418Cycle ) < 1536 )
-					{
-						digiD418Visualization = 1;
-
-						// heuristic to detect Mahoney's technique based on findings by Jürgen Wothke used in WebSid (https://bitbucket.org/wothke/websid/src/master/) )
-						if ( ( 0x17[ outRegisters ] == 0x3 ) && ( 0x15[ outRegisters ] >= 0xfe ) && ( 0x16[ outRegisters ] >= 0xfe ) &&
-							 ( 0x06[ outRegisters ] >= 0xfb ) && ( 0x06[ outRegisters ] == 0x0d[ outRegisters ] ) && ( 0x06[ outRegisters ] == 0x14[ outRegisters ] ) &&
-							 ( 0x04[ outRegisters ] == 0x49 ) && ( 0x0b[ outRegisters ] == 0x49 ) && ( 0x12[ outRegisters ] == 0x49 ) )
-							digiD418Visualization = 2;
-					} else
-						digiD418Visualization = 0;
-
-					lastD418Cycle = targetEmulationCycle;
-				}
-				#endif
 
 				writeReSID( reg, cmd & 255 );
 
@@ -866,57 +686,6 @@ void runEmulation()
 
 			newSample = s;
 
-			s = ( s_ >> ( 1 + 16 - AUDIO_BITS ) );
-			if ( ramp < ( RAMP_LENGTH - 1 ) ) s = ( s * ramp ) >> RAMP_BITS;
-			newLEDValue = abs( s ) << 2;
-			s *= s;
-			s >>= ( AUDIO_BITS - 5 );
-			newLEDValue += s;
-
-			#ifdef USE_RGB_LED
-			extern int32_t voiceOutAcc[ 3 ], nSamplesAcc;
-
-			#define SAMPLE2BRIGHTNESS( _s, res ) {					\
-				int32_t s = _s;										\
-				s = ( s >> ( 16 - AUDIO_BITS ) );					\
-				res = abs( s ) << 2;								\
-				s *= s;												\
-				s >>= ( AUDIO_BITS - 5 );							\
-				res += s; }
-
-			int32_t r, g, b;
-
-			// no LEDs from voice output when using Mahoney's digi technique or PWM techniques
-			if ( digiD418Visualization < 2 )
-			{
-				SAMPLE2BRIGHTNESS( voiceOutAcc[ 0 ] >> 2, r );
-				SAMPLE2BRIGHTNESS( voiceOutAcc[ 1 ] >> 2, g );
-				SAMPLE2BRIGHTNESS( voiceOutAcc[ 2 ] >> 2, b );
-				r_ += r;
-				g_ += g;
-				b_ += b;
-			}
-
-			if ( digiD418Visualization )
-			{
-				int32_t t = newLEDValue << 7;
-				if ( digiD418Visualization == 1 ) t <<= 4;
-				r_ += t;
-				g_ += t;
-				b_ += t;
-			}
-
-			static uint16_t smpCnt = 0;
-			if ( ++ smpCnt >= 1024 )
-			{
-				r_ >>= 24;
-				g_ >>= 24;
-				b_ >>= 24;
-				pio_sm_put( pio0, 1, RGB24( r_, g_, b_ ) << 8 );
-				r_ = g_ = b_ = 0;
-				smpCnt = 0;
-			}
-			#endif
 		}
 	}
 }
@@ -1240,9 +1009,6 @@ int main()
 	readConfiguration();
 	SET_CLOCK_FAST
 	initGPIOs();
-#ifdef USE_POT
-	initPotGPIOs();
-#endif
 	// start bus handling and emulation
 	multicore_launch_core1( handleBus );
 	bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC1_BITS;

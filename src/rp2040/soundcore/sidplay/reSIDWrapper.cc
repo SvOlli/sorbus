@@ -55,7 +55,6 @@
 #define CFG_REGISTER_READ 2
 #define CFG_TRIGGER 17
 #define CFG_CLOCKSPEED 19
-#define CFG_POT_FILTER 20
 #define CFG_DIGIDETECT 21
 #define CFG_CONFIG_WRITE 29
 #define CFG_CRC1 30
@@ -73,34 +72,15 @@ uint8_t SID_DIGI_DETECT = 0;
 uint32_t SID2_FLAG = 0;
 uint8_t SID2_IOx_global = 0;
 uint8_t FM_ENABLE = 0;
-uint8_t POT_FILTER_global = 0, POT_SET_PULLDOWN = 0;
-uint8_t POT_OUTLIER_REJECTION = 0;
 uint32_t SID2_ADDR_PREV = 255;
 uint8_t config[CFG_SIZE];
 
-#ifdef USE_RGB_LED
-int32_t voiceOutAcc[3], nSamplesAcc;
-#endif
 
 SID16 *sid16;
 SID16 *sid16b;
 
 extern "C"
 {
-    #ifdef USE_RGB_LED
-    static const __not_in_flash("mydata") unsigned char colorMap[9][3] =
-        {
-            {64, 153, 255},
-            {35, 195, 228},
-            {25, 227, 185},
-            {67, 247, 135},
-            {132, 255, 81},
-            {183, 247, 53},
-            {223, 223, 55},
-            {249, 188, 57},
-            {254, 144, 41},
-    };
-    #endif
     uint16_t crc16(const uint8_t *p, uint8_t l)
     {
         uint8_t x;
@@ -131,7 +111,6 @@ extern "C"
         config[CFG_SID_PANNING] = 5;
         config[CFG_SID_BALANCE] = 7;
         config[CFG_CLOCKSPEED] = 0;
-        config[CFG_POT_FILTER] = 16; // obvious outlier-rejection
         config[CFG_DIGIDETECT] = 0;
         config[CFG_TRIGGER] = 0;
 
@@ -187,13 +166,6 @@ extern "C"
             sid16b->reset();
 
         SID2_ADDR_PREV = config[CFG_SID2_ADDRESS];
-
-        POT_FILTER_global = config[CFG_POT_FILTER];
-
-        POT_OUTLIER_REJECTION = (POT_FILTER_global >> 4) & 3;
-        POT_SET_PULLDOWN = POT_FILTER_global & 64;
-
-        POT_FILTER_global &= 15;
 
         uint8_t panning = config[CFG_SID_PANNING];
 
@@ -259,12 +231,6 @@ extern "C"
 
         updateConfiguration();
 
-#ifdef USE_RGB_LED
-        voiceOutAcc[0] =
-            voiceOutAcc[1] =
-                voiceOutAcc[2] = 0;
-        nSamplesAcc = 0;
-#endif
     }
 
     void emulateCyclesReSID(int cyclesToEmulate)
@@ -304,20 +270,6 @@ extern "C"
         *left = L >> 16;
         *right = R >> 16;
 
-#ifdef USE_RGB_LED
-        // SID #1 voices map to red, green, blue
-        voiceOutAcc[0] = sid16->voiceOut[0];
-        voiceOutAcc[1] = sid16->voiceOut[1];
-        voiceOutAcc[2] = sid16->voiceOut[2];
-        // SID #2 voices map to orange, cyan, purple
-        voiceOutAcc[0] += (3 * sid16b->voiceOut[0]) >> 2;
-        voiceOutAcc[1] += sid16b->voiceOut[0] >> 2;
-        voiceOutAcc[1] += sid16b->voiceOut[1] >> 1;
-        voiceOutAcc[2] += sid16b->voiceOut[1] >> 1;
-        voiceOutAcc[2] += sid16b->voiceOut[2] >> 1;
-        voiceOutAcc[0] += sid16b->voiceOut[2] >> 1;
-        nSamplesAcc++;
-#endif
     }
 
     void outputReSIDFM(int16_t *left, int16_t *right, int32_t fm, uint8_t fmHackEnable, uint8_t *fmDigis)
@@ -340,42 +292,6 @@ extern "C"
         *left = L;
         *right = R;
 
-#ifdef USE_RGB_LED
-        // SID #1 voices map to red, green, blue
-        voiceOutAcc[0] = sid16->voiceOut[0];
-        voiceOutAcc[1] = sid16->voiceOut[1];
-        voiceOutAcc[2] = sid16->voiceOut[2];
-
-        // FM voices map to colors as defined in colorMap
-        if (fmHackEnable)
-        {
-            // voiceOutAcc[ 0 ] = voiceOutAcc[ 1 ] = voiceOutAcc[ 2 ] = (fm-2048) << 6;
-            if (fmHackEnable & 2)
-            {
-                voiceOutAcc[0] >>= 1;
-                voiceOutAcc[1] >>= 1;
-                voiceOutAcc[2] >>= 1;
-                voiceOutAcc[0] += (colorMap[8][0] * (fmDigis[1] - 64) << 11) >> 7;
-                voiceOutAcc[1] += (colorMap[8][1] * (fmDigis[1] - 64) << 11) >> 7;
-                voiceOutAcc[2] += (colorMap[8][2] * (fmDigis[1] - 64) << 11) >> 7;
-            }
-            if (fmHackEnable & 1)
-            {
-                voiceOutAcc[0] += (colorMap[1][0] * (fmDigis[0] - 64) << 11) >> 7;
-                voiceOutAcc[1] += (colorMap[1][1] * (fmDigis[0] - 64) << 11) >> 7;
-                voiceOutAcc[2] += (colorMap[1][2] * (fmDigis[0] - 64) << 11) >> 7;
-            }
-        }
-        else
-            for (int i = 0; i < 9; i++)
-            {
-                extern int32_t outputCh[9];
-                voiceOutAcc[0] += (colorMap[i][0] * outputCh[i]) >> 1;
-                voiceOutAcc[1] += (colorMap[i][1] * outputCh[i]) >> 1;
-                voiceOutAcc[2] += (colorMap[i][2] * outputCh[i]) >> 1;
-            }
-        nSamplesAcc++;
-#endif
     }
 
     void resetReSID()
