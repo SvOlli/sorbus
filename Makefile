@@ -75,9 +75,9 @@ endef
 
 .PHONY: nocpmfs all clean distclean release setup-apt cc65-sdk
 
-#nocpmfs:  #is included in the default, so commented :(
-#	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(EXTRA_CMAKE_ARGS) -DDONT_GENERATE_CPMFS=ON
-#	make -C $(BUILD_DIR) -j$(JOBS) && echo "\nbuild was successful\n"
+nocpmfs:  #is included in the default, so commented :(
+	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(EXTRA_CMAKE_ARGS) -DDONT_GENERATE_CPMFS=ON
+	make -C $(BUILD_DIR) -j$(JOBS) && echo "\nbuild was successful\n"
 
 all: $(PICO_SDK_PATH)/README.md
 	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(EXTRA_CMAKE_ARGS)

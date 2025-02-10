@@ -13,14 +13,14 @@
 #include <string.h>
 #include <math.h>
 
-#include "../rp2040_purple.h"
+#include "../../rp2040_purple.h"
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
 #include <pico/multicore.h>
 #include <pico/platform.h>
 #include <pico/binary_info.h>
 #include "i2s/i2s.h"
-#include "hardware/dma.h"
+#include "hardware/dma.h" 
 
 #include <hardware/clocks.h>
 #include "flash_config.h"
