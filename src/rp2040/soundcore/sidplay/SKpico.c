@@ -65,6 +65,7 @@
 #include "hardware/adc.h"
 #include "hardware/resets.h"
 #include "hardware/watchdog.h"
+#include "../pin_cfg.h"
 
 #ifdef FMOPL_ENABLED
 #include "fmopl.h"
@@ -122,19 +123,6 @@ extern void outputReSID( int16_t *left, int16_t *right );
 extern void readRegs( uint8_t *p1, uint8_t *p2 );
 
 
-#define D0			0  // ok
-#define A0			14 // ok
-#define A5			19
-#define nCS2		11   // HMMM is nCS2
-#define OE_DATA		8    // not needed , auf j4 Pin 1
-#define RW			10  // ok
-#define PHI			9   // ok
-#define AUDIO_PIN	29  // auf j4 pin 5
-#define CS1			12  // o.k. CS1 
-#define RESET		25  // o.k  , check auf LED_BUILTIN
-#define LED_BUILTIN 24  //  J4 Pin4
-#define SND_FLT 22
-#define SND_DEMP 13
 #ifdef USE_POT
 #define POTX		( 10 )
 #define POTY		( 11 )
@@ -148,8 +136,8 @@ extern void readRegs( uint8_t *p1, uint8_t *p2 );
 #define bRW			( 1 << RW )
 #define bOE			( 1 << OE_DATA )
 
-#define AUDIO_I2S_CLOCK_PIN_BASE 26  //ok
-#define AUDIO_I2S_DATA_PIN	28		 //ok
+#define AUDIO_I2S_CLOCK_PIN_BASE SND_CLKBASE  //ok
+#define AUDIO_I2S_DATA_PIN	SND_DOUT		 //ok
 
 #define DAC_BITS	( ( 3 << AUDIO_I2S_CLOCK_PIN_BASE ) | ( 1 << AUDIO_I2S_DATA_PIN ) )
 #ifdef USE_POT

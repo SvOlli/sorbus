@@ -24,6 +24,7 @@
 
 #include <hardware/clocks.h>
 #include "flash_config.h"
+#include "../pin_cfg.h"
 
 #include "cream_of_the_earth.h"
 
@@ -38,12 +39,7 @@
 				  "bne   1b"  : : [_c] "r" (c) : "r0", "cc", "memory" );
 
 
-#define SND_SCK 29
-#define SND_DOUT 28   
-#define SND_DIN 0       // Unsued 
-#define SND_CLKBASE 26     // occupies two pin 8 +9 for blck and lr-clock
-#define SND_FLT 22
-#define SND_DEMP 13
+
 
 
 /*****************************************************************************************************/

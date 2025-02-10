@@ -87,6 +87,7 @@ SID16 *sid16b;
 
 extern "C"
 {
+    #ifdef USE_RGB_LED
     static const __not_in_flash("mydata") unsigned char colorMap[9][3] =
         {
             {64, 153, 255},
@@ -99,7 +100,7 @@ extern "C"
             {249, 188, 57},
             {254, 144, 41},
     };
-
+    #endif
     uint16_t crc16(const uint8_t *p, uint8_t l)
     {
         uint8_t x;
@@ -119,10 +120,10 @@ extern "C"
         for (uint8_t i = 0; i < CFG_REG_MAX; i++)
             config[i] = 0;
 
-        config[CFG_SID1_TYPE] = 0;
+        config[CFG_SID1_TYPE] = MOS8580;
         config[CFG_SID2_TYPE] = 3;
         config[CFG_REGISTER_READ] = 1;
-        config[CFG_SID2_ADDRESS] = 1 + 4 * 0;
+        config[CFG_SID2_ADDRESS] = 1 + 4 * 0; 
         config[CFG_SID1_DIGIBOOST] = 12;
         config[CFG_SID2_DIGIBOOST] = 12;
         config[CFG_SID1_VOLUME] = 14;
