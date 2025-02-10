@@ -53,8 +53,5 @@ target_link_libraries(SKpico pico_stdlib pico_multicore hardware_dma hardware_in
 pico_set_program_name(SKpico "SKpico")
 pico_set_program_version(SKpico "0.1")
 
-#setup_target(sound_core c-flod i2s)
-
-
 # create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(SKpico)

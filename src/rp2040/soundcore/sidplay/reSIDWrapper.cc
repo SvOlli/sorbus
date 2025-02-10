@@ -215,9 +215,6 @@ extern "C"
     volatile int doe =1;
     void initReSID()
     {
-        //extern char *exo_decrunch(const char *in, char *out);
-        //while (doe);
-        //exo_decrunch((const char *)&reSID_LUTs_exo[reSID_LUTs_exo_size], (char *)&reSID_LUTs[32768]);
         
         sid16 = new SID16();
         sid16->set_chip_model(MOS8580);

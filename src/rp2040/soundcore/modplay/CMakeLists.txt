@@ -28,7 +28,7 @@ add_library(c_flod
 add_definitions(-DFLOD_NO_SOUNDBLASTER)
 
 add_executable(sound_core
-   system_sound.c
+   sound_core.c
    i2s/i2s.c   
    )
 target_include_directories(sound_core PRIVATE "${PICO_SDK_PATH}/src/rp2_common/hardware_pio/include/")
