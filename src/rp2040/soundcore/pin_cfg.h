@@ -5,7 +5,7 @@
 #define _PIN_CFG_H_
 
 // Common for ModPlay and Sidplay
-#define SND_SCK 29
+#define SND_SCK 0       // Unused
 #define SND_DOUT 28   
 #define SND_DIN 0       // Unsued 
 #define SND_CLKBASE 26     // occupies two pin 8 +9 for blck and lr-clock

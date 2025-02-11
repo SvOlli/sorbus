@@ -14,7 +14,7 @@ message("STORE PICO EXTRAS to: ${PICO_EXTRAS_FETCH_FROM_GIT_PATH}")
 include(pico_extras_import.cmake)
 include(${PICO_EXTRAS_PATH}/post_init.cmake)
 
-#set (PICO_COPY_TO_RAM 1)
+set (PICO_COPY_TO_RAM 1)
 add_compile_definitions(SKpico PICO_NO_FPGA_CHECK=1)
 add_compile_definitions(SKpico PICO_BARE_METAL=1)
 add_compile_definitions(SKpico PICO_CXX_ENABLE_EXCEPTIONS=0)
