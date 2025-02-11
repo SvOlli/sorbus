@@ -1,0 +1,50 @@
+{
+  "name": "sorbus-devenv",
+  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu-24.04",
+  "appPort": [],
+  "forwardPorts": [8000],
+  "customizations": {
+    "vscode": {
+      // Set *default* container specific settings.json values on container create.
+      "settings": {
+        },
+        "[json]": {
+          "editor.defaultFormatter": "vscode.json-language-features"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "zsh": {
+            "path": "/usr/bin/zsh",
+            "args": ["-l", "-i"]
+          }
+        }
+      },
+      // Add the IDs of extensions you want installed when the container is created.
+      "extensions": [
+        "asciidoctor.asciidoctor-vscode",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "ms-python.black-formatter",
+        "ms-vscode.makefile-tools",
+        "ms-vscode.cmake-tools",
+        "rpdswtk.vsmqtt",
+        "marus25.cortex-debug",
+        "debug-tracker-vscode"
+        ]
+  },
+  "onCreateCommand": "bash .devcontainer/install/onCreateCommand.sh",
+  "postStartCommand": "bash .devcontainer/install/postCreateCommand.sh",
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "PICO_SDK_FETCH_FROM_GIT": "ON",
+    "PICOTOOL_FETCH_FROM_GIT_PATH": "../build/_deps"
+  },
+  "mounts": ["type=bind,source=/dev/bus/usb,target=/dev/bus/usb"],
+  "runArgs": [
+    "--privileged",   // Needed for USB-connection
+    //"--device=/dev/ttyACM0",
+    // "--device=/dev/ttyACM1"
+    // uncomment if you have picoprobe installed
+  ]
+}
+   
