@@ -31,13 +31,13 @@ $(info # Using global pico sdk at: $(PICO_SDK_PATH))
 endif
 EXTRA_CMAKE_ARGS += -DPICO_SDK_PATH="$(PICO_SDK_PATH)"
 
-#ifeq ($(PICO_EXTRAS_PATH),)
-#PICO_EXTRAS_PATH=$(shell readlink -f ../pico-extras)
-#$(info # Using local pico extras at: $(PICO_EXTRAS_PATH))
-#else
-#$(info # Using global pico extras at: $(PICO_EXTRAS_PATH))
-#endif
-#EXTRA_CMAKE_ARGS += -DPICO_EXTRAS_PATH="$(PICO_EXTRAS_PATH)"
+ifeq ($(PICO_EXTRAS_PATH),)
+PICO_EXTRAS_PATH=$(shell readlink -f ../pico-extras)
+$(info # Using local pico extras at: $(PICO_EXTRAS_PATH))
+else
+$(info # Using global pico extras at: $(PICO_EXTRAS_PATH))
+endif
+EXTRA_CMAKE_ARGS += -DPICO_EXTRAS_PATH="$(PICO_EXTRAS_PATH)"
 
 CMAKE_CPM65_PATH = $(realpath $(CPM65_PATH))
 ifneq ($(CMAKE_CPM65_PATH),)

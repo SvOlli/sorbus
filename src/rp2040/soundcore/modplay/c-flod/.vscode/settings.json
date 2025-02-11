@@ -1,9 +1,0 @@
-{
-    "makefile.launchConfigurations": [
-        {
-            "cwd": "/home/oliver/Coding/c64/sorbus/mod_play/c-flod",
-            "binaryPath": "/home/oliver/Coding/c64/sorbus/mod_play/c-flod/flodplayer",
-            "binaryArgs": []
-        }
-    ]
-}

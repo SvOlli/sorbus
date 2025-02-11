@@ -13,6 +13,7 @@ set(CMAKE_WARN_DEPRECATED FALSE) # mbedtls will not build otherwise
 set(PICO_BOARD_HEADER_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/rp2040")
 set(PICO_BOARD "rp2040_purple")
 include(pico_sdk_import.cmake)
+include(pico_extras_import.cmake)
 project(sorbus)
 
 # self-hosted tools to e.g. convert binary to text data
