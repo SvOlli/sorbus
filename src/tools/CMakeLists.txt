@@ -16,9 +16,9 @@ add_executable(bin2hex
 # tool to convert to and from wear leveling format
 add_executable(dharatool
    dharatool.c
-   ../rp2040/dhara/error.c
-   ../rp2040/dhara/journal.c
-   ../rp2040/dhara/map.c
+   ../rp2040/3rdparty/dhara/error.c
+   ../rp2040/3rdparty/dhara/journal.c
+   ../rp2040/3rdparty/dhara/map.c
    )
 
 # tool to convert binary data to UF2 files

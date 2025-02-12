@@ -72,7 +72,7 @@ add_compile_definitions(SKpico PICO_STDIO_UART=0)
 #add_compile_definitions(SKpico PICO_COPY_TO_RAM=1)
 
 target_include_directories(SKpico PRIVATE
-      ${CMAKE_CURRENT_BINARY_DIR}
+   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 target_compile_definitions(SKpico PUBLIC  PICO PICO_STACK_SIZE=0x100)
@@ -81,7 +81,7 @@ target_compile_definitions(SKpico PRIVATE PICO_USE_MALLOC_MUTEX=0)
 target_compile_definitions(SKpico PRIVATE PICO_DEBUG_MALLOC=0)
 target_compile_options(SKpico PRIVATE -save-temps -fverbose-asm)
 
-set_target_properties(SKpico PROPERTIES PICO_TARGET_LINKER_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/memmap_copy_to_ram_skpico.ld)
+set_target_properties(SKpico PROPERTIES PICO_TARGET_LINKER_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/sound-sid/memmap_copy_to_ram_skpico.ld)
 
 target_link_libraries(SKpico pico_stdlib pico_multicore hardware_dma hardware_interp hardware_pwm pico_audio_i2s hardware_flash hardware_adc)
 #pico_audio_spdif 
@@ -90,4 +90,4 @@ pico_set_program_name(SKpico "SKpico")
 pico_set_program_version(SKpico "0.1")
 
 # create map/bin/hex/uf2 file in addition to ELF.
-pico_add_extra_outputs(SKpico)
+setup_target(SKpico "sound-sid")

@@ -39,9 +39,9 @@ add_executable(jam_alpha
    common/disassemble.c
    common/disassemble_historian.c
    common/generic_helper.c
-   dhara/error.c
-   dhara/journal.c
-   dhara/map.c
+   3rdparty/dhara/error.c
+   3rdparty/dhara/journal.c
+   3rdparty/dhara/map.c
    jam/main.c
    jam/console.c
    jam/bus.c

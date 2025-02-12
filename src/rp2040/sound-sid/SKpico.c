@@ -125,7 +125,7 @@ extern void setDefaultConfiguration();
 #define bnCS2	    ( 1 << nCS2 )
 #define bPHI		( 1 << PHI )
 #define bRW			( 1 << RW )
-#define bOE			( 1 << OE_DATA )
+//#define bOE			( 1 << OE_DATA )
 
 #define AUDIO_I2S_CLOCK_PIN_BASE SND_CLKBASE  //ok
 #define AUDIO_I2S_DATA_PIN	SND_DOUT		 //ok
@@ -819,12 +819,14 @@ void handleBus()
 	volatile uint32_t cs2count=0;
 	volatile uint8_t volatile shadow_reg[64]={0,};
 
+#ifdef bOE
 	gpio_set_dir_all_bits( gpioDir );
 	sio_hw->gpio_clr = bOE;
+#endif
 
 	SID2_IOx = SID2_IOx_global;
 
-		WAIT_FOR_CPU_HALF_CYCLE
+	WAIT_FOR_CPU_HALF_CYCLE
 	WAIT_FOR_VIC_HALF_CYCLE
 	WAIT_FOR_CPU_HALF_CYCLE
 
@@ -853,11 +855,12 @@ handleSIDCommunication:
 			disableDataLines = 0;
 		}
 
+#ifdef bOE
 		if ( gpioDir != gpioDirCur )
 		{
 			gpioDirCur = gpioDir;
 		}
-
+#endif
 		if ( newSample < 0xfffe )
 		{
 			#ifdef OUTPUT_VIA_PWM

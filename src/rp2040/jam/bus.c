@@ -31,7 +31,7 @@
 
 #include "event_queue.h"
 #include "dhara_flash.h"
-#include "dhara/error.h"
+#include "3rdparty/dhara/error.h"
 
 #include "cpu_detect.h"
 #include "disassemble.h"

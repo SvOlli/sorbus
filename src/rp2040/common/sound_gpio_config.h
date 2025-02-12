@@ -5,12 +5,12 @@
 #define SOUND_GPIO_CONFIG_H SOUND_GPIO_CONFIG_H
 
 // Common for ModPlay and Sidplay
-//#define SND_DIN      ( 0)     // Unsued 
+#define SND_DIN      ( 0)   // Unsued 
 #define SND_DEMP     (29)
 #define SND_FLT      (25)
-#define SND_CLKBASE  (26)     // occupies two pin 8 +9 for blck and lr-clock
+#define SND_CLKBASE  (26)   // occupies two pin 8 +9 for blck and lr-clock
 #define SND_DOUT     (28)   
-//#define SND_SCK      (29)   // unused
+#define SND_SCK      ( 0)   // unused
 
 // Busdecoding in Sidplay
 #define D0           ( 0)   // ok

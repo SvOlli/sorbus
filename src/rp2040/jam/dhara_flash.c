@@ -1,8 +1,8 @@
 
 #include "dhara_flash.h"
-#include "../dhara/error.h"
-#include "../dhara/map.h"
-#include "../dhara/nand.h"
+#include "3rdparty/dhara/error.h"
+#include "3rdparty/dhara/map.h"
+#include "3rdparty/dhara/nand.h"
 
 #include <string.h>
 #include <stdbool.h>

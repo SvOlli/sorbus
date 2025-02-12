@@ -21,9 +21,9 @@
 #include <strings.h>
 #include <unistd.h>
 #include <errno.h>
-#include "../rp2040/dhara/error.h"
-#include "../rp2040/dhara/map.h"
-#include "../rp2040/dhara/nand.h"
+#include "../rp2040/3rdparty/dhara/error.h"
+#include "../rp2040/3rdparty/dhara/map.h"
+#include "../rp2040/3rdparty/dhara/nand.h"
 #define XIP_BASE (0x10000000)
 #include "../rp2040/jam/flash_config.h"
 
