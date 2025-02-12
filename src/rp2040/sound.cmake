@@ -1,27 +1,27 @@
 
 
 add_library(c_flod
-   sound-mod/c-flod/player/flodplay_simple.c
-   sound-mod/c-flod/backends/wavewriter.c 
-   sound-mod/c-flod/flashlib/ByteArray.c 
-   sound-mod/c-flod/neoart/flod/core/Amiga.c 
-   sound-mod/c-flod/neoart/flod/core/AmigaChannel.c
-   sound-mod/c-flod/neoart/flod/core/AmigaFilter.c
-   sound-mod/c-flod/neoart/flod/core/AmigaPlayer.c 
-   sound-mod/c-flod/neoart/flod/core/AmigaRow.c
-   sound-mod/c-flod/neoart/flod/core/AmigaSample.c
-   sound-mod/c-flod/neoart/flod/core/AmigaStep.c
-   sound-mod/c-flod/neoart/flod/core/CoreMixer.c 
-   sound-mod/c-flod/neoart/flod/core/CorePlayer.c
-   sound-mod/c-flod/neoart/flod/core/Sample.c
-   sound-mod/c-flod/neoart/flod/trackers/PTPlayer.c
-   sound-mod/c-flod/neoart/flod/trackers/PTRow.c
-   sound-mod/c-flod/neoart/flod/trackers/PTSample.c
-   sound-mod/c-flod/neoart/flod/trackers/PTVoice.c
-   sound-mod/c-flod/neoart/flod/trackers/STPlayer.c
-   sound-mod/c-flod/neoart/flod/trackers/STVoice.c
-   sound-mod/c-flod/neoart/flod/futurecomposer/FCPlayer.c
-   sound-mod/c-flod/neoart/flod/futurecomposer/FCVoice.c
+   3rdparty/c-flod/player/flodplay_simple.c
+   3rdparty/c-flod/backends/wavewriter.c 
+   3rdparty/c-flod/flashlib/ByteArray.c 
+   3rdparty/c-flod/neoart/flod/core/Amiga.c 
+   3rdparty/c-flod/neoart/flod/core/AmigaChannel.c
+   3rdparty/c-flod/neoart/flod/core/AmigaFilter.c
+   3rdparty/c-flod/neoart/flod/core/AmigaPlayer.c 
+   3rdparty/c-flod/neoart/flod/core/AmigaRow.c
+   3rdparty/c-flod/neoart/flod/core/AmigaSample.c
+   3rdparty/c-flod/neoart/flod/core/AmigaStep.c
+   3rdparty/c-flod/neoart/flod/core/CoreMixer.c 
+   3rdparty/c-flod/neoart/flod/core/CorePlayer.c
+   3rdparty/c-flod/neoart/flod/core/Sample.c
+   3rdparty/c-flod/neoart/flod/trackers/PTPlayer.c
+   3rdparty/c-flod/neoart/flod/trackers/PTRow.c
+   3rdparty/c-flod/neoart/flod/trackers/PTSample.c
+   3rdparty/c-flod/neoart/flod/trackers/PTVoice.c
+   3rdparty/c-flod/neoart/flod/trackers/STPlayer.c
+   3rdparty/c-flod/neoart/flod/trackers/STVoice.c
+   3rdparty/c-flod/neoart/flod/futurecomposer/FCPlayer.c
+   3rdparty/c-flod/neoart/flod/futurecomposer/FCVoice.c
 )
 add_definitions(-DFLOD_NO_SOUNDBLASTER)
 
@@ -55,13 +55,13 @@ bin2h(reSID_LUT_bin.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-sid/LUT.bin reSID_LUTs)
 add_executable(SKpico
     reSID_LUT_bin.h
     sound-sid/SKpico.c
-    sound-sid/reSID16/envelope.cc
-    sound-sid/reSID16/extfilt.cc
-    sound-sid/reSID16/pot.cc
-    sound-sid/reSID16/filter.cc
-    sound-sid/reSID16/sid.cc
-    sound-sid/reSID16/voice.cc
-    sound-sid/reSID16/wave.cc
+    3rdparty/reSID16/envelope.cc
+    3rdparty/reSID16/extfilt.cc
+    3rdparty/reSID16/pot.cc
+    3rdparty/reSID16/filter.cc
+    3rdparty/reSID16/sid.cc
+    3rdparty/reSID16/voice.cc
+    3rdparty/reSID16/wave.cc
     sound-sid/reSIDWrapper.cc
 )
 
@@ -73,6 +73,7 @@ add_compile_definitions(SKpico PICO_STDIO_UART=0)
 
 target_include_directories(SKpico PRIVATE
    ${CMAKE_CURRENT_BINARY_DIR}
+   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty
 )
 
 target_compile_definitions(SKpico PUBLIC  PICO PICO_STACK_SIZE=0x100)
