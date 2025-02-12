@@ -27,3 +27,25 @@ However, all of this code has been modified to some degree to fit this
 project, the Sorbus Computer. The focus is always on make things work good on
 the hardware and not on keeping code as original as possible.
 
+
+src/rp2040/3rdparty/dhara:
+Dhara - NAND flash management layer
+Copyright (C) 2013 Daniel Beer <dlbeer@gmail.com>
+BSD-2-Clause
+
+src/rp2040/3rdparty/c-flod:
+   Christian Corti
+   Neoart Costa Rica
+Creative Commons Attribution-Noncommercial-Share Alike 3.0
+
+src/rp2040/3rdparty/reSID16:
+Dag Lem: Designed and programmed complete emulation engine.
+GPL 2.0
+
+src/rp2040/vga-term:
+Copyright 2023 by S.Dixon & D.Meurisse
+BSD-3-Clause
+
+On several occasions things were taken from Raspberry Pi Pico examples:
+Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
+BSD-3-Clause
