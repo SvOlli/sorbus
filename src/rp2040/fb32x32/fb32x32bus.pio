@@ -1,0 +1,36 @@
+; Copyright (c) 2025 Sven Oliver "SvOlli" Moll
+;
+; SPDX-License-Identifier: GPL-3.0-or-later
+;
+; This program implements a 32x32 pixel framebuffer
+; for the Sorbus Computer
+;
+.pio_version 0
+
+; GPIOs in use are
+;  0: A0
+;  1: A1
+; [...]
+; 15: A15
+; 16: D0
+; 17: D1
+; [...]
+; 23: D7
+; 24: R/!W
+; 25: CLK
+
+.program bus_wait
+
+.define RW  24
+.define CLK 25
+
+.wrap_target
+loop:
+   wait 0 gpio RW       ; first wait for r/w to go low (write)
+   wait 1 gpio CLK  [2] ; now wait for clock to go high (and a bit more)
+   in pins, 24          ; bug fixed, this now works!
+   ;mov isr, pins        ; just pull all GPIOs to output
+   ;push
+   wait 0 gpio CLK      ; and wait for clock to go low again
+                        ; to prevent too fast reentering
+.wrap

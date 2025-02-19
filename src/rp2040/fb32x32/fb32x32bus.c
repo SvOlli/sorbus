@@ -10,10 +10,15 @@
 #include <pico/binary_info.h>
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
+#include <hardware/clocks.h>
 
+/* bus config is shared, because hardware is shared */
 #include "common/bus.h"
 #include "fb32x32.h"
-#include "bus.pio.h"
+#include <fb32x32bus.pio.h>
+
+#define FB32X32_BUS_PIO pio1
+#define FB32X32_BUS_SM  0
 
 bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
@@ -24,11 +29,39 @@ bi_decl(bi_pin_mask_with_name(BUS_CONFIG_mask_clock,   "CLK"));
 
 uint8_t mem_cache[0x12000];
 
+
+static void bus_wait_program_init( PIO pio, uint sm, uint offset, float freq )
+{
+   // do not mess with these!
+   const uint startpin = 0;
+   const uint numpins  = 24;
+
+   pio_gpio_init( pio, startpin );
+
+   // setup pins
+   // listen on the pins 0-25 of the bus
+   pio_sm_config c = bus_wait_program_get_default_config( offset );
+   sm_config_set_in_pin_base( &c, startpin );
+   sm_config_set_in_pin_count( &c, numpins );
+   pio_sm_set_consecutive_pindirs( pio, sm, startpin, numpins+2, false );
+
+   sm_config_set_fifo_join( &c, PIO_FIFO_JOIN_RX );
+   sm_config_set_in_shift( &c, false, true, numpins ); // address+data bus
+
+   // running the PIO state machine 20 times as fast as expected CPU freq
+   float div = clock_get_hz( clk_sys ) / (freq * 20);
+   sm_config_set_clkdiv( &c, div );
+
+   pio_sm_init( pio, sm, offset, &c );
+   pio_sm_set_enabled( pio, sm, true );
+}
+
+
 void bus_init()
 {
    const float freq = 1150000;
    uint offset = pio_add_program( pio1, &bus_wait_program );
-   bus_wait_program_init( pio1, 0, offset, freq );
+   bus_wait_program_init( FB32X32_BUS_PIO, FB32X32_BUS_SM, offset, freq );
 }
 
 
@@ -40,7 +73,7 @@ void bus_loop()
    for(;;)
    {
       /* wait in tight loop for a write to bus to check address and data */
-      bus = pio_sm_get_blocking( pio1, 0 );
+      bus = pio_sm_get_blocking( FB32X32_BUS_PIO, FB32X32_BUS_SM );
       address = bus >> BUS_CONFIG_shift_address;
 
       // cache every write access
