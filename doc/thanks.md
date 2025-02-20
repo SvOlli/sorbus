@@ -13,6 +13,31 @@ This project uses software that was developed under non-free licenses.
 6502 Based Code
 ---------------
 
+All of this code has been modified to some degree to fit this project, the
+Sorbus Computer. The focus is always on make things work good on the hardware
+and not on keeping code as original as possible.
+
+### MOS TIM
+
+* [src/65c02/jam/rom/tim.s](../src/65c02/jam/rom/tim.s)
+
+This is the Terminal Interface Monitor (TIM) of the MOS 6530-004.
+```
+Copyright 1976 MOS Technology
+```
+License terms: unknown
+
+### WozMon
+
+* [src/65c02/jam/rom/woz.s](../src/65c02/jam/rom/woz.s)
+
+This is WozMon of the Apple 1 Computer
+```
+Written by Steve Wozniak
+Copyright 1976 Apple Computer Company
+```
+License terms: unknown
+
 ### Apple direct assembler/disassembler
 
 * [src/65c02/jam/mon/assembler.s](../src/65c02/jam/mon/assembler.s)
@@ -33,6 +58,7 @@ John A         NOV 1978
 R. Auricchio   SEP 1982
 E. Beernink        1983
 ```
+License terms: unknown
 
 ### Microsoft BASIC 1.0
 
@@ -42,39 +68,24 @@ E. Beernink        1983
 This is OSI BASIC V1.0 REV 3.2
 Written by Richard W. Weiland
 Copyright 1977 Microsoft Co.
+```
 It has been used with computers manufactured by
 [Ohio Scientific Inc.](https://en.wikipedia.org/wiki/Ohio_Scientific)
-```
 
 Reverse engineering was started by Michael Steil
 Source code is based on version by Grant Searle for his simple 6502 computer.
 
-### MOS TIM
-
-* [src/65c02/jam/rom/tim.s](../src/65c02/jam/rom/tim.s)
-This is the Terminal Interface Monitor (TIM) of the MOS 6530-004.
-Copyright 1976 MOS Technology
-
-### WozMon
-
-* [src/65c02/jam/rom/woz.s](../src/65c02/jam/rom/woz.s)
-This is WozMon of the Apple 1 Computer
-Written by Steve Wozniak
-Copyright 1976 Apple Computer Company
+License terms: unknown
 
 ### Instant Assembler
 
 * [src/65c02/jam/sx4/inst-ass.s](../src/65c02/jam/sx4/inst-ass.s)
 
-```
 This is Instant 6502 Assembler for KIM-1
-Written by Alan Cashin
-Released as public domain
 ```
-
-However, all of this code has been modified to some degree to fit this
-project, the Sorbus Computer. The focus is always on make things work good on
-the hardware and not on keeping code as original as possible.
+Written by Alan Cashin
+```
+License terms: released as public domain
 
 
 RP2040 Code
@@ -88,7 +99,7 @@ RP2040 Code
 Dhara - NAND flash management layer
 Copyright (C) 2013 Daniel Beer <dlbeer@gmail.com>
 ```
-BSD-2-Clause
+License terms: BSD-2-Clause
 
 ### Mod Player
 
@@ -98,7 +109,7 @@ BSD-2-Clause
 Christian Corti
 Neoart Costa Rica
 ```
-Creative Commons Attribution-Noncommercial-Share Alike 3.0
+License terms: Creative Commons Attribution-Noncommercial-Share Alike 3.0
 
 ### SID Emulation
 
@@ -107,7 +118,7 @@ Creative Commons Attribution-Noncommercial-Share Alike 3.0
 ```
 Dag Lem: Designed and programmed complete emulation engine.
 ```
-GPL 2.0
+License terms: GPL 2.0
 
 ### PicoTerm
 
@@ -116,7 +127,7 @@ GPL 2.0
 ```
 Copyright 2023 by S.Dixon & D.Meurisse
 ```
-BSD-3-Clause
+License terms: BSD-3-Clause
 
 ### Raspberry Pi Pico Examples
 
@@ -124,7 +135,7 @@ On several occasions things were taken from Raspberry Pi Pico examples:
 ```
 Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
 ```
-BSD-3-Clause
+License terms: BSD-3-Clause
 
 
 Special Thanks

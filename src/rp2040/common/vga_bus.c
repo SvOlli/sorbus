@@ -1,19 +1,27 @@
 
-#include <hardware/clocks.h>
-#include <vga_bus.pio.h>
-
-typedef void (*vga_bus_callback_t)();
+#include "vga_bus.h"
 
 static PIO  vga_bus_pio;
 static uint vga_bus_sm;
+extern queue_t vga_bus_queue_cpu_write;
 
-static inline void vga_bus_handler_program_init( PIO pio, uint sm, uint offset,
-   vga_bus_callback_t callback, float freq )
+static void vga_bus_irq_handler()
+{
+   uint32_t bus;
+   //
+   bus = pio_sm_get_blocking( vga_bus_pio, vga_bus_sm );
+   queue_try_add( &vga_bus_queue_cpu_write, &bus );
+   // acknoledge interrupt
+   pio_interrupt_clear( vga_bus_pio, vga_bus_sm );
+}
+
+void vga_bus_handler_program_init( PIO pio, uint sm, uint offset,
+                                   vga_bus_callback_t callback, float freq )
 {
    // other values don't make sense
    const uint startpin    = 18; // D7
-   const uint outpins     = 8;
-   const uint inpins      = 11;  // to get A0 as well
+   const uint outpins     =  8;
+   const uint inpins      = 11; // to get A0 as well
    const uint rwpin       = 26;
 
    vga_bus_pio = pio;
@@ -44,12 +52,12 @@ static inline void vga_bus_handler_program_init( PIO pio, uint sm, uint offset,
 }
 
 // returns bus as 0x00-0xff: data + 0x400 when A0 set
-static inline uint32_t vga_bus_read()
+uint32_t vga_bus_read()
 {
    return (pio_sm_get_blocking( vga_bus_pio, vga_bus_sm ) >> 18) & 0x4FF;
 }
 
-static inline void vga_bus_write( uint8_t data )
+void vga_bus_write( uint8_t data )
 {
    pio_sm_put_blocking( vga_bus_pio, vga_bus_sm, data );
 }
