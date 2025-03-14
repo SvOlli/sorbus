@@ -10,8 +10,8 @@ the knowledge of the author(s).
 
 This project uses software that was developed under non-free licenses.
 
-6502 Based Code
----------------
+65(C)02 Based Code
+------------------
 
 All of this code has been modified to some degree to fit this project, the
 Sorbus Computer. The focus is always on make things work good on the hardware

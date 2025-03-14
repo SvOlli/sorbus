@@ -61,3 +61,20 @@ void vga_bus_write( uint8_t data )
 {
    pio_sm_put_blocking( vga_bus_pio, vga_bus_sm, data );
 }
+
+void vga_bus_init()
+{
+   uint pin = 5; /* chip select */
+
+   gpio_init( pin );
+   gpio_set_dir( pin, GPIO_IN );
+   gpio_pull_up( pin );
+
+   /* setup all other non-VGA GPIO pins */
+   for( pin = 18; pin < 32; ++pin )
+   {
+      gpio_init( pin );
+      gpio_set_dir( pin, GPIO_IN );
+      gpio_pull_up( pin );
+   }
+}

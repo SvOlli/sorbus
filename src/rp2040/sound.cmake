@@ -1,5 +1,4 @@
 
-
 add_library(c_flod
    3rdparty/c-flod/player/flodplay_simple.c
    3rdparty/c-flod/backends/wavewriter.c 
@@ -65,30 +64,40 @@ add_executable(SKpico
     sound-sid/reSIDWrapper.cc
 )
 
-add_compile_definitions(SKpico PICO_NO_FPGA_CHECK=1)
-add_compile_definitions(SKpico PICO_BARE_METAL=1)
-add_compile_definitions(SKpico PICO_CXX_ENABLE_EXCEPTIONS=0)
-add_compile_definitions(SKpico PICO_STDIO_UART=0)
-#add_compile_definitions(SKpico PICO_COPY_TO_RAM=1)
 
 target_include_directories(SKpico PRIVATE
    ${CMAKE_CURRENT_BINARY_DIR}
    ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty
 )
 
+# are those required? need to test without...
+add_compile_definitions(SKpico PICO_NO_FPGA_CHECK=1)
+add_compile_definitions(SKpico PICO_BARE_METAL=1)
+add_compile_definitions(SKpico PICO_CXX_ENABLE_EXCEPTIONS=0)
 target_compile_definitions(SKpico PUBLIC  PICO PICO_STACK_SIZE=0x100)
 target_compile_definitions(SKpico PRIVATE PICO_MALLOC_PANIC=0)
 target_compile_definitions(SKpico PRIVATE PICO_USE_MALLOC_MUTEX=0)
 target_compile_definitions(SKpico PRIVATE PICO_DEBUG_MALLOC=0)
 target_compile_options(SKpico PRIVATE -save-temps -fverbose-asm)
 
-set_target_properties(SKpico PROPERTIES PICO_TARGET_LINKER_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/sound-sid/memmap_copy_to_ram_skpico.ld)
+#set_target_properties(SKpico PROPERTIES PICO_TARGET_LINKER_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/sound-sid/memmap_copy_to_ram_skpico.ld)
 
-target_link_libraries(SKpico pico_stdlib pico_multicore hardware_dma hardware_interp hardware_pwm pico_audio_i2s hardware_flash hardware_adc)
-#pico_audio_spdif 
+target_link_libraries(SKpico
+   pico_stdlib
+   pico_multicore
+   hardware_dma
+   hardware_interp
+   hardware_pwm
+   pico_audio_i2s
+   hardware_flash
+   hardware_adc
+)
 
 pico_set_program_name(SKpico "SKpico")
 pico_set_program_version(SKpico "0.1")
 
 # create map/bin/hex/uf2 file in addition to ELF.
 setup_target(SKpico "sound-sid")
+# make sure code runs from RAM
+pico_set_binary_type(SKpico copy_to_ram)
+

@@ -42,14 +42,14 @@ void bus_init()
       uint32_t bit = (1 << pin);
       if( bit & bus_config.mask_input )
       {
-         gpio_init(pin);
-         gpio_set_dir(pin, GPIO_IN);
+         gpio_init( pin );
+         gpio_set_dir( pin, GPIO_IN );
       }
       if( bit & bus_config.mask_output )
       {
-         gpio_init(pin);
-         gpio_set_dir(pin, GPIO_OUT);
-         gpio_put(pin, 1);
+         gpio_init( pin );
+         gpio_set_dir( pin, GPIO_OUT );
+         gpio_put( pin, 1 );
       }
       if( bit & (bus_config.mask_input | bus_config.mask_output) )
       {
