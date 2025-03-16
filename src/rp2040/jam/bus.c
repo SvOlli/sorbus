@@ -649,9 +649,10 @@ int32_t get_16bit_address( uint16_t lastaddr )
       }
       else switch( c )
       {
-         case 'q':
+         case 0x03: // CTRL+C
          case 0x1b: // ESC
          case 0x1d: // CTRL+]
+         case 'q':
             puts( "quit" );
             return (-1);
          case ' ':

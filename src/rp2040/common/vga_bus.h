@@ -8,6 +8,7 @@
 
 typedef void (*vga_bus_callback_t)();
 
+void vga_bus_init();
 void vga_bus_handler_program_init( PIO pio, uint sm, uint offset,
                                    vga_bus_callback_t callback, float freq );
 

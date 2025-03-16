@@ -224,13 +224,13 @@ static inline void setcustomcolor( uint8_t id, uint8_t rgb,
    switch( rgb )
    {
       case 0: // r
-         pal_custom[id][pos] = pal_custom[id-1][pos] & 0x0FF | ((value & 0x0F) << 8);
+         pal_custom[id][pos] = pal_custom[id][pos] & 0x0FF | ((value & 0x0F) << 8);
          break;
       case 1: // g
-         pal_custom[id][pos] = pal_custom[id-1][pos] & 0xF0F | ((value & 0x0F) << 4);
+         pal_custom[id][pos] = pal_custom[id][pos] & 0xF0F | ((value & 0x0F) << 4);
          break;
       case 2: // b
-         pal_custom[id][pos] = pal_custom[id-1][pos] & 0xFF0 |  (value & 0x0F);
+         pal_custom[id][pos] = pal_custom[id][pos] & 0xFF0 |  (value & 0x0F);
          break;
       default:
          break;
@@ -326,22 +326,26 @@ void control_loop()
          case 0x0c:
             setcolormap( data );
             break;
-         case 0x0d:
-            if( (data > 0) && (data < 4) )
+         case 0x10:
+            if( (data >= 1) && (data <= 3) )
             {
+               customid  = data;
                colidx[0] = 0;
                colidx[1] = 0;
                colidx[2] = 0;
-               customid  = (data > 3) ? 0 : data;
+            }
+            else
+            {
+               customid  = 0;
             }
             break;
-         case 0x10:
          case 0x11:
          case 0x12:
-            if( customid && (colidx[address&3] < 0x100) )
+         case 0x13:
+            if( customid && (colidx[(address&3)-1] < 0x100) )
             {
-               setcustomcolor( customid-1, address&3,
-                               colidx[address&3]++, data );
+               setcustomcolor( customid-1, (address&3)-1,
+                               colidx[(address&3)-1]++, data );
             }
             break;
          default:
