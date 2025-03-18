@@ -220,6 +220,7 @@ audio_buffer_pool_t *initI2S()
 	return pool;
 }
 
+
 uint16_t audioPos = 0, 
 		 audioOutPos = 0;
 uint32_t audioBuffer[ SAMPLES_PER_BUFFER ];
@@ -262,6 +263,57 @@ uint32_t ringTime[ RING_SIZE ];
 uint8_t  ringWrite = 0;
 uint8_t  ringRead  = 0;
 
+uint32_t SampleCount=0;
+
+
+// Use alarm 0
+#define ALARM_NUM 0
+#define ALARM_IRQ TIMER_IRQ_0
+
+
+static void alarm_irq(void) ;
+
+
+static void alarm_in_us(uint32_t delay_us) {
+    // Enable the interrupt for our alarm (the timer outputs 4 alarm irqs)
+    hw_set_bits(&timer_hw->inte, 1u << ALARM_NUM);
+    // Set irq handler for alarm irq
+    irq_set_exclusive_handler(ALARM_IRQ, alarm_irq);
+    // Enable the alarm irq
+    irq_set_enabled(ALARM_IRQ, true);
+    // Enable interrupt in block and at processor
+
+    // Alarm is only 32 bits so if trying to delay more
+    // than that need to be careful and keep track of the upper
+    // bits
+    uint64_t target = timer_hw->timerawl + delay_us;
+
+    // Write the lower 32 bits of the target time to the alarm which
+    // will arm it
+    timer_hw->alarm[ALARM_NUM] = (uint32_t) target;
+}
+
+
+static void alarm_irq(void) {
+    // Clear the alarm irq
+    hw_clear_bits(&timer_hw->intr, 1u << ALARM_NUM);
+
+    // Assume alarm 0 has fired
+    //printf("Alarm IRQ fired\n");
+
+    newSample = 0xfffe;
+	SampleCount ++;
+	// Retrigger
+	alarm_in_us(1000000/44100);
+ 
+}
+
+void init_timer (void){
+
+	alarm_in_us(1000000/44100);
+	
+
+}
 void resetEverything() 
 {
 	ringRead = ringWrite = 0;
@@ -387,6 +439,7 @@ void runEmulation()
 	ap = initSPDIF();
 	#endif
 
+	init_timer();
 	#ifdef SID_DAC_MODE_SUPPORT
 	int32_t DAC_L = 0, DAC_R = 0;
 	#endif
@@ -800,7 +853,7 @@ void handleBus()
 	volatile const uint32_t *gpioInAddr = &sio_hw->gpio_in;
 	
 	register volatile uint8_t disableDataLines = 0;
-	register uint32_t curSample = 0;
+	//register uint32_t curSample = 0;
 
 	// variables for potentiometer handling and filtering
 	#ifdef USE_POT
@@ -847,7 +900,7 @@ handleSIDCommunication:
 		//
 		// wait for VIC-halfcycle
 		//
-		WAIT_FOR_VIC_HALF_CYCLE
+        WAIT_FOR_VIC_HALF_CYCLE
 
 		if ( disableDataLines )
 		{
@@ -875,12 +928,13 @@ handleSIDCommunication:
 
 		// we have to generate a new sample after C64_CLOCK / AUDIO_RATE cycles
 		++ c64CycleCounter;
+		/* Now in timer_callback
 		curSample += AUDIO_RATE;
 		if ( curSample > C64_CLOCK )
 		{
 			curSample -= C64_CLOCK;
 			newSample = 0xfffe;
-		}
+		}*/
 
 		if ( busValueTTL < 0 )
 		{

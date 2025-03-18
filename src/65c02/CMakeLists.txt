@@ -266,7 +266,12 @@ quick_6502asm(santa)
 add_executable(8bit_dp
    jam/sx4/8bit_dance_party.s
 )
-target_type(8bit_dp sx4 "2.")
+target_type(8bit_dp sx4 "1.")
+
+add_executable(animatrn
+   jam/sx4/animatron.s
+)
+target_type(animatrn sx4 "1.")
 
 
 gencpmfs(jam_cpmfs.img)
