@@ -24,20 +24,19 @@ add_library(c_flod
 )
 add_definitions(-DFLOD_NO_SOUNDBLASTER)
 
-add_executable(sound-mod
+add_executable(sound_mod
    cream_of_the_earth.h
    sound-mod/sound_core.c
    sound-mod/i2s/i2s.c   
 )
 bin2h(cream_of_the_earth.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/CreamOfTheEarth.mod mod_data)
 
-#target_include_directories(sound-mod PRIVATE "${PICO_SDK_PATH}/src/rp2_common/hardware_pio/include/")
-#target_include_directories(sound-mod PRIVATE "${PICO_SDK_PATH}/src/rp2_common/hardware_dma/include/")
-#./pico-sdk/src/rp2_common/hardware_pio/include/hardware/pio.h 
+#target_include_directories(sound_mod PRIVATE "${PICO_SDK_PATH}/src/rp2_common/hardware_pio/include/")
+#target_include_directories(sound_mod PRIVATE "${PICO_SDK_PATH}/src/rp2_common/hardware_dma/include/")
 
-pico_generate_pio_header(sound-mod ${CMAKE_CURRENT_LIST_DIR}/sound-mod/i2s/i2s.pio)
+pico_generate_pio_header(sound_mod ${CMAKE_CURRENT_LIST_DIR}/sound-mod/i2s/i2s.pio)
 
-target_link_libraries(sound-mod
+target_link_libraries(sound_mod
    pico_stdlib
    pico_multicore
    pico_rand
@@ -46,13 +45,13 @@ target_link_libraries(sound-mod
    hardware_clocks
    c_flod
 )
-setup_target(sound-mod c-flod i2s)
+setup_target(sound_mod c-flod)
 
 
-bin2h(reSID_LUT_bin.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-sid/LUT.bin reSID_LUTs)
+bin2h(${CMAKE_CURRENT_BINARY_DIR}/reSID_LUT_bin.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-sid/LUT.bin reSID_LUTs)
 
-add_executable(SKpico
-    reSID_LUT_bin.h
+add_executable(sound_sid
+    ${CMAKE_CURRENT_BINARY_DIR}/reSID_LUT_bin.h
     sound-sid/SKpico.c
     3rdparty/reSID16/envelope.cc
     3rdparty/reSID16/extfilt.cc
@@ -65,39 +64,68 @@ add_executable(SKpico
 )
 
 
-target_include_directories(SKpico PRIVATE
+target_include_directories(sound_sid PRIVATE
    ${CMAKE_CURRENT_BINARY_DIR}
    ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty
 )
 
 # are those required? need to test without...
-add_compile_definitions(SKpico PICO_NO_FPGA_CHECK=1)
-add_compile_definitions(SKpico PICO_BARE_METAL=1)
-add_compile_definitions(SKpico PICO_CXX_ENABLE_EXCEPTIONS=0)
-target_compile_definitions(SKpico PUBLIC  PICO PICO_STACK_SIZE=0x100)
-target_compile_definitions(SKpico PRIVATE PICO_MALLOC_PANIC=0)
-target_compile_definitions(SKpico PRIVATE PICO_USE_MALLOC_MUTEX=0)
-target_compile_definitions(SKpico PRIVATE PICO_DEBUG_MALLOC=0)
-target_compile_options(SKpico PRIVATE -save-temps -fverbose-asm)
+add_compile_definitions(sound_sid PICO_NO_FPGA_CHECK=1)
+add_compile_definitions(sound_sid PICO_BARE_METAL=1)
+add_compile_definitions(sound_sid PICO_CXX_ENABLE_EXCEPTIONS=0)
+target_compile_definitions(sound_sid PUBLIC  PICO PICO_STACK_SIZE=0x100)
+target_compile_definitions(sound_sid PRIVATE PICO_MALLOC_PANIC=0)
+target_compile_definitions(sound_sid PRIVATE PICO_USE_MALLOC_MUTEX=0)
+target_compile_definitions(sound_sid PRIVATE PICO_DEBUG_MALLOC=0)
+target_compile_options(sound_sid PRIVATE -save-temps -fverbose-asm)
 
-#set_target_properties(SKpico PROPERTIES PICO_TARGET_LINKER_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/sound-sid/memmap_copy_to_ram_skpico.ld)
-
-target_link_libraries(SKpico
+target_link_libraries(sound_sid
    pico_stdlib
+   pico_audio_i2s
    pico_multicore
+   hardware_adc
    hardware_dma
+   hardware_flash
    hardware_interp
    hardware_pwm
-   pico_audio_i2s
-   hardware_flash
-   hardware_adc
 )
 
-pico_set_program_name(SKpico "SKpico")
-pico_set_program_version(SKpico "0.1")
-
 # create map/bin/hex/uf2 file in addition to ELF.
-setup_target(SKpico "sound-sid")
+setup_target(sound_sid "sound-sid")
 # make sure code runs from RAM
-pico_set_binary_type(SKpico copy_to_ram)
+pico_set_binary_type(sound_sid copy_to_ram)
+
+add_library(pico_fatfs
+   3rdparty/fatfs/fatfs/ff.c
+   3rdparty/fatfs/fatfs/ffsystem.c
+   3rdparty/fatfs/fatfs/ffunicode.c
+   3rdparty/fatfs/tf_card.c
+)
+
+target_include_directories(pico_fatfs PUBLIC
+   ${CMAKE_CURRENT_LIST_DIR}/3rdparty/fatfs
+   ${CMAKE_CURRENT_LIST_DIR}/3rdparty/fatfs/fatfs
+   ${CMAKE_CURRENT_LIST_DIR}/3rdparty/fatfs/fatfs/conf
+)
+
+target_link_libraries(pico_fatfs PUBLIC
+   pico_stdlib
+   hardware_clocks
+   hardware_spi
+)
+
+add_executable(sound_sd
+   sound-sd/main.c
+)
+
+target_include_directories(sound_sd PUBLIC
+   ${CMAKE_CURRENT_BINARY_DIR}
+   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty
+)
+
+target_link_libraries(sound_sd
+   pico_fatfs
+)
+
+setup_target(sound_sd "sound-sd")
 

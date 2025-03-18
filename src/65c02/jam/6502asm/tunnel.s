@@ -135,6 +135,23 @@ colupdate:
 :
    lda   #$01
    sta   FB32X32_COLMAP ; required to activate new palette
+
+   lda   tmp8
+   beq   :+
+
+   lda   RANDOM
+   and   #$0f
+   sta   rtab
+
+   lda   RANDOM
+   and   #$0f
+   sta   gtab
+
+   lda   RANDOM
+   and   #$0f
+   sta   btab
+:
+
    rts
 
 irqhandler:
@@ -145,7 +162,7 @@ irqhandler:
    jsr   colupdate
    stz   FB32X32_COPY
 
-   lda   TMIMRL
+   lda   TMIMRL         ; acknoledge timer
    ply
    plx
    pla
@@ -183,8 +200,20 @@ init:
    sta   luma
 
    cli
+   stz   tmp8
+
+   jsr   PRINT
+   .byte 10,"press space to toggle mode"
+   .byte 10,"(CTRL-C to quit) ",0
+
 @mainloop:
    jsr   CHRIN
+   cmp   #$20
+   bne   :+
+   lda   tmp8
+   eor   #$01
+   sta   tmp8
+:
    cmp   #$03
    bne   @mainloop
 

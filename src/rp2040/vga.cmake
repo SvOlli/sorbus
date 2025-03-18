@@ -13,20 +13,21 @@ target_link_libraries(vga_bus PUBLIC
 )
 target_include_directories(vga_bus PUBLIC
    ${CMAKE_CURRENT_SOURCE_DIR}
+   ${PICO_SDK_PATH}/lib/tinyusb/src/common
 )
+# TODO: figure out a way to remove "${PICO_SDK_PATH}/lib/tinyusb/src/common"
 
-
-add_executable(vga-iotest
+add_executable(vga_iotest
    vga-iotest/main.c
    common/vga_bus.c
    common/vga_gpio_config.c
 )
-target_link_libraries(vga-iotest PRIVATE
+target_link_libraries(vga_iotest PRIVATE
    vga_bus
 )
 # vga_bus.pio is required
-add_dependencies(vga-iotest vga-term)
-setup_target(vga-iotest "vga-iotest")
+add_dependencies(vga_iotest vga-term)
+setup_target(vga_iotest "vga-iotest")
 
 
 add_executable(vga-term

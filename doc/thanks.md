@@ -120,6 +120,15 @@ Dag Lem: Designed and programmed complete emulation engine.
 ```
 License terms: GPL 2.0
 
+### FAT Filesystem
+
+* [src/rp2040/3rdparty/fatfs](../src/rp2040/3rdparty/fatfs)
+
+```
+Copyright (c) 2020-2021, Elehobica
+```
+License terms: BSD-2-Clause
+
 ### PicoTerm
 
 [src/rp2040/vga-term](../src/rp2040/vga-term)

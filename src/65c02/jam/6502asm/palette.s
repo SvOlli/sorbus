@@ -32,6 +32,7 @@ main:
    .byte 10,"4: C64 (16 colors)"
    .byte 10,"5: C16 (128 colors)"
    .byte 10,"6: Atari 8-bit (256 colors)"
+   .byte 10,"7: Atari 8-bit (256 colors, SvOlli's order)"
    .byte 10,"Press 0-9 to display colormap (CTRL-C to quit) ",0
 
    lda   #<FRAMEBUFFER
@@ -74,12 +75,3 @@ main:
    ldy   #$01
    int   FB32X32
    jmp   ($fffc)
-
-delay12:
-   phx
-   ldx   #$00
-:
-   dex
-   bne   :-
-   plx
-   rts

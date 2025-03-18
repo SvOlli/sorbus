@@ -27,12 +27,12 @@ uint8_t framebuffer[0x800];
 
 uint16_t pal_custom[3][256] = { 0 };
 
-uint16_t pal_c64[16] = {
+const uint16_t pal_c64[16] = {
    0x000, 0xfff, 0xb12, 0x3ec, 0xb1e, 0x1d1, 0x21a, 0xdf0,
    0xb40, 0x630, 0xf45, 0x222, 0x444, 0x5f5, 0x55f, 0x888
 };
 
-uint16_t pal_c16[128] = {
+const uint16_t pal_c16[128] = {
    0x000, 0x222, 0x611, 0x044, 0x506, 0x050, 0x229, 0x330,
    0x620, 0x430, 0x240, 0x613, 0x042, 0x038, 0x418, 0x150,
    0x000, 0x333, 0x722, 0x055, 0x617, 0x060, 0x33a, 0x440,
@@ -51,7 +51,7 @@ uint16_t pal_c16[128] = {
    0xffc, 0xffa, 0xff9, 0xfef, 0xcff, 0xdff, 0xfef, 0xefa
 };
 
-uint16_t pal_a800[256] = {
+const uint16_t pal_a800[256] = {
    0x000, 0x111, 0x222, 0x333, 0x444, 0x555, 0x666, 0x777,
    0x888, 0x999, 0xaaa, 0xbbb, 0xccc, 0xddd, 0xeee, 0xfff,
    0x100, 0x210, 0x320, 0x430, 0x540, 0x650, 0x860, 0x970,
@@ -211,6 +211,28 @@ static inline void setcolormap( uint8_t data )
          break;
       case 6:
          setpalette( &pal_a800[0], count_of(pal_a800) );
+         break;
+      case 7:
+         {
+            uint16_t c, i;
+            uint8_t r, g, b;
+
+            for( c = 0; c < 0x100; ++c )
+            {
+               if( c & 0x08 )
+               {
+                  i = (c & 0xf0) | (0x0f - ((c & 0x07) << 1));
+               }
+               else
+               {
+                  i = (c & 0xf0) | ((c & 0x07) << 1);
+               }
+               r = (pal_a800[i] & 0xf00) >> 8;
+               g = (pal_a800[i] & 0x0f0) >> 4;
+               b = (pal_a800[i] & 0x00f) >> 0;
+               hardware_setcolor( c, r, g, b );
+            }
+         }
          break;
       default:
          break;
