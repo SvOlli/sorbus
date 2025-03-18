@@ -22,12 +22,13 @@
                 "interface/cmsis-dap.cfg",
                 "target/rp2040.cfg"
             ],
-            "svdFile": "/workspaces/sorbus/src/build/_deps/pico_sdk-src/src/rp2040/hardware_regs/RP2040.svd", //${env:PICO_SDK_PATH}
+            //"svdFile": "/workspaces/sorbus/src/build/_deps/pico_sdk-src/src/rp2040/hardware_regs/RP2040.svd", 
+            "svdFile": "${env:PICO_SDK_PATH}/src/rp2040/hardware_regs/RP2040.svd",
             "runToEntryPoint": "main",
             // Work around for stopping at main on restart
-            //"postRestartCommands": [
-            //    "break main",
-            //    "continue"
+            "postRestartCommands": [
+                "break main",
+                "continue"
            // ]
         }
     ]

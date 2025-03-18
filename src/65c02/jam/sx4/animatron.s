@@ -25,9 +25,9 @@ start:
    ldy   #$01           ; user 1
    int   CPMNAME
 
-   lda   #$7a
+   lda   #$f4
    sta   CPM_SADDR+0
-   lda   #$0f
+   lda   #$8f
    sta   CPM_SADDR+1
    int   CPMLOAD
 
@@ -44,7 +44,7 @@ start:
    .byte 10,"setting up IRQ",10,0
 
    lda   #$00
-   jsr   $1000
+   jsr   $9000
 
    lda   #<irqhandler
    sta   UVNBI+0
@@ -69,7 +69,7 @@ start:
    jmp   ($FFFC)        ; reset
 
 filename:
-   .byte "animatron.sid",0
+   .byte "animtron.sid",0
 
 irqhandler:
    pha
@@ -77,7 +77,7 @@ irqhandler:
    phy
 
    lda   TMIMRL         ; acknoledge timer
-   jsr   $1003          ; play frame
+   jsr   $9003          ; play frame
 
    ply
    plx
