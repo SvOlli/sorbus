@@ -1,0 +1,47 @@
+; Copyright (c) 2025 Sven Oliver "SvOlli" Moll
+;
+; SPDX-License-Identifier: GPL-3.0-or-later
+;
+.pio_version 0
+
+; GPIOs in use are
+;  5: !CS
+; 18: D0
+; 19: D1
+; [...]
+; 25: D7
+; 26: R/!W
+; 27: CLK
+; 28: !IRQ/A0
+; 29: !NMI
+
+.program vga_bus_handler
+
+.define CS        5
+.define CLK       27
+.define INPINS    11
+.define OUTPINS   8
+
+.wrap_target
+loop:
+   wait 0 gpio CS       ; first wait for CS to go low
+   wait 1 gpio CLK      ; wait for CLK to go high
+   jmp pin read         ; high signal indecades a read by CPU
+
+write:                  ; CPU perfoms a write, VGA needs to fetch data from bus
+   nop              [1] ; wait for bus to settle
+   in pins, INPINS      ; read databus + 2 dummy bits + A0
+   irq 4 rel            ; taken from pico-examples/pio/uart_tx/uart_tx.pio
+   jmp done
+
+read:                   ; CPU perfoms a read, VGA needs to provide data on bus
+   out pins, OUTPINS
+   mov osr, !null
+   out pindirs, OUTPINS
+
+done:
+   wait 0 gpio CLK      ; wait for CLK to go low
+   wait 1 gpio CS       ; wait for CS to be done
+   mov osr, null
+   out pindirs, OUTPINS
+.wrap

@@ -1,4 +1,31 @@
 
+add_library(sound_bus
+   common/sound_bus.c
+)
+pico_generate_pio_header(sound_bus
+   ${CMAKE_CURRENT_LIST_DIR}/common/sound_bus.pio
+   OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
+)
+target_link_libraries(sound_bus PUBLIC
+   pico_stdlib
+   pico_multicore
+   hardware_pio
+)
+target_include_directories(sound_bus PUBLIC
+   ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(sound_iotest
+   sound-iotest/main.c
+   common/sound_bus.c
+   common/sound_gpio_config.c
+)
+target_link_libraries(sound_iotest PRIVATE
+   sound_bus
+)
+add_dependencies(sound_iotest sound_bus)
+setup_target(sound_iotest "sound-iotest")
+
 add_library(c_flod
    3rdparty/c-flod/player/flodplay_simple.c
    3rdparty/c-flod/backends/wavewriter.c 
