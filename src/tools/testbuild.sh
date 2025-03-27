@@ -12,6 +12,7 @@ git clone . "${testdir}"
 cd "${testdir}"
 
 src/tools/gen_opcode_tables.sh
+src/tools/exomize-texts.sh
 git status | grep -q 'nothing to commit, working tree clean' ||
 {
    git status

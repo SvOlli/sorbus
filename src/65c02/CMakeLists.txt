@@ -264,6 +264,12 @@ quick_6502asm(random)
 quick_6502asm(santa)
 quick_6502asm(tunnel)
 
+add_executable(about
+   jam/about/main.s
+   jam/about/exostreamdecr2.s
+)
+target_type(about sx4)
+
 add_executable(8bit_dp
    jam/sx4/8bit_dance_party.s
 )

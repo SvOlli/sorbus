@@ -16,7 +16,7 @@
 #include "main.h" // UART_ID
 #include "hardware/watchdog.h"
 #include <stdio.h>
-
+#include "uart_tx.h"
 
 
 #if SORBUS_USE_I2C
@@ -312,8 +312,6 @@ char handle_config_input(){
    ---------------------------------------------------------------------------*/
 
 void display_help(){
-  char msg[80];
-  char _c;
   // reset_escape_sequence(); LOOKS not usefull from screen!
   clrscr();
   move_cursor_home(); // csr.x = 0; csr.y = 0;

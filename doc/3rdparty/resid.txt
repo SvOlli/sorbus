@@ -1,0 +1,7 @@
+src/rp2040/3rdparty/reSID16/
+
+Taken from: https://github.com/frntc/SIDKick-pico
+
+Used in Sorbus Sound board for SID emulation.
+
+Distributed under the GPL v2 license.

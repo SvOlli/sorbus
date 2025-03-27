@@ -1,0 +1,6 @@
+The Sorbus Computer uses the Raspberry Pi Pico SDK and extras repositories.
+Some of the code taken and modified from the examples.
+
+Copyright (c) 2020-2025 Raspberry Pi (Trading) Ltd.
+
+Distributed under the terms of the BSD 3-Clause license.

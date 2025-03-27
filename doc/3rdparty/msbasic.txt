@@ -1,0 +1,20 @@
+src/65c02/jam/rom/osi_basic.s
+
+OSI 6502 BASIC Version 1.0 Rev 3.2
+Written by Richard W. Weiland
+Copyright 1977 by Microsoft Co.
+
+Originally created for Ohio Scientific, Inc.
+https://www.oldcomputers.net/osi-600.html
+
+Modified from the original files at http://www.pagetable.com/?p=46
+Merged into one file and macros and conditional statements removed
+by Grant Searle 2013: http://searle.x10host.com/6502/Simple6502.html
+
+Configration as specified by Michael Steil:
+ Name      | Release | MS Version  | ROM | FP | INPUTBUFFER | extensions
+-----------+---------+-------------+-----+------------------+------------
+ OSI BASIC |    1977 | 1.0 REV 3.2 |  Y  | 6  | ZP          | -
+
+This code also contains expansions for this project as well as generic bugs
+fixes found in later releases of Microsoft BASIC.

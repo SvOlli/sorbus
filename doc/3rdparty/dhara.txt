@@ -1,0 +1,10 @@
+src/rp2040/3rdparty/dhara/
+
+Dhara - NAND flash management layer
+Copyright (C) 2013 Daniel Beer <dlbeer@gmail.com>
+
+Taken from https://github.com/dlbeer/dhara
+
+Dhara is used for wear leveling on the internal drive of the Sorbus JAM.
+
+Distributed on the terms of the BSD 0-Clause license.

@@ -13,7 +13,6 @@
 
 // Keyboard device USB address
 #define UNDEFINED_ADDR  0xFF
-static uint8_t keybd_dev_addr = UNDEFINED_ADDR;
 
 // Conversion ScanCode -> Ascii
 static uint8_t const keycode2ascii[128][3] =  { PM_KEYCODE_TO_ASCII };
@@ -25,8 +24,6 @@ char scancode_esc_seq_item(uint8_t index, uint8_t pos ); // One of the char of t
 
 // Key down/up callbacks
 typedef void (*key_change_cb_t)( int scancode, int keysym, int modifiers );
-static key_change_cb_t key_down_cb = NULL;
-static key_change_cb_t key_up_cb = NULL;
 
 // Exported function
 void keybd_init( key_change_cb_t key_down_callback, key_change_cb_t key_up_callback );

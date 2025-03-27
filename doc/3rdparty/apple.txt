@@ -1,0 +1,19 @@
+src/65c02/jam/rom/wozmon.s
+
+WozMon was taken from the Apple I
+Copyright 1976 by Apple Computer, Inc.
+
+It was modified to reflect the different I/O of the Sorbus JAM.
+
+--------------------------------------------------------------------------
+
+src/65c02/jam/mon/assembler.s
+src/65c02/jam/mon/disassembler.s
+
+The (dis-)assembly routines were taken from:
+
+Apple //c Monitor ROM Source
+Copyright 1977-1983 by Apple Computer, Inc.
+All Rights Reserved
+
+It was slightly modified to simplify usage and complete 65SC02 opcode set.

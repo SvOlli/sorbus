@@ -165,7 +165,7 @@ static inline void dmacopytrans( uint8_t *dest, uint8_t *src,
 }
 
 
-static inline void setpalette( uint16_t *palette, uint16_t elements )
+static inline void setpalette( const uint16_t *palette, uint16_t elements )
 {
    uint16_t c;
    uint8_t r, g, b;

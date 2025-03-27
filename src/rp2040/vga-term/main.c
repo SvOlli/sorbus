@@ -104,7 +104,9 @@ int hpos;
 int vpos;
 
 
+#if 0
 static const int input_pin0 = 22;
+#endif
 
 
 // this is how a line of 8 bits is stored
@@ -137,15 +139,19 @@ const lv_font_t *font = &nupetscii_mono8;
 //auto_init_mutex(frame_logic_mutex);
 struct mutex frame_logic_mutex;
 
+#if 0
 static int left = 0;
 static int top = 0;
 static int x_sprites = 1;
+#endif
 
 void init_render_state(int core);
 
 void render_loop() {
     /* Multithreaded execution */
+#if 0
     static uint8_t last_input = 0;
+#endif
     static uint32_t last_frame_num = 0;
     int core_num = get_core_num();
     assert(core_num >= 0 && core_num < 2);
@@ -404,9 +410,13 @@ static __not_in_flash("y") uint16_t end_of_line[] = {
 bool render_scanline_bg(struct scanvideo_scanline_buffer *dest, int core) {
     // 1 + line_num red, then white
     uint32_t *buf = dest->data;
+#if 0
     size_t buf_length = dest->data_max;
+#endif
     int y = scanvideo_scanline_number(dest->scanline_id) + vpos;
+#if 0
     int x = hpos;
+#endif
 
     // we handle both ends separately
     dest->fragment_words = FRAGMENT_WORDS;

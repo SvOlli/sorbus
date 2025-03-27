@@ -1,0 +1,17 @@
+ About Sorbus Computer
+=======================
+
+RP2040 Software used:   |  6502 Software used:
+C) C-Flod               |  A) WozMon
+D) Dhara                |  A) Apple //c Monitor ROM
+F) FatFS                |  B) Microsoft BASIC
+R) reSID16              |  M) TIM
+S) Pico SDK / Extras    |  P) CP/M 65
+                        |  T) Tali Forth 2
+Licenses used:
+2) GPL v2
+3) GPL v3
+4) Creative Commons BY-NC-SA
+5) BSD-0 clause
+6) BSD-2 clause
+7) BSD-3 clause

@@ -82,10 +82,13 @@ mkheader()
 }
 
 # autoupdate 65SC02 from 65C02 data
-# as of now, those can be considered the same except for bit operation opcodes
+# check if there is a difference ignoring 65C02 "enhancements" over 65SC02
 md5_65c02="$(grep -v -e '^$.[7F]' -e '^$[CD]B' doc/opcodes65c02.csv | md5sum -)"
 md5_65sc02="$(grep -v -e '^$.[7F]' -e '^$[CD]B' doc/opcodes65sc02.csv | md5sum -)"
 if [ "${md5_65c02}" != "${md5_65sc02}" ]; then
+   # first regex removes bit (re)set and test opcodes
+   # second regex removes STP and WAI opcodes
+   # otherwise 65C02 and 65SC02 opcodes should be the same
    sed -e 's/^\($.[7F]\);...[0-7];ZP.*$/\1;NOP;;1;1;1;;;/g' \
        -e 's/^\($[CD]B\);.*/\1;NOP;;1;1;1;;;/g' \
       <doc/opcodes65c02.csv >doc/opcodes65sc02.csv

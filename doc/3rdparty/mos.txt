@@ -1,0 +1,7 @@
+src/65c02/jam/rom/tim.s
+
+TIM copyright by MOS Technology in 1976
+The Terminal Interface Monitor was originally part of MOS 6530-004 chip
+
+TIM was modified to work with Sorbus JAM, most noticeably the bitbanging
+implementation for the UART was removed.

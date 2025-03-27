@@ -26,6 +26,7 @@
                    Standard definition for Picoterm
    ========================================================================== */
 
+#if 0
 static uint16_t palette[] = {
       PICO_SCANVIDEO_PIXEL_FROM_RGB8(0, 0, 0),        //black
       PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xAA, 0, 0),     // red
@@ -44,6 +45,7 @@ static uint16_t palette[] = {
       PICO_SCANVIDEO_PIXEL_FROM_RGB8(0x55, 0xFF, 0xFF),//bright cyan
       PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xFF, 0xFF, 0xFF),//white
 };
+#endif
 
 // Font Face - High Nibble 0x00, 0x10, 0x20 ... (up to 16 font face)
 #define FFACE_MONO8  0x00

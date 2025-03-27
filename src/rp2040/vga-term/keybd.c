@@ -32,6 +32,12 @@
 #include "keybd.h"
 #include "pmhid.h"
 
+#include "uart_tx.h"
+
+static uint8_t keybd_dev_addr = UNDEFINED_ADDR;
+static key_change_cb_t key_down_cb = NULL;
+static key_change_cb_t key_up_cb = NULL;
+
 // New TinyUSB stuff
 enum {
     SDL_SCANCODE_SPACE = 44,

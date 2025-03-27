@@ -1,0 +1,11 @@
+src/bin/cpm/
+
+The here is distributed as binary only, source code is available at
+https://github.com/davidgiven/cpm65
+
+CP/M-65 is used as an operating system for Sorbus JAM
+
+Copyright (c) 2022, David Given
+All rights reserved.
+
+Distributed under the terms of the BSD 2-Clause license
