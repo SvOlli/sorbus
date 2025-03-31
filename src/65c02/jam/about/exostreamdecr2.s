@@ -102,7 +102,9 @@ tabl_hi = decrunch_table + 104
 ; by other data between decrunches.
 ; -------------------------------------------------------------------
 .if 1
-decrunch_table = $0100-156
+decrunch_table = zp_bitbuf + 1
+decrunch_table_end = decrunch_table + 156
+.exportzp decrunch_table_end
 .else
 decrunch_table:
 	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

@@ -5,14 +5,15 @@
 .import init_decruncher
 .import get_decrunched_chunk
 .importzp zp_dest_hi
+.importzp decrunch_table_end
 
 .export get_crunched_byte
 .export buffer_start_hi
 .export buffer_len_hi
 .export decrunched_chunk_size
 
-rows     := $1a
-cols     := $1b
+exosrc   := decrunch_table_end
+rows     := exosrc+2
 
 buffer_start_hi         := $e000
 buffer_len_hi           := $1000 ; only 4k work stable @ $e000
@@ -25,13 +26,11 @@ start:
    stz   BANK
    ldy   #VT100_SCRN_SIZ
    int   VT100
-   dec
-   dec
+   dec                  ; remove one line for "press SPACE" message
    sta   rows
-   stx   cols
    cpx   #80
    bcc   toosmall
-   cmp   #18            ; 20-2 "dec"s
+   cmp   #19            ; 20-1 "dec"
    bcs   menu
 toosmall:
    jsr   PRINT
@@ -43,9 +42,9 @@ menu:
    int   VT100
 
    lda   #<WELCOME
-   sta   getraw+1
+   sta   exosrc+0
    lda   #>WELCOME
-   sta   getraw+2
+   sta   exosrc+1
    jsr   runpager
 
    jsr   PRINT
@@ -72,9 +71,9 @@ input:
    asl
    tax
    lda   txttable+0,x
-   sta   getraw+1
+   sta   exosrc+0
    lda   txttable+1,x
-   sta   getraw+2
+   sta   exosrc+1
 
    lda   #$0a
    jsr   CHROUT
@@ -104,22 +103,21 @@ input:
 runpager:
    jsr   init_decruncher
    ldx   rows
-   inx
 @nextchunk:
-   phx
+   phx                  ; get_decrunched_chunk changes X
    jsr   get_decrunched_chunk
    plx
-   ldy   #$00
+   ldy   #$00           ; reset pointer in current chunk
 @printchar:
    dey
    lda   (zp_dest_hi-1),y
-   beq   @done
+   beq   @done          ; $00: end of text (crunched in)
    jsr   CHROUT
-   cmp   #$0a
-   bne   @nonl
+   cmp   #$0a           ; is it newline?
+   bne   @skip
 ; do pager stuff here
-   dex
-   bne   @nonl
+   dex                  ; decrement # lines before wait space
+   bne   @skip          ; number of lines reached?
    jsr   PRINT
    .byte "  press SPACE for next page, Q for menu",13,0
 :
@@ -136,9 +134,10 @@ runpager:
    int   VT100
    ply
 
-   ldx   rows
-@nonl:
-   tya
+   ldx   rows           ; restore number of rows to display
+   dex                  ; remove one for last line of previous page
+@skip:
+   tya                  ; cpy #$00
    bne   @printchar
    beq   @nextchunk
 
@@ -155,14 +154,11 @@ runpager:
 ; and must not modify the state of the carry flag.
 ; -------------------------------------------------------------------
 get_crunched_byte:
-   php
-getraw:
-   lda   $ffff
-   inc   getraw+1
+   lda   (exosrc)
+   inc   exosrc+0
    bne   :+
-   inc   getraw+2
+   inc   exosrc+1
 :
-   plp
    rts
 
 

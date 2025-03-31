@@ -23,7 +23,7 @@ IN CONSIDERATION OF YOUR ACCEPTANCE OF SUCH TERMS AND CONDITIONS.
     considered an Adaptation for the purpose of this License.
  b. Collection means a collection of literary or artistic works, such as
     encyclopedias and anthologies, or performances, phonograms or broadcasts,
-    or other works or subject matter other than works listed in Section 1(g) 
+    or other works or subject matter other than works listed in Section 1(g)
     below, which, by reason of the selection and arrangement of their
     contents, constitute intellectual creations, in which the Work is
     included in its entirety in unmodified form along with one or more other
@@ -195,7 +195,7 @@ limited by the following restrictions:
     not refer to the copyright notice or licensing information for the Work;
     and,
     (iv) consistent with Section 3(b), in the case of an Adaptation, a credit
-    identifying the use of the Work in the Adaptation (e.g., "French 
+    identifying the use of the Work in the Adaptation (e.g., "French
     translation of the Work by Original Author," or "Screenplay based on
     original Work by Original Author"). The credit required by this
     Section 4(d) may be implemented in any reasonable manner; provided,
@@ -313,7 +313,7 @@ WORK, EVEN IF LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
     without the mutual written agreement of the Licensor and You.
  f. The rights granted under, and the subject matter referenced, in this
     License were drafted utilizing the terminology of the Berne Convention
-    for the Protection of Literary and Artistic Works (as amended on 
+    for the Protection of Literary and Artistic Works (as amended on
     September 28, 1979), the Rome Convention of 1961, the WIPO Copyright
     Treaty of 1996, the WIPO Performances and Phonograms Treaty of 1996 and
     the Universal Copyright Convention (as revised on July 24, 1971). These
