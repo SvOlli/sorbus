@@ -25,11 +25,13 @@ start:
    stz   BANK
    ldy   #VT100_SCRN_SIZ
    int   VT100
+   dec
+   dec
    sta   rows
    stx   cols
    cpx   #80
    bcc   toosmall
-   cmp   #20
+   cmp   #18            ; 20-2 "dec"s
    bcs   menu
 toosmall:
    jsr   PRINT
@@ -47,7 +49,7 @@ menu:
    jsr   runpager
 
    jsr   PRINT
-   .byte 10,"Select document to view: ",0
+   .byte 10,"Select document to view (CTRL+C to quit): ",0
 
 input:
    int   CHRINUC
@@ -64,6 +66,8 @@ input:
 
 @found:
    jsr   CHROUT
+   lda   #$0a
+   jsr   CHROUT
    txa
    asl
    tax
@@ -78,15 +82,16 @@ input:
    jsr   runpager
    bcs   menu
 
+   txa                  ; cpx #$00
+   beq   :++
    lda   #$0A
-   dex
 :
    jsr   CHROUT
    dex
    bne   :-
-
+:
    jsr   PRINT
-   .byte 10,"  press Q for menu",13,0
+   .byte "  press Q for menu",13,0
 :
    int   CHRINUC
    cmp   #$03
@@ -99,7 +104,7 @@ input:
 runpager:
    jsr   init_decruncher
    ldx   rows
-   dex
+   inx
 @nextchunk:
    phx
    jsr   get_decrunched_chunk
@@ -126,9 +131,12 @@ runpager:
    cmp   #' '
    bne   :-
 
+   phy
+   ldy   #VT100_EOLN_CLR
+   int   VT100
+   ply
+
    ldx   rows
-   dex
-   dex
 @nonl:
    tya
    bne   @printchar
