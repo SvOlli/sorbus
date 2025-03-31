@@ -6,6 +6,7 @@
 ; [X] remove SCRWIDTH, POSWARP, POSX
 ; [X] Change useless NULL instruction to SYS to align tokens
 ; [X] Change input to "INT LINEINPUT"
+; [X] fix INPUT instruction, so input only got to end of line
 ; [X] Drop DIR command (use LOAD"$")
 ; [X] RAM start set to $0400 (or $0380)
 ; [X] RAM end set to $D000 (hardcoded instead of detection)
@@ -46,6 +47,10 @@
 ; * Applesoft lite by Tom Greene http://cowgod.org/replica1/applesoft/ helped a lot, too.
 ; * Thanks to Joe Zbicak for help with Intellision Keyboard BASIC
 ; * This work is dedicated to the memory of my dear hacking pal Michael "acidity" Kollmann.
+
+; defines are used only to test changes!
+; they are not for configuring BASIC to ones liking
+; changing any define will most probably break the code
 
 ; replace NULL token with SYS
 .define USE_SYS 1
@@ -184,6 +189,11 @@ CPRMASK:    ; $0028
 .if USE_LINEINPUT
 .else
 CTRLOFLAG:  ; $0029
+   .res 1
+.endif
+.if USE_LINEWRAP
+.else
+SCRWIDTH:
    .res 1
 .endif
 
@@ -382,15 +392,11 @@ L4098:
    sty   MEMSIZ+1
    sta   FRETOP
    sty   FRETOP+1
+   ldy   #VT100_SCRN_SIZ; get screen size
+   int   VT100          ; vt100 interrupt
+   stx   SCRWIDTH       ; store # columns
 .if USE_LINEWRAP
-   lda   #$fe           ; set max row, col
-   tax
-   ldy   #VT100_CPOS_SET; set cursor position
-   int   VT100          ; vt100 interrupt
-   ldy   #VT100_CPOS_GET; get cursor position (size)
-   int   VT100          ; vt100 interrupt
    txa                  ; X contains columns
-   sta   SCRWIDTH       ; store # columns
 L4129:
    sbc   #$0E
    bcs   L4129
@@ -1160,11 +1166,19 @@ INLIN:
 ;.define LINEINPUT $0C
    stz   INPUTBUFFER
 :
-   ldy   #VT100_CPOS_SOL
+   ldy   #VT100_CPOS_GET   ; get width
    int   VT100
+   txa
+   eor   #$ff
+   sec
+   adc   SCRWIDTH          ; A now has # remaining chars
+   tay                     ; use this as input length
    lda   #<INPUTBUFFER
    ldx   #>INPUTBUFFER
+   cpy   #INPUTSIZE
+   bcc   :+
    ldy   #INPUTSIZE
+:
    int   LINEINPUT
    beq   :+                ; input okay -> CLC
    cmp   #$03              ; on any other key but Ctrl-C just continue input
