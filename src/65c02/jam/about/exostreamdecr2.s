@@ -25,6 +25,10 @@
 ;
 
 ; -------------------------------------------------------------------
+; this version includes changes and bugfixes done by SvOlli in 2025
+; -------------------------------------------------------------------
+
+; -------------------------------------------------------------------
 ; this file is intended to be assembled and linked with the cc65 toolchain.
 ; It has not been tested with any other assemblers or linkers.
 ; -------------------------------------------------------------------
@@ -38,9 +42,9 @@
 ; Please observe that the uncrunched file size must be a multiple of the
 ; chunk size. If not the final uncomplete chunk will be skipped.
 ; -------------------------------------------------------------------
-.import buffer_start_hi:	absolute
-.import buffer_len_hi:	absolute
-.import decrunched_chunk_size:	absolute
+.import buffer_start_hi:   absolute
+.import buffer_len_hi:   absolute
+.import decrunched_chunk_size:   absolute
 
 ; -------------------------------------------------------------------
 ; The decruncher jsr:s to the get_crunched_byte address when it wants to
@@ -77,10 +81,11 @@ zp_bits_lo = $16
 zp_bits_hi = zp_bits_lo + 1
 
 zp_bitbuf  = $18
-zp_dest_lo = $10			; dest addr lo
-zp_dest_hi = zp_dest_lo + 1	; dest addr hi
+zp_dest_lo = $10        ; dest addr lo
+zp_dest_hi = zp_dest_lo + 1   ; dest addr hi
+zp_dest    = zp_dest_lo
 
-.exportzp zp_dest_hi
+.exportzp zp_dest
 
 ; -------------------------------------------------------------------
 ; symbolic names for constants
@@ -107,16 +112,16 @@ decrunch_table_end = decrunch_table + 156
 .exportzp decrunch_table_end
 .else
 decrunch_table:
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   .byte 0,0,0,0,0,0,0,0,0,0,0,0
 .endif
 ; -------------------------------------------------------------------
 ; end of decruncher
@@ -124,205 +129,205 @@ decrunch_table:
 ; -------------------------------------------------------------------
 ; jsr this label to init the decruncher, it will init used zeropage
 ; zero page locations and the decrunch tables
-; no constraints on register content, however the
-; decimal flag has to be #0 (it almost always is, otherwise do a cld)
+; no constraints on register content, however the decimal flag has
+; to be clear (it almost always is, otherwise do a cld)
 ; -------------------------------------------------------------------
 init_decruncher:
-	jsr get_crunched_byte
-	sta zp_bitbuf
+   jsr 	 get_crunched_byte
+   sta   zp_bitbuf
 
-	ldx #>buffer_start_hi
-	stx zp_dest_hi
-	ldx #0
-	stx zp_dest_lo
-	stx zp_len_lo
-	stx zp_len_hi
-	ldy #0
+   ldx   #>buffer_start_hi
+   stx   zp_dest_hi
+   ldx   #$00
+   stx   zp_dest_lo
+   stx   zp_len_lo
+   stx   zp_len_hi
+   ldy   #$00
 ; -------------------------------------------------------------------
 ; calculate tables (49 bytes)
-; x and y must be #0 when entering
+; x and y must be #$00 when entering
 ;
 _init_nextone:
-	tya
-	and #$0f
-	beq _init_shortcut		; starta p� ny sekvens
+   tya
+   and   #$0f
+   beq   _init_shortcut ; start a new sequence
 
-	txa			; this clears reg a
-	sec			; and sets the carry flag
-	ldx zp_bits_lo
+   txa         			; this clears reg a
+   sec         			; and sets the carry flag
+   ldx   zp_bits_lo
 _init_rolle:
-	rol a
-	rol zp_bits_hi
-	dex
-	bpl _init_rolle		; c = 0 after this (rol zp_bits_hi)
+   rol
+   rol   zp_bits_hi
+   dex
+   bpl   _init_rolle    ; c = 0 after this (rol zp_bits_hi)
 
-	adc tabl_lo-1,y
-	tax
+   adc   tabl_lo-1,y
+   tax
 
-	lda zp_bits_hi
-	adc tabl_hi-1,y
+   lda   zp_bits_hi
+   adc   tabl_hi-1,y
 _init_shortcut:
-	sta tabl_hi,y
-	txa
-	sta tabl_lo,y
+   sta   tabl_hi,y
+   txa
+   sta   tabl_lo,y
 
-	ldx #4
-	jsr _bit_get_bits		; clears x-reg.
-	sta tabl_bi,y
-	iny
-	cpy #52
-	bne _init_nextone
+   ldx   #$04
+   jsr   _bit_get_bits  ; clears x-reg.
+   sta   tabl_bi,y
+   iny
+   cpy   #52
+   bne   _init_nextone
 _do_exit:
-	rts
+   rts
 ; -------------------------------------------------------------------
 ; decrunch chunk
 ;
 ; -------------------------------------------------------------------
 get_decrunched_chunk:
-	ldx zp_dest_lo
-	bne _seq_dest_dec_lo
-	ldx zp_dest_hi
-	cpx #>buffer_start_hi
-	bne _seq_dest_dec_hi
+   ldx   zp_dest_lo
+   bne   _seq_dest_dec_lo
+   ldx   zp_dest_hi
+   cpx   #>buffer_start_hi
+   bne   _seq_dest_dec_hi
 ; ------- handle buffer wrap problematics here ----------------------
-	ldx #>buffer_end_hi
-	stx zp_dest_hi
+   ldx   #>buffer_end_hi
+   stx   zp_dest_hi
 _seq_dest_dec_hi:
-	dec zp_dest_hi
+   dec   zp_dest_hi
 _seq_dest_dec_lo:
 ; -------------------------------------------------------------------
 _decrunched_chunk_loop:
-	dec zp_dest_lo
+   dec   zp_dest_lo
 
-	ldy zp_len_lo
-	bne _do_sequence
-	ldx zp_len_hi
-	bne _do_sequence2
+   ldy   zp_len_lo
+   bne   _do_sequence
+   ldx   zp_len_hi
+   bne   _do_sequence2
 ; -------------------------------------------------------------------
 ; count zero bits + 1 to get length table index (10 bytes)
 ; y = x = 0 when entering
 ; -------------------------------------------------------------------
 _seq_bit_next:
-	lsr zp_bitbuf
-	bne _seq_bit_ok
-	jsr get_crunched_byte
-	ror
-	sta zp_bitbuf
+   lsr   zp_bitbuf
+   bne   _seq_bit_ok
+   jsr   get_crunched_byte
+   ror
+   sta   zp_bitbuf
 _seq_bit_ok:
-	iny
-	bcc _seq_bit_next
-	dey
-	beq _get_literal
-	cpy #$11
-	bcs _do_exit
+   iny
+   bcc   _seq_bit_next
+   dey
+   beq   _get_literal
+   cpy   #$11
+   bcs   _do_exit
 ; -------------------------------------------------------------------
 ; calulate length of sequence (zp_len) (17 bytes)
 ;
-	txa
-	sta zp_bits_lo
-	sta zp_bits_hi
-	ldx tabl_bi - 1,y
-	beq _seq_skip_len_bits1
-	jsr _bit_get_bits_noclear
+   txa
+   sta   zp_bits_lo
+   sta   zp_bits_hi
+   ldx   tabl_bi - 1,y
+   beq   _seq_skip_len_bits1
+   jsr   _bit_get_bits_noclear
 _seq_skip_len_bits1:
-	adc tabl_lo - 1,y
-	sta zp_len_lo
-	lda zp_bits_hi
-	adc tabl_hi - 1,y
-	sta zp_len_hi
+   adc   tabl_lo - 1,y
+   sta   zp_len_lo
+   lda   zp_bits_hi
+   adc   tabl_hi - 1,y
+   sta   zp_len_hi
 ; -------------------------------------------------------------------
 ; here we decide what offset table to use (20 bytes)
 ; x is 0 here
 ;
-	bne _seq_nots123
-	ldy zp_len_lo
-	cpy #$03
-	bcc _seq_size123
+   bne   _seq_nots123
+   ldy   zp_len_lo
+   cpy   #$03
+   bcc   _seq_size123
 _seq_nots123:
-	ldy #$02
+   ldy   #$02
 _seq_size123:
-	ldx tabl_bit,y
+   ldx   tabl_bit,y
 
-	lda tabl_off,y
-	sta zp_bits_lo
+   lda   tabl_off,y
+   sta   zp_bits_lo
 
-	jsr _bit_get_bits_noclear
-	tay
+   jsr   _bit_get_bits_noclear
+   tay
 ; -------------------------------------------------------------------
 ; calulate absolute offset (zp_src) (27 bytes)
 ;
-	txa
-	sta zp_bits_lo
-	sta zp_bits_hi
-	ldx tabl_bi,y
-	beq _seq_skip_len_bits2
-	jsr _bit_get_bits_noclear
+   txa
+   sta   zp_bits_lo
+   sta   zp_bits_hi
+   ldx   tabl_bi,y
+   beq   _seq_skip_len_bits2
+   jsr   _bit_get_bits_noclear
 _seq_skip_len_bits2:
-	adc tabl_lo,y
-	bcc _seq_skipcarry
-	inc zp_bits_hi
+   adc   tabl_lo,y
+   bcc   _seq_skipcarry
+   inc   zp_bits_hi
 _seq_skipcarry:
-	sec
-	adc zp_dest_lo
-	sta zp_src_lo
-	lda zp_bits_hi
-	adc tabl_hi,y
-	adc zp_dest_hi
+   sec
+   adc   zp_dest_lo
+   sta   zp_src_lo
+   lda   zp_bits_hi
+   adc   tabl_hi,y
+   adc   zp_dest_hi
 ; -------------------------------------------------------------------
-	cmp #>buffer_end_hi
-	bcc _seq_offset_ok
-	sbc #>buffer_len_hi
+   cmp   #>buffer_end_hi
+   bcc   _seq_offset_ok
+   sbc   #>buffer_len_hi
 ; -------------------------------------------------------------------
 _seq_offset_ok:
-	sta zp_src_hi
-	jmp _seq_shortcut
+   sta   zp_src_hi
+   bra   _seq_shortcut
 ; -------------------------------------------------------------------
 _get_literal:
-	jsr get_crunched_byte
-	bcs _do_literal
+   jsr   get_crunched_byte
+   bcs   _do_literal
 ; -------------------------------------------------------------------
 ; literal handling (13 bytes)
 ;
 _do_sequence2:
-	dec zp_len_hi
+   dec   zp_len_hi
 _do_sequence:
-	dec zp_len_lo
+   dec   zp_len_lo
 ; -------------------------------------------------------------------
-	ldx zp_src_lo
-	bne _seq_src_dec_lo
-	ldx zp_src_hi
-	cpx #>buffer_start_hi
-	bne _seq_src_dec_hi
+   ldx   zp_src_lo
+   bne   _seq_src_dec_lo
+   ldx   zp_src_hi
+   cpx   #>buffer_start_hi
+   bne   _seq_src_dec_hi
 ; ------- handle buffer wrap problematics here ----------------------
-	ldx #>buffer_end_hi
-	stx zp_src_hi
+   ldx   #>buffer_end_hi
+   stx   zp_src_hi
 ; -------------------------------------------------------------------
 _seq_src_dec_hi:
-	dec zp_src_hi
+   dec   zp_src_hi
 _seq_src_dec_lo:
-	dec zp_src_lo
+   dec   zp_src_lo
 ; -------------------------------------------------------------------
 _seq_shortcut:
-	ldy #0
-	lda (zp_src_lo),y
+   ldy   #$00
+   lda   (zp_src_lo),y
 ; -------------------------------------------------------------------
 _do_literal:
 ; -------------------------------------------------------------------
-	sta (zp_dest_lo),y
-	lda <zp_dest_lo
-	and #<(decrunched_chunk_size - 1)
-	beq do_exit2
-	jmp _decrunched_chunk_loop
+   sta   (zp_dest_lo),y
+   lda   <zp_dest_lo
+   and   #<(decrunched_chunk_size - 1)
+   beq   do_exit2
+   jmp   _decrunched_chunk_loop
 do_exit2:
-	clc
-	rts
+   clc
+   rts
 ; -------------------------------------------------------------------
 ; two small static tables (6 bytes)
 ;
 tabl_bit:
-	.byte 2,4,4
+   .byte $02,$04,$04
 tabl_off:
-	.byte %0001100, %00000010, %00000001
+   .byte %00001100, %00000010, %00000001
 ; -------------------------------------------------------------------
 ; get bits (31 bytes)
 ;
@@ -330,33 +335,33 @@ tabl_off:
 ;   x = number of bits to get
 ; returns:
 ;   a = #bits_lo
-;   x = #0
+;   x = #$00
 ;   c = 0
 ;   zp_bits_lo = #bits_lo
 ;   zp_bits_hi = #bits_hi
 ; notes:
 ;   y is untouched
-;   other status bits are set to (a == #0)
+;   other status bits are set to (a == #$00)
 ; -------------------------------------------------------------------
 _bit_get_bits:
-	lda #0
-	sta zp_bits_lo
-	sta zp_bits_hi
+   lda   #$00
+   sta   zp_bits_lo
+   sta   zp_bits_hi
 _bit_get_bits_noclear:
-	lda zp_bitbuf
+   lda   zp_bitbuf
 _bit_bits_next:
-	lsr a
-	bne _bit_ok
-	jsr get_crunched_byte
-	ror a
+   lsr
+   bne   _bit_ok
+   jsr   get_crunched_byte
+   ror
 _bit_ok:
-	rol zp_bits_lo
-	rol zp_bits_hi
-	dex
-	bne _bit_bits_next
-	sta zp_bitbuf
-	lda zp_bits_lo
-	rts
+   rol   zp_bits_lo
+   rol   zp_bits_hi
+   dex
+   bne   _bit_bits_next
+   sta   zp_bitbuf
+   lda   zp_bits_lo
+   rts
 ; -------------------------------------------------------------------
 ; end of decruncher
 ; -------------------------------------------------------------------

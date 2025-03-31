@@ -4,7 +4,7 @@
 
 .import init_decruncher
 .import get_decrunched_chunk
-.importzp zp_dest_hi
+.importzp zp_dest
 .importzp decrunch_table_end
 
 .export get_crunched_byte
@@ -19,15 +19,17 @@ buffer_start_hi         := $e000
 buffer_len_hi           := $1000 ; only 4k work stable @ $e000
 decrunched_chunk_size   := buffer_len_hi
 
+.define NEWLINE $0a
+
 .segment "CODE"
 
 start:
-   int   COPYBIOS
-   stz   BANK
+   int   COPYBIOS       ; required for debug only
+   stz   BANK           ; so upload with timcat works
    ldy   #VT100_SCRN_SIZ
-   int   VT100
+   int   VT100          ; get screen size
    dec                  ; remove one line for "press SPACE" message
-   sta   rows
+   sta   rows           ; save # lines for later
    cpx   #80
    bcc   toosmall
    cmp   #19            ; 20-1 "dec"
@@ -39,25 +41,25 @@ toosmall:
 
 menu:
    ldy   #VT100_SCRN_CL0
-   int   VT100
+   int   VT100          ; CLR/HOME
 
    lda   #<WELCOME
    sta   exosrc+0
    lda   #>WELCOME
    sta   exosrc+1
-   jsr   runpager
+   jsr   runpager       ; uncompress welcome message
 
    jsr   PRINT
    .byte 10,"Select document to view (CTRL+C to quit): ",0
 
 input:
-   int   CHRINUC
+   int   CHRINUC        ; get character converted to upper case
    ldx   #<(txttable-keys-1)
    cmp   #$03
    bne   :+
-   jmp   ($fffc)
+   jmp   ($fffc)        ; CTRL+C quits
 :
-   cmp   keys,x
+   cmp   keys,x         ; check for menu items
    beq   @found
    dex
    bpl   :-
@@ -65,25 +67,25 @@ input:
 
 @found:
    jsr   CHROUT
-   lda   #$0a
+   lda   #NEWLINE
    jsr   CHROUT
    txa
    asl
    tax
-   lda   txttable+0,x
+   lda   txttable+0,x   ; get start address of exomized text from table
    sta   exosrc+0
    lda   txttable+1,x
    sta   exosrc+1
 
-   lda   #$0a
+   lda   #NEWLINE
    jsr   CHROUT
 
    jsr   runpager
-   bcs   menu
+   bcs   menu           ; C=1: CTRL+C -> no end of text message
 
    txa                  ; cpx #$00
    beq   :++
-   lda   #$0A
+   lda   #NEWLINE
 :
    jsr   CHROUT
    dex
@@ -94,7 +96,7 @@ input:
 :
    int   CHRINUC
    cmp   #$03
-   beq   :+
+   beq   :+             ; wait for CTRL+C or Q
    cmp   #'Q'
    bne   :-
 :
@@ -104,16 +106,16 @@ runpager:
    jsr   init_decruncher
    ldx   rows
 @nextchunk:
-   phx                  ; get_decrunched_chunk changes X
+   phx                  ; get_decrunched_chunk changes A,X,Y
    jsr   get_decrunched_chunk
    plx
    ldy   #$00           ; reset pointer in current chunk
 @printchar:
    dey
-   lda   (zp_dest_hi-1),y
+   lda   (zp_dest),y    ; get decompressed byte
    beq   @done          ; $00: end of text (crunched in)
    jsr   CHROUT
-   cmp   #$0a           ; is it newline?
+   cmp   #NEWLINE       ; is it newline?
    bne   @skip
 ; do pager stuff here
    dex                  ; decrement # lines before wait space
@@ -123,16 +125,16 @@ runpager:
 :
    int   CHRINUC
    cmp   #$03
-   beq   @quit
+   beq   @quit          ; quit on CTRL+C or Q
    cmp   #'Q'
    beq   @quit
    cmp   #' '
-   bne   :-
+   bne   :-             ; wait for space
 
-   phy
+   tya                  ; we need to keep the index in decompressed text
    ldy   #VT100_EOLN_CLR
-   int   VT100
-   ply
+   int   VT100          ; clean until end of line
+   tay
 
    ldx   rows           ; restore number of rows to display
    dex                  ; remove one for last line of previous page
