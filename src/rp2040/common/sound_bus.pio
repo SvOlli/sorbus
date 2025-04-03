@@ -22,16 +22,16 @@
 ; step 1: wait for system bus
 .wrap_target
 loop:
-   wait 1 gpio CS1      ; check for CS1 to go high
-   jmp pin loop         ; check for CS2 to go low
-   wait 1 gpio CLK [2]  ; wait for CLK
-   mov isr, pins        ; fetch data from bus
+   ;wait 1 gpio CS1      ; check for CS1 to go high
+   ;wait 0 gpio CS0 ; jmp pin loop         ; check for CS2 to go low
+   ;wait 1 gpio CLK [2]  ; wait for CLK
+   in pins, INPINS
    mov osr, !null
-   out pins, OUTPINS    ; dummy output on databus: $FF
+   out pins, OUTPINS    ; dummy output on databus: $FF, everything pulled up
+                        ; intended to be overwritten by C code during write,
+                        ; ignored during read
    out pindirs, OUTPINS ; set datapins to output, just in case
-   push                 ; now let C code handle it
    wait 0 gpio CLK      ; wait for CLK
    mov osr, null        ; cleanup by
    out pindirs, OUTPINS ; setting databus to input again
 .wrap
-

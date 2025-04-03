@@ -19,11 +19,12 @@ loop:
    wait 1 gpio CLK      ; wait for CLK to go high
    in pins, INPINS      ; read databus + 2 dummy bits + A0 into isr
    mov osr, !null
-   out pins, OUTPINS    ; dummy output on databus: $FF
+   out pins, OUTPINS    ; dummy output on databus: $FF, everything pulled up
+                        ; intended to be overwritten by C code during write,
+                        ; ignored during read
    out pindirs, OUTPINS ; set datapins to output, just in case
    irq nowait 0         ; now call C code IRQ handler
    wait 0 gpio CLK      ; wait for CLK
    mov osr, null        ; cleanup by
    out pindirs, OUTPINS ; setting databus to input again
 .wrap
-

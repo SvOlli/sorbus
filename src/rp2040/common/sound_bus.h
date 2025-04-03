@@ -22,8 +22,9 @@ typedef void (*sound_bus_read_handler_t)( uint8_t addr );
 void sound_bus_read_handler_set( sound_bus_read_handler_t );
 void sound_bus_read_handler_default( uint8_t addr );
 
-
+/*  */
 void sound_bus_init();
+/*  */
 void sound_bus_loop();
 
 #endif

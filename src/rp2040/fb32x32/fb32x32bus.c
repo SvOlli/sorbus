@@ -30,38 +30,33 @@ bi_decl(bi_pin_mask_with_name(BUS_CONFIG_mask_clock,   "CLK"));
 uint8_t mem_cache[0x12000];
 
 
-static void bus_wait_program_init( PIO pio, uint sm, uint offset, float freq )
+void bus_init()
 {
-   // do not mess with these!
-   const uint startpin = 0;
-   const uint numpins  = 24;
-
-   pio_gpio_init( pio, startpin );
+   uint pin;
+   const float freq = 1150000;
+   uint offset = pio_add_program( pio1, &bus_wait_program );
 
    // setup pins
+   for( pin = 0; pin < INPINS+2; ++pin )
+   {
+      pio_gpio_init( FB32X32_BUS_PIO, pin );
+   }
+
    // listen on the pins 0-25 of the bus
    pio_sm_config c = bus_wait_program_get_default_config( offset );
-   sm_config_set_in_pin_base( &c, startpin );
-   sm_config_set_in_pin_count( &c, numpins );
-   pio_sm_set_consecutive_pindirs( pio, sm, startpin, numpins+2, false );
+   sm_config_set_in_pin_base( &c, STARTPIN );
+   sm_config_set_in_pin_count( &c, INPINS );
+   pio_sm_set_consecutive_pindirs( FB32X32_BUS_PIO, FB32X32_BUS_SM, STARTPIN, INPINS+2, false );
 
    sm_config_set_fifo_join( &c, PIO_FIFO_JOIN_RX );
-   sm_config_set_in_shift( &c, false, true, numpins ); // address+data bus
+   sm_config_set_in_shift( &c, false, true, INPINS ); // address+data bus
 
    // running the PIO state machine 20 times as fast as expected CPU freq
    float div = clock_get_hz( clk_sys ) / (freq * 20);
    sm_config_set_clkdiv( &c, div );
 
-   pio_sm_init( pio, sm, offset, &c );
-   pio_sm_set_enabled( pio, sm, true );
-}
-
-
-void bus_init()
-{
-   const float freq = 1150000;
-   uint offset = pio_add_program( pio1, &bus_wait_program );
-   bus_wait_program_init( FB32X32_BUS_PIO, FB32X32_BUS_SM, offset, freq );
+   pio_sm_init( FB32X32_BUS_PIO, FB32X32_BUS_SM, offset, &c );
+   pio_sm_set_enabled( FB32X32_BUS_PIO, FB32X32_BUS_SM, true );
 }
 
 
