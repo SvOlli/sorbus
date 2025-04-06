@@ -44,3 +44,5 @@
 #endif
 
 #endif
+
+void init_gpio (void);

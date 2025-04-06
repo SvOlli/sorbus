@@ -106,8 +106,8 @@ extern "C"
         config[CFG_SID2_ADDRESS] = 1 + 4 * 0; 
         config[CFG_SID1_DIGIBOOST] = 12;
         config[CFG_SID2_DIGIBOOST] = 12;
-        config[CFG_SID1_VOLUME] = 14;
-        config[CFG_SID2_VOLUME] = 14;
+        config[CFG_SID1_VOLUME] = 12;
+        config[CFG_SID2_VOLUME] = 12;
         config[CFG_SID_PANNING] = 5;
         config[CFG_SID_BALANCE] = 7;
         config[CFG_CLOCKSPEED] = 0;

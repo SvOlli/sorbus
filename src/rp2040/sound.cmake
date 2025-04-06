@@ -54,7 +54,8 @@ add_definitions(-DFLOD_NO_SOUNDBLASTER)
 add_executable(sound_mod
    cream_of_the_earth.h
    sound-mod/sound_core.c
-   sound-mod/i2s/i2s.c   
+   sound-mod/i2s/i2s.c  
+   common/sound_gpio_config 
 )
 bin2h(cream_of_the_earth.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/CreamOfTheEarth.mod mod_data)
 
@@ -80,6 +81,7 @@ bin2h(${CMAKE_CURRENT_BINARY_DIR}/reSID_LUT_bin.h ${CMAKE_CURRENT_SOURCE_DIR}/so
 add_executable(sound_sid
     ${CMAKE_CURRENT_BINARY_DIR}/reSID_LUT_bin.h
     sound-sid/SKpico.c
+    common/sound_gpio_config 
     3rdparty/reSID16/envelope.cc
     3rdparty/reSID16/extfilt.cc
     3rdparty/reSID16/pot.cc

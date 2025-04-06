@@ -87,6 +87,8 @@ uint8_t DELAY_READ_BUS, DELAY_PHI2;
 uint8_t sidDACMode = SID_DAC_OFF;
 #endif
 
+volatile int32_t discrepancy = 0;
+
 #define VERSION_STR_SIZE  36
 static const __not_in_flash( "mydata" ) unsigned char VERSION_STR[ VERSION_STR_SIZE ] = {
 #if defined( USE_SPDIF )
@@ -170,26 +172,6 @@ extern uint32_t C64_CLOCK;
 				  "1: sub  r0, r0, #1\n\t"					\
 				  "bne   1b"  : : [_c] "r" (c) : "r0", "cc", "memory" );
 
-void initGPIOs()
-{
-	for ( int i = 0; i < 26; i++ )
-		gpio_init( i );
-	gpio_init( 28 );
-	gpio_set_pulls( nCS2, false, true );
-	gpio_set_pulls( CS1, true, false );
-	gpio_set_pulls( RESET, true, false );
-
-    gpio_init(SND_FLT);
-    gpio_put(SND_FLT,0);  // FIR Filter
-    gpio_set_dir(SND_FLT, GPIO_OUT);
-    gpio_init(SND_DEMP);
-    gpio_set_dir(SND_DEMP, GPIO_OUT);
-    gpio_put(SND_DEMP,0);  // no De-Emphasis
-
-#ifdef LED_BUILTIN
-	gpio_set_dir_all_bits( bOE | ( 1 << LED_BUILTIN ) | ( 1 << 23 ) );
-#endif
-}
 
 extern uint8_t config[ 64 ];
 
@@ -303,6 +285,8 @@ static void alarm_irq(void) {
 
     newSample = 0xfffe;
 	SampleCount ++;
+	c64CycleCounter+=C64_CLOCK/44100;
+
 	// Retrigger
 	alarm_in_us(1000000/44100);
  
@@ -434,6 +418,8 @@ void runEmulation()
 
 	#ifdef USE_DAC  
 	ap = initI2S();
+	gpio_put(SND_DEMP,1);  //  De-Emphasis on
+
 	#endif
 	#ifdef USE_SPDIF
 	ap = initSPDIF();
@@ -696,7 +682,7 @@ void runEmulation()
 			audio_buffer_t *buffer = take_audio_buffer( ap, false );
 			if ( buffer )
 			{
-				int32_t discrepancy = 0;
+				discrepancy = 0;
 
 				if ( firstOutput )
 					audio_i2s_set_enabled( true );
@@ -716,8 +702,8 @@ void runEmulation()
 				give_audio_buffer( ap, buffer );
 				audioOutPos = audioPos = 0;
 			}
-
-			#endif
+			newSample = 0xffff;
+			#else
 			
 			// PWM output via C64/C128 mainboard
 			int32_t s_ = L + R;
@@ -744,7 +730,7 @@ void runEmulation()
 			if ( ramp < ( RAMP_LENGTH - 1 ) ) s = ( s * ramp ) >> RAMP_BITS;
 
 			newSample = s;
-
+		#endif
 		}
 	}
 }
@@ -914,6 +900,7 @@ handleSIDCommunication:
 			gpioDirCur = gpioDir;
 		}
 #endif
+#ifndef USE_DAC 
 		if ( newSample < 0xfffe )
 		{
 			#ifdef OUTPUT_VIA_PWM
@@ -925,10 +912,10 @@ handleSIDCommunication:
 
 			newSample = 0xffff;
 		}
-
+#endif
 		// we have to generate a new sample after C64_CLOCK / AUDIO_RATE cycles
-		++ c64CycleCounter;
 		/* Now in timer_callback
+		++ c64CycleCounter;
 		curSample += AUDIO_RATE;
 		if ( curSample > C64_CLOCK )
 		{
@@ -1070,6 +1057,9 @@ int main()
 	vreg_set_voltage( VREG_VOLTAGE_1_30 );
 	readConfiguration();
 	initGPIOs();
+#ifdef LED_BUILTIN
+	gpio_set_dir_all_bits( bOE | ( 1 << LED_BUILTIN ) | ( 1 << 23 ) );
+#endif	
 	// start bus handling and emulation
 	multicore_launch_core1( handleBus );
 	bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC1_BITS;

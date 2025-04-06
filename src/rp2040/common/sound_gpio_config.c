@@ -16,3 +16,34 @@ bi_decl(bi_1pin_with_name(SND_CLKBASE+0,  "BCK"));
 bi_decl(bi_1pin_with_name(SND_CLKBASE+1,  "LRCK"));
 bi_decl(bi_1pin_with_name(SND_DOUT,       "DIN"));
 bi_decl(bi_1pin_with_name(SND_DEMP,       "DEMP"));
+
+
+
+void init_gpio (void){
+
+    for ( int i = 0; i < 26; i++ )
+        gpio_init( i );
+    gpio_init( 28 );
+    gpio_set_pulls( nCS2, false, true );
+    gpio_set_pulls( CS1, true, false );
+    gpio_set_pulls( RESET, true, false );
+
+    gpio_init(SND_SCK);
+    gpio_set_dir(SND_SCK, GPIO_OUT);
+    gpio_init(SND_DOUT);
+    gpio_set_dir(SND_DOUT, GPIO_OUT);
+    gpio_init(SND_CLKBASE);
+    gpio_set_dir(SND_CLKBASE, GPIO_OUT);
+    gpio_init(SND_CLKBASE+1);
+    gpio_set_dir(SND_CLKBASE+1, GPIO_OUT);
+    gpio_init(SND_FLT);
+    gpio_put(SND_FLT,0);  // FIR Filter
+    gpio_set_dir(SND_FLT, GPIO_OUT);
+    gpio_init(SND_DEMP);
+    gpio_set_dir(SND_DEMP, GPIO_OUT);
+    gpio_put(SND_DEMP,0);  // no De-Emphasis
+    //Databus
+    gpio_set_dir_masked(0xff,0);
+
+
+}
