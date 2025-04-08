@@ -8,12 +8,13 @@
 ; this code needs to run on an RP2040
 .pio_version 0
 
-.define public CS1       10
-.define public CS0       11
+.define public DATABUS0  0
 .define public CLK       8
 .define public R_W       9
-.define public DATABUS0  0
+.define public CS1       10
+.define public CS0       11
 .define public ADDRBUS0  12
+
 .define public OUTPINS   8
 .define public INPINS    20
 
@@ -36,8 +37,8 @@ loop:
 ;   out pindirs, OUTPINS ; setting databus to input again
 
    wait 0 gpio R_W      ; first wait for r/w to go low (write)
-   wait 1 gpio CLK  [1] ; now wait for clock to go high (and a bit more)
-   in pins, INPINS      ; bug fixed, this now works!
+   wait 1 gpio CLK  [2] ; now wait for clock to go high (and a bit more)
+   in pins, INPINS      ; send out addressbus and databus state
    wait 0 gpio CLK      ; and wait for clock to go low again
                         ; to prevent too fast reentering
 .wrap

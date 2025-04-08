@@ -15,10 +15,11 @@
 /* bus config is shared, because hardware is shared */
 #include "common/bus.h"
 #include "fb32x32.h"
-#include <fb32x32bus.pio.h>
+#include <fb32x32_bus.pio.h>
 
 #define FB32X32_BUS_PIO pio1
 #define FB32X32_BUS_SM  0
+#define OVERSAMPLING (20)
 
 bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
@@ -35,6 +36,7 @@ void bus_init()
    uint pin;
    const float freq = 1150000;
    uint offset = pio_add_program( pio1, &bus_wait_program );
+   pio_sm_config c = bus_wait_program_get_default_config( offset );
 
    // setup pins
    for( pin = 0; pin < INPINS+2; ++pin )
@@ -43,7 +45,6 @@ void bus_init()
    }
 
    // listen on the pins 0-25 of the bus
-   pio_sm_config c = bus_wait_program_get_default_config( offset );
    sm_config_set_in_pin_base( &c, STARTPIN );
    sm_config_set_in_pin_count( &c, INPINS );
    pio_sm_set_consecutive_pindirs( FB32X32_BUS_PIO, FB32X32_BUS_SM, STARTPIN, INPINS+2, false );
@@ -52,7 +53,7 @@ void bus_init()
    sm_config_set_in_shift( &c, false, true, INPINS ); // address+data bus
 
    // running the PIO state machine 20 times as fast as expected CPU freq
-   float div = clock_get_hz( clk_sys ) / (freq * 20);
+   float div = clock_get_hz( clk_sys ) / (freq * OVERSAMPLING);
    sm_config_set_clkdiv( &c, div );
 
    pio_sm_init( FB32X32_BUS_PIO, FB32X32_BUS_SM, offset, &c );

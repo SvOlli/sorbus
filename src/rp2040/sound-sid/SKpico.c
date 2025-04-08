@@ -124,7 +124,7 @@ extern void setDefaultConfiguration();
 
 #define bRESET		( 1 << RESET )
 #define bCS1		( 1 << CS1 )
-#define bnCS2	    ( 1 << nCS2 )
+#define bnCS0	    ( 1 << nCS0 )
 #define bPHI		( 1 << PHI )
 #define bRW			( 1 << RW )
 //#define bOE			( 1 << OE_DATA )
@@ -138,7 +138,7 @@ extern void setDefaultConfiguration();
 #define CPU_HALF_CYCLE( g )	(  ( (g) & bPHI ) )
 #define WRITE_ACCESS( g )	( !( (g) & bRW ) )
 #define READ_ACCESS( g )	(  ( (g) & bRW ) )
-#define SID_ACCESS( g )		( ( (g) & bCS1 ) && (!( (g) & bnCS2 )) )
+#define SID_ACCESS( g )		( ( (g) & bCS1 ) && (!( (g) & bnCS0 )) )
 #define SID_ADDRESS( g )	(  ( (g) >> A0 ) & 0x1f )
 #define SID_UPPER_ADDRESS( g )	(  ( (g) >> A0 ) & 0xe0 )
 #define SID_DATA( g )	       ( (g) & 0xff )
@@ -151,7 +151,7 @@ extern void setDefaultConfiguration();
       { sio_hw->gpio_set = ( D ); \
         sio_hw->gpio_clr = ( (~(uint32_t)( D )) & 255 ); } 
 
-const __not_in_flash( "mydata" ) uint32_t  sidFlags[ 6 ] = { bCS1, ( 1 << A5 ), ( 1 << nCS2 ), ( 1 << A5 ) | ( 1 << nCS2 ), ( 1 << nCS2 ), ( 1 << nCS2 ) };
+const __not_in_flash( "mydata" ) uint32_t  sidFlags[ 6 ] = { bCS1, ( 1 << A5 ), ( 1 << nCS0 ), ( 1 << A5 ) | ( 1 << nCS0 ), ( 1 << nCS0 ), ( 1 << nCS0 ) };
 extern uint32_t SID2_FLAG;
 extern uint8_t  SID2_IOx_global;
 

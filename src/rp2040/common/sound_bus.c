@@ -4,6 +4,8 @@
 // for debug only
 #include <stdio.h>
 
+#define OVERSAMPLING (19)
+
 static PIO  sound_bus_pio = pio0;
 static uint sound_bus_sm  = 0;
 extern queue_t sound_bus_queue_cpu_write;
@@ -45,12 +47,12 @@ void sound_bus_init()
 {
    uint pin;
    const float freq = 1150000;
+   uint offset = pio_add_program( pio0, &sound_bus_wait_program );
+   pio_sm_config c = sound_bus_wait_program_get_default_config( offset );
 
    /* setup handlers */
    write_handler = sound_bus_write_handler_default;
    read_handler  = sound_bus_read_handler_default;
-
-   uint offset = pio_add_program( pio0, &sound_bus_wait_program );
 
    // setup pins
    for( pin = DATABUS0; pin < INPINS; ++pin )
@@ -58,7 +60,6 @@ void sound_bus_init()
       pio_gpio_init( sound_bus_pio, pin );
    }
 
-   pio_sm_config c = sound_bus_wait_program_get_default_config( offset );
    sm_config_set_in_pin_base( &c, DATABUS0 );
    sm_config_set_in_pin_count( &c, INPINS );
    pio_sm_set_consecutive_pindirs( sound_bus_pio, sound_bus_sm,
@@ -68,7 +69,7 @@ void sound_bus_init()
    sm_config_set_in_shift( &c, false, true, INPINS );
 
    // running the PIO sm 20 times as fast as expected CPU address
-   float div = clock_get_hz( clk_sys ) / (freq * 20);
+   float div = clock_get_hz( clk_sys ) / (freq * OVERSAMPLING);
    sm_config_set_clkdiv( &c, div );
 
    pio_sm_set_jmp_pin( sound_bus_pio, sound_bus_sm, CS0 );
@@ -85,7 +86,7 @@ void sound_bus_loop()
    {
 //printf( "%s(%d): %d\n", __FILE__, __LINE__, sound_bus_sm );
       bus = pio_sm_get_blocking( sound_bus_pio, sound_bus_sm );
-printf( "%s(%d): %08x\n", __FILE__, __LINE__, bus );
+printf( "%s(%d): %08x%s\n", __FILE__, __LINE__, bus, (bus & (1<<R_W)) ? "!" : "" );
       addr = (bus >> ADDRBUS0);
       if( bus & (1 << R_W) )
       {

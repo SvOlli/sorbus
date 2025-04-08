@@ -20,7 +20,7 @@
 #define PHI          ( 8)   // ok
 #define RW           ( 9)   // ok
 #define CS1          (10)   // ok CS1 
-#define nCS2         (11)   // ok nCS2
+#define nCS0         (11)   // ok nCS0
 #define A0           (12)   // ok
 #define A5           (17)
 //#define LED_BUILTIN  (24)   //  J4 Pin4
@@ -34,7 +34,7 @@
 #define PHI          ( 9)   // ok
 #define RW           (10)   // ok
 #define CS1          (12)   // o.k. CS1 
-#define nCS2         (11)   // HMMM is nCS2
+#define nCS0         (11)   // HMMM is nCS0
 #define A0           (14)   // ok
 #define A5           (19)
 //#define LED_BUILTIN  (24)   //  J4 Pin4
