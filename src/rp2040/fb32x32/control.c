@@ -187,7 +187,7 @@ static inline void setcolormap( uint8_t data )
 
    switch( tab )
    {
-      case 0:
+      case 0: // default colormap
          for( c = 0; c < 0x100; ++c )
          {
             // convert 0bRRGGBBII to 0b0000RRII0000GGII0000BBII
@@ -198,21 +198,21 @@ static inline void setcolormap( uint8_t data )
             hardware_setcolor( c, (r << 2) | i, (g << 2) | i, (b << 2) | i );
          }
          break;
-      case 1:
-      case 2:
-      case 3:
+      case 1: // custom colormap 1
+      case 2: // custom colormap 2
+      case 3: // custom colormap 3
          setpalette( &pal_custom[data-1][0], 0x100 );
          break;
-      case 4:
+      case 4: // C64 colormap
          setpalette( &pal_c64[0], count_of(pal_c64) );
          break;
-      case 5:
+      case 5: // C16 colormap
          setpalette( &pal_c16[0], count_of(pal_c16) );
          break;
-      case 6:
+      case 6: // Atari 800 colormap
          setpalette( &pal_a800[0], count_of(pal_a800) );
          break;
-      case 7:
+      case 7: // Atari 800 colormap, SvOlli style
          {
             uint16_t c, i;
             uint8_t r, g, b;
@@ -287,10 +287,14 @@ void control_loop()
       bus     = multicore_fifo_pop_blocking();
       address = bus >> BUS_CONFIG_shift_address;
       data    = bus >> BUS_CONFIG_shift_data;
+      if( bus & BUS_CONFIG_mask_rw )
+      {
+         continue;
+      }
 
       switch( address & 0x1f )
       {
-         case 0x00:
+         case 0x00: // copy data with flush
             if( data )
             {
                dmacopytrans( &framebuffer[destaddr], &mem_cache[srcaddr],
@@ -303,7 +307,7 @@ void control_loop()
             }
             hardware_flush();
             break;
-         case 0x01:
+         case 0x01: // copy data without flush
             if( data )
             {
                dmacopytrans( &framebuffer[destaddr], &mem_cache[srcaddr],
@@ -315,40 +319,40 @@ void control_loop()
                            width, height, step );
             }
             break;
-         case 0x02:
+         case 0x02: // src addr low
             srcaddr  =  (srcaddr & 0xFF00) | data;
             break;
-         case 0x03:
+         case 0x03: // src addr high
             srcaddr  =  (srcaddr & 0x00FF) | (data << 8);
             break;
-         case 0x04:
+         case 0x04: // dest addr low
             destaddr = (destaddr & 0x0300) | data;
             break;
-         case 0x05:
+         case 0x05: // dest addr high
             destaddr = (destaddr & 0x00FF) | ((data & 0x03) << 8);
             break;
-         case 0x06:
+         case 0x06: // dest x
             destaddr = (destaddr & 0x03E0) | (data & 0x1F);
             break;
-         case 0x07:
+         case 0x07: // dest y
             destaddr = (destaddr & 0x001F) | ((data & 0x1F) << 5);
             break;
-         case 0x08:
+         case 0x08: // width
             width    = (data & 0x1F);
             break;
-         case 0x09:
+         case 0x09: // height
             height   = (data & 0x1F);
             break;
-         case 0x0a:
+         case 0x0a: // step
             step     = data;
             break;
-         case 0x0b:
+         case 0x0b: // transparent color index
             tcol     = data;
             break;
-         case 0x0c:
+         case 0x0c: // set colormap
             setcolormap( data );
             break;
-         case 0x10:
+         case 0x10: // set custom colormap index
             if( (data >= 1) && (data <= 3) )
             {
                customid  = data;
@@ -361,9 +365,9 @@ void control_loop()
                customid  = 0;
             }
             break;
-         case 0x11:
-         case 0x12:
-         case 0x13:
+         case 0x11: // set custom colormap red
+         case 0x12: // set custom colormap green
+         case 0x13: // set custom colormap blue
             if( customid && (colidx[(address&3)-1] < 0x100) )
             {
                setcustomcolor( customid-1, (address&3)-1,

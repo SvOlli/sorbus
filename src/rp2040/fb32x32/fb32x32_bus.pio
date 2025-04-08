@@ -20,9 +20,9 @@
 ; 25: CLK
 
 .define public STARTPIN 0
-.define public INPINS   24
 .define public R_W      24
 .define public CLK      25
+.define public INPINS   25
 
 .program bus_wait
 
@@ -30,9 +30,7 @@
 loop:
    wait 0 gpio R_W      ; first wait for r/w to go low (write)
    wait 1 gpio CLK  [2] ; now wait for clock to go high (and a bit more)
-   in pins, INPINS      ; bug fixed, this now works!
-   ;mov isr, pins        ; just pull all GPIOs to output
-   ;push
+   in pins, INPINS      ; enqueue bus state for C code
    wait 0 gpio CLK      ; and wait for clock to go low again
                         ; to prevent too fast reentering
 .wrap

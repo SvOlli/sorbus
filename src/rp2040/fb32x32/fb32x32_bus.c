@@ -19,7 +19,8 @@
 
 #define FB32X32_BUS_PIO pio1
 #define FB32X32_BUS_SM  0
-#define OVERSAMPLING (20)
+#define OVERSAMPLING (8)      // deduction by trial: 7 is minimum
+#define BASE_ADDRESS (0xD300) // must be on page boundry
 
 bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
@@ -76,7 +77,7 @@ void bus_loop()
       mem_cache[address] = bus >> BUS_CONFIG_shift_data;
 
       // handle control registers
-      if( (address >> 8) == 0xD3 )
+      if( (address >> 8) == (BASE_ADDRESS >> 8) )
       {
 #if 1
          // letting it block would fill up the pio cue before overflow

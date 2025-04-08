@@ -19,32 +19,43 @@ target_include_directories(fb32x32bus PUBLIC
 )
 
 # WS2812 variant
-add_executable(fb32x32ws2812
+add_executable(fb32x32_ws2812
    fb32x32/main.c
    fb32x32/control.c
    fb32x32/hardware_ws2812.c
    fb32x32/translation_matrix_1.c
 )
-pico_generate_pio_header(fb32x32ws2812
+pico_generate_pio_header(fb32x32_ws2812
    ${CMAKE_CURRENT_LIST_DIR}/fb32x32/ws2812.pio
    OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
 )
-target_link_libraries(fb32x32ws2812 PRIVATE
+target_link_libraries(fb32x32_ws2812 PRIVATE
    fb32x32bus
 )
 # just for fun run out of ram
-#pico_set_binary_type(fb32x32ws2812 copy_to_ram)
-setup_target(fb32x32ws2812 "fb32x32")
+#pico_set_binary_type(fb32x32_ws2812 copy_to_ram)
+setup_target(fb32x32_ws2812 "fb32x32")
 
 # variant for emulation via UART
-add_executable(fb32x32usbuart
+add_executable(fb32x32_usbuart
    fb32x32/main.c
    fb32x32/control.c
    fb32x32/hardware_uart.c
 )
-target_link_libraries(fb32x32usbuart PRIVATE
+target_link_libraries(fb32x32_usbuart PRIVATE
    fb32x32bus
 )
 # just for fun run out of ram
-#pico_set_binary_type(fb32x32usbuart copy_to_ram)
-setup_target(fb32x32usbuart "fb32x32")
+#pico_set_binary_type(fb32x32_usbuart copy_to_ram)
+setup_target(fb32x32_usbuart "fb32x32")
+
+# variant for just testing PIO
+add_executable(fb32x32_iotest
+   fb32x32/iotest.c
+)
+target_link_libraries(fb32x32_iotest PRIVATE
+   fb32x32bus
+)
+# just for fun run out of ram
+#pico_set_binary_type(fb32x32_usbuart copy_to_ram)
+setup_target(fb32x32_iotest "fb32x32")

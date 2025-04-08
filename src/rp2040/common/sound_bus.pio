@@ -38,6 +38,9 @@ loop:
 
    wait 0 gpio R_W      ; first wait for r/w to go low (write)
    wait 1 gpio CLK  [2] ; now wait for clock to go high (and a bit more)
+
+;   wait 1 gpio CLK
+;   jmp pin loop
    in pins, INPINS      ; send out addressbus and databus state
    wait 0 gpio CLK      ; and wait for clock to go low again
                         ; to prevent too fast reentering
