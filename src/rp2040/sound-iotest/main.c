@@ -34,6 +34,7 @@ void logger()
    for(;;)
    {
       bus     = multicore_fifo_pop_blocking();
+#if 0
       switch( bus >> 30 )
       {
          case 0x2:
@@ -46,6 +47,7 @@ void logger()
             printf( "fail:  %08x\n", bus );
             break;
       }
+#endif
    }
 }
 

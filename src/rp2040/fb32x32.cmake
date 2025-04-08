@@ -3,10 +3,10 @@
 
 #
 add_library(fb32x32bus
-   fb32x32/fb32x32bus.c
+   fb32x32/fb32x32_bus.c
 )
 pico_generate_pio_header(fb32x32bus
-   ${CMAKE_CURRENT_LIST_DIR}/fb32x32/fb32x32bus.pio
+   ${CMAKE_CURRENT_LIST_DIR}/fb32x32/fb32x32_bus.pio
    OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
 )
 target_link_libraries(fb32x32bus PUBLIC

@@ -30,14 +30,18 @@ void vga_bus_pio_program_init( PIO pio, uint sm, uint offset,
    pio_sm_config c = vga_bus_wait_program_get_default_config( offset );
    sm_config_set_in_pin_base( &c, startpin );
    sm_config_set_in_pin_count( &c, INPINS );
+#if 0
    sm_config_set_out_pin_base( &c, startpin );
    sm_config_set_out_pin_count( &c, OUTPINS );
+#endif
    // start with data direction set to read, extra pins are up to A0
    pio_sm_set_consecutive_pindirs( pio, sm, startpin, INPINS, false );
 
-   sm_config_set_fifo_join( &c, PIO_FIFO_JOIN_NONE );
+   sm_config_set_fifo_join( &c, PIO_FIFO_JOIN_RX );
    sm_config_set_in_shift( &c, false, true, INPINS );
+#if 0
    sm_config_set_out_shift( &c, false, true, OUTPINS );
+#endif
 
    // running the PIO sm 20 times as fast as expected CPU address
    float div = clock_get_hz( clk_sys ) / (freq * 20);
