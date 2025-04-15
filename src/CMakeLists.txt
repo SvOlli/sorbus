@@ -10,7 +10,6 @@ option(CPM65_PATH "directory of CP/M 65 source code")
 
 # initialize the SDK based on PICO_SDK_PATH and BOARD config
 # note: this must happen before project()
-set(CMAKE_WARN_DEPRECATED FALSE) # mbedtls will not build otherwise
 set(PICO_BOARD_HEADER_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/rp2040")
 set(PICO_BOARD "rp2040_purple")
 include(pico_sdk_import.cmake)

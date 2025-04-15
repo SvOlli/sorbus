@@ -172,27 +172,6 @@ bi_decl(bi_program_url("https://xayax.net/sorbus/"))
 
 
 
-void init_gpio (void){
-
-   if (SND_SCK){ 
-    gpio_init(SND_SCK);
-    gpio_set_dir(SND_SCK, GPIO_OUT);
-   }
-   gpio_init(SND_DOUT);
-   gpio_set_dir(SND_DOUT, GPIO_OUT);
-   gpio_init(SND_CLKBASE);
-   gpio_set_dir(SND_CLKBASE, GPIO_OUT);
-   gpio_init(SND_CLKBASE+1);
-   gpio_set_dir(SND_CLKBASE+1, GPIO_OUT);
-   gpio_init(SND_FLT);
-   gpio_put(SND_FLT,0);  // FIR Filter
-   gpio_set_dir(SND_FLT, GPIO_OUT);
-   gpio_init(SND_DEMP);
-   gpio_set_dir(SND_DEMP, GPIO_OUT);
-   gpio_put(SND_DEMP,0);  // no De-Emphasis
-
-
-}
 extern int play_chunk(int32_t* output_buffer,size_t buffer_size);
 
 static void process_audio(const int32_t* input, int32_t* output, size_t num_frames) {
@@ -206,12 +185,15 @@ static void dma_i2s_in_handler(void) {
      * DMA is currently reading from, we can identify which buffer it has just
      * finished reading (the completion of which has triggered this interrupt).
      */
+    gpio_put(SND_SCK,1);
     if (*(int32_t**)dma_hw->ch[i2s.dma_ch_out_ctrl].read_addr == i2s.output_buffer) {
         // It is inputting to the second buffer so we can overwrite the first
         player_state=play_chunk(i2s.output_buffer, STEREO_BUFFER_SIZE);
+        gpio_put(SND_SCK,0);
     } else {
         // It is currently inputting the first buffer, so we write to the second
         player_state=play_chunk(&i2s.output_buffer[STEREO_BUFFER_SIZE], STEREO_BUFFER_SIZE);
+        gpio_put(SND_SCK,0);
     }
 #endif
     dma_hw->ints0 = 1u << i2s.dma_ch_out_data;  // clear the IRQ

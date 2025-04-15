@@ -118,8 +118,6 @@ extern void writeReSID( uint8_t A, uint8_t D );
 extern void writeReSID2( uint8_t A, uint8_t D );
 extern void outputReSID( int16_t *left, int16_t *right );
 extern void readRegs( uint8_t *p1, uint8_t *p2 );
-		// load default values
-extern void setDefaultConfiguration();
 
 
 #define bRESET		( 1 << RESET )
@@ -1028,6 +1026,8 @@ void readConfiguration()
 
 	if ( ( c & 255 ) != config[ CFG_CRC1 ] || ( c >> 8 ) != config[ CFG_CRC2 ] )
 	{
+		// load default values
+		extern void setDefaultConfiguration();
 		setDefaultConfiguration();
 	}
 }
@@ -1056,7 +1056,8 @@ int main()
 {
 	vreg_set_voltage( VREG_VOLTAGE_1_30 );
 	readConfiguration();
-	initGPIOs();
+	SET_CLOCK_FAST
+	init_gpio();
 #ifdef LED_BUILTIN
 	gpio_set_dir_all_bits( bOE | ( 1 << LED_BUILTIN ) | ( 1 << 23 ) );
 #endif	
