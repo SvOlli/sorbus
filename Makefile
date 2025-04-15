@@ -73,17 +73,13 @@ $$(my_dest): $$(my_src)
 	$(INSTALL) -D -m0644 $$< $$@
 endef
 
-.PHONY: nocpmfs all clean distclean release setup-apt cc65-sdk
+.PHONY: all clean distclean release setup-apt cc65-sdk
 
-nocpmfs:  #is included in the default, so commented :(
-	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(EXTRA_CMAKE_ARGS) -DDONT_GENERATE_CPMFS=ON
-	make -C $(BUILD_DIR) -j$(JOBS) && echo "\nbuild was successful\n"
-
-all: $(PICO_SDK_PATH)/README.md
+all: $(PICO_SDK_PATH)/README.md $(PICO_EXTRAS_PATH)/README.md
 	cmake -S $(SRC_DIR) -B $(BUILD_DIR) $(EXTRA_CMAKE_ARGS)
 	make -C $(BUILD_DIR) -j$(JOBS) && echo "\nbuild was successful\n"
 
-log: $(PICO_SDK_PATH)/README.md
+log: $(PICO_SDK_PATH)/README.md $(PICO_EXTRAS_PATH)/README.md
 	cmake -S $(SRC_DIR) -B $(BUILD_DIR) -DCMAKE_VERBOSE_MAKEFILE=ON $(EXTRA_CMAKE_ARGS) 2>&1 | tee cmake.log
 	make -C $(BUILD_DIR) -j$(JOBS) 2>&1 | tee make.log
 
@@ -106,7 +102,7 @@ $(PICO_SDK_PATH)/README.md:
 	$(MKDIR) $(PICO_SDK_PATH)
 	$(GIT_CHECKOUT) $(PICO_SDK_URL) $(PICO_SDK_PATH)
 
-$(PICO_EXTRAS_PATH)/README.md:
+$(PICO_EXTRAS_PATH)/README.md: $(PICO_SDK_PATH)/README.md
 	$(MKDIR) $(PICO_EXTRAS_PATH)
 	$(GIT_CHECKOUT) $(PICO_EXTRAS_URL) $(PICO_EXTRAS_PATH)
 
