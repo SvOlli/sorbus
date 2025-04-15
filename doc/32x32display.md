@@ -23,7 +23,7 @@ only sniffes the bus and never actively drives it.
 
 - $D310: red color for custom colormap
 - $D311: green color for custom colormap
-- $D312: blud color for custom colormap
+- $D312: blue color for custom colormap
 
 (defaults are starting at $d302: $00,$cc,$00,$00,$00,$00,$1f,$1f,$1f,$00,$00)
 

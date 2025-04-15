@@ -16,6 +16,7 @@ the core in flash, using the following commands:
 (This is a subject to change, because it's now possible to create a UF2
 file with everything firmware.)
 
+
 Available Boot Options
 ----------------------
 
@@ -51,6 +52,9 @@ to RAM. This will enable the loaded code to utilize the software
 interrupt handler and other features of the kernel. This part is called
 the BIOS.
 
+The second bootblock will be loaded when an NMOS 6502 is detected.
+
+
 Using an NMOS 6502
 ------------------
 
@@ -71,6 +75,7 @@ the built-in commands ``DIR``, ``ERA``, ``REN``, ``TYPE``, ``USER`` and
 ``FREE``.
 
 `Repository of CP/M 65 <https://github.com/davidgiven/cpm65>`_
+
 
 OSI BASIC V1.0 REV 3.2 Usage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,12 +107,16 @@ BASIC.
 -  code for RND(0) has been changed, so sequence will not be the same,
    actually being random
 
+
 SX4 File Format For Executables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 SX4 stands for Sorbus eXecutable $0400, so it's just a binary blob
 loaded to $0400 at memory and started at the load address, after the
 bank has been switched to $00 (RAM @ $E000) with the BIOS copied to RAM.
+This is done by the File Browser. When an SX4 is loaded otherwise, e.g.
+via UART the bank configuration will be left untouched.
+
 
 Memory map
 ----------
@@ -131,13 +140,14 @@ Memory map
 -  $D000-$D3FF: scratch RAM that can by exchanged with $0000-$03FF
    by writing to $DF03 (not accessable directly from 65C02)
 -  $D300-$D3FF: I/O area suggested to be used by 32x32 framebuffer
--  $DE00-$DEFF: internal temporary buffer (not accessable from 65C02)
 -  $DF00-$DFFF: I/O provided by main RP2040 board
+   (this can change to $DE00-$DFFF, when $DFxx area is not sufficiant)
 -  $E000-$FFFF: bank 0 (RAM, used to load CP/M 65)
--  $E000-$FFFF: bank 1 (ROM, custom firmware)
+-  $E000-$FFFF: bank 1 (ROM, kernal, custom firmware)
 -  $E000-$FFFF: bank 2 (ROM, tools e.g. filebrowser)
 -  $E000-$FFFF: bank 3 (ROM, OSI BASIC)
 -  $FF00-$FFFF: bankswitching code, BRK handler, I/O routines
+   -  same on all ROM banks
    -  can be copied to RAM using code at $0100 after loading a bootblock
    -  is copied to RAM before running SX4 file
 
@@ -157,7 +167,6 @@ Miscellaneous ($DF00-$DF0F)
 -  $DF04: (R) CPU: $01=6502, $06=65C02, $12=65816, $0e=65CE02, $02=65SC02
    (bit set indicate CPU features:NMOS,CMOS,BIT (RE)SET,Z reg,16 bit)
 -  $DF05-$DF0A: reserved for future use
--  $DF0A: 65CE02: userspace workaround to save Z for BRK (might change)
 -  $DF0B: UART config: bit 0=enable crlf conversion
                        bit 1=enable flow control
 -  $DF0C: (R) UART in queue read
@@ -360,22 +369,9 @@ the real size is reported. It might be a good idea to then set position
 Suggested External I/O Addresses
 --------------------------------
 
--  $D400: SID clone(s): 5-bit register select -> 8 SIDs max
--  $DA00: RIOT 6532: 1 will take up full page
--  $DB00: ACIA(s): 2-bit register select -> 64 ACIAs max
--  $DC00: VIA(s): 4-bit register select -> 16 VIAs max
-
-Chip-Select-GAL
----------------
-
-Using a GAL 22v10 chip
-
-Out of 16 bit address - 8 bits 15-8 hardcoded to Dx?? - 3 bits 7-5 to
-decode chip select output - 8 chip select outputs - 1 bank select output
-(also used internally)
-
-A GAL 20v8 could only decode 4 chip selects (or mayby 7, based upon
-implementation)
+-  $0000-$0001: VGA
+-  $D300-$D3FF: 32x32 LED Framebuffer
+-  $D400-$D4FF: Sound: SID clone(s), mod player
 
 Notes On Implementation in RP2040
 ---------------------------------

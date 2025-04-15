@@ -444,7 +444,7 @@ static inline void handle_scratch_mem( uint8_t flags )
 {
    // not accessable RAM is used as scratch memory:
    // $D000-$D3FF 1k of scratch RAM, can be copied from/to $0000-$03FF
-   // $DE00-$DEFF 256 bytes temporary storage required to swap banks
+   uint8_t tmpbuf[0x100];
    int i;
    for( i = 0; i < 4; ++i )
    {
@@ -459,9 +459,9 @@ static inline void handle_scratch_mem( uint8_t flags )
                memcpy( &ram[i*0x100], &ram[0xD000+i*0x100], 0x100 );
                break;
             case 0xC0:
-               memcpy( &ram[0xDE00], &ram[i*0x100], 0x100 );
+               memcpy( &tmpbuf[0], &ram[i*0x100], 0x100 );
                memcpy( &ram[i*0x100], &ram[0xD000+i*0x100], 0x100 );
-               memcpy( &ram[0xD000+i*0x100], &ram[0xDE00], 0x100 );
+               memcpy( &ram[0xD000+i*0x100], &tmpbuf[0], 0x100 );
                break;
          }
       }
@@ -944,7 +944,7 @@ static inline void handle_io()
          case 0x23: // fall throughs are intended
             bus_data_write( watchdog_cycles_total ? 0x80 : 0x00 );
             break;
-         case 0x24: // for some reason doesn't work with 0x2C (?)
+         case 0x24:
             shadow_cycle_count.value = (uint32_t)_queue_cycle_counter;
             // fall through
          case 0x25:
@@ -953,6 +953,9 @@ static inline void handle_io()
             bus_data_write( shadow_cycle_count.reg[address & 3] );
             break;
          /* 0x2C-0x2F used as RAM for BRK routine */
+         /* 0x30-0x37 used as RAM for System Monitor */
+         /* 0x78-0x7F used as RAM for system vectors */
+         /* 0x76 used to store Z register with int macro on 65CE02 */
          default:
             // everything else is handled like RAM by design
             handle_ramrom();
@@ -1006,8 +1009,11 @@ static inline void handle_io()
             watchdog_setup( data );
             break;
          /* 0x2C-0x2F used as RAM for BRK routine */
+         /* 0x30-0x37 used as RAM for System Monitor */
+         /* 0x78-0x7F used as RAM for system vectors */
          case 0x74: // dma read from flash disk
          case 0x75: // dma write to flash disk
+         /* 0x76 used to store Z register with int macro on 65CE02 */
          case 0x77: // flash disk trim, no dma address used
             // access is strobe: written data does not matter
             handle_flash_dma();
