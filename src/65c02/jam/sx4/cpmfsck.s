@@ -38,8 +38,11 @@ start:
 
 :
    sta   IDREAD
+:
+   lda   IDREAD
+   bpl   :-
    inx
-   bne   :-
+   bne   :--
 
 @dirloop:
    ldy   #$00

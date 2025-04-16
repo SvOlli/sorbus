@@ -46,9 +46,13 @@
    lda   #'.'           ; print out a dot for every sector written
 :
    sta   IDWRT
+:
+   lda   IDWRT
+   bpl   :-
+   ;bvs   @fail
    jsr   CHROUT
    dey
-   bne   :-
+   bne   :--
 
 @done:
    lda   #10            ; done, newline

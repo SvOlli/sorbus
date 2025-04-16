@@ -77,6 +77,9 @@ trimreadloop:
    lda   #$DF
    sta   ID_MEM+1
    sta   IDREAD
+waitreaddone:
+   lda   IDREAD
+   bpl   waitreaddone
 
    \ TODO: complete implementation
 

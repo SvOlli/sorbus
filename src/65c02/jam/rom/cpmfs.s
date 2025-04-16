@@ -310,7 +310,10 @@ dmafile:
 
 @nonewblock:
    stz   IDREAD,x       ; in save X=1 to trigger write instead of load
-
+:
+   lda   IDREAD,x
+   bpl   :-
+   ;bvs   @fail
    inc   tmp16+0        ; increment sector number
    bne   :+
    inc   tmp16+1
@@ -544,6 +547,10 @@ readbuffer:
    sta   ID_MEM+1
 
    stz   IDREAD,x       ; read (X=0) or write (X=1)
+:
+   lda   IDREAD,x
+   bpl   :-
+   ;bvs   @fail
    stz   cpm_dirty      ; now the buffer has to be clean
    rts
 

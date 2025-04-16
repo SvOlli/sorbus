@@ -44,8 +44,10 @@ blockrw:
    rol                  ; Y=0, unless A>='W' -> Y=1
    tay
    sta   IDREAD,y       ; with Y=1 it's IDWRIT
+:
    lda   IDREAD,y
-   bne   :+             ; i/o error occured
+   bpl   :-
+   bvs   :+             ; i/o error occured
    rts
 :
    jsr   PRINT

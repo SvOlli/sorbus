@@ -484,7 +484,9 @@ static inline void handle_flash_dma()
    uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
    int retval = 0;
 
+   // signalize that work was started
    ram[address] = 0x00;
+   // sanity checks
    if( !dhara_flash_size )
    {
       // size = 0: no dhara image found
@@ -535,6 +537,8 @@ static inline void handle_flash_dma()
          queue_event_add( DHARA_SYNC_DELAY, event_flash_sync, 0 );
          break;
       default:
+         // unused addresses are treated like RAM
+         handle_ramrom();
          break;
    }
 
@@ -548,6 +552,8 @@ static inline void handle_flash_dma()
    // increment pointers
    (*lba)++;
    (*mem) += SECTOR_SIZE;
+   // signalize that operation was completed successfully
+   ram[address] = 0x80;
 }
 
 

@@ -184,9 +184,10 @@ boota:
    sta   ID_MEM+1
 
    sta   IDREAD
-
+:
    lda   IDREAD
-   bne   bootfailed
+   bpl   :-
+   bvs   bootfailed
 
    dec   ID_LBA+0       ; reset LBA for re-reading to $E000
 .if SECTOR_BUFFER <> $DF80
@@ -210,8 +211,12 @@ boota:
    ldy   #$40           ; banksize ($2000) / sectorsize ($80)
 :
    sta   IDREAD         ; yep, it's really that easy to load a boot block
+:
+   lda   IDREAD
+   bpl   :-
+   bvs   bootfailed
    dey
-   bne   :-
+   bne   :--
 
    jsr   PRINT
    .byte "Go",10,0
