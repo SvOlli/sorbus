@@ -3,6 +3,10 @@ Infos For The Opcodes CSV Tables
 
 Format is CSV with semicolor (`;`) as separator.
 
+The files can be edited with LibreOffice or similar tools. However, github fails
+to display them as tables, while gitea for example does this correct.
+
+
 Columns
 -------
 

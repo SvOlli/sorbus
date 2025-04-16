@@ -30,20 +30,21 @@ only sniffes the bus and never actively drives it.
 If not all bits of a register are required, those will be masked out/ignored.
 
 Value written do $D300/1 indicades mode (can be or'ed together):
-$00: plain copy
-$01: transparency: no copy when source color = transparent
-$02: transparency: no copy when destination color = transparent
-$04: transparency: only copy when destination color = transparent
-$06: no nothing
+- $00: plain copy
+- $01: transparency: no copy when source color = transparent
+- $02: transparency: no copy when destination color = transparent
+- $04: transparency: only copy when destination color = transparent
+- $06: do nothing
 
 Color palettes:
-$00: Insane's RGBI2222
-$01: Custom 1
-$02: Custom 2
-$03: Custom 3
-$04: C64 like
-$05: C16 like
-$06: Atari 8-bit like
+- $00: Insane's RGBI2222
+- $01: Custom 1
+- $02: Custom 2
+- $03: Custom 3
+- $04: C64 like
+- $05: C16 like
+- $06: Atari 8-bit like
+- $07: Atari 8-bit like, ordered differently
 
 Custom defined color palettes are always specified in RGB444. Writing to $D30D
 resets internal index of $D310-$D312 to $00, when a colorvalue is written,

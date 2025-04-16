@@ -26,11 +26,11 @@ target_link_libraries(vga_iotest PRIVATE
    vga_bus
 )
 # vga_bus.pio is required
-add_dependencies(vga_iotest vga-term)
+add_dependencies(vga_iotest vga_term)
 setup_target(vga_iotest "vga-iotest")
 
 
-add_executable(vga-term
+add_executable(vga_term
    vga-term/main.c
    vga-term/picoterm_core.c
    vga-term/picoterm_conio_config.c
@@ -51,8 +51,8 @@ add_executable(vga-term
    common/uart_tx.c
 )
 
-pico_generate_pio_header(vga-term ${CMAKE_CURRENT_SOURCE_DIR}/common/uart_tx.pio)
-target_compile_definitions(vga-term PRIVATE
+pico_generate_pio_header(vga_term ${CMAKE_CURRENT_SOURCE_DIR}/common/uart_tx.pio)
+target_compile_definitions(vga_term PRIVATE
    PICO_SCANVIDEO_SCANLINE_BUFFER_COUNT=4
    PICO_SCANVIDEO_PLANE1_FIXED_FRAGMENT_DMA=true
    COLUMNS=80
@@ -62,8 +62,8 @@ target_compile_definitions(vga-term PRIVATE
    PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64
    CMAKE_PROJECT_VERSION="1.6.0.32"
 )
-target_include_directories(vga-term PRIVATE ${CMAKE_CURRENT_LIST_DIR}/vga-term/common )
-target_link_libraries(vga-term 
+target_include_directories(vga_term PRIVATE ${CMAKE_CURRENT_LIST_DIR}/vga-term/common )
+target_link_libraries(vga_term
    pico_scanvideo_dpi
    hardware_gpio
    hardware_i2c
@@ -76,6 +76,6 @@ target_link_libraries(vga-term
    tinyusb_host
    vga_bus
 )
-setup_target(vga-term "vga-term")
-pico_enable_stdio_usb(vga-term 0)  # Redirect printf to USB-Serial. Conflict with TinyUSB!
-pico_enable_stdio_uart(vga-term 0) # Redirect printf to uart0. But no room to place UART0 on GPIO!
+setup_target(vga_term "vga-term")
+pico_enable_stdio_usb(vga_term 0)  # Redirect printf to USB-Serial. Conflict with TinyUSB!
+pico_enable_stdio_uart(vga_term 0) # Redirect printf to uart0. But no room to place UART0 on GPIO!

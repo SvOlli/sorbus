@@ -42,3 +42,35 @@ suggested:
 - sorbus-computer-jam_kernel.uf2
 - sorbus-computer-jam_alpha.uf2
 
+sound_iotest.uf2:
+Code for the Sorbus-Sound board: test the 65C02 bus communication
+
+sound_mod.uf2:
+Code for the Sorbus-Sound board: a mod player
+WIP: right now just playing a song without 65C02 bus
+
+sound_sd.uf2:
+Code for the Sorbus-Sound board: SD card test program
+WIP: no real code here right now
+
+sound_sid.uf2:
+Code for the Sorbus-Sound board: dual SID emulation
+WIP: missing merge with sd and mod support
+
+vga_iotest.uf2:
+Code for the Sorbus-VGA board: test the 65C02 bus communication
+
+vga_term.uf2:
+Code for the Sorbus-VGA board: a hack to display a terminal console
+WIP: communication on the 65C02 bus is still missing
+
+fb32x32_iotest.uf2:
+Code for the repurposed Chipset board: test the 65C02 bus communication
+
+fb32x32_usbuart.uf2:
+Code for the repurposed Chipset board: simuation via USB UART
+WIP: there's no software capable of displaying the output yet
+
+fb32x32_ws2812.uf2:
+Code for the repurposed Chipset board: output data to WS2812
+

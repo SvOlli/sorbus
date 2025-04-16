@@ -1,3 +1,6 @@
+Microsoft BASIC
+===============
+
 The BASIC provided is based upon Microsoft BASIC for the OSI Computer
 Ohio Scientific, Inc. : https://www.oldcomputers.net/osi-600.html
 
@@ -10,7 +13,8 @@ reverse engineered by Michael Steil.
 | OSI BASIC |    1977 | 1.0 REV 3.2 |  Y  | 6  | ZP          | -          |
 
 
-This code contains these additional changes:
+This code contains these additional changes implemented by SvOlli
+-----------------------------------------------------------------
 
  * zero page addresses totally reshuffled, no POKE works as with OSI BASIC
    * e.g. inputbuffer starts at address 25 ($19) instead of 19 ($13) and is
@@ -30,14 +34,15 @@ This code contains these additional changes:
    * this only changes the tokens, not variable names
  * LOAD and SAVE are adapted to use internal drive
    * LOAD"$" shows directory _without_ losing BASIC programm
-   * loading a file not used returns an "NF error"
+   * loading a file not available returns an "NF error"
      (reusing "no for" as "not found")
- * memory used for BASIC is $0400-$CFFF (=52K)
+ * memory used for BASIC is $0400-$CFFF (=51K)
  * FRE(0) fixed
  * POKE a, PEEK(b) fixed
 
 
-Credits:
+Original Credits
+----------------
 
  * main work by Michael Steil
  * Grant Searle did the onefile version (credit as mentioned by him)
