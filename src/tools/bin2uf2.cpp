@@ -196,6 +196,8 @@ int bin2uf2(FILE *in, long address, FILE *out)
 
 int main( int argc, char **argv )
 {
+   std::string tmp_filename;
+   FILE *in, *out;
    int rc = 0;
    int arg = 1;
    if( (arg < argc) && !strcmp(argv[arg], "-v") )
@@ -209,16 +211,19 @@ int main( int argc, char **argv )
    }
 
    const char *out_filename = argv[arg++];
-   FILE *out = fopen( out_filename, "wb" );
-   if( !out )
-   {
-      fprintf( stderr, "%s: Can't open output file '%s': %s\n",
-               argv[0], out_filename, strerror(errno) );
-      return ERROR_ARGS;
-   }
+   tmp_filename = std::string( out_filename );
+   tmp_filename.append( ".tmp" );
+   char buffer[4096];
 
    long address = std::stol( argv[arg++], 0, 0 );
 
+   out = fopen( tmp_filename.c_str(), "wb" );
+   if( !out )
+   {
+      fprintf( stderr, "%s: Can't open temporary file '%s': %s\n",
+               argv[0], tmp_filename.c_str(), strerror(errno) );
+      return ERROR_ARGS;
+   }
    while( arg < argc )
    {
       const char *in_filename = argv[arg++];
@@ -230,21 +235,46 @@ int main( int argc, char **argv )
           return ERROR_ARGS;
       }
 
-      rc = bin2uf2( in, address, out );
-      address += ftell( in );
-      fclose( in );
-
-      if( rc )
+      while( !feof( in ) )
       {
-         fclose(out);
-         remove(out_filename);
-         if( error_msg[0] )
-         {
-            fprintf( stderr, "%s: ERROR: %s\n",
-                     argv[0], error_msg);
-         }
-         return rc;
+         long readsize = fread( &buffer, 1, sizeof(buffer), in );
+         fwrite( &buffer, 1, readsize, out );
       }
+
+      fclose( in );
+   }
+   fclose( out );
+
+   out = fopen( out_filename, "wb" );
+   if( !out )
+   {
+      fprintf( stderr, "%s: Can't open output file '%s': %s\n",
+               argv[0], out_filename, strerror(errno) );
+      return ERROR_ARGS;
+   }
+
+   in = fopen( tmp_filename.c_str(), "rb" );
+   if( !in )
+   {
+         fprintf( stderr, "%s: Can't open input file '%s': %s\n",
+                  argv[0], tmp_filename.c_str(), strerror(errno) );
+         return ERROR_ARGS;
+   }
+
+   rc = bin2uf2( in, address, out );
+   fclose( in );
+   remove( tmp_filename.c_str() );
+
+   if( rc )
+   {
+      fclose( out );
+      remove( out_filename );
+      if( error_msg[0] )
+      {
+         fprintf( stderr, "%s: ERROR: %s\n",
+                  argv[0], error_msg );
+      }
+      return rc;
    }
    fclose( out );
 
