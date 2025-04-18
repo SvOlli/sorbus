@@ -50,6 +50,7 @@ Firmware
 * [W652C134S Monitor ROM](https://www.westerndesigncenter.com/wdc/documentation/134monrom.pdf)
 * [OSI 8K BASIC Manual](https://osiweb.org/manuals/OSI_8K_Basic_in_ROM.pdf)
 * [Book on OSI BASIC](https://osiweb.org/books/OSI_Basic_In_Rom.PDF)
+* [Apple Disassembler](http://6502.org/documents/publications/dr_dobbs_journal/selected_articles/6502_disassembler_from_apple.pdf)
 
 Host Based Hardware
 -------------------
