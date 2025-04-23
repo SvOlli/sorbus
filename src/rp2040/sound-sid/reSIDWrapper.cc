@@ -111,7 +111,7 @@ extern "C"
         config[CFG_SID_PANNING] = 5;
         config[CFG_SID_BALANCE] = 7;
         config[CFG_CLOCKSPEED] = 0;
-        config[CFG_DIGIDETECT] = 0;
+        config[CFG_DIGIDETECT] = 1;
         config[CFG_TRIGGER] = 0;
 
         uint16_t c = crc16(config, CFG_CRC1);

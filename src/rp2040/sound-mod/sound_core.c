@@ -19,7 +19,7 @@
 #include <pico/multicore.h>
 #include <pico/platform.h>
 #include <pico/binary_info.h>
-#include "i2s/i2s.h"
+#include "i2s.h"
 #include "hardware/dma.h" 
 
 #include <hardware/clocks.h>
@@ -180,22 +180,17 @@ static void process_audio(const int32_t* input, int32_t* output, size_t num_fram
 volatile int player_state=1;
 
 static void dma_i2s_in_handler(void) {
-#ifdef SND_SCK
     /* We're double buffering using chained TCBs. By checking which buffer the
      * DMA is currently reading from, we can identify which buffer it has just
      * finished reading (the completion of which has triggered this interrupt).
      */
-    gpio_put(SND_SCK,1);
     if (*(int32_t**)dma_hw->ch[i2s.dma_ch_out_ctrl].read_addr == i2s.output_buffer) {
         // It is inputting to the second buffer so we can overwrite the first
         player_state=play_chunk(i2s.output_buffer, STEREO_BUFFER_SIZE);
-        gpio_put(SND_SCK,0);
     } else {
         // It is currently inputting the first buffer, so we write to the second
         player_state=play_chunk(&i2s.output_buffer[STEREO_BUFFER_SIZE], STEREO_BUFFER_SIZE);
-        gpio_put(SND_SCK,0);
     }
-#endif
     dma_hw->ints0 = 1u << i2s.dma_ch_out_data;  // clear the IRQ
 }
 extern int main_player(const uint8_t *mod_data,size_t mod_data_size);

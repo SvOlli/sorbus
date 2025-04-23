@@ -56,7 +56,10 @@
 #include "hardware/pwm.h"  
 #include "hardware/flash.h"
 #include "hardware/structs/bus_ctrl.h" 
-#include "pico/audio_i2s.h"
+#include "i2s.h"
+#include "hardware/dma.h" 
+
+
 #ifdef USE_SPDIF
 //#include "pico/audio_spdif.h"
 #endif
@@ -176,35 +179,37 @@ extern uint8_t config[ 64 ];
 
 #ifdef USE_DAC
 
-audio_buffer_pool_t *ap;
+uint player_state =0;
 
-audio_buffer_pool_t *initI2S() 
-{
-	static audio_format_t audio_format = { .format = AUDIO_BUFFER_FORMAT_PCM_S16, .sample_freq = 44100, .channel_count = 2 };
-	static audio_buffer_format_t producer_format = { .format = &audio_format, .sample_stride = 4 };
-	audio_buffer_pool_t *pool = audio_new_producer_pool( &producer_format, 3, SAMPLES_PER_BUFFER ); 
+const i2s_config i2s_config_pcm5102 = {44100, 256, 32, SND_SCK, SND_DOUT, SND_DIN, SND_CLKBASE, false};
 
-	audio_i2s_config_t config = { .data_pin = AUDIO_I2S_DATA_PIN, .clock_pin_base = AUDIO_I2S_CLOCK_PIN_BASE, .dma_channel = 0, .pio_sm = 0 };
-	
-	const audio_format_t *format = audio_i2s_setup( &audio_format, &config );
-
-	audio_i2s_connect( pool );
-	
-	// initial buffer data
-	audio_buffer_t *b = take_audio_buffer( pool, true );
-	int16_t *samples = (int16_t *)b->buffer->bytes;
-	memset( samples, 0, b->max_sample_count * 4 );
-	b->sample_count = b->max_sample_count;
-	give_audio_buffer( pool, b );
-
-	return pool;
-}
-
+static __attribute__((aligned(8))) pio_i2s i2s;
 
 uint16_t audioPos = 0, 
 		 audioOutPos = 0;
-uint32_t audioBuffer[ SAMPLES_PER_BUFFER ];
+int32_t  audioBuffer[ STEREO_BUFFER_SIZE * 2 ];
 uint8_t  firstOutput = 1;
+
+uint16_t play_chunk (int32_t * output_buffer, int buffer_size){
+
+	memcpy(output_buffer,&audioBuffer[audioOutPos],STEREO_BUFFER_SIZE*sizeof(int32_t));
+
+}
+
+static void dma_i2s_in_handler(void) {
+		/* We're double buffering using chained TCBs. By checking which buffer the
+		 * DMA is currently reading from, we can identify which buffer it has just
+		 * finished reading (the completion of which has triggered this interrupt).
+		 */
+		if (*(int32_t**)dma_hw->ch[i2s.dma_ch_out_ctrl].read_addr == i2s.output_buffer) {
+			// It is inputting to the second buffer so we can overwrite the first
+			player_state=play_chunk(i2s.output_buffer, STEREO_BUFFER_SIZE);
+		} else {
+			// It is currently inputting the first buffer, so we write to the second
+			player_state=play_chunk(&i2s.output_buffer[STEREO_BUFFER_SIZE], STEREO_BUFFER_SIZE);
+		}
+		dma_hw->ints0 = 1u << i2s.dma_ch_out_data;  // clear the IRQ
+	}
 
 #endif
 
@@ -277,9 +282,6 @@ static void alarm_in_us(uint32_t delay_us) {
 static void alarm_irq(void) {
     // Clear the alarm irq
     hw_clear_bits(&timer_hw->intr, 1u << ALARM_NUM);
-
-    // Assume alarm 0 has fired
-    //printf("Alarm IRQ fired\n");
 
     newSample = 0xfffe;
 	SampleCount ++;
@@ -359,6 +361,16 @@ inline uint8_t median( uint8_t *x )
 	return sum - minV - maxV;
 }
 
+//#define DEBUG_I2S_CLK
+
+void debug_clock(void){
+#ifdef DEBUG_I2S_CLK
+pio_i2s_clocks clocks;
+
+   calc_clocks(&i2s_config_pcm5102, &clocks);
+   validate_sck_bck_sync(&clocks);
+#endif
+}
 void runEmulation()
 {
 	irq_set_mask_enabled( 0xffffffff, 0 );
@@ -415,7 +427,9 @@ void runEmulation()
 	updateEmulationParameters();
 
 	#ifdef USE_DAC  
-	ap = initI2S();
+	debug_clock();
+	i2s_program_start_output(pio0, &i2s_config_pcm5102, dma_i2s_in_handler, &i2s);
+
 	gpio_put(SND_DEMP,1);  //  De-Emphasis on
 
 	#endif
@@ -672,34 +686,19 @@ void runEmulation()
 			#if defined( USE_DAC ) 
 
 			// fill buffer, skip/stretch as needed
-			if ( audioPos < 256 )
-				audioBuffer[ audioPos ] = ( ( *(uint16_t *)&R ) << 16 ) | ( *(uint16_t *)&L );
+			audioBuffer[ audioPos +1 ] = R<<16; 
+			audioBuffer[ audioPos    ] = L<<16;
 
-			audioPos ++;
-
-			audio_buffer_t *buffer = take_audio_buffer( ap, false );
-			if ( buffer )
-			{
-				discrepancy = 0;
-
-				if ( firstOutput )
-					audio_i2s_set_enabled( true );
-				firstOutput = 0;
-
-				int16_t *samples = (int16_t *)buffer->buffer->bytes;
-				audioOutPos = 0;
-				for ( uint i = 0; i < buffer->max_sample_count; i++ )
-				{
-					*(uint32_t *)&samples[ i * 2 + 0 ] = audioBuffer[ audioOutPos ];
-					if ( audioOutPos < audioPos - 1 ) audioOutPos ++; else discrepancy ++;
+			audioPos +=2;
+			if ( audioPos < STEREO_BUFFER_SIZE *2 ){
+				if (audioPos>=STEREO_BUFFER_SIZE){
+					audioOutPos=0;		// This is the start of the DMA-buffer					
 				}
-
-				discrepancy += (int32_t)audioOutPos - (int32_t)audioPos;
-
-				buffer->sample_count = buffer->max_sample_count;
-				give_audio_buffer( ap, buffer );
-				audioOutPos = audioPos = 0;
+			}else{
+				audioPos = 0;
+				audioOutPos=STEREO_BUFFER_SIZE;
 			}
+
 			newSample = 0xffff;
 			#else
 			
@@ -839,10 +838,6 @@ void handleBus()
 	register volatile uint8_t disableDataLines = 0;
 	//register uint32_t curSample = 0;
 
-	// variables for potentiometer handling and filtering
-	#ifdef USE_POT
-	uint8_t potCycleCounter = 0;
-	#endif
 	uint8_t skipMeasurements = 0;
 
 	//uint16_t prgLength;
@@ -911,16 +906,6 @@ handleSIDCommunication:
 			newSample = 0xffff;
 		}
 #endif
-		// we have to generate a new sample after C64_CLOCK / AUDIO_RATE cycles
-		/* Now in timer_callback
-		++ c64CycleCounter;
-		curSample += AUDIO_RATE;
-		if ( curSample > C64_CLOCK )
-		{
-			curSample -= C64_CLOCK;
-			newSample = 0xfffe;
-		}*/
-
 		if ( busValueTTL < 0 )
 		{
 			busValue = 0;
@@ -1013,7 +998,6 @@ const uint8_t *pConfigXIP = (const uint8_t *)flashCFG;
  
 void readConfiguration()
 {
-	//memcpy( prgDirectory, prgDirectory_Flash, 16 * 24 );
 
 	memcpy( config, pConfigXIP, CFG_SIZE );	
 

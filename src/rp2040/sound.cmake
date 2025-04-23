@@ -15,6 +15,10 @@ target_include_directories(sound_bus PUBLIC
    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+
+#target_include_directories(i2s PRIVATE "${PICO_SDK_PATH}/src/rp2_common/hardware_pio/include/")
+#target_include_directories(i2s PRIVATE "${PICO_SDK_PATH}/src/rp2_common/hardware_dma/include/")
+
 add_executable(sound_iotest
    sound-iotest/main.c
    common/sound_bus.c
@@ -53,16 +57,18 @@ add_definitions(-DFLOD_NO_SOUNDBLASTER)
 
 add_executable(sound_mod
    cream_of_the_earth.h
-   sound-mod/sound_core.c
-   sound-mod/i2s/i2s.c  
+   sound-mod/sound_core.c  
    common/sound_gpio_config 
+   3rdparty/i2s/i2s.c
 )
+pico_generate_pio_header(sound_mod ${CMAKE_CURRENT_LIST_DIR}/3rdparty/i2s/i2s.pio)
+
 bin2h(cream_of_the_earth.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/CreamOfTheEarth.mod mod_data)
 
-#target_include_directories(sound_mod PRIVATE "${PICO_SDK_PATH}/src/rp2_common/hardware_pio/include/")
-#target_include_directories(sound_mod PRIVATE "${PICO_SDK_PATH}/src/rp2_common/hardware_dma/include/")
+target_include_directories(sound_mod PUBLIC
+   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/i2s
+)
 
-pico_generate_pio_header(sound_mod ${CMAKE_CURRENT_LIST_DIR}/sound-mod/i2s/i2s.pio)
 
 target_link_libraries(sound_mod
    pico_stdlib
@@ -90,6 +96,11 @@ add_executable(sound_sid
     3rdparty/reSID16/voice.cc
     3rdparty/reSID16/wave.cc
     sound-sid/reSIDWrapper.cc
+    3rdparty/i2s/i2s.c
+)
+pico_generate_pio_header(sound_sid ${CMAKE_CURRENT_LIST_DIR}/3rdparty/i2s/i2s.pio)
+target_include_directories(sound_sid PUBLIC
+   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/i2s
 )
 
 
