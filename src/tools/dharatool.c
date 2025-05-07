@@ -273,13 +273,14 @@ int dhara2binary( uint8_t *inbuffer, uint8_t *outbuffer, uint32_t outbuffer_size
 void usage( const char *progname, int exitcode )
 {
    fprintf( exitcode == 0 ? stdout : stderr,
-            "%s <dhararead|dharawrite> <infile> <outfile>\n",
-            progname );
+            "%s dharawrite <binfile> (<hexaddress>:<binfile> ...) <dharafile>\n"
+            "%s dhararead  <dharafile> <binfile>\n",
+            progname, progname );
    exit( exitcode );
 }
 
 
-int main(int argc, char* const* argv)
+int main( int argc, char* const* argv )
 {
    uint8_t  *binary_data;
    uint32_t binary_pages;
@@ -293,7 +294,7 @@ int main(int argc, char* const* argv)
    nand.num_blocks = flashsize / BLOCK_SIZE;
 
    // check parameters
-   if( argc != 4 )
+   if( argc < 4 )
    {
       usage( argv[0], argc == 1 ? 0 : 1 );
    }
@@ -330,9 +331,31 @@ int main(int argc, char* const* argv)
    else if ( !strcmp( argv[1], "dharawrite" ) )
    {
       long loaded;
-      loaded = loadfile( binary_data, binary_pages * PAGE_SIZE, argv[2] );
-      binary2dhara( binary_data, loaded, dhara_data );
-      savefile( dhara_data, flashsize, argv[3] );
+      long offset;
+      long end;
+      int a;
+      end = loadfile( binary_data, binary_pages * PAGE_SIZE, argv[2] );
+      for( a = 3; a < (argc-1); ++a )
+      {
+         char *colon = strtok( argv[a], ":" );
+         if( !colon )
+         {
+            usage( argv[0], 1 );
+         }
+         offset = strtol( argv[a], 0, 16 );
+         if( offset >= (binary_pages * PAGE_SIZE) )
+         {
+            fprintf( stderr, "file '%s' out of memory range: %08lx > %08x\n",
+                     colon+1, offset, (binary_pages * PAGE_SIZE) );
+         }
+         loaded = loadfile( binary_data + offset, (binary_pages * PAGE_SIZE) - offset, colon+1 );
+         if( (offset + loaded) > end )
+         {
+            end = loaded + offset;
+         }
+      }
+      binary2dhara( binary_data, end, dhara_data );
+      savefile( dhara_data, flashsize, argv[argc-1] );
    }
    else
    {

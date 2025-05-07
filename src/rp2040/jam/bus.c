@@ -500,9 +500,10 @@ static inline void handle_flash_dma()
       // DMA would run into I/O which is not possible, only RAM works
       ram[address] |= 0xF1;
    }
-   if( *lba >= 0x8000 ) // could also be if( *lba >= dhara_flash_size )
+   if( *lba >= 0x8800 ) // could also be if( *lba >= dhara_flash_size )
    {
-      // only 32768 sectors are available
+      // only 32768 sectors are available for CP/M
+      // and additional 2048 sectors for Forth
       ram[address] |= 0xF2;
    }
    if( ram[address] )

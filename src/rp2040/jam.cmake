@@ -10,10 +10,11 @@ add_custom_target(jam_firmware ALL
 # building firmware .uf2 file containing all ROMs
 add_custom_target(jam_rom ALL
    $<TARGET_FILE:bin2uf2> "jam_rom.uf2"
-      0x103FA000
+      0x103F8000
       $<TARGET_FILE:jam_kernel>
       $<TARGET_FILE:jam_tools>
       $<TARGET_FILE:jam_basic>
+      $<TARGET_FILE:jam_forth>
    DEPENDS jam_kernel jam_tools jam_basic ${BIN2UF2}
 )
 

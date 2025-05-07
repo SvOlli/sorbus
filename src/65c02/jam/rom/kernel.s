@@ -101,8 +101,8 @@ cmos6502:
    jsr   PRINT          ;       2         3         4         5         6         7         8
    ;         12345678901234567890123456789012345678901234567890123456789012345678901234567890
    .byte 10,"Sorbus JAM V", VERSION
-   .byte                   ": 1-4)Bootsector, 0)Exec RAM @ $E000,"
-   .byte 10,"F)ilebrowser, B)ASIC, System M)onitor, T)IM, W)ozMon?",10,0
+   .byte                   ": 1-4)Bootsector, 0)Exec RAM @ $E000, F)ilebrowser,"
+   .byte 10,"B)ASIC, E)Forth, System M)onitor, T)IM, W)ozMon?",10,0
 :
    jsr   chrinuc        ; wait for keypress and make it uppercase
    bcs   :-
@@ -123,7 +123,7 @@ cmos6502:
    jmp   (@jmps,x)
 
 @keys:
-   .byte "01234BFIMTW"
+   .byte "01234BEFIMTW"
 @jmps:
    .word execram        ; 0
    .word boot           ; 1
@@ -131,6 +131,7 @@ cmos6502:
    .word boot           ; 3
    .word boot           ; 4
    .word basic          ; B
+   .word forth          ; E
    .word filebrowser    ; F
    .word @info          ; I
    .word mon_init       ; M
@@ -231,6 +232,9 @@ filebrowser:
    .byte $2c
 basic:
    lda   #$03           ; select BASIC bank
+   .byte $2c
+forth:
+   lda   #$04           ; select Forth bank
    .byte $2c
 execram:
    ; execute loaded boot block in RAM at $E000
