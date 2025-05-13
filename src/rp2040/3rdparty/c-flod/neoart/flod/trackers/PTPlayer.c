@@ -87,6 +87,7 @@ static void extended(struct PTPlayer* self, struct PTVoice *voice);
 static void moreEffects(struct PTPlayer* self, struct PTVoice *voice);
 static void effects(struct PTPlayer* self);
 
+
 void PTPlayer_defaults(struct PTPlayer* self) {
 	CLASS_DEF_INIT();
 	// static initializers go here
@@ -312,8 +313,8 @@ void PTPlayer_loader(struct PTPlayer* self, struct ByteArray *stream) {
 	int j = 0;
 	struct PTRow *row = NULL;
 	struct PTSample *sample = NULL;
-	int size = 0;
-	int value = 0;
+	unsigned int size = 0;
+	unsigned int value = 0;
 	
 	self->chans = 4;
 	
@@ -416,7 +417,7 @@ The 6 and 8 channel mod files differ from the normal mods in two ways:
 
 		row->super.note   = (value >> 16) & 0x0fff;
 		row->super.effect = (value >>  8) & 0x0f;
-		row->super.sample = (value >> 24) & 0xf0 | (value >> 12) & 0x0f;
+		row->super.sample = ((value >> 24) & 0xf0) | ((value >> 12) & 0x0f);
 		row->super.param  = value & 0xff;
 
 		//self->patterns[i] = row;
@@ -432,6 +433,15 @@ The 6 and 8 channel mod files differ from the normal mods in two ways:
 	}
 
 	Amiga_store(self->super.amiga, stream, size, -1);
+	// find a null sample, to play when nothing has to be played
+	unsigned int null_sample=0;
+	for (i=0;i<size-2;i++){
+		if ((self->super.amiga->memory[i]==0)&&(self->super.amiga->memory[i+1]==0)){
+			null_sample=i;
+			break;
+		}
+
+	}
 
 	for (i = 1; i < PTPLAYER_MAX_SAMPLES; ++i) {
 		sample = &self->samples[i];
@@ -441,7 +451,7 @@ The 6 and 8 channel mod files differ from the normal mods in two ways:
 			sample->super.loopPtr = sample->super.pointer + sample->super.loop;
 			sample->super.length  = sample->super.loop + sample->super.repeat;
 		} else {
-			sample->super.loopPtr = self->super.amiga->vector_count_memory;  //self->super.amiga->memory->length;
+			sample->super.loopPtr = null_sample; //->super.amiga->vector_count_memory;  //self->super.amiga->memory->length;
 			sample->super.repeat  = 2;
 		}
 
@@ -457,7 +467,7 @@ The 6 and 8 channel mod files differ from the normal mods in two ways:
 	
 	
 	//sample = PTSample_new();
-	sample->super.pointer = sample->super.loopPtr =  self->super.amiga->vector_count_memory; //self->super.amiga->memory->length;
+	sample->super.pointer = sample->super.loopPtr = null_sample; //->super.amiga->vector_count_memory; //self->super.amiga->memory->length;
 	sample->super.length  = sample->super.repeat  = 2;
 	//self->samples[0] = sample;
 }

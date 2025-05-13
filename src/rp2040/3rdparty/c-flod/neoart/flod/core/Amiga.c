@@ -35,7 +35,11 @@ void Amiga_ctor(struct Amiga* self) {
 	//super();
 	
 	PFUNC();
-	
+#ifndef PLAY_MOD_FROM_FLASH	
+	self->memory=malloc(AMIGA_MAX_MEMORY);
+#else 
+	self->memory=NULL;	
+#endif	
 	CoreMixer_ctor(&self->super);
 	self->super.type = CM_AMIGA;
 	CoreMixer_set_bufferSize((struct CoreMixer*) self, COREMIXER_MAX_BUFFER);
@@ -79,16 +83,21 @@ void Amiga_memory_set_length(struct Amiga *self, unsigned len) {
 }
 
 // pointer default value: -1
-int Amiga_store(struct Amiga* self, struct ByteArray *stream, int len, int pointer) {
+int Amiga_store(struct Amiga* self, struct ByteArray *stream, int len, int pointer) 
+{
 
+#ifdef PLAY_MOD_FROM_FLASH
 	Amiga_memory_set_length(self, len);
-	self->memory=stream->start_addr+ByteArray_get_position(stream);
-	return len;
+	if (!self->memory){
+		self->memory=stream->start_addr+ByteArray_get_position(stream);
+	}
+	if (pointer <0){	
+		return 0;
+	}
+	return ByteArray_get_position(stream)+pointer;
 
-}
+#else
 
-// pointer default value: -1
-int Amiga_store2(struct Amiga* self, struct ByteArray *stream, int len, int pointer) {
 	int add = 0; 
 	int i = 0;
 	int pos = ByteArray_get_position(stream);
@@ -115,6 +124,7 @@ int Amiga_store2(struct Amiga* self, struct ByteArray *stream, int len, int poin
 	assert_op(self->vector_count_memory, <=, AMIGA_MAX_MEMORY);
 	if (pointer > -1) ByteArray_set_position(stream, pos);
 	return start;
+#endif	
 }
 
 //override

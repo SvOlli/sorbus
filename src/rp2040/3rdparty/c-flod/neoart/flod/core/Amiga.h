@@ -20,6 +20,9 @@
 //#define AMIGA_MAX_MEMORY_KB 178
 // soundfx modules by kerni need 197 kb, those by fredius dardi 286
 #define AMIGA_MAX_MEMORY_KB 286
+//#define AMIGA_MAX_MEMORY_KB 60
+
+#define PLAY_MOD_FROM_FLASH  // Don't copy mod into ram, but play from flash instead
 
 #define AMIGA_MAX_MEMORY ((AMIGA_MAX_MEMORY_KB * 1024) / sizeof(char))
 

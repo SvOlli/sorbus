@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "rp2040_purple.h"
@@ -26,7 +27,12 @@
 #include "flash_config.h"
 #include "common/sound_gpio_config.h"
 
-#include "cream_of_the_earth.h"
+//#include "cream_of_the_earth.h"
+//#include "rsi_rise_up.h"
+//#include "phantasmagoria.h"
+#include "bloodmoney_intro.h"
+//#include "test_mod.h"
+//#include "trsi_cracktro.h"
 
 #define SET_CLOCK_125MHZ set_sys_clock_pll( 1500000000, 6, 2 );
  // for ModPlayer we need a multiple of 44,1kHz *32 
@@ -228,6 +234,7 @@ int main()
    validate_sck_bck_sync(&clocks);
 #endif
 
+    
    main_player(mod_data,sizeof(mod_data));
    i2s_program_start_output(pio0, &i2s_config_pcm5102, dma_i2s_in_handler, &i2s);
 

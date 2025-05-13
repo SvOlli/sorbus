@@ -12,8 +12,8 @@
 
 
 enum PlayerType {
-	P_A_FC=0,
-	P_A_PT,
+	P_A_PT=0,
+	P_A_FC,
 	P_A_ST,
 	P_MAX
 };
