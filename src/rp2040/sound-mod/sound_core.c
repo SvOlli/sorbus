@@ -24,6 +24,7 @@
 #include "hardware/dma.h" 
 
 #include <hardware/clocks.h>
+#include <hardware/flash.h>
 #include "flash_config.h"
 #include "common/sound_gpio_config.h"
 
@@ -46,6 +47,20 @@
 
 
 
+// TODO : replace with well known table based function
+uint16_t crc16(uint8_t *p, uint8_t l)
+{
+    uint8_t x;
+    uint16_t crc = 0xFFFF;
+
+    while (l--)
+    {
+        x = crc >> 8 ^ *p++;
+        x ^= x >> 4;
+        crc = (crc << 8) ^ ((uint16_t)(x << 12)) ^ ((uint16_t)(x << 5)) ^ ((uint16_t)x);
+    }
+    return crc;
+}
 
 
 /*****************************************************************************************************/
@@ -83,6 +98,16 @@ typedef struct dir_entry_t
 }dir_entry;
 
 
+/* For each mod , 1 Mb space ( minus 1 page ) is reserved in Flash 
+   the last page contains the direnty. This is written, when all mod-data has been flashed 
+   The reserved space has to be a multiple of FLASH_PAGE_SIZE
+*/
+
+#define MAX_MOD_NO 10
+
+
+uint32_t mod_flash_offset [MAX_MOD_NO]={0x100000*1,0x100000*2,0x100000*3,0x100000*4,0x100000*5,
+                                        0x100000*6,0x100000*7,0x100000*8,0x100000*9,0x100000*10 };
 
 #define CFG_CONFIG_SIZE 4096        // one sector
 
@@ -164,7 +189,82 @@ void writeConfiguration()
 	readConfiguration();
 }
 
+uint32_t get_mod_flash_offset(int mod_no){
+    
+    assert (mod_no<=MAX_MOD_NO);
+    return mod_flash_offset[mod_no];
 
+}
+
+void invalidate_mod_data(int mod_no){
+
+    assert (mod_no<=MAX_MOD_NO);
+    uint32_t flash_off = get_mod_flash_offset(mod_no) + 0x100000 -FLASH_PAGE_SIZE;
+    flash_range_erase( flash_off, FLASH_PAGE_SIZE );
+
+}
+
+dir_entry * get_mod_dir_entry(int mod_no){
+
+    assert (mod_no<=MAX_MOD_NO);
+
+    uint32_t flash_off = get_mod_flash_offset(mod_no) + 0x100000 -FLASH_PAGE_SIZE;
+    return (dir_entry *) (flash_off + XIP_BASE) ;
+
+}
+
+bool is_mod_data_valid(int mod_no){
+
+    assert (mod_no<=MAX_MOD_NO);
+
+    dir_entry * mod_dir_entry=get_mod_dir_entry(mod_no);
+
+    if (mod_dir_entry->valid==0x28){
+        return true;
+    }
+    return false;
+}
+
+bool validate_mod_data(int mod_no,uint32_t size,uint16_t crc){
+
+    assert (mod_no<=MAX_MOD_NO);
+    invalidate_mod_data(mod_no);
+    dir_entry local_dir;
+    dir_entry * mod_dir_entry=get_mod_dir_entry(mod_no);
+
+    local_dir.valid=0x28;
+    local_dir.size=size;
+    local_dir.crc=crc16((uint8_t*)(get_mod_flash_offset(mod_no)+XIP_BASE),size);
+    if (local_dir.crc != crc){
+        // Flashing failed
+        return false;
+    }
+    flash_range_program((uint32_t)mod_dir_entry-XIP_BASE,(uint8_t*)&local_dir,sizeof(local_dir));
+
+    return true;
+}
+
+
+uint16_t write_mod_data(uint32_t * mod_data, uint32_t size , int mod_no){
+
+    assert (mod_no<=MAX_MOD_NO);
+    assert (size<=0x100000);
+
+    uint32_t flash_p = mod_flash_offset[mod_no];
+    uint8_t local_page[FLASH_PAGE_SIZE];
+    
+    // We can erase the whole area    
+    flash_range_erase( flash_p, size);
+    // TODO: make last sector copy only until the reminder of size  -FLASH_PAGE_SIZE 
+    // but we cannot flash from flash to flash, so copy it to RAM first
+    for(uint32_t i=0;i<size;i+=FLASH_PAGE_SIZE){
+        uint8_t * mod_src=((uint8_t*)mod_data)+i;
+        memcpy(local_page,mod_src,FLASH_PAGE_SIZE);
+	    flash_range_program( flash_p +i, local_page, FLASH_PAGE_SIZE );
+    }
+    return (crc16((uint8_t*)mod_data,size));
+
+}
 
 const i2s_config i2s_config_pcm5102 = {44100, 256, 32, SND_SCK, SND_DOUT, SND_DIN, SND_CLKBASE, false};
 
@@ -220,6 +320,13 @@ int main()
    sleep_ms( 2000 );
 #endif
 
+   // Check for valid mod in slot 0 
+   if (!is_mod_data_valid(0)){
+    // Nope, we got to flash it first
+    uint16_t crc= write_mod_data((uint32_t*)mod_data,sizeof(mod_data),0);
+    validate_mod_data(0,sizeof(mod_data),crc);
+   }  
+
    // for ModPlayer we need a multiple of 44,1kHz *32
    set_sys_clock_khz( 144000, true );
 
@@ -235,7 +342,8 @@ int main()
 #endif
 
     
-   main_player(mod_data,sizeof(mod_data));
+   main_player((uint8_t*)(mod_flash_offset[0]+XIP_BASE),sizeof(mod_data));
+  // main_player((uint8_t*)(mod_data),sizeof(mod_data));
    i2s_program_start_output(pio0, &i2s_config_pcm5102, dma_i2s_in_handler, &i2s);
 
    while(1){
@@ -243,7 +351,7 @@ int main()
             // disable the dma-handler
             dma_channel_set_irq0_enabled(DMA_IRQ_0, false);
             main_player_close();
-            main_player(mod_data,sizeof(mod_data));
+            main_player((uint8_t*)(mod_flash_offset[0]+XIP_BASE),sizeof(mod_data));
             player_state=1;
             dma_channel_set_irq0_enabled(DMA_IRQ_0, true);
         }
