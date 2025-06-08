@@ -13,8 +13,8 @@
 #define SND_SCK      ( 0)   // unused
 
 
-#define SOUND_PCB_V1_1
-#ifdef SOUND_PCB_V1_1
+
+#ifndef SOUND_PCB_V1_0   // The PCB V1.1 is default
 // Busdecoding in Sidplay
 #define D0           ( 0)   // ok
 #define PHI          ( 8)   // ok
@@ -23,9 +23,7 @@
 #define nCS0         (11)   // ok nCS0
 #define A0           (12)   // ok
 #define A5           (17)
-//#define LED_BUILTIN  (24)   //  J4 Pin4
 #define RESET        (24)   // o.k  
-//#define AUDIO_PIN    (29)   // auf j4 pin 5
 
 #else
 
@@ -37,12 +35,20 @@
 #define nCS0         (11)   // HMMM is nCS0
 #define A0           (14)   // ok
 #define A5           (19)
-//#define LED_BUILTIN  (24)   //  J4 Pin4
-#define RESET        (24)   // o.k  , check auf LED_BUILTIN
-//#define AUDIO_PIN    (29)   // auf j4 pin 5
+#define RESET        (25)   // o.k  
+// For standalone player  
+#define SND_BUTTON_PLAY (29)
+#define SND_BUTTON_NEXT (24)
 
 #endif
 
-#endif
+#define SD_SCK           (22)
+#define SD_CS            (21)
+#define SD_MISO          (20)
+#define SD_MOSI          (23)
 
 void init_gpio (void);
+
+
+#endif
+

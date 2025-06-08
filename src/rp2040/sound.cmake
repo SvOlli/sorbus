@@ -62,9 +62,13 @@ add_executable(sound_mod
    bloodmoney_intro.h
    trsi_cracktro.h
    test_mod.h
-   sound-mod/sound_core.c  
+   sound-mod/sound_core.c 
+   sound-mod/sound_console.c   
+   sound-mod/sd_access.c  
    common/sound_gpio_config 
    3rdparty/i2s/i2s.c
+   3rdparty/xmodem/xmodem.c
+
 )
 pico_generate_pio_header(sound_mod ${CMAKE_CURRENT_LIST_DIR}/3rdparty/i2s/i2s.pio)
 
@@ -80,6 +84,7 @@ bin2h(trsi_cracktro.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/Mod.TrsiCrack10.Mod 
 
 target_include_directories(sound_mod PUBLIC
    ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/i2s
+   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/xmodem
 )
 
 
@@ -91,9 +96,48 @@ target_link_libraries(sound_mod
    hardware_pio
    hardware_clocks
    c_flod
+   pico_fatfs
 )
 setup_target(sound_mod c-flod)
 
+#################  Standalone player ######################
+
+
+
+add_executable(sound_mod_player 
+   cream_of_the_earth.h
+   sound-mod/sound_core.c  
+   sound-mod/standalone.c  
+   sound-mod/sound_console.c  
+   common/sound_gpio_config 
+   3rdparty/i2s/i2s.c
+   3rdparty/xmodem/xmodem.c
+)
+pico_generate_pio_header(sound_mod_player ${CMAKE_CURRENT_LIST_DIR}/3rdparty/i2s/i2s.pio)
+
+target_compile_definitions(sound_mod_player PUBLIC -DSTANDALONE_PLAYER)
+target_compile_definitions(sound_mod_player PUBLIC -DSOUND_PCB_V1_0)
+
+target_include_directories(sound_mod_player PUBLIC
+   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/i2s
+   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/xmodem
+
+)
+
+
+target_link_libraries(sound_mod_player
+   pico_stdlib
+   pico_multicore
+   pico_rand
+   hardware_dma
+   hardware_pio
+   hardware_clocks
+   c_flod
+)
+setup_target(sound_mod_player c-flod)
+
+
+###################### sid player #######################
 
 bin2h(${CMAKE_CURRENT_BINARY_DIR}/reSID_LUT_bin.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-sid/LUT.bin reSID_LUTs)
 

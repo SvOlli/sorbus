@@ -50,11 +50,11 @@ void STPlayer_ctor(struct STPlayer* self, struct Amiga *amiga) {
 	}
 	
 	//vtable
-	self->super.super.set_ntsc = STPlayer_set_ntsc;
-	self->super.super.set_force = STPlayer_set_force;
-	self->super.super.process = STPlayer_process;
-	self->super.super.initialize = STPlayer_initialize;
-	self->super.super.loader = STPlayer_loader;
+	self->super.super.set_ntsc = (void (*)(struct CorePlayer *, int))STPlayer_set_ntsc;
+	self->super.super.set_force = (void (*)(struct CorePlayer *, int))STPlayer_set_force;
+	self->super.super.process = (void (*)(struct CorePlayer *))STPlayer_process;
+	self->super.super.initialize = (void (*)(struct CorePlayer *))STPlayer_initialize;
+	self->super.super.loader = (void (*)(struct CorePlayer *, struct ByteArray *))STPlayer_loader;
 	
 	self->super.super.min_filesize = 1625;
 }

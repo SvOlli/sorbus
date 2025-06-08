@@ -103,6 +103,23 @@ static union {
 struct ByteArray *wave;
 unsigned char * wave_buffer=NULL;
 
+struct CorePlayer * player_p[P_MAX]={NULL,};
+
+
+/* We have to initialize all players right at startup. 
+    Constanly allocating and freeing crumble the heap into peaces :( */
+int main_player_init(void){
+
+    player.core=CorePlayer_new(&hardware.core);
+	current_hw = player_hardware[0];
+	hardware_ctors[current_hw](&hardware.core);
+
+	for (int i=0; i<P_MAX;i++ ){
+		player_p[i]=player_new[i](&hardware.core);
+	}
+
+
+}
 
 int main_player(const uint8_t *mod_data,size_t mod_data_size){
 
@@ -118,17 +135,12 @@ int main_player(const uint8_t *mod_data,size_t mod_data_size){
 	unsigned i;
 
 
-	player.core=CorePlayer_new(&hardware.core);
+	
 
 	for(i = 0; i < P_MAX; i++) {
-		if(current_hw != player_hardware[i]) {
-			current_hw = player_hardware[i];
-			hardware_ctors[current_hw](&hardware.core);
-		}
-		free(player.core);
-		player.core=player_new[i](&hardware.core);
+		player.core=player_p[i];
 		// ctor already in new
-		// player_ctors[i](player.core, &hardware.core);
+		player_ctors[i](player.core, &hardware.core);
 		if(ByteArray_get_length(&stream) > player.core->min_filesize) {
 			CorePlayer_load(player.core, &stream);
 			if (player.core->version) {
@@ -173,11 +185,14 @@ play:
 void main_player_close(void){
 
 	
+	CoreMixer_reset(&hardware.core);
 	free(wave_buffer);
 	wave_buffer=NULL;
 	free(wave);
 	wave=NULL;
-	free(player.core);
+	//player.core->reset(player.core);
+	//free(player.core); // keep it allocated
+	player.core=NULL;
 
 }
 

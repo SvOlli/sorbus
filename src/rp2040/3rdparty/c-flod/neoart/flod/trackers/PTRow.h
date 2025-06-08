@@ -9,9 +9,9 @@ Object
 	-> AmigaRow
 		-> PTRow
 */
-struct PTRow {
+struct __attribute__((packed)) PTRow {
 	struct AmigaRow super;
-	int step;
+	short step;
 };
 
 void PTRow_defaults(struct PTRow* self);

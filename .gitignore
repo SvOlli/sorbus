@@ -6,3 +6,7 @@ doc/downloaded
 doc/traces/*.diff
 doc/traces/*.disass
 pcb/*/*-backups
+*.o
+*.lib
+*.sx4
+

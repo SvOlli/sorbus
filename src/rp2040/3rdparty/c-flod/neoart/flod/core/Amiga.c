@@ -150,7 +150,11 @@ void Amiga_initialize(struct Amiga* self) {
 void Amiga_reset(struct Amiga* self) {
 	PFUNC();
       //self->memory = new Vector.<int>();
-      //memset(self->memory, 0, sizeof(self->memory));
+#ifndef PLAY_MOD_FROM_FLASH	
+      memset(self->memory, 0, sizeof(self->memory));
+#else	  
+	  self->memory=NULL;
+#endif	  
       self->vector_count_memory = 0;
       // we need to set memory_fixed to false so that Amiga_initialize will set correct memory bounds.
       self->memory_fixed = false;

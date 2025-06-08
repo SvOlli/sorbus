@@ -47,7 +47,9 @@ static float pio_div(float freq, uint16_t* div, uint8_t* frac) {
     // Try to get a precise ratio between SCK and BCK regardless of how
     // perfect the system_clock divides. First, see what sck we can actually get:
     float sck_desired   = (float)config->fs * (float)config->sck_mult * (float)i2s_sck_program_pio_mult;
+    printf("Desired Clock speed for SCK: %f\n",sck_desired);
     float sck_attained  = pio_div(sck_desired, &clocks->sck_d, &clocks->sck_f);
+    printf("Attained Clock speed for SCK: %f\n",sck_attained);
     clocks->fs_attained = sck_attained / (float)config->sck_mult / (float)i2s_sck_program_pio_mult;
 
     // Now that we have the closest fs our dividers will give us, we can
