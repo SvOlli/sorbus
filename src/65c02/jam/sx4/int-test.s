@@ -9,6 +9,8 @@ TMPVEC = $fe
 SIN_AMPLITUDE = $fc
 SIN_OFFSET = $fd
 
+DECHI  = $fd
+
 D_BUF  = $fb ; 3 bytes
 
 .segment "CODE"
@@ -38,7 +40,8 @@ start:
    .byte 10,"d) $0c: line input (enter)"
    .byte 10,"e) $0c: line input (edit)"
    .byte 10,"f) $0d: generate sine"
-   .byte 10,"g) $0e: system monitor"
+   .byte 10,"g) $11: decimal print"
+   .byte 10,"h) $0e: system monitor"
    .byte 10,"Ctrl+C) quit"
    .byte 10,0
 
@@ -71,6 +74,7 @@ jmptab:
    .word lineinput0
    .word lineinput
    .word gensine
+   .word decimal
    .word sysmon
 jmpend:
 
@@ -452,3 +456,34 @@ gensine:
    int   GENSINE
 
    jmp   @inputloop
+
+decimal:
+   stz   DECHI
+   lda   #$00
+   sec
+:
+   ldx   DECHI
+   php
+   jsr   :+
+   plp
+   rol
+   rol   DECHI
+   bcc   :-
+
+   dec
+   tax
+   jsr   :+
+   jmp   done
+
+:
+   int   PRHEX16
+   pha
+   lda   #$20
+   jsr   CHROUT
+   pla
+   int   PRDEC16
+   pha
+   lda   #$0a
+   jsr   CHROUT
+   pla
+   rts

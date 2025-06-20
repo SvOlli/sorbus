@@ -83,7 +83,7 @@ PRIMM    := PRINT
 ; print out an 8 bit hex value
 ; in:
 ; A: value
-; out
+; out:
 ; -
 .define PRHEX8    $03
 
@@ -91,7 +91,7 @@ PRIMM    := PRINT
 ; in:
 ; X: value hibyte
 ; A: value lobyte
-; out
+; out:
 ; -
 .define PRHEX16   $04
 
@@ -205,3 +205,18 @@ PRIMM    := PRINT
 ; Y=$00 reset LED registers to framebuffer @ X/A
 ; Y=$01 as $00, but also clear framebuffer with $00
 .define FB32X32   $0F
+
+; print out an 8 bit decimal value with leading 0s
+; in:
+; A: value
+; out:
+; -
+.define PRDEC8    $10
+
+; print out a 16 bit decimal value with leading 0s
+; in:
+; X: value hibyte
+; A: value lobyte
+; out:
+; -
+.define PRDEC16   $11

@@ -304,7 +304,7 @@ brkjump:
    .word @user, chrinuc, chrcfg, prhex8, prhex16         ; $00-$04
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir     ; $05-$09
    .word vt100, copybios, xinputline, b2gensine, mon_brk ; $0a-$0e
-   .word fb32x32                                         ; $0f
+   .word fb32x32, prdec8, prdec16                        ; $0f-$11
 @jumptableend:
 
 chrinuc:
@@ -351,11 +351,51 @@ prhex8:
 prhex4:
    and   #$0f           ; mask LSD for hex PRINT
    ora   #'0'           ; add ascii "0"
-   cmp   #':'           ; is still decimal
+   cmp   #':'           ; is still powof10
    bcc   :+             ; yes -> output
    adc   #$06           ; adjust offset for letters A-F
 :
    jmp   CHROUT
+
+; code for powof10 print inspired by bemi from Forum64.de:
+; https://www.forum64.de/index.php?thread/156318-kleiner-basic-profiler/
+prdec8:
+   ldx   #$00           ; configure for 8bit output
+   ldy   #$02           ; no hibyte, start on 100s instead of 10000s
+   .byte $2c            ; BIT to skip following ldy #$04
+prdec16:
+   ldy   #$04
+   stx   TMP16+1
+   sta   TMP16+0
+@loop1:
+   ldx   #$00
+@loop2:
+   lda   TMP16+1
+   cmp   powof10hi,y
+   bcc   @prout
+   bne   :+
+   lda   TMP16+0
+   cmp   powof10lo,y
+   bcc   @prout
+:
+   inx
+   ;sec                 ; carry always set here due to bcc @prout
+   lda   TMP16+0
+   sbc   powof10lo,y
+   sta   TMP16+0
+   lda   TMP16+1
+   sbc   powof10hi,y
+   sta   TMP16+1
+   bra   @loop2         ; can also be bcs for NMOS, sbc not underflowing
+
+@prout:
+   txa
+   ;clc                 ; carry always clear here due to bcc @prout
+   adc   #'0'
+   jsr   CHROUT
+   dey
+   bpl   @loop1
+   rts
 
 xinputline:
    bit   BRK_SY
@@ -402,6 +442,11 @@ fb32x32:
 fb32x32defaults:
    .byte $00,$00,$1f,$1f,$1f,$00,$00 ; fbX,fbY,width,height,step,tcol,colmap
 fb32x32defaultsend:
+
+powof10lo:
+   .byte <1,<10,<100,<1000,<10000
+powof10hi:
+   .byte >1,>10,>100,>1000,>10000
 
 signature:
    .byte "SBC23"
