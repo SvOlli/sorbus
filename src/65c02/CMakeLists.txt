@@ -85,9 +85,9 @@ macro(quick_sx4 target)
    target_type(${target} sx4)
 endmacro()
 
-macro(quick_6502asm target)
+macro(quick_fb32x32 target)
    add_executable(${target}
-      jam/6502asm/${target}.s
+      jam/fb32x32/${target}.s
       )
    target_type(${target} sx4 "9.")
 endmacro()
@@ -256,13 +256,14 @@ quick_sx4(opcodes)
 quick_sx4(wozmon2c)
 quick_sx4(wrtboot)
 
-quick_6502asm(amiga)
-quick_6502asm(depth)
-quick_6502asm(intro1)
-quick_6502asm(palette)
-quick_6502asm(random)
-quick_6502asm(santa)
-quick_6502asm(tunnel)
+quick_fb32x32(amiga)
+quick_fb32x32(depth)
+quick_fb32x32(intro1)
+quick_fb32x32(palette)
+quick_fb32x32(random)
+quick_fb32x32(santa)
+quick_fb32x32(texture)
+quick_fb32x32(tunnel)
 
 add_executable(about
    jam/about/main.s

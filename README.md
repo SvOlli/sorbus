@@ -10,7 +10,8 @@ Raspberry Pi Pico clone for the rest of the functionality.
 
 The Project is capabile to run as an [Apple Computer 1](doc/apple1.md)
 as well as an own monitor command prompt (mcp) to learn about the 65C02
-processor and it siblings.
+processor and it siblings. However now the main focus is now on creating
+a custom computer, using a code called "JAM" (Just Another Machine).
 
 The project is fully open source, licensend under GPL v3:
   - the PCB design is in the folder pcb
@@ -35,6 +36,13 @@ Also there is now an
 [independent review](http://retro.hansotten.nl/the-sorbus-computer/)
 available at the wonderful
 [Retro Computing pages](http://retro.hansotten.nl/) of Hans Otten.
+
+As part of creating a full featured computer, there are also two expansion
+boards developed here: a sound card, called "Sorbus Sound" and a graphics
+card, called "Sorbus VGA".
+
+![Sorbus Sound](doc/images/SorbusSound.jpg)
+![Sorbus VGA](doc/images/SorbusVGA.jpg)
 
 To access the RP2040 without super user rights, make sure that your user is
 in the groups "plugdev" and "dialout". You also need to add a udev rule. This
