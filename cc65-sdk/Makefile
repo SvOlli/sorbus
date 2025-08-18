@@ -12,7 +12,7 @@ my_src  := $(1)
 
 targets += $$(my_dest)
 $$(my_dest): $$(my_src) $$(EXPORT_DIR) $$(SORBUS_LIB) includes
-	$$(CL65) $$(SYS_FLAGS) $$(CC65_FLAGS) -o $$@ $$< $$(SORBUS_LIB)
+	$$(CL65) $$(SYS_FLAGS) $$(CC65_FLAGS) -o $$@ $$< $$(SORBUS_LIB) -l $$@.lst -Ln $$@.labels
 endef
 
 .PHONY: all clean includes sx4

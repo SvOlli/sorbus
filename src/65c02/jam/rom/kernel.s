@@ -16,6 +16,7 @@ TRAMPOLINE    := $0100
 .include "jam_bios.inc"
 .include "jam_kernel.inc"
 .include "jam_cpmfs.inc"
+.include "fb32x32_regs.inc"
 
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
@@ -358,7 +359,7 @@ prhex4:
    jmp   CHROUT
 
 ; code for powof10 print inspired by bemi from Forum64.de:
-; https://www.forum64.de/index.php?thread/156318-kleiner-basic-profiler/
+; https://github.com/kumakyoo64/BASIC_Profiler
 prdec8:
    ldx   #$00           ; configure for 8bit output
    ldy   #$02           ; no hibyte, start on 100s instead of 10000s
@@ -386,12 +387,11 @@ prdec16:
    lda   TMP16+1
    sbc   powof10hi,y
    sta   TMP16+1
-   bra   @loop2         ; can also be bcs for NMOS, sbc not underflowing
+   bra   @loop2         ; can also be bcs for NMOS, sbc doesn't underflow
 
 @prout:
    txa
-   ;clc                 ; carry always clear here due to bcc @prout
-   adc   #'0'
+   ora   #'0'
    jsr   CHROUT
    dey
    bpl   @loop1
@@ -407,9 +407,9 @@ xinputline:
 fb32x32:
    cpy   #$02
    bcs   @noinit
-   sta   $D302
+   sta   FB32X32_SRC+0
+   stx   FB32X32_SRC+1
    sta   TMP16+0        ; might be required for clear
-   stx   $D303
    stx   TMP16+1        ; might be required for clear
    ldx   #(fb32x32defaultsend-fb32x32defaults)
 :
@@ -429,7 +429,7 @@ fb32x32:
    inc   TMP16+1
    dex
    bne   :-
-   stz   $D301          ; clear also target framebuffer
+   stz   FB32X32_COPY   ; clear also target framebuffer
 @noclear:
    rts
 

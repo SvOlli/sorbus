@@ -68,6 +68,7 @@ function(setup_target targetname incdir)
       ${CMAKE_CURRENT_SOURCE_DIR}/common
       ${CMAKE_CURRENT_BINARY_DIR}
    )
+   target_link_options(${targetname} PRIVATE -Xlinker --print-memory-usage)
 endfunction()
 
 # payload for jam and mcp

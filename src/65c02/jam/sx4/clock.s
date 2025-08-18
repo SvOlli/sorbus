@@ -110,7 +110,6 @@ irqhandler:
    inx
    cpx   #$03
    bcc   :-
-:
    plx
    lda   TMIMRL
    pla

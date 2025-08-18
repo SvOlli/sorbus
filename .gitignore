@@ -1,7 +1,8 @@
 build
+cc65-sdk/**/*.o
 dump
 external-build
 doc/downloaded
-pcb/*/*-backups
 doc/traces/*.diff
 doc/traces/*.disass
+pcb/*/*-backups

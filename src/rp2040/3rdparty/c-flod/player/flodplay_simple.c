@@ -48,11 +48,14 @@ static const player_new_func player_new[] = {
 	[P_A_ST]  = (player_new_func) STPlayer_new,
 };
 
+#if 0
+// unused
 static const player_ctor_func player_ctors[] = {
 	[P_A_FC]  = (player_ctor_func) FCPlayer_ctor,
 	[P_A_PT]  = (player_ctor_func) PTPlayer_ctor,
 	[P_A_ST]  = (player_ctor_func) STPlayer_ctor,
 };
+#endif
 
 static const hardware_ctor_func hardware_ctors[] = {
 	[HT_AMIGA] = (hardware_ctor_func) Amiga_ctor,
@@ -67,6 +70,8 @@ typedef int (*backend_write_func) (struct Backend *, void*, size_t);
 typedef int (*backend_close_func) (struct Backend *);
 typedef int (*backend_init_func)  (struct Backend *, void*);
 
+#if 0
+// unused
 static const struct BackendInfo {
 	const char *name;
 	backend_init_func  init_func;
@@ -80,6 +85,7 @@ static const struct BackendInfo {
 		.close_func = (backend_close_func) WaveWriter_close,
 	}
 };
+#endif
  
 
 static union {
@@ -100,8 +106,10 @@ unsigned char * wave_buffer=NULL;
 
 int main_player(const uint8_t *mod_data,size_t mod_data_size){
 
+#if 0
+	// unused
 	enum BackendType backend_type = BE_WAVE;
-
+#endif
 	struct ByteArray stream;
 	ByteArray_ctor(&stream);
 
@@ -134,10 +142,13 @@ int main_player(const uint8_t *mod_data,size_t mod_data_size){
 	printf("couldn't find a player for tune\n");
 	return 1;
 
+#if 0
+	// unused
 	union {
 		struct Backend backend;
 		struct WaveWriter ww;
 	} writer;
+#endif
 
 play:
 

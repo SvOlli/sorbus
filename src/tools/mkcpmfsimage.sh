@@ -63,6 +63,9 @@ ls -1d [0-9]*/* $@ | sort | while read i;do
    # skip directories
    [ -d "${i}" ] && continue
    case "${i}" in
+   *.labels|*.lst) # debug file not for target
+      continue
+   ;;
    /*) # argument
       basename="${i##*/}"
       user="${basename%%.*}"

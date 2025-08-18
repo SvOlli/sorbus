@@ -1165,7 +1165,6 @@ INLIN:
 ; unused end of buffer will be padded with $00 bytes
 ;.define LINEINPUT $0C
    stz   INPUTBUFFER
-:
    ldy   #VT100_CPOS_GET   ; get width
    int   VT100
    txa
