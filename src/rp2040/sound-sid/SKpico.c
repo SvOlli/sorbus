@@ -249,6 +249,8 @@ uint8_t  ringWrite = 0;
 uint8_t  ringRead  = 0;
 
 uint32_t SampleCount=0;
+uint32_t SampleCount_play=0;
+int SampleMiss=0;
 
 
 // Use alarm 0
@@ -288,13 +290,13 @@ static void alarm_irq(void) {
 	c64CycleCounter+=C64_CLOCK/44100;
 
 	// Retrigger
-	alarm_in_us(1000000/44100);
+	alarm_in_us(C64_CLOCK/44100);
  
 }
 
 void init_timer (void){
 
-	alarm_in_us(1000000/44100);
+	alarm_in_us(C64_CLOCK/44100);
 	
 
 }
@@ -657,6 +659,13 @@ void runEmulation()
 		if ( newSample == 0xfffe )
 		{
 			int16_t L, R;
+			SampleCount_play ++;
+			if (abs(SampleCount-SampleCount_play)>2){
+				// missed a Sample
+				SampleMiss++;
+				SampleCount_play=SampleCount;
+
+			}
 
 			#ifdef SID_DAC_MODE_SUPPORT
 			if ( sidDACMode )

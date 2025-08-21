@@ -393,8 +393,8 @@ int main()
    // Check for valid mod in slot 0 
    if (!is_mod_data_valid(0)){
     // Nope, we got to flash it first
-    uint16_t crc= write_mod_data((uint32_t*)mod_data,sizeof(mod_data),0);
-    validate_mod_data(0,sizeof(mod_data),crc,true);
+    uint16_t crc= write_mod_data((uint32_t*)mod_data,sizeof(mod_data)+FLASH_SECTOR_SIZE-(sizeof(mod_data)%FLASH_SECTOR_SIZE),0);
+    validate_mod_data(0,sizeof(mod_data),crc,false);
    }  
 
    while(1){

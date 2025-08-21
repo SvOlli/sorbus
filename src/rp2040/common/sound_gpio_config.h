@@ -24,6 +24,8 @@
 #define A0           (12)   // ok
 #define A5           (17)
 #define RESET        (24)   // o.k  
+#define SND_BUTTON_NEXT (29)
+#define SND_BUTTON_PLAY (24)
 
 #else
 

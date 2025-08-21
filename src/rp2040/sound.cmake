@@ -116,7 +116,7 @@ add_executable(sound_mod_player
 pico_generate_pio_header(sound_mod_player ${CMAKE_CURRENT_LIST_DIR}/3rdparty/i2s/i2s.pio)
 
 target_compile_definitions(sound_mod_player PUBLIC -DSTANDALONE_PLAYER)
-target_compile_definitions(sound_mod_player PUBLIC -DSOUND_PCB_V1_0)
+
 
 target_include_directories(sound_mod_player PUBLIC
    ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/i2s
