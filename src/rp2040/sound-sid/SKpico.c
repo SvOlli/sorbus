@@ -50,7 +50,8 @@
 #include <malloc.h>
 #include <ctype.h>
 #include <string.h>
-#include "pico/stdlib.h"
+#include <stdlib.h>
+#include <pico/stdlib.h>
 #include <pico/multicore.h>
 #include "hardware/vreg.h"
 #include "hardware/pwm.h"  
@@ -977,17 +978,21 @@ handleSIDCommunication:
 
 				/* code */
 				break;
-			/* Address $d440 - $d45f , config-register*/	
-			case 0x40:
-				if ( READ_ACCESS( g ) ){
-					handleConfigRead(A);
-					disableDataLines = 1;
+			/* Address $d4e0 - $d4ff , config-register
+			   $d4ff for selection of player */	
+			case 0xe0:
+				if (A==0x1f){
+					//Switch Sid / Mod / whateverplayer here 
 				}else{
-					handleConfigWrite(A,D);				
-				}
-
+					if ( READ_ACCESS( g ) ){
+						handleConfigRead(A);
+						disableDataLines = 1;
+					}else{
+						handleConfigWrite(A,D);				
+					}
+			}
 				break;
-			/* Address $d480 - $d4ff , mod-player*/			
+			/* Address $d440 - $d4df , mod-player*/			
 			default:
 				break;
 			}
@@ -1043,12 +1048,13 @@ void writeConfiguration()
 	readConfiguration();
 }
 
-
+extern void setDefaultConfiguration();
 
 int main()
 {
 	vreg_set_voltage( VREG_VOLTAGE_1_30 );
 	readConfiguration();
+	//setDefaultConfiguration();
 	SET_CLOCK_FAST
 	init_gpio();
 #ifdef LED_BUILTIN

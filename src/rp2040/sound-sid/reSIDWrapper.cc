@@ -101,7 +101,7 @@ extern "C"
             config[i] = 0;
 
         config[CFG_SID1_TYPE] = MOS8580;
-        config[CFG_SID2_TYPE] = 3;
+        config[CFG_SID2_TYPE] = MOS8580;
         config[CFG_REGISTER_READ] = 1;
         config[CFG_SID2_ADDRESS] = 1 + 4 * 0; 
         config[CFG_SID1_DIGIBOOST] = 12;
