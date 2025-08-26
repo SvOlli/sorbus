@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <ctype.h>
 
 
 #ifndef count_of
@@ -41,5 +42,9 @@ void hexdump( peek_t peek, uint16_t address, uint32_t size );
  * print trace data in format: aaaa r dd
  */
 const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank );
+
+/* Read a 4-digt address from console and check if it is below "lastaddr" */
+int32_t get_16bit_address( uint16_t lastaddr );
+
 
 #endif
