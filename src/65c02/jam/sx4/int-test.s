@@ -392,7 +392,7 @@ gensine:
    lda   #$0a
    jsr   CHROUT
 
-   lda   #$CF
+   lda   #$CE
    jsr   hexdumppage
 
    jsr   PRINT
@@ -451,8 +451,8 @@ gensine:
 ;   bits 6-7: variant (offset in 90 degrees)
    lda   SIN_AMPLITUDE
    ora   SIN_OFFSET
-   tax
-   lda   #$CF
+   ora   #$20    ; also generate decimal parts, though not showing
+   ldx   #$CE
    int   GENSINE
 
    jmp   @inputloop

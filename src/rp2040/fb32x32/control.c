@@ -102,8 +102,8 @@ static inline void dmacopy( uint8_t *dest, uint8_t *src,
    uint8_t x, y;
    uint8_t *d = dest;
    uint8_t *s = src;
-   uint8_t sextra = step - width;
    uint8_t dextra = 32   - width;
+   int16_t sextra = step - width;
 
    for( y = 0; y < height; ++y )
    {
@@ -133,8 +133,8 @@ static inline void dmacopytrans( uint8_t *dest, uint8_t *src,
    uint8_t x, y;
    uint8_t *d = dest;
    uint8_t *s = src;
-   uint8_t sextra = step - width;
    uint8_t dextra = 32   - width;
+   int16_t sextra = step - width;
 
    for( y = 0; y < height; ++y )
    {
@@ -281,6 +281,7 @@ void control_loop()
    uint8_t  tcol     = 0x00;
    uint8_t  customid = 0x01;
    uint16_t colidx[3]= { 0, 0, 0 };
+   int8_t   custom_color_palette_step = 1;
 
    for(;;)
    {
@@ -353,12 +354,23 @@ void control_loop()
             setcolormap( data );
             break;
          case 0x10: // set custom colormap index
-            if( (data >= 1) && (data <= 3) )
+            if( ((data & 0x7f) >= 1) && ((data & 0x7f) <= 3) )
             {
-               customid  = data;
-               colidx[0] = 0;
-               colidx[1] = 0;
-               colidx[2] = 0;
+               customid  = data & 3;
+               if( data & 0x80 )
+               {
+                  colidx[0] = 0xFF;
+                  colidx[1] = 0xFF;
+                  colidx[2] = 0xFF;
+                  custom_color_palette_step = -1;
+               }
+               else
+               {
+                  colidx[0] = 0;
+                  colidx[1] = 0;
+                  colidx[2] = 0;
+                  custom_color_palette_step = 1;
+               }
             }
             else
             {
@@ -371,7 +383,8 @@ void control_loop()
             if( customid && (colidx[(address&3)-1] < 0x100) )
             {
                setcustomcolor( customid-1, (address&3)-1,
-                               colidx[(address&3)-1]++, data );
+                               colidx[(address&3)-1], data );
+               colidx[(address&3)-1] += custom_color_palette_step;
             }
             break;
          default:

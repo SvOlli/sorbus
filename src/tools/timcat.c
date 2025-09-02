@@ -106,6 +106,13 @@ void timgoto( uint16_t addr )
 }
 
 
+void sysmongoto( uint16_t addr )
+{
+   printf( "g%04X\r", addr );
+   fflush( stdout );
+}
+
+
 int main( int argc, char *argv[] )
 {
    FILE *f;
