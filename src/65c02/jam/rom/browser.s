@@ -635,6 +635,10 @@ browsedir:
    beq   @right
    cmp   #'D'
    beq   @left
+   cmp   #'F'
+   beq   @end
+   cmp   #'H'
+   beq   @home
    bne   @inputloop+2
 
 @left:
@@ -665,10 +669,25 @@ browsedir:
    ldx   index
    dex
    bmi   @setarrow2
+@setidx:
    stx   index
 @setarrow2:
    jmp   @setarrow
-
+@end:
+   ldx   lastidx
+   dex
+   bra   @clrarrow
+@home:
+   ldx   #$00
+@clrarrow:
+   lda   index
+   clc
+   adc   #FIRSTLINE
+   stx   index
+   jsr   setline
+   jsr   PRINT
+   .byte "   ",0
+   bra   @setarrow2
 
 
 move:
