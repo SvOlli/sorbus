@@ -55,6 +55,12 @@ add_library(c_flod
 )
 add_definitions(-DFLOD_NO_SOUNDBLASTER)
 
+bin2h(cream_of_the_earth.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/CreamOfTheEarth.mod mod_data)
+bin2h(rsi_rise_up.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/MOD.rsi-rise_up mod_data)
+bin2h(phantasmagoria.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/phantasmagoria.mod mod_data)
+bin2h(bloodmoney_intro.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/BloodMoneyIntro.mod mod_data)
+bin2h(test_mod.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/bloodmoney.mod mod_data)
+bin2h(trsi_cracktro.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/Mod.TrsiCrack10.Mod mod_data)
 add_executable(sound_mod
    cream_of_the_earth.h
    rsi_rise_up.h
@@ -71,14 +77,6 @@ add_executable(sound_mod
 
 )
 pico_generate_pio_header(sound_mod ${CMAKE_CURRENT_LIST_DIR}/3rdparty/i2s/i2s.pio)
-
-bin2h(cream_of_the_earth.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/CreamOfTheEarth.mod mod_data)
-bin2h(rsi_rise_up.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/MOD.rsi-rise_up mod_data)
-bin2h(phantasmagoria.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/phantasmagoria.mod mod_data)
-bin2h(bloodmoney_intro.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/BloodMoneyIntro.mod mod_data)
-bin2h(test_mod.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/bloodmoney.mod mod_data)
-bin2h(trsi_cracktro.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/Mod.TrsiCrack10.Mod mod_data)
-
 
 
 

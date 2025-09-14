@@ -14,10 +14,7 @@ vector2 = $22
 
 tmpbuf      := $0200
 FRAMEBUFFER := $cc00
-
-rtab     = $02cd
-gtab     = $02de
-btab     = $02ef
+BARS        := $c000       ; must be page aligned
 
 start:
    jmp   init
@@ -51,7 +48,10 @@ init:
    sta   chroma
    stz   luma
 
-   jsr   setupfb
+   lda   #<FRAMEBUFFER
+   ldx   #>FRAMEBUFFER
+   ldy   #$01
+   int   FB32X32
 
    sei
    lda   #<irqhandler
@@ -63,12 +63,7 @@ init:
    lda   #>DELAY
    sta   TMIMRH
 
-.if BARS & 0xFF
-   lda   #<BARS
-   sta   vector+0
-.else
    stz   vector+0
-.endif
    lda   #>BARS
    sta   vector+1
 
