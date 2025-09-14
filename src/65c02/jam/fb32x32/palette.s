@@ -1,11 +1,19 @@
 
 .include "fb32x32.inc"
 
-vector := $10
+vector0 := $10
+vector1 := $12
 
 FRAMEBUFFER := $cc00
 
 start:
+   lda   #<FRAMEBUFFER
+   ldx   #>FRAMEBUFFER
+   ldy   #$01
+   int   FB32X32
+
+   jsr   setupfb
+
    lda   #$03
    sta   FB32X32_CCOLMAP_IDX
 
@@ -33,24 +41,13 @@ main:
    .byte 10,"5: C16 (128 colors)"
    .byte 10,"6: Atari 8-bit (256 colors)"
    .byte 10,"7: Atari 8-bit (256 colors, SvOlli's order)"
-   .byte 10,"8: VDC/SECAM Atari 2600 inspired coder colors"
+   .byte 10,"8: Veto's all retro combined palette"
+   .byte 10,"9: VDC/SECAM Atari 2600 inspired coder colors"
    .byte 10,"Press 0-9 to display colormap (CTRL-C to quit) ",0
 
-   lda   #<FRAMEBUFFER
-   ldx   #>FRAMEBUFFER
-   ldy   #$01
-   int   FB32X32
-
-:
-   tya
-   sta   FRAMEBUFFER,y
-   iny
-   bne   :-
-
-   lda   #$08           ; startpos x, y
-   sta   FB32X32_DEST_X
-   sta   FB32X32_DEST_Y
-   lda   #$0f           ; witdh, height, step: 16 pixel
+   stz   FB32X32_DEST_X
+   stz   FB32X32_DEST_Y
+   lda   #$1f              ; witdh, height, step: 32 pixel
    sta   FB32X32_WIDTH
    sta   FB32X32_HEIGHT
    sta   FB32X32_STEP
@@ -76,3 +73,47 @@ main:
    ldy   #$01
    int   FB32X32
    jmp   ($fffc)
+
+
+setupfb:
+   lda   #>FRAMEBUFFER
+   stz   vector0+0
+   sta   vector0+1
+   ldx   #$20
+   stx   vector1+0
+   sta   vector1+1
+
+   ldx   #$00
+   ldy   #$00
+@loop:
+   txa
+   sta   (vector0),y
+   sta   (vector1),y
+   iny
+   sta   (vector0),y
+   sta   (vector1),y
+   iny
+   inc
+   and   #$0f
+   bne   :+
+   tya
+   clc
+   adc   #$20
+   tay
+:
+   inx
+   cpx   #$40
+   bcc   @loop
+
+   ldx   #$00
+:
+   lda   FRAMEBUFFER+$000,y
+   ora   #$40
+   sta   FRAMEBUFFER+$100,y
+   eor   #$c0
+   sta   FRAMEBUFFER+$200,y
+   ora   #$40
+   sta   FRAMEBUFFER+$300,y
+   iny
+   bne   :-
+   rts
