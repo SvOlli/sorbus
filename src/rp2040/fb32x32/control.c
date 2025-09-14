@@ -234,6 +234,21 @@ static inline void setcolormap( uint8_t data )
             }
          }
          break;
+      case 8: // coder colors, VDC inspired
+         {
+            uint8_t c, r, g, b;
+            for( c = 0; c < 0x80; ++c )
+            {
+               r = (c & 0x04 ? 0xf : 0);
+               g = (c & 0x02 ? 0xf : 0);
+               b = (c & 0x01 ? 0xf : 0);
+               hardware_setcolor( c, r, g, b );
+               r = (c & 0x40 ? (c & 0xf) : 0);
+               g = (c & 0x20 ? (c & 0xf) : 0);
+               b = (c & 0x10 ? (c & 0xf) : 0);
+               hardware_setcolor( 0x80+c, r, g, b );
+            }
+         }
       default:
          break;
    }

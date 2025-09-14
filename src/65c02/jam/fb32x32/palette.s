@@ -33,6 +33,7 @@ main:
    .byte 10,"5: C16 (128 colors)"
    .byte 10,"6: Atari 8-bit (256 colors)"
    .byte 10,"7: Atari 8-bit (256 colors, SvOlli's order)"
+   .byte 10,"8: VDC/SECAM Atari 2600 inspired coder colors"
    .byte 10,"Press 0-9 to display colormap (CTRL-C to quit) ",0
 
    lda   #<FRAMEBUFFER

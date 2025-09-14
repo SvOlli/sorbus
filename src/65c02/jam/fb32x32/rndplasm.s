@@ -96,6 +96,17 @@ start:
 
 @mainloop:
    jsr   CHRIN
+   bcs   @mainloop
+
+   cmp   #'0'
+   bcc   @nodigit
+   cmp   #'9'+1
+   bcs   @nodigit
+   and   #$0f
+   sta   FB32X32_COLMAP
+   bra   @mainloop
+
+@nodigit:
    cmp   #$03
    bne   @mainloop
 
