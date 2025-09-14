@@ -3,11 +3,17 @@ project(sorbus_65c02)
 
 include(65c02-toolchain.cmake)
 
-if( CPM65_PATH )
-   message(STATUS "CP/M-65 detected at '${CPM65_PATH}', adding build command")
-   add_custom_target(cpm ALL
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cpm/build.sh" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/0" "${CPM65_PATH}"
-      )
+option(DONT_GENERATE_CPMFS "Skip CPMFS generation" OFF ) # Default is to genarate
+
+if (DONT_GENERATE_CPMFS STREQUAL "ON")
+   message("Dont generate CPMFS")
+else()
+   if( CPM65_PATH )
+      message(STATUS "CP/M-65 detected at '${CPM65_PATH}', adding build command")
+      add_custom_target(cpm ALL
+         COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cpm/build.sh" "${CMAKE_CURRENT_SOURCE_DIR}/../bin/cpm/0" "${CPM65_PATH}"
+         )
+   endif()
 endif()
 
 function(runmake target in_dir)
@@ -257,11 +263,15 @@ quick_sx4(wozmon2c)
 quick_sx4(wrtboot)
 
 quick_fb32x32(amiga)
+quick_fb32x32(c64)
 quick_fb32x32(depth)
 quick_fb32x32(intro1)
+quick_fb32x32(kefrens)
 quick_fb32x32(life)
+quick_fb32x32(manplasm)
 quick_fb32x32(palette)
 quick_fb32x32(random)
+quick_fb32x32(rndplasm)
 quick_fb32x32(santa)
 quick_fb32x32(texture)
 quick_fb32x32(tunnel)

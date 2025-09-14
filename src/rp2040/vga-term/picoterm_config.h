@@ -26,7 +26,7 @@
    at the end of structure and do not modifies OLD ones. Reflashing does not
    always erase the Flash content */
 typedef struct PicotermConfig {
-  char magic_key[6];
+  char magic_key[8];
   uint8_t version;
   uint8_t colour_preference;
   // version 2

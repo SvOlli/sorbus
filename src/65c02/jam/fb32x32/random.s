@@ -30,7 +30,18 @@ loop:
    sta   $11
    lda   RANDOM
    sta   ($10)
-   jmp   loop
+   jsr   CHRIN
+   cmp   #$03
+   bne   :+
+   jmp   ($FFFC)
+:
+   cmp   #'0'
+   bcc   loop
+   cmp   #'9'+1
+   bcs   loop
+   and   #$0f
+   sta   FB32X32_COLMAP
+   bra   loop
 
 irqhandler:
    bit   TMIMRL
