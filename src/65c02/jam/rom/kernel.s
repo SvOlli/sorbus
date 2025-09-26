@@ -269,7 +269,8 @@ woz:
    ; will be reached if own code run within WozMon exits using rts
    jmp   :-             ; no bra here: NMOS 6502 fallback mode
 
-
+copybiossetram:
+   stz   BRK_SB
 copybios:
    ; copy the BIOS page to RAM
    ldx   #$00
@@ -304,8 +305,8 @@ brkjump:
 @jumptable:
    .word @user, chrinuc, chrcfg, prhex8, prhex16         ; $00-$04
    .word cpmname, cpmload, cpmsave, cpmerase, cpmdir     ; $05-$09
-   .word vt100, copybios, xinputline, b2gensine, mon_brk ; $0a-$0e
-   .word fb32x32, prdec8, prdec16                        ; $0f-$11
+   .word vt100, copybiossetram, xinputline, b2gensine    ; $0a-$0d
+   .word mon_brk, fb32x32, prdec8, prdec16               ; $0e-$11
 @jumptableend:
 
 chrinuc:

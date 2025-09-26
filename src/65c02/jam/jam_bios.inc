@@ -176,6 +176,7 @@ PRIMM    := PRINT
 
 ; copy the BIOS ($FF00-$FFFF) from ROM to RAM, so $E000-$FFFF can be banked
 ; to RAM without losing the functionality of the kernel
+; also switches to RAM bank on return
 .define COPYBIOS  $0B
 
 ; input text using a line
