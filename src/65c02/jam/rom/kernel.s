@@ -3,7 +3,7 @@
 ;
 ; This ROM for the native mode is in very early development.
 
-.define VERSION "0.5"
+.define VERSION "0.6"
 .segment "CODE"
 
 ; zeropage addresses used by this part of ROM

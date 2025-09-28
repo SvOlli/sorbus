@@ -108,6 +108,36 @@ tmp16     = TMP16       ; also used by jsr PRINT
 ; was the main focus and it's still fast enough.
 ;-------------------------------------------------------------------------
 
+.if 0
+_cpmdump:
+   php
+   pha
+   phx
+   lda   tmp16+0
+   pha
+   lda   tmp16+1
+   pha
+   lda   #$0a
+   jsr   CHROUT
+   ldx   #$00
+:
+   lda   #$20
+   jsr   CHROUT
+   lda   cpm_saddr,x
+   int   PRHEX8
+   inx
+   cpx   #$10
+   bne   :-
+   pla
+   sta   tmp16+1
+   pla
+   sta   tmp16+0
+   plx
+   pla
+   plp
+   rts
+.endif
+
 ;-------------------------------------------------------------------------
 ; API functions
 ;-------------------------------------------------------------------------
@@ -466,7 +496,7 @@ setupsave:
 
    txa
    stz   tmp16+1
-   ldy   #$03
+   ldy   #$03           ; multiply by 8
 :
    asl   tmp16+0
    rol
@@ -495,8 +525,16 @@ setupsave:
 
    ; create dir entries
    stz   cpm_cdent
+   lda   cpm_nsect+0    ; dh_create need to manipulate nsect
+   pha                  ; but we need nsect intact afterwards
+   lda   cpm_nsect+1
+   pha
    ldx   #<i_create
    jsr   scandir
+   pla
+   sta   cpm_nsect+1
+   pla
+   sta   cpm_nsect+0
    clc
 @restore200:
    lda   #$84           ; restore page $0200
@@ -638,6 +676,7 @@ dh_usedblocks:
    rts
 
 dh_create:
+   ; entered with X=0,Y=0
    lda   cpm_cdent
    cmp   cpm_ndent      ; all required entries created?
    bcs   @done          ; then nothing to do here
