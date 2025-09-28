@@ -751,7 +751,7 @@ load:
 
    ; do two things in one loop:
    ; 1) check if the filename ends in SX4
-   ; 2) copy code for setting bank to $00 before running file
+   ; 2) copy code for setting bank to $00 before loading and running file
    ldy   #$02
 @loadloop:
    lda   CPM_FNAME+$09,y
@@ -759,21 +759,19 @@ load:
    beq   :+
    jmp   reload
 :
-   lda   @bankcode,y
-   sta   SX4START-3,y
    dey
    bpl   @loadloop
 
    int   CPMLOAD
-   int   COPYBIOS
+   stz   SX4START-2
+   lda   #COPYBIOS
+   sta   SX4START-1
 
    ldy   #VT100_SCRN_CLR
    int   VT100
 
-   jmp   SX4START-3
+   jmp   SX4START-2
 
-@bankcode:
-   stz   BANK
 @fileext:
    .byte "SX4"
 

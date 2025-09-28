@@ -24,8 +24,7 @@ decrunched_chunk_size   := buffer_len_hi
 .segment "CODE"
 
 start:
-   int   COPYBIOS       ; required for debug only
-   stz   BANK           ; so upload with timcat works
+   int   COPYBIOS       ; required for debug only, so upload with timcat works
    ldy   #VT100_SCRN_SIZ
    int   VT100          ; get screen size
    dec                  ; remove one line for "press SPACE" message
