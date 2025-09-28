@@ -9,4 +9,4 @@ pcb/*/*-backups
 *.o
 *.lib
 *.sx4
-
+*.labels
