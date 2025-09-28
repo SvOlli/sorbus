@@ -1,6 +1,9 @@
 
 project(sorbus_tools)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GD REQUIRED gdlib)
+
 include(host-toolchain.cmake)
 
 # tool to convert binary data to header file for including in source code
@@ -53,3 +56,12 @@ add_executable(translation_matrix
 add_executable(wozcat
    wozcat.c
    )
+
+# tool to convert 32x32 pixel image to executable for fb32x32
+add_executable(img2sx4
+   img2sx4.c
+   gdhelper.c
+   )
+target_link_libraries(img2sx4 ${GD_LIBRARIES})
+target_include_directories(img2sx4 PUBLIC ${GD_INCLUDE_DIRS})
+target_compile_options(img2sx4 PUBLIC ${GD_CFLAGS_OTHER})

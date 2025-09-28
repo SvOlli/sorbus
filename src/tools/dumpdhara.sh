@@ -12,7 +12,7 @@ readonly FORMAT='sorbus'
 mkdir -p dump
 cp src/bin/cpm/diskdefs dump/
 cd dump
-#picotool save -r 0x10400000 0x11000000 -t bin dump.dhara -f
+picotool save -r 0x10400000 0x11000000 -t bin dump.dhara -f
 ../build/tools/dharatool.exe dhararead dump.dhara dump.bin
 
 for i in {0..15};do
