@@ -286,6 +286,11 @@ add_executable(8bit_dp
 )
 target_type(8bit_dp sx4 "1.")
 
+add_executable(ping
+   jam/sx4/ping.s
+)
+target_type(ping sx4 "1.")
+
 add_executable(animatrn
    jam/sx4/animatron.s
 )
