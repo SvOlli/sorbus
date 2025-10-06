@@ -137,5 +137,9 @@ $(RELEASE_ARCHIVE): $(CC65_SDK_DIR) all
 	make -C $(CC65_SDK_DIR) clean
 	7z a -mx=9 -bd $@ $(CC65_SDK_DIR) doc/apple1.md doc/monitors.md doc/sysmon.md doc/jam.rst
 
-release: $(RELEASE_ARCHIVE)
+release: sanitycheck $(RELEASE_ARCHIVE)
+
+sanitycheck:
+	: src/ should not contain filename with spaces
+	[ $$(find src/ -name "* *" | wc -l) -eq 0 ]
 
