@@ -15,7 +15,7 @@ Howto use goattracker on Windows with sorbus
   (you should see the transfer-bar shown )
 - press return 
   ( "Reception successful. 0x0F80 - 0x1B00" , last address may vary due to your music)
-- press "m" for the systemmonitor 
+- press "m" for the systemmonitor ( maybe a "CTRL+c" is needed to stop a running player) 
   ( "Sorbus System Monitor via menu
    PC  BK AC XR YR SP NV-BDIZC" )
 - start the player with 'g0f80'
