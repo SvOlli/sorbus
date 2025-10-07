@@ -653,7 +653,7 @@ void runEmulation()
 				emulateCyclesReSIDSingle( cyclesToEmulate ); else
 #endif				
 				emulateCyclesReSID( cyclesToEmulate );
-			readRegs( &outRegisters[ 0x1b ], &outRegisters_2[ 0x1b ] );
+			readRegs( &outRegisters[ 0x1b ], &outRegisters[ 0x1b+34 ] );
 		}
 
 
@@ -1054,7 +1054,7 @@ int main()
 {
 	vreg_set_voltage( VREG_VOLTAGE_1_30 );
 	readConfiguration();
-	//setDefaultConfiguration();
+	setDefaultConfiguration();
 	SET_CLOCK_FAST
 	init_gpio();
 #ifdef LED_BUILTIN
