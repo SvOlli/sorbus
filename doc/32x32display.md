@@ -2,6 +2,9 @@
 Sorbus 32x32 LED Display
 ========================
 
+The panels built so far use this order of LEDs.
+
+![LED order](images/WS2812_order.gif)
 
 I/O Registers
 -------------
@@ -18,7 +21,7 @@ only sniffes the bus and never actively drives it.
 - $D309: height of DMA in pixels-1 (5 bit, $00=one line, $1f sets full height)
 - $D30A: linestep of source in pixels-1 (8 bit)
 - $D30B: transparency color
-- $D30C: colormap / brightness? (bits 7-6)
+- $D30C: colormap
 - $D30D: custom colormap id register (valid value: 1-3)
 
 - $D310: red color for custom colormap
@@ -45,13 +48,21 @@ Color palettes:
 - $05: C16 like
 - $06: Atari 8-bit like
 - $07: Atari 8-bit like, ordered differently
+- $08: Veto's custom curated
+- $09: Coder colors
 
-Custom defined color palettes are always specified in RGB444. Writing to $D30D
-resets internal index of $D310-$D312 to $00, when a colorvalue is written,
-lower 4 bits will be taken as value for this index, and the index will be
-incremented. Once $100 color values has been written, that color slot does not
-take new color values. If a value other than 1-3 is written to $D30D, then
-$D310-$D312 will not accept any data as well.
+Custom defined color palettes are always specified in RGB444. Writing
+to $D30D resets internal index of $D310-$D312 to $00, when a colorvalue
+is written, lower 4 bits will be taken as value for this index, and the
+index will be incremented. Once $100 color values has been written,
+that color slot does not take new color values. Adding $80 to the index
+value will fill the palette in reverse order starting with $ff going
+down. If a value other than $01-$03 and $81-$83 is written to $D30D,
+then $D310-$D312 will not accept any data.
 
-Since the board just sniffes the bus, DMA from internal drive or swap pages is
-not detected.
+Also selecting the colormap by writing to $D30C copies the palette to the
+"current palette", so only then the data is updated not during writing to
+$D310-$D312.
+
+Since the board just sniffes the bus, DMA from internal drive or swap
+pages is not detected.

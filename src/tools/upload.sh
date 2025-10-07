@@ -18,5 +18,5 @@ fi
 picotool info "${file}" -a || :
 picotool load "${file}" -f
 picotool reboot -f || :
-while [ ! -c "${device}" ]; do sleep 0.33; done
+while [ ! -c "${device}" ]; do sleep 0.33; done; sleep 0.2
 exec microcom -p "${device}"
