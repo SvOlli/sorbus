@@ -72,5 +72,6 @@ Code for the repurposed Chipset board: simuation via USB UART
 WIP: there's no software capable of displaying the output yet
 
 fb32x32_ws2812.uf2:
-Code for the repurposed Chipset board: output data to WS2812
+Code for the repurposed Chipset board: output data to WS2812.
+The order of the LEDs is illustrated in doc/images/WS2812_order.gif
 

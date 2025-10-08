@@ -87,32 +87,19 @@ pingdataend:
 .segment "CODE"
 
 playping:
-   ldx   #$18
+   ldy   #$18
 :
-   lda   pingdata,x
-   sta   SID,x
-   sta   SID2,x
-   dex
+   lda   pingdata,y
+   sta   SID,y
+   sta   SID2,y
+   dey
    bpl   :-
-   lda   #$11
-   sta   SID_Ctl1
-   sta   SID_Ctl2
-   sta   SID_Ctl3
-   sta   SID2_Ctl1
-   sta   SID2_Ctl2
-   sta   SID2_Ctl3
-:
-   lda   SID_Read3
-   bpl   :-
-:
-   lda   SID_Read3
-   bne   :-
-   stz   SID_Ctl1
-   stz   SID_Ctl2
-   stz   SID_Ctl3
-   stz   SID2_Ctl1
-   stz   SID2_Ctl2
-   stz   SID2_Ctl3
+
+   ldx   #$00
+   jsr   @play
+
+   ldx   #$20
+   jsr   @play
 
    jsr   PRINT
    .byte 10,"done. ",0
@@ -123,3 +110,24 @@ playping:
    cmp   #$03
    bne   playping
    jmp   ($fffc)
+
+@play:
+   jsr   PRINT
+   .byte 10,"SID @ $D4",0
+   txa
+   int   PRHEX8
+
+   lda   #$11
+   sta   SID_Ctl1,x
+   sta   SID_Ctl2,x
+   sta   SID_Ctl3,x
+:
+   lda   SID_Read3,x
+   bpl   :-
+:
+   lda   SID_Read3,x
+   bne   :-
+   stz   SID_Ctl1,x
+   stz   SID_Ctl2,x
+   stz   SID_Ctl3,x
+   rts
