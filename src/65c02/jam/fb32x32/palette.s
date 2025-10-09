@@ -7,30 +7,14 @@ vector1 := $12
 FRAMEBUFFER := $cc00
 
 start:
+   jsr   colortab
+
    lda   #<FRAMEBUFFER
    ldx   #>FRAMEBUFFER
    ldy   #$01
    int   FB32X32
 
    jsr   setupfb
-
-   lda   #$03
-   sta   FB32X32_CCOLMAP_IDX
-
-   ldx   #$00
-:
-   txa
-   and   #$0F
-   sta   FB32X32_CCOLMAP_R
-   txa
-   lsr
-   lsr
-   lsr
-   lsr
-   sta   FB32X32_CCOLMAP_G
-   stz   FB32X32_CCOLMAP_B
-   inx
-   bne   :-
 
 main:
    jsr   PRINT
@@ -64,6 +48,11 @@ main:
    cmp   #'9'+1
    bcs   :-
    and   #$0f
+   cmp   #$03
+   bne   :+
+   jsr   colortab
+   lda   #$03
+:
    sta   FB32X32_COLMAP
    bra   @update
 
@@ -116,4 +105,35 @@ setupfb:
    sta   FRAMEBUFFER+$300,y
    iny
    bne   :-
+   rts
+
+colortab:
+   lda   #$03
+   sta   FB32X32_CCOLMAP_IDX
+
+   ldx   #$00
+:
+   txa
+   and   #$0F
+   tay
+   txa
+   lsr
+   lsr
+   lsr
+   lsr
+@s0:
+   sta   FB32X32_CCOLMAP_R
+@s1:
+   sty   FB32X32_CCOLMAP_G
+@s2:
+   stz   FB32X32_CCOLMAP_B
+   inx
+   bne   :-
+   ; rotate colors
+   ldy   @s0
+   lda   @s1
+   sta   @s0
+   lda   @s2
+   sta   @s1
+   sty   @s2
    rts
