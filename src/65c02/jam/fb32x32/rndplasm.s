@@ -163,6 +163,9 @@ plasma_next:
    cmp   #$80
    ror
    ror   hafnext+0,x
+   cmp   #$80
+   ror
+   ror   hafnext+0,x
    sta   hafnext+1,x
    phx
    lda   hafnext+1,x
