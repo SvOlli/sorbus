@@ -13,6 +13,9 @@ FRAMEBUFFER := $cc00
 
 frmcnt = $13
 
+start:
+   stz   FB32X32_COLMAP
+
    sei
    lda   #<FRAMEBUFFER
    sta   vector+0

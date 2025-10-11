@@ -176,6 +176,7 @@ add_executable(jam_tools
    jam/rom/tools.s
    jam/rom/browser.s
    jam/rom/gensine.s
+   jam/rom/emu6502asm.s
    jam/rom/bios.s
    jam/rom/bios_stub.s
    )
@@ -266,14 +267,17 @@ quick_fb32x32(amiga)
 quick_fb32x32(c64)
 quick_fb32x32(depth)
 quick_fb32x32(intro1)
-quick_fb32x32(life)
+quick_fb32x32(kaleido)
+quick_fb32x32(latency)
+#quick_fb32x32(life)
 quick_fb32x32(manplasm)
 quick_fb32x32(palette)
 quick_fb32x32(random)
 quick_fb32x32(rndplasm)
 quick_fb32x32(santa)
-quick_fb32x32(texture)
+#quick_fb32x32(texture)
 quick_fb32x32(tunnel)
+quick_fb32x32(vcsbars)
 
 add_executable(about
    jam/about/main.s

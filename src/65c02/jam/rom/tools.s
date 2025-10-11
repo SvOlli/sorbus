@@ -1,6 +1,7 @@
 
 .import     browser
 .import     gensine
+.import     emu6502asm
 
 
 .segment "CODE"
@@ -13,4 +14,5 @@ dispatch:
 @jmptab:
    .word browser
    .word gensine
+   .word emu6502asm
 
