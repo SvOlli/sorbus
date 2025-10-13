@@ -265,6 +265,7 @@ quick_sx4(wrtboot)
 
 quick_fb32x32(amiga)
 quick_fb32x32(c64)
+quick_fb32x32(dblbars)
 quick_fb32x32(depth)
 quick_fb32x32(intro1)
 quick_fb32x32(kaleido)
