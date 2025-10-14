@@ -15,6 +15,7 @@ frmcnt = $13
 
 start:
    stz   FB32X32_COLMAP
+   stz   FB32X32_TCOL
 
    sei
    lda   #<FRAMEBUFFER
@@ -39,8 +40,8 @@ start:
    cpy   #$20
    bcc   :-
 
-   lda   #>sinbuf
-   ldx   #$42
+   lda   #$42
+   ldx   #>sinbuf
    int   GENSINE
    ldx   #$00
 :
