@@ -82,7 +82,7 @@ start:
    .byte 10,"(CTRL-C to quit) ",10,0
 
    jsr   plasma_init
-   
+
    sei
    lda   #<irqhandler
    sta   UVNBI+0
@@ -181,7 +181,7 @@ plasma_next:
 
    lda   #$0a
    jsr   CHROUT
-   
+
    ldx   #$00
 
 @calcsteps:
@@ -206,7 +206,7 @@ plasma_next:
 
 .if DEBUGOUTPUT
    ldy   #$00
-:   
+:
    lda   tabstep+1,y
    tax
    lda   tabstep+0,y
@@ -225,7 +225,7 @@ plasma_next:
 
    lda   #(1 << DIVLOOPS)
    sta   steps_left
-   
+
    rts
 
 plasma_init:
@@ -396,7 +396,7 @@ plasma_calc:
 
 .if DEBUGOUTPUT
    ldy   #$00
-:   
+:
    lda   tabadd+1,y
    tax
    lda   tabadd+0,y

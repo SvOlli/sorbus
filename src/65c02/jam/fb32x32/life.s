@@ -2,39 +2,34 @@
 ; http://rosettacode.org/wiki/Conway\'s_Game_of_Life
 ; Submitted by Anonymous
 
-
-
-.include "jam.inc"
-.include "jam_bios.inc"
+.include "fb32x32.inc"
 
 sorbusinit:
+   lda   #$00
+   ldx   #$cc
+   ldy   #$01
+   int   FB32X32
+
     sei
-    lda #$86
-    sta $df04
+    lda #FB32X32_CMAP_C64
+    sta FB32X32_COLMAP
     lda #<irqhandler
-    sta $df7c
+    sta UVNBI+0
     lda #>irqhandler
-    sta $df7d
+    sta UVNBI+1
     lda #$90
-    sta $df18
+    sta TMIMRL
     lda #$01
-    sta $df19
-    ldx #$00
-:
-    stz $cc00,x
-    stz $cd00,x
-    stz $ce00,x
-    stz $cf00,x
-    inx
-    bne :-
+    sta TMIMRH
+
     jsr inittick
     cli
 :
-    jsr $ff00
+    jsr CHRIN
     cmp #$03
     bne :-
-    stz $df18
-    stz $df19
+    stz TMIMRL
+    stz TMIMRH
     jmp ($fffc)
 
 irqhandler:
@@ -45,8 +40,8 @@ irqhandler:
 
  jsr starttick
  
- stz $df04
- lda $df18
+ stz FB32X32_COPY
+ lda TMIMRL
  ply
  plx
  pla

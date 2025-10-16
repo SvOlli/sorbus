@@ -84,7 +84,7 @@ interface:
    iface 'n',vaadd   ,inc16
    iface 'm',vbadd+1 ,inc8
    iface ',',vbadd   ,inc16
-   
+
    iface '/',0       ,zero
    iface '.',0       ,rnd
 
@@ -97,7 +97,7 @@ start:
    sta   FB32X32_COLMAP
 
    jsr   plasma_init
-   
+
    sei
    lda   #<irqhandler
    sta   UVNBI+0
@@ -166,7 +166,7 @@ output:
    int   FB32X32
 
    jmp   ($fffc)
-   
+
 @found:
    inx
    lda   interface,x
@@ -179,7 +179,7 @@ plasma_init:
    lda   #$90
    ldx   #>SINE
    int   GENSINE
-   
+
    ldx   #$f
 :
    lda   plasma_init_vals,x
@@ -194,7 +194,7 @@ inc8:
    inc
    sta   (vector)
    jmp   output
-   
+
 dec8:
    lda   (vector)
    dec
@@ -233,7 +233,7 @@ zero:
    dex
    bpl   :-
    jmp   output
-   
+
 rnd:
    lda   RANDOM
    sta   hafadd+0
@@ -306,7 +306,7 @@ plasma_calc_axis:
 
    ldx   #$00
    jsr   @subcalc
-   
+
    ldx   #<(hafstart-vafstart)
 @subcalc:
    stx   @offset+1

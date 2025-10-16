@@ -15,7 +15,7 @@ FRAMEBUFFER := $cc00
    bne   :-
 
    ldy   #$1f
-   
+
    lda   #>gfx
    sta   FB32X32_SRC+1
    stz   FB32X32_DEST_X
@@ -51,7 +51,7 @@ FRAMEBUFFER := $cc00
    bne   :-
    iny
    bne   :-
-   
+
    pha
    jsr   CHRIN
    cmp   #$03

@@ -102,7 +102,7 @@ colupdate:
    sta   btab+1,x
    dex
    bpl   :-
-   
+
    lda   luma
    dec
    and   #$0f
