@@ -1,39 +1,82 @@
 
 .include "fb32x32.inc"
 
+.define     IMPROVED 1
+
 FRAMEBUFFER := $cc00
+DELAY       := 500
 
-tmp8     := $10
-xp       := $11
-yp       := $12
-mp       := $13
-
-myschedule:
+tmp8        := $10
+xp          := $11
+yp          := $12
+mp          := $13
 
 
 .segment "CODE"
 
 start:
-kaleidoscope:
-   lda   #FB32X32_CMAP_VDC
-   sta   FB32X32_COLMAP
+   jsr   kaleido_init
 
-   sta   xp
-   sta   yp
-   sta   mp
+   jsr   PRINT
+   .byte 10,"(CTRL-C to quit) ",10,0
+
+   sei
+   lda   #<irqhandler
+   sta   UVNBI+0
+   lda   #>irqhandler
+   sta   UVNBI+1
+   lda   #<DELAY
+   sta   TMIMRL
+   lda   #>DELAY
+   sta   TMIMRH
+   cli
+
+@mainloop:
+   jsr   CHRIN
+   cmp   #$03
+   bne   @mainloop
+
+   stz   TMIMRL
+   stz   TMIMRH
 
    lda   #<FRAMEBUFFER
    ldx   #>FRAMEBUFFER
    ldy   #$01
    int   FB32X32
 
-   ldx   #$0f
-   stx   FB32X32_WIDTH
-   stx   FB32X32_HEIGHT
-   stx   FB32X32_STEP
-;   stz   FB32X32_SRC+0 ; not required due to fb setup
+   jmp   ($fffc)
 
-@newframe:
+
+irqhandler:
+   pha
+   phx
+   phy
+
+   jsr   kaleido_run
+   lda   TMIMRL         ; acknoledge timer
+
+   ply
+   plx
+   pla
+   rti
+
+
+kaleido_init:
+   lda   #<FRAMEBUFFER
+   ldx   #>FRAMEBUFFER
+   ldy   #$01
+   int   FB32X32
+
+   lda   #FB32X32_CMAP_VDC
+   sta   FB32X32_COLMAP
+
+   sta   xp
+   sta   yp
+   sta   mp
+   rts
+
+
+kaleido_run:
    ldx   #$00
 
 @loop:
@@ -65,9 +108,11 @@ kaleidoscope:
    lda   yp
    and   #$f0
    ora   tmp8
-   tay                     ; sta   lefty
-   eor   #$0f              ; mirror on X
+   tay
+.if IMPROVED
+   eor   #$0f
    pha
+.endif
 
    txa
    and   #$01
@@ -75,9 +120,11 @@ kaleidoscope:
    txa
    lsr
 :
-   sta   FRAMEBUFFER+$000,y
+   sta   FRAMEBUFFER,y
+.if IMPROVED
    ply
    sta   FRAMEBUFFER+$100,y
+.endif
 
    inx
    cpx   #$10
@@ -86,8 +133,14 @@ kaleidoscope:
    inc   xp
    inc   yp
    inc   mp
+   jsr   flip16to32
+   jmp   show4fb
 
+
+
+flip16to32:
    ldx   #$00
+.if IMPROVED
    ldy   #$ff
 :
    lda   FRAMEBUFFER+$000,x
@@ -97,29 +150,59 @@ kaleidoscope:
    dey
    inx
    bne   :-
-
-:
-   lda   fbhi,x
-   sta   FB32X32_SRC+1
-   lda   xpos,x
-   sta   FB32X32_DEST_X
-   lda   ypos,x
-   sta   FB32X32_DEST_Y
-   lda   copy,x
+.else
+@loop:
+   txa
+   eor   #$0f
    tay
-   sta   FB32X32_COPY,y
+   lda   FRAMEBUFFER,x
+   sta   FRAMEBUFFER+$100,y
+
+   txa
+   eor   #$f0
+   tay
+   lda   FRAMEBUFFER,x
+   sta   FRAMEBUFFER+$200,y
+
+   txa
+   eor   #$ff
+   tay
+   lda   FRAMEBUFFER,x
+   sta   FRAMEBUFFER+$300,y
    inx
-   cpx   #$04
-   bne   :-
+   bne   @loop
+.endif
+   rts
 
-   jmp   @newframe
+show4fb:
+   ldy   #$10
+   stz   FB32X32_SRC+0
+   lda   #>FRAMEBUFFER
+   sta   FB32X32_SRC+1
+   stz   FB32X32_DEST_X
+   stz   FB32X32_DEST_Y
+   ldx   #$0f
+   stx   FB32X32_WIDTH
+   stx   FB32X32_HEIGHT
+   stx   FB32X32_STEP
+   stz   FB32X32_COPYN
 
+   inc
+   sta   FB32X32_SRC+1
+   sty   FB32X32_DEST_X
+   stz   FB32X32_DEST_Y
+   stz   FB32X32_COPYN
 
-fbhi:
-   .byte (>FRAMEBUFFER)+0,(>FRAMEBUFFER)+1,(>FRAMEBUFFER)+2,(>FRAMEBUFFER)+3
-xpos:
-   .byte              $00,             $10,             $00,             $10
-ypos:
-   .byte              $00,             $00,             $10,             $10
-copy:
-   .byte                1,               1,               1,               0
+   inc
+   sta   FB32X32_SRC+1
+   stz   FB32X32_DEST_X
+   sty   FB32X32_DEST_Y
+   stz   FB32X32_COPYN
+
+   inc
+   sta   FB32X32_SRC+1
+   sty   FB32X32_DEST_X
+   sty   FB32X32_DEST_Y
+   stz   FB32X32_COPY
+
+   rts
