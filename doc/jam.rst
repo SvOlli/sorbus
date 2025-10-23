@@ -4,7 +4,7 @@ Sorbus JAM
 The Sorbus JAM (short for Just Another Machine) is an implementation of a
 complete system that does not resemble any already created computer. It
 is intended to grow into a well defined platform capable of running
-demos.
+demos. (See https://en.wikipedia.org/wiki/Demoscene)
 
 The flash of the RP2040 contains the Kernel ROM and the flash filesystem
 image in RAW flash. Those can (and have to) be loaded independently from
@@ -14,7 +14,7 @@ the core in flash, using the following commands:
 -  picotool load -o 0x10400000 -t bin <filesystem>
 
 (This is a subject to change, because it's now possible to create a UF2
-file with everything firmware.)
+file with everything firmware, but this seems not to be fully supported.)
 
 
 Available Boot Options
@@ -35,7 +35,8 @@ machines. It has got its [own documentation file](sysmon.md).
 -  Filebrowser
 
 This is a simple file loader. It loads files with the extension “.SX4”
-from the user-partition 10.
+and others (see "Executable Formats" below) from the user-partition 10
+or others.
 
 -  CP/M 65
 
@@ -108,14 +109,70 @@ BASIC.
    actually being random
 
 
-SX4 File Format For Executables
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-SX4 stands for Sorbus eXecutable $0400, so it's just a binary blob
+Executeable Formats
+-------------------
+
+Executeable file formats can be loaded using the file browser and are
+only distinguished by their extension. The filebrowser does whatever is
+required to set up the system to run those files.
+
+
+SX4
+~~~
+
+SX4 stands for Sorbus eXecutable at $0400, so it's just a binary blob
 loaded to $0400 at memory and started at the load address, after the
-bank has been switched to $00 (RAM @ $E000) with the BIOS copied to RAM.
+bank has been switched to $00 (RAM at $E000) with the BIOS copied to RAM.
 This is done by the File Browser. When an SX4 is loaded otherwise, e.g.
 via UART the bank configuration will be left untouched.
+
+
+SX6
+~~~
+
+SX6 stands for Sorbus eXecutable at $0600, however it differs significantly
+from SX4. SX6 is a file format intended to be running executeables
+written for the runtime environment of 6502asm.com a now defunct online
+"fantasy system", It was an assembler combined with a runtime environment
+to run executeable at $0600 with a 32x32 pixels framebuffer located at
+$0200, using a C64 color map.
+
+This implementation is using the IRQ to update the framebuffer to the
+FB32X32 hardware expansion. The IRQ and NMI were never implemented in
+6502asm.com, so this is fitting. However there are some changes.
+
+Compatibility issues:
+
+-  no other start address than $0600 can be used
+-  the framebuffer is updated with constant 20 frame per second
+-  $FF (random number generator) is updated only once per IRQ. If more
+   random numbers per frame are required, $FF needs to be changed to
+   $DF02.
+-  $FE (key press) is also updated only once per IRQ.
+-  RAM at $00-$03 cannot be used, since the Sorbus has this reserved
+   for I/O
+-  RAM at $04-$07 should not be used as it is reserved for kernel
+   functions. However when no kernel functions are used, this can be
+   used.
+-  RAM can be only used up to $CFFF, as $D000-$FFFF contain I/O and ROM.
+-  $FC/$FD contain a 16 bit frame counter, this is actually an
+   improvement
+-  SEI/CLI are now implemented
+-  all other I/O registers from the Sorbus JAM are available
+
+The frame counter can be utilized to calculate effects according to their
+frame number. Also syncing with the next frame can be implemented rather
+easily::
+
+   lda   $fc
+   loop:
+   cmp   $fc
+   beq   loop
+
+So, this is intended with the balance of rather easy porting existing
+6502asm.com software as well having some nice features to write new short
+demos for the Sorbus JAM.
 
 
 Memory map
@@ -366,12 +423,14 @@ with A & X set to 254, then query the cursor position with call $03. Then
 the real size is reported. It might be a good idea to then set position
 1, 1 (top left).
 
+
 Suggested External I/O Addresses
 --------------------------------
 
 -  $0000-$0001: VGA
 -  $D300-$D3FF: 32x32 LED Framebuffer
 -  $D400-$D4FF: Sound: SID clone(s), mod player
+
 
 Notes On Implementation in RP2040
 ---------------------------------
