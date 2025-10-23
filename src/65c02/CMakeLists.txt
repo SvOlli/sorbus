@@ -176,7 +176,7 @@ add_executable(jam_tools
    jam/rom/tools.s
    jam/rom/browser.s
    jam/rom/gensine.s
-   jam/rom/emu6502asm.s
+   jam/rom/run6502asm.s
    jam/rom/bios.s
    jam/rom/bios_stub.s
    )

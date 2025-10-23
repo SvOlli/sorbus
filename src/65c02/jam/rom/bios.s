@@ -127,7 +127,7 @@ NMI:
    jmp   (UVNMI)        ; user vector for NMI ($DF7A)
 IRQ:
    jmp   (UVIRQ)        ; user vector for BRK/IRQ ($DF7E) -> irqcheck (default)
-RESET:
+_reset:
    ; reset routine that also has to work when copied to RAM
    lda   #$01
    sta   BANK           ; set banking to first ROM bank (kernel)
@@ -148,4 +148,5 @@ _biossize = (_biosend-BIOS) + (_fixend-_fixstart)
 .assert  CHRIN   = _chrin,   error, "CHRIN at wrong address"
 .assert  CHROUT  = _chrout,  error, "CHROUT at wrong address"
 .assert  PRINT   = _print,   error, "PRINT at wrong address"
+.assert  RESET   = _reset,   error, "RESET at wrong address"
 .assert  _fixend = _vectors, error, "FIXEND segment not at end of memory"

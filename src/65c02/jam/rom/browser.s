@@ -4,6 +4,7 @@
 .include "jam_cpmfs.inc"
 
 .export     browser
+.import     run6502asm
 
 .segment "CODE"
 
@@ -596,6 +597,10 @@ browsedir:
    cmp   #'`'
    beq   @leave
 
+   cmp   #$0d
+   bne   :+
+   jmp   checkexec
+:
    cmp   #'L'
    bne   :+
    jmp   load
@@ -965,3 +970,80 @@ edituserorname:
 @cancel:
    sec
    rts
+
+checkexec:
+   lda   index
+   asl
+   asl
+   asl
+   asl
+   inc
+   ldx   readp+1
+
+   ldy   user
+   int   CPMNAME
+
+   ldx   #(extletter2-extletter1-1)
+@loop:
+   lda   CPM_FNAME+$09
+   cmp   extletter1,x
+   bne   @next
+   lda   CPM_FNAME+$0A
+   cmp   extletter2,x
+   bne   @next
+   lda   CPM_FNAME+$0B
+   cmp   extletter3,x
+   beq   @run
+@next:
+   dex
+   bpl   @loop
+   jmp   reload
+@run:
+   txa
+   asl
+   tax
+   jmp   (extstart,x)
+
+loadsx4:
+   ; load an executable to $0400, and execute at switch to BANK0
+   stz   SX4START-2        ; write BRK #COPYBIOS, which also switches to BANK0
+   lda   #COPYBIOS
+   sta   SX4START-1
+   ldx   #<(SX4START-2)
+   ldy   #>(SX4START-2)
+   lda   #>SX4START
+   bra   loadrun
+loadsx6:
+   ; load an executable to $0600, and execute 6502asm environment
+   ldx   #<run6502asm
+   ldy   #>run6502asm
+   lda   #$06              ; set load address
+   ; slip through
+loadrun:
+   ; load file to address at A*$100 and jump to vector at Y*$100+X
+   stz   CPM_SADDR+0
+   sta   CPM_SADDR+1
+   int   CPMLOAD
+   lda   #>(RESET-1)
+   pha
+   lda   #<(RESET-1)
+   pha
+   inx
+   bne   :+
+   iny
+:
+   phy
+   phx
+   rts
+
+.segment "DATA"
+   ; table for checking file extensions
+extletter1:
+   .byte "SS"
+extletter2:
+   .byte "XX"
+extletter3:
+   .byte "46"
+
+extstart:
+   .word loadsx4-1, loadsx6-1

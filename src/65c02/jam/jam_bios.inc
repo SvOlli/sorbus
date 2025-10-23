@@ -27,6 +27,12 @@ PRINT    := $FF06
 ; PRIMM is a common used synonym for PRINT here
 PRIMM    := PRINT
 
+; $FFF2: reset routine
+; switches to the correct bank
+; and executes reset code (65522 dec)
+; like $FCE2 on C64
+RESET    := $FFF2
+
 ; non-API addresses required for BIOS <-> kernel calls
 .global  BIOS
 .global  IRQCHECK
