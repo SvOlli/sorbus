@@ -76,7 +76,7 @@ uint32_t SID2_ADDR_PREV = 255;
 uint8_t config[CFG_SIZE];
 
 
-SID16 *sid16;
+SID16 *sid16a;
 SID16 *sid16b;
 
 extern "C"
@@ -98,7 +98,9 @@ extern "C"
     void setDefaultConfiguration()
     {
         for (uint8_t i = 0; i < CFG_REG_MAX; i++)
+        {
             config[i] = 0;
+        }
 
         config[CFG_SID1_TYPE] = MOS8580;
         config[CFG_SID2_TYPE] = MOS8580;
@@ -122,16 +124,16 @@ extern "C"
     void updateConfiguration()
     {
         if (config[CFG_SID1_TYPE] == 0)
-            sid16->set_chip_model(MOS6581);
+            sid16a->set_chip_model(MOS6581);
         else
-            sid16->set_chip_model(MOS8580);
+            sid16a->set_chip_model(MOS8580);
 
         const uint32_t c64clock[3] = {985248, 1022727, 1023440};
 
         if (config[CFG_SID1_TYPE] == 2)
-            sid16->input(-(1 << config[CFG_SID1_DIGIBOOST]));
+            sid16a->input(-(1 << config[CFG_SID1_DIGIBOOST]));
         else
-            sid16->input(0);
+            sid16a->input(0);
 
         if (config[CFG_SID2_TYPE] == 0)
             sid16b->set_chip_model(MOS6581);
@@ -144,7 +146,7 @@ extern "C"
             sid16b->input(0);
 
         C64_CLOCK = c64clock[config[CFG_CLOCKSPEED] % 3];
-        sid16->set_sampling_parameters(C64_CLOCK, SAMPLE_INTERPOLATE, 44100);
+        sid16a->set_sampling_parameters(C64_CLOCK, SAMPLE_INTERPOLATE, 44100);
         sid16b->set_sampling_parameters(C64_CLOCK, SAMPLE_INTERPOLATE, 44100);
 
         extern const uint32_t sidFlags[6];
@@ -216,10 +218,10 @@ extern "C"
     void initReSID()
     {
 
-        sid16 = new SID16();
-        sid16->set_chip_model(MOS8580);
-        sid16->reset();
-        sid16->set_sampling_parameters(C64_CLOCK, SAMPLE_INTERPOLATE, 44100);
+        sid16a = new SID16();
+        sid16a->set_chip_model(MOS8580);
+        sid16a->reset();
+        sid16a->set_sampling_parameters(C64_CLOCK, SAMPLE_INTERPOLATE, 44100);
 
         sid16b = new SID16();
         sid16b->set_chip_model(MOS8580);
@@ -232,18 +234,18 @@ extern "C"
 
     void emulateCyclesReSID(int cyclesToEmulate)
     {
-        sid16->clock(cyclesToEmulate);
+        sid16a->clock(cyclesToEmulate);
         sid16b->clock(cyclesToEmulate);
     }
 
     void emulateCyclesReSIDSingle(int cyclesToEmulate)
     {
-        sid16->clock(cyclesToEmulate);
+        sid16a->clock(cyclesToEmulate);
     }
 
-    void writeReSID(uint8_t A, uint8_t D)
+    void writeReSID1(uint8_t A, uint8_t D)
     {
-        sid16->write(A, D);
+        sid16a->write(A, D);
     }
 
     void writeReSID2(uint8_t A, uint8_t D)
@@ -253,12 +255,12 @@ extern "C"
 
     void outputDigi(uint8_t voice, int32_t value)
     {
-        sid16->forceDigiOutput(voice, value);
+        sid16a->forceDigiOutput(voice, value);
     }
 
     void outputReSID(int16_t *left, int16_t *right)
     {
-        int32_t sid1 = sid16->output(),
+        int32_t sid1 = sid16a->output(),
                 sid2 = sid16b->output();
 
         int32_t L = sid1 * actVolSID1_Left + sid2 * actVolSID2_Left;
@@ -271,7 +273,7 @@ extern "C"
 
     void outputReSIDFM(int16_t *left, int16_t *right, int32_t fm, uint8_t fmHackEnable, uint8_t *fmDigis)
     {
-        int32_t sid1 = sid16->output();
+        int32_t sid1 = sid16a->output();
 
         int32_t L = sid1 * actVolSID1_Left + (fm * actVolSID2_Left * 2);
         int32_t R = sid1 * actVolSID1_Right + (fm * actVolSID2_Right * 2);
@@ -293,19 +295,19 @@ extern "C"
 
     void resetReSID()
     {
-        sid16->reset();
+        sid16a->reset();
         sid16b->reset();
     }
 
     void readRegs(uint8_t *p1, uint8_t *p2)
     {
-        sid16->readRegisters(p1);
+        sid16a->readRegisters(p1);
         sid16b->readRegisters(p2);
     }
 
     uint8_t readSID(uint8_t offset)
     {
-        return sid16->read(offset);
+        return sid16a->read(offset);
     }
 
     uint8_t readSID2(uint8_t offset)
