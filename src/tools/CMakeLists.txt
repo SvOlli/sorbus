@@ -58,6 +58,15 @@ add_executable(wozcat
    )
 
 # tool to convert 32x32 pixel image to executable for fb32x32
+add_executable(gdleddiagram
+   gdleddiagram.c
+   gdhelper.c
+   )
+target_link_libraries(gdleddiagram ${GD_LIBRARIES})
+target_include_directories(gdleddiagram PUBLIC ${GD_INCLUDE_DIRS})
+target_compile_options(gdleddiagram PUBLIC ${GD_CFLAGS_OTHER})
+
+# tool to convert 32x32 pixel image to executable for fb32x32
 add_executable(img2sx4
    img2sx4.c
    gdhelper.c
