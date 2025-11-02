@@ -6,6 +6,7 @@
 
 .define INPUT_DEBUG 0
 
+.import     clrenter
 .import     getkey
 .import     mon
 
@@ -25,6 +26,7 @@ reset:
    jmp   start
    .byte "SBC23"
 
+_getkeytest:
    jmp   getkeytest
 
 start:
@@ -93,9 +95,10 @@ start:
    jsr   PRINT
    .byte " 16bit",0
 :
-
-   lda   #$0a           ; start WozMon port
-   jsr   CHROUT
+   jsr   PRINT
+   .byte $0a,$0a,"Routines:"
+   .byte $0a,.sprintf( "$%04x: getkeytest", $e000+_getkeytest-reset )
+   .byte $0a,$00
    jmp   mon_init
 
 chrinuc:
@@ -136,11 +139,25 @@ prhex4:
    jmp   CHROUT
 
 getkeytest:
+   jsr   nlout
+@loop:
    jsr   getkey
+   pha
    jsr   prhex8
+   pla
+   cmp   #$03
+   bne   :+
+   jmp   clrenter
+:
+   jsr   spout
+   jmp   @loop
+
+nlout:
+   lda   #$0a
+   .byte $2c
+spout:
    lda   #' '
-   jsr   CHROUT
-   jmp   getkeytest
+   jmp   CHROUT
 
 .segment "DATA"
 

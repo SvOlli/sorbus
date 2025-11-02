@@ -47,6 +47,19 @@ memorydump:
    sta   ADDR0+1
 
    ; divide by 16 and we've got the number of lines (still 2s complement)
+.ifp02
+   ; NMOS implementation that also works with 6502 Rev.A
+   ldy   #$0d
+:
+   rol   ADDR0+0
+   rol   ADDR0+1
+   dey
+   bne   :-
+   lda   ADDR0+1
+   ora   #$f0
+   sta   ADDR0+1
+.else
+   ; CMOS implementation
    ldy   #$04
 :
    sec
@@ -54,6 +67,7 @@ memorydump:
    ror   ADDR0+0
    dey
    bne   :-
+.endif
 
 @addrloop:
    jsr   memorydumpline

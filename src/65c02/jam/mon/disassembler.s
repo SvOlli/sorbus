@@ -103,7 +103,19 @@ decodeopcode:
    tay                  ;LABLE moved down 1
    lsr                  ;EVEN/ODD TEST
    bcc   @ieven
+.ifp02
+   ; NMOS implementation should also work with 6502 Rev.A
+   rol
+   rol
+   rol
+   rol
+   rol
+   rol
+   rol
+   rol
+.else
    ror                  ;BIT 1 TEST
+.endif
    bcs   @error         ;XXXXXX11 INVALID OP
    and   #$87           ;MASK BITS
 @ieven:
