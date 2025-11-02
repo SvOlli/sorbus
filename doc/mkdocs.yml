@@ -1,0 +1,70 @@
+site_name: The Sorbus Computer
+site_url: https://sorbus.xayax.net/
+repo_url: https://github.com/SvOlli/sorbus
+edit_uri: https://github.com/SvOlli/sorbus/tree/master/doc/site
+site_description: a simple and cheap retro homebrew computer
+docs_dir: site
+site_dir: ../build/site
+extra_css:
+   - css/sorbus.css
+   - css/prism.css
+extra_javascript:
+   - js/prism.js
+dev_addr: 0.0.0.0:8000
+
+markdown_extensions:
+   - attr_list
+   - md_in_html
+
+theme:
+   #name: null
+   #custom_dir: themes/material
+   name: readthedocs
+   prev_next_buttons_location: both
+   highlightjs: True
+   # hljs_languages:
+   include_homepage_in_sidebar: True
+   navigation_depth: 4
+   collapse_navigation: True
+   titles_only: False
+   sticky_navigation: True
+   locale: en
+   logo: null
+
+nav:
+   - About: index.md
+   - Boards:
+      - 'General Information': 'boards/index.md'
+      - 'Sorbus Backplane': 'boards/backplane.md'
+      - 'Sorbus 65C02 CPU': 'boards/65c02cpu.md'
+      - 'Sorbus Chipset': 'boards/chipset.md'
+      - 'Sorbus Junior': 'boards/junior.md'
+      - 'Sorbus Sound': 'boards/sound.md'
+      - 'Sorbus VGA': 'boards/vga.md'
+      - 'BOM': 'boards/bom.md'
+   - 'Main Core: Sorbus JAM':
+      - 'General Information': 'jam/index.md'
+      - 'System Monitor': 'jam/sysmon.md'
+      - 'Other Monitors': 'jam/monitors.md'
+      - 'Meta-Mode': 'jam/meta_mode.md'
+      - 'Microsoft BASIC 1.0': 'jam/ms_basic.md'
+      - 'CP/M 65': 'jam/cpm65.md'
+      - 'Filebrowser': 'jam/filebrowser.md'
+      - 'Useful Software': 'jam/software.md'
+      - 'Memory Map & I/O Registers': 'jam/memory_map_io_registers.md'
+      - '32x32 LEDs Display': 'jam/32x32display.md'
+   - 'Classic Cores':
+      - 'Apple 1': 'apple1.md'
+      - 'MCP': 'mcp/index.md'
+      - 'MCP Lessons': 'mcp/lessons.md'
+   - '6502 Opcodes':
+      - 'General Information': 'opcodes/index.md'
+      - 'NMOS 6502 Opcodes': 'opcodes/opcodes_6502.md'
+      - 'CMOS 65SC02 Opcodes': 'opcodes/opcodes_65sc02.md'
+      - 'CMOS 65C02 Opcodes': 'opcodes/opcodes_65c02.md'
+      - 'CMOS 65CE02 Opcodes': 'opcodes/opcodes_65ce02.md'
+      - 'CMOS 65816 Opcodes': 'opcodes/opcodes_65816.md'
+      - 'CPU Detection': 'opcodes/cpu_detect.md'
+   - 'Appendix':
+      - 'Thanks': 'thanks.md'
+      - 'Datasheets': 'datasheets.md'

@@ -1,0 +1,26 @@
+.boxed {
+  border: 1px solid #555;
+  margin: 3px;
+  padding: 5px;
+}
+
+.underlined {
+  text-decoration-line: underline;
+}
+
+div.explain_wrap > div.explain_main {
+  display: none;
+  overflow: hidden;
+}
+
+div.explain_wrap:hover > div.explain_main {
+  border: 1px solid #555;
+  margin: 3px;
+  padding: 5px;
+  display: block;
+  overflow: hidden;
+}
+
+td,th {
+    padding: 5px;
+}

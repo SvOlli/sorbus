@@ -3,6 +3,7 @@ cc65-sdk/**/*.o
 dump
 external-build
 doc/downloaded
+doc/site/opcodes/opcodes_65*.md
 doc/traces/*.diff
 doc/traces/*.disass
 pcb/*/*-backups

@@ -118,7 +118,7 @@ paths:
 # these packages are required to create the release package
 setup-apt:
 	sudo apt update
-	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full cpmtools build-essential pkg-config libgd-dev
+	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full cpmtools build-essential pkg-config libgd-dev mkdocs
 
 # this is additionally required on a development host
 setup-dev: setup-apt

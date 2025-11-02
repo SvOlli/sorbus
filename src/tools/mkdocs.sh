@@ -1,0 +1,47 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${0}")/../.."
+
+readonly basedir="${PWD}"
+
+opcode_cvs2md()
+{
+   local cpu="${1}"
+
+   cat <<EOH
+# ${cpu^^} Opcodes
+
+- Name: name of instruction (e.g. "LDA")
+- Mode: addressing mode (e.g. "REL" for branch)
+- Reserved: is it a resevered / undocumented (aka illegal) opcode
+- Bytes: bytes used for command (8 bit mode for 65816)
+- Cycles: cycles taken (without extra for e.g. page crossing)
+- ExtraCycles: extra cycles taken when crossing a page(1) and/or taking a branch(2)
+
+EOH
+   local header=1
+   while read opcode name mode reserved bytes cycles extracycles mxe jump; do
+      echo "| ${opcode} | ${name} | ${mode} | ${reserved} | ${bytes} | ${cycles} | ${extracycles} |"
+      if [ ${header} -eq 1 ]; then
+         echo "| :---- | :---- | :---- | ----: | ----: | ----: | ----: |"
+         header=0
+      fi
+   done
+}
+
+for cpu in 6502 65sc02 65c02 65ce02 65816; do
+   IFS=';' opcode_cvs2md "${cpu}" <doc/opcodes${cpu}.csv >doc/site/opcodes/opcodes_${cpu}.md
+done
+
+cd doc
+case "${1}" in
+upload) mkdocs build --clean &&
+        rsync -av --size-only --delete-before \
+           ../build/site/ \
+           sorbus.xayax.net:/srv/www/root/sorbus.xayax.net/
+;;
+*) exec mkdocs "${@}";;
+esac
+

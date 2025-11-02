@@ -1,6 +1,5 @@
 
-CPU Detection Routine
-=====================
+# CPU Detection Routine
 
 The Sorbus Computer can run any kind of 6502 variant that shares the
 same pinout. The small test and learn environment "Monitor Command
@@ -37,13 +36,12 @@ it relys on special features of the runtime environment. This exact code
 would only work partially on an Apple II series machine for example.
 
 
-Partial Detection
------------------
+## Partial Detection
 
 A very easy way to tell apart an NMOS 6502 CPU from it's CMOS
 successors it done like this in the Sorbus JAM kernel.
 
-```
+```asm6502
 ;  65C02       ; NMOS 6502
    LDA   #$00  ; LDA   #$00
    DEC         ; .byte $3a  ; "illegal" NOP
@@ -64,7 +62,7 @@ This was most probably used to tell apart an Apple IIgs (using a 65816)
 from an Apple IIc/IIe enhanced (using a 65C02) and the original Apple
 II/II+/IIe (using an NMOS 6502).
 
-```
+```asm6502
 ;  65816       ; 65C02            ; 6502
    LDA   #$01  ; LDA   #$01       ; LDA   #$01
    XBA         ; .byte $EB ; NOP  ; .byte $EB, $EA ; "illegal" SBC #$EA
@@ -92,8 +90,7 @@ Now there are two ways. Either to check for the 65CE02 in advance or
 start from scratch.
 
 
-The Goal
---------
+## The Goal
 
 The goal is to could tell 6502 variants apart by their instruction
 sets. There are five different instruction sets have been seen in chips
@@ -124,8 +121,7 @@ whopping 22000 transistors. (If you can, please provide more exact
 numbers and also references.)
 
 
-The Runtime Environment
------------------------
+### The Runtime Environment
 
 To make things easier, a runtime environment was defined with the sole
 purpose to detect the CPU. This is the advantage of this software
@@ -155,8 +151,7 @@ well encapsulated, it can be used just as a subroutine in differenct
 cores. As of now, it is used within the MCP and the JAM Core.
 
 
-Every Byte Is Sacred
---------------------
+### Every Byte Is Sacred
 
 One of the fun things about coding for a 6502 processor is trying to
 reach a maximum of efficiency. This typically means: either to use a
@@ -168,7 +163,7 @@ opcodes, which then writes the result to the exit code address ($FF).
 But for this to work, X has to be initialized to $00.
 
 So the code would pratically look something like this:
-```
+```asm6502
    LDX   #$00 ; clear out X
    ; run test code
    ; [...]
@@ -191,25 +186,84 @@ the IRQ vector, and then wraps around as described above to address
 $0020.
 
 
-The Detection Routine
----------------------
+## The Detection Routine
 
-Because reading the [sourcecode](../src/65c02/cpudetect.s) is very
-hard, as you can't write code for different variants at the same time,
-let's use a simple flow chart on how the detection is implemented.
-Red bubbles show a successful detection of a CPU variant.
+The source code is complex, as it was written for all architectures at
+the same time.
 
-![flowchart](cpu_detect_flowchart.png)
+```asm6502
+   ; should start at $0000
+   ; whole memory is just $20 (=32) bytes
+   ; -> code also needs to be 32 bytes
+   ; runtime environment is also not capable of generating IRQ or NMI
+start:
+   ;ldx   #$00 ; removed due to reset vector now at irq and code is wrapping
+   clc
+   ; $5c is evaluated by ($xxxx = address of is65816):
+   ; 6502:     NOP $xxxx,X ("illegal" opcode)
+   ; 65(S)C02: NOP #$xxxx (reserved)
+   ; 65816:    JMP $38xxxx ($38 taken from SEC)
+   ; 65CE02:   AUG #$38xxxx ($38 taken from SEC)
+   .byte $5c
+   .word is65816
+   ; 6502 and 65(S)C02 continue here from $5c
+   sec
+   ; 65CE02 continues here from $5c
+   bcc   is65CE02
+   txa           ; A=$00
+   ; $1a is evaluated by:
+   ; 6502:   NOP ("illegal" opcode)
+   ; 65C02:  INC
+   .byte $1a
+   bne   check65sc02  ; 6502: A=$00, 65(S)C02: A=$01
+   ror
+   bcs   is6502noror
+   bcc   is6502
+check65sc02:
+   ; $97 is evaluated by:
+   ; 65C02:  SMB1 $FF ; will set retval to $02 = 65C02
+   ; 65SC02: NOP(reserved) : NOP(reserved, $FF)
+   .byte $97
+   .byte $FF
+
+is65SC02:
+   inx            ; X=$06
+is6502noror:
+   inx            ; X=$05
+is65CE02:
+   inx            ; X=$04
+is65816:
+   ; 65816 continues here from $5c
+   inx            ; X=$03
+is65C02:
+   inx            ; X=$02 ; will be set using SMB1 $FF above
+is6502:
+   inx            ; X=$01
+   stx   $ff      ; will stop CPU
+
+   .byte $ea,$4c  ; spare bytes, unused, evaluate to NOP : JMP irq
+                  ; also NMI vector, which is also unused
+reset:
+   .word irq      ; reset vector, start of ram
+irq:
+   ldx   #$00     ; argument needs to be $00
+   ;slip through to start
+```
+
+Because reading the source code is very hard, as you can't write code
+for different variants at the same time, let's use a simple flow chart
+on how the detection is implemented. Red bubbles show a successful
+detection of a CPU variant.
+
+![flowchart](../images/cpu_detect_flowchart.png)
 
 
-Detection Routine As Processed By The Different CPUs
-====================================================
+## Detection Routine As Processed By The Different CPUs
 
 Now, we can also take a look at the traces collected from running all
 those CPUs.
 
-Hexdump
--------
+### Hexdump
 
 This is the initial memory configuration when starting the detection
 environment.
@@ -230,11 +284,11 @@ not drift into undefined behaviour.
 
 Before we dive into the disassemblies, first let's explain the format
 using the first executed instruction as our example.
-```
+```asm6502
  10:001e r a2    :LDX  #$00
 ```
-The `10` is just a line number that starts when the interrupt register
-is pulled high, so the CPU leaves reset state.
+The `10` is just a line number. Counting starts when the reset line is
+pulled high, so the CPU leaves reset state.
 
 This is followed by an overview of the bus state at that time. `001e` is
 the address bus, `r` shows that the CPU is reading, and `a2` is the data
@@ -257,9 +311,9 @@ writing this document, the disassembler can't always tell apart if the
 byte read is an opcode or a parameter.)
 
 
-Disassembly as seen on a 6502
------------------------------
-```
+### Disassembly as seen on a 6502
+
+```asm6502
   1:8aff r 00    :
   2:0089 r d0    :
   3:d0ff r 00    :
@@ -307,12 +361,11 @@ not succeed. The third and final test in line 28 for a working `ROR`
 instruction does succeed, though.
 
 
-Disassembly as seen on a 6502 Rev.A
------------------------------------
+### Disassembly as seen on a 6502 Rev.A
 
 This is just estimated, as such a processor is hard to find for a decent
 price.
-```
+```asm6502
   1:8aff r 00    :
   2:0089 r d0    :
   3:d0ff r 00    :
@@ -370,9 +423,9 @@ Eric Schlaepfer, who also built the
 [MOnSter 6502](https://monster6502.com/).
 
 
-Disassembly as seen on a 65C02
-------------------------------
-```
+### Disassembly as seen on a 65C02
+
+```asm6502
   1:0032 r e8    :
   2:0032 r e8    :
   3:ffff r 00    :
@@ -425,9 +478,9 @@ value, at line 37 making this the only time, the `INX`-slide is not used
 for the return value.
 
 
-Disassembly as seen on a 65SC02
--------------------------------
-```
+### Disassembly as seen on a 65SC02
+
+```asm6502
   1:0001 r 5c    :
   2:0001 r 5c    :
   3:0001 r 5c    :
@@ -483,9 +536,9 @@ the address of that instruction at line 33. So execution continues with
 the `INX`-slide.
 
 
-Disassembly as seen on a 65816
-------------------------------
-```
+### Disassembly as seen on a 65816
+
+```asm6502
   1:001b r 4c    :
   2:001b r 4c    :
   3:001b r 4c    :
@@ -518,9 +571,9 @@ of the address does not matter much, only the least significant byte is
 required here.
 
 
-Disassembly as seen on a 65CE02
--------------------------------
-```
+### Disassembly as seen on a 65CE02
+
+```asm6502
   1:01f8 r 86    :
   2:01f8 r 86    :
   3:01f8 r 86    :
@@ -562,8 +615,7 @@ branching requires only two clock cycles, not three like with all other
 6502 variants.)
 
 
-The Mysterious Problem
-======================
+## The Mysterious Problem
 
 Since the start of a CPU detection within the Sorbus Computer, sometimes
 a CPU could not be detected, but when running the test a couple of
@@ -594,8 +646,7 @@ reading the reset vector. Or one can say: before the reset vector is
 read the memory is read-only. Problem solved with an elegant solution.
 
 
-There Is Always Someone Better
-==============================
+## There Is Always Someone Better
 
 After finishing the CPU detection from the Sorbus, I found this:
 [getspu.s](https://github.com/cc65/cc65/blob/master/libsrc/common/getcpu.s)

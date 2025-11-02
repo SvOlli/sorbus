@@ -1,5 +1,5 @@
-BOM & Prices
-============
+
+# BOM & Prices
 
 At one point the prices when buying supplies got written down, indended to be
 updated when buying the next batch.
@@ -7,19 +7,23 @@ updated when buying the next batch.
 All prices are in Euros.
 
 
-A Note About Getting 65C02s
----------------------------
+## A Note About Getting 65C02s
 
 When the project was started in mid 2023, 65C02 or 65SC02 were easy to obtain
 for ~2,50 Euro per chip when buying 10. However since end of 2024 these chips
-are getting harder to get. The official price at Mouser is ~8.30/chip when
-buying 10 or more. So, if prices of refurbished and new old stock rise even
-more, it makes more sense to buy new chips.
+are getting harder to get. This results in two things: for one prices rise,
+but more importantly there are more fakes around. Two out of three tries to
+obtain reasonable priced refurbished 65C02s leads to discovering them being
+fakes. This is one of the reasons why the Sorbus is good at detecting the
+variant of the 6502 at hand.
+
+The official price at Mouser is ~8.30/chip when buying 10 or more. So, if
+prices of refurbished and new old stock rise even more, it makes more
+sense to buy new chips.
 [(WDC W65C02TPG-14 @ Mouser)](https://eu.mouser.com/ProductDetail/Western-Design-Center-WDC/W65C02S6TPG-14?qs=opBjA1TV903lvWo9AEKH5w%3D%3D)
 
 
-Sorbus Junior
--------------
+## Sorbus Junior
 
 | Count | Part                     | Price Per Batch | When Buying | Supplier Used    | Comment          |
 | ----: | ------------------------ | --------------: | ----------: | ---------------- | ---------------- |
@@ -33,14 +37,13 @@ Sorbus Junior
 |     1 | jumper                   |                 |             | eBay             |                  |
 
 
-Sorbus Sound
-------------
+## Sorbus Sound
 
 | Count | Part                     | Price Per Batch | When Buying | Supplier Used    | Comment          |
 | ----: | ------------------------ | --------------: | ----------: | ---------------- | ---------------- |
 |     1 | PCB                      |            1.00 |          10 | Elecrow          |                  |
 |     1 | RP2040 Purple Board 16MB |            2.50 |          10 | AliExpress       |                  |
-|     1 | 32 pin connector, angled |                 |             | AliExpress       | 40 pin connector |
+|     1 | 32 pin connector, angled |                 |             | eBay             | 40 pin connector |
 |     1 | PCM5102 I2S sound module |            2.00 |          10 | AliExpress       |                  |
 |     1 | uSD socket               |            0.70 |          10 | AliExpress       |                  |
 |     8 | diode                    |                 |             | Mouser           |                  |
@@ -48,8 +51,7 @@ Sorbus Sound
 |     1 | jumper                   |                 |             | eBay             |                  |
 
 
-Sorbus VGA
-----------
+## Sorbus VGA
 
 | Count | Part                     | Price Per Batch | When Buying | Supplier Used    | Comment          |
 | ----: | ------------------------ | --------------: | ----------: | ---------------- | ---------------- |
@@ -68,8 +70,7 @@ Sorbus VGA
 |     2 | jumper                   |                 |             | eBay             |                  |
 
 
-Chipset / GPIO
---------------
+## Chipset / GPIO
 
 | Count | Part                     | Price Per Batch | When Buying | Supplier Used    | Comment          |
 | ----: | ------------------------ | --------------: | ----------: | ---------------- | ---------------- |
@@ -81,8 +82,7 @@ Chipset / GPIO
 |     1 | jumper                   |                 |             | eBay             |                  |
 
 
-32x32 LED Matrix
-----------------
+## 32x32 LED Matrix
 
 | Count | Part                     | Price Per Batch | When Buying | Supplier Used    | Comment          |
 | ----: | ------------------------ | --------------: | ----------: | ---------------- | ---------------- |
@@ -91,13 +91,17 @@ Chipset / GPIO
 |     1 | woodwork done by father  |       priceless |             | Daddy            |                  |
 
 
-Links
------
+## Links
+
+Note that these links are just an example. It is very likely that you can save
+more than 20% if you look for a similar item.
 
 - [W65C02S6TPG-14](https://www.mouser.de/ProductDetail/Western-Design-Center-WDC/W65C816S6PG-14?qs=opBjA1TV900oFHK2UUDZKA%3D%3D)
-- [RP2040 Purple Board 16MB]()
-- [32 pin socket]()
-- [PCM5102 I2S sound module]()
-- [uSD socket]()
-- [16x16 WS2812 panel]()
-
+- [RP2040 Purple Board 16MB](https://www.aliexpress.com/item/1005009735509158.html)
+  (make sure that you get the 16MB variant, there also is a 4MB variant around which
+  is not sufficiant)
+- [32 pin socket](https://www.ebay.de/itm/334682289902)
+- [PCM5102 I2S sound module](https://www.aliexpress.com/item/1005009800576806.html)
+- [uSD socket](https://www.aliexpress.com/item/1005005591145849.html)
+- [16x16 WS2812 panel](https://www.ebay.de/itm/315667763935) (You find them
+  cheaper at AliExpress)

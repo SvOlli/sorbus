@@ -1,13 +1,23 @@
 
-Sorbus 32x32 LED Display
-========================
+# Sorbus 32x32 LED Display
 
 The panels built so far use this order of LEDs.
 
-![LED order](images/WS2812_order.gif)
+## Hardware Setup
 
-I/O Registers
--------------
+The LED hardware is a single string of 1024 WS2812 LEDs created by
+concatinating four 16x16 WS2812 panels, which are available on AliExpress
+or eBay. The order in the hardcoded translation matrix within the software
+looks like this:
+
+![LED order](../images/WS2812_order.gif)
+
+Note the first LED is roughly at the middle on the left side. If the order
+of the LEDs is different in your setup, you need to create a new translation
+matrix. An example on how to create one is available as part of the source
+code: `src/tools/translation_matrix.c`.
+
+## I/O Registers
 
 I/O utilizes the page $D3xx. All registers are write only, as the hardware
 only sniffes the bus and never actively drives it.
@@ -32,14 +42,18 @@ only sniffes the bus and never actively drives it.
 
 If not all bits of a register are required, those will be masked out/ignored.
 
+## Copy Mode
+
 Value written do $D300/1 indicades mode (can be or'ed together):
+
 - $00: plain copy
 - $01: transparency: no copy when source color = transparent
 - $02: transparency: no copy when destination color = transparent
 - $04: transparency: only copy when destination color = transparent
 - $06: do nothing
 
-Color palettes:
+## Color Palettes
+
 - $00: Insane's RGBI2222
 - $01: Custom 1
 - $02: Custom 2
@@ -49,7 +63,7 @@ Color palettes:
 - $06: Atari 8-bit like
 - $07: Atari 8-bit like, ordered differently
 - $08: Veto's custom curated
-- $09: Coder colors
+- $09: Coder colors (C128 VDC like)
 
 Custom defined color palettes are always specified in RGB444. Writing
 to $D30D resets internal index of $D310-$D312 to $00, when a colorvalue

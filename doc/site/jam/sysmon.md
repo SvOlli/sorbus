@@ -1,3 +1,4 @@
+
 # Sorbus System Monitor
 
 This is intended to be the "go-to" system monitor to use. There are two
@@ -7,6 +8,7 @@ different versions to invoke:
 - the standard version included in ROM and invoked either by pressing "m" in
   the reset menu or by invoking BRK #$0e (or BRK #$00, if user vector UVBRK
   wasn't changed)
+
 
 ## Invoking
 
@@ -40,6 +42,7 @@ go (`G`) command, the data will be written back to those registers. The
 tilde (`~`) just denotes that the following line contains registers. The
 greater-than-sign (`>`) is the entry prompt.
 
+
 ## Line Input
 
 The line input is capable of minimal command line editing
@@ -56,29 +59,33 @@ The line input is capable of minimal command line editing
 | Ctrl+K    | delete everything right from the cursor |
 | Ctrl+C    | cancel input                            |
 
-(This is a kernel function that also works with OSI BASIC for example.)
+(This is a kernel function that also used by OSI BASIC for example.)
+
 
 ## Supported Commands
 
-| Command | Function                                                          |
-| ------- | ----------------------------------------------------------------- |
-| R       | dump shadow registers                                             |
-| G       | go                                                                |
-| ~       | edit shadow registers                                             |
-| M       | dump memory                                                       |
-| :       | edit memory                                                       |
-| D       | disassemble                                                       |
-| A       | assemble                                                          |
-| C       | compare                                                           |
-| F       | fill                                                              |
-| H       | hunt (find)                                                       |
-| T       | transfer (copy)                                                   |
-| ;       | handle papertape input            (not available on CMOS version) |
-| BR      | read sector from internal drive                                   |
-| BW      | write sector to internal drive                                    |
-| L       | load file from CP/M filesystem    (not available on NMOS version) |
-| S       | save file to CP/M filesystem      (not available on NMOS version) |
-| $       | show directory of CP/M filesystem (not available on NMOS version) |
+| Command | Function                          | Comment                         |
+| ------- | --------------------------------- | ------------------------------- |
+| R       | dump shadow registers             |                                 |
+| G       | go                                |                                 |
+| ~       | edit shadow registers             |                                 |
+| M       | dump memory                       |                                 |
+| :       | edit memory                       |                                 |
+| D       | disassemble                       |                                 |
+| A       | assemble                          |                                 |
+| C       | compare                           |                                 |
+| F       | fill                              |                                 |
+| H       | hunt (find)                       |                                 |
+| T       | transfer (copy)                   |                                 |
+| ;       | handle papertape input            | (not available on CMOS version) |
+| BR      | read sector from internal drive   |                                 |
+| BW      | write sector to internal drive    |                                 |
+| L       | load file from CP/M filesystem    | (not available on NMOS version) |
+| S       | save file to CP/M filesystem      | (not available on NMOS version) |
+| $       | show directory of CP/M filesystem | (not available on NMOS version) |
+
+(Input is case insensitive.)
+
 
 ### Command Examples
 
@@ -103,6 +110,7 @@ So these commands are equivalent:
 >m04000480
 >m 400 480
 ```
+
 
 #### Hexdump memory
 
@@ -147,6 +155,7 @@ The first one disassembles 20 instructions. You can enter `d` without an
 address again to continue disassembling for another 20 instructions. The
 second one will disassemble the memory area from $e000 to $e100.
 
+
 #### Assemble
 
 ```txt
@@ -162,6 +171,7 @@ It will turn to this for a successful assembly:
 
 See how the assembler has already prepared the next line for entering.
 
+
 #### Compare
 
 ```txt
@@ -172,6 +182,7 @@ Compares the area from $1000 to $1fff with the area from $4000 to $4fff.
 All addresses that do not match will be printed out, where the address of
 the first area will be used.
 
+
 #### Fill
 
 ```txt
@@ -179,6 +190,7 @@ the first area will be used.
 ```
 
 Fills the memory from $1000 to $1fff with the value of $bd.
+
 
 #### Hunt
 
@@ -188,6 +200,7 @@ Fills the memory from $1000 to $1fff with the value of $bd.
 
 Searches for the byte combination $ff, $f2 in the area from $0400 to $0fff.
 When such a combination is found, the address of the first byte is printed.
+
 
 #### Transfer
 
@@ -223,6 +236,7 @@ Technically we're using sectors of 128 bytes here, not blocks combining
 to "Save". (See below.) Also, the commands `BR` and `BW` were used by the
 monitor of the Action Replay Cartridge as well.
 
+
 #### CP/M Filesystem Load/Save
 
 ```txt
@@ -250,6 +264,7 @@ Since kernel routines are used, load and save will always use RAM. Supported
 areas are $0400-$cfff and $df80-$ffff. $0004-$03ff will do unpredictable
 stuff, as this area is swapable. $d000-$df7f will just cause an error.
 
+
 #### Directory
 
 ```txt
@@ -257,6 +272,7 @@ $A
 ```
 
 Will show contents of the directory of the user partition $A.
+
 
 ## Differences between 65SC02 in ROM and NMOS 6502 toolkit versions
 
@@ -271,3 +287,15 @@ Will show contents of the directory of the user partition $A.
 If the bank register is set to $00, then using "G" command will copy the
 BIOS from ROM to RAM in process. Without it the code for executing would
 not work.
+
+Also upon startup of the NMOS 6502 toolkit, you will be greeted with the
+[CPU detected](../opcodes/cpu_detect.md) upon cold boot. It should be one of the following:
+
+```
+6502 CPU features: NMOS
+65SC02 CPU features: CMOS
+65C02 CPU features: CMOS BBSR
+65CE02 CPU features: CMOS BBSR Z-Reg
+65816 CPU features: CMOS 16bit
+6502RA CPU features: NMOS
+```

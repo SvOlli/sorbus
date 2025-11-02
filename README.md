@@ -2,7 +2,9 @@ The Sorbus Computer
 ===================
 
 The attempt to build a very simple 65C02 based computer by utilizing a
-Raspberry Pi Pico clone for the rest of the functionality.
+Raspberry Pi Pico clone for the rest of the functionality. More
+documentation is available at
+[https://sorbus.xayax.net/](https://sorbus.xayax.net/).
 
 ![Sorbus assembled](doc/images/SorbusAssembled.jpg)
 ![Sorbus parts](doc/images/SorbusParts.jpg)
@@ -14,14 +16,14 @@ processor and it siblings. However now the main focus is now on creating
 a custom computer, using a code called "JAM" (Just Another Machine).
 
 The project is fully open source, licensend under GPL v3:
-  - the PCB design is in the folder pcb
+  - the PCB design is in the folder pcb/
     - the Raspberry Pi Pico clone is found under the term "Purple PR2040"
       on AliExpress and other sites
     - the clone is used because all GPIOs of the RP2040 are required
-  - the 65C02 source code to run on the target is at src/65c02
+  - the 65C02 source code to run on the target is at src/65c02/
     - compiling requires the [cc65](https://cc65.github.io/), which
       needs to be preinstalled.
-  - the source code for the Raspberry Pi Pico clone is at src/rp2040
+  - the source code for the Raspberry Pi Pico clone is at src/rp2040/
     - compiling requires the
       [Pico-SDK](https://github.com/raspberrypi/pico-sdk) from the
       Raspberry Pi Foundation, which will be downloaded if not previously
@@ -90,7 +92,7 @@ There are also some build scripts available for special cases:
   - src/tools/upload.sh
     - script used to build and transfer software using picotool
       (needs rewrite)
-    - defaults to uploading the native core
+    - defaults to uploading the JAM core
   - src/tools/external-taliforth2.sh
     - script to checkout, build and install the TaliForth2
       binary ready for building the filesystem image
