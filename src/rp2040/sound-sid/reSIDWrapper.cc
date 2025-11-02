@@ -103,7 +103,7 @@ extern "C"
         config[CFG_SID1_TYPE] = MOS8580;
         config[CFG_SID2_TYPE] = MOS8580;
         config[CFG_REGISTER_READ] = 1;
-        config[CFG_SID2_ADDRESS] = 1 + 4 * 0; 
+        config[CFG_SID2_ADDRESS] = 1 + 4 * 0;
         config[CFG_SID1_DIGIBOOST] = 12;
         config[CFG_SID2_DIGIBOOST] = 12;
         config[CFG_SID1_VOLUME] = 12;
@@ -215,7 +215,7 @@ extern "C"
     volatile int doe =1;
     void initReSID()
     {
-        
+
         sid16 = new SID16();
         sid16->set_chip_model(MOS8580);
         sid16->reset();
