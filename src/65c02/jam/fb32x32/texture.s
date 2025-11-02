@@ -70,7 +70,7 @@ init_loop:
 
 loop:
    ;jmp skip_blit
-   
+
    lda   $ff
 :
    cmp   $ff

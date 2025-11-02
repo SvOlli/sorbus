@@ -6,6 +6,8 @@ Then a mass storage device will show up. Copy the desired *.uf2 file to
 the top level of this device. Then the system will reboot with the new
 core installed.
 
+More documentation is available in the docs/ directory.
+
 Cores available are:
 - Monitor Command Prompt: MCP
 - Apple 1

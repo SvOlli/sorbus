@@ -555,7 +555,7 @@ static const uint8_t gylph_bitmap[] = {
 /* U+7E "~" */
 0x6e, 0xe7, 0x24, 0xdd, 0x42, 0x8f, 0xf6
 
-/* FONT EXTENSION  added by compile_font.py */ 
+/* FONT EXTENSION  added by compile_font.py */
 
 /* U+7F DEL=Cursor (127) */
 ,0x0,0xf,0xf0,0x0,0x0,0xf0,0xf,0x0,0xf,0x0,0x0,0xf0,0xf,0x0,0x0,0xf0,0xf,0x0,0x0,0xf0,0xf,0x0,0x0,0xf0,0xf,0xff,0xff,0xf0
@@ -920,7 +920,7 @@ static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {
         {.bitmap_index = 2384, .adv_w = 128, .box_h = 14, .box_w = 6, .ofs_x = 1, .ofs_y = -3},
         {.bitmap_index = 2426, .adv_w = 128, .box_h = 2, .box_w = 7, .ofs_x = 1, .ofs_y = 3}
 
-/* FONT EXTENSION added by compile_font.py */ 
+/* FONT EXTENSION added by compile_font.py */
 
 ,{.bitmap_index = 2433, .adv_w = 128, .box_h = 7, .box_w = 8, .ofs_x = 0, .ofs_y = 2}
 ,{.bitmap_index = 2461, .adv_w = 128, .box_h = 15, .box_w = 8, .ofs_x = 0, .ofs_y = -3}

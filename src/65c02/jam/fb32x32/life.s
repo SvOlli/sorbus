@@ -39,7 +39,7 @@ irqhandler:
  phy
 
  jsr starttick
- 
+
  stz FB32X32_COPY
  lda TMIMRL
  ply
@@ -61,7 +61,7 @@ randloop:   lda RANDOM       ;generate random
             lda $12
             cmp #$d0
             bne randloop
- 
+
 clearmem:   lda #$df         ;set $07df-$0a20
             sta $11          ;to $#00
             lda #$07
@@ -75,14 +75,14 @@ clearbyte:  lda #$00
             cmp #$0a
             bne clearbyte
             rts
- 
+
 starttick:
             inc $15
             lda $15
             cmp #$64
             bne copyscreen
             stz $15
-            
+
             jsr inittick
 copyscreen: lda #$00         ;set up source
             sta $11          ;pointer at
@@ -100,8 +100,8 @@ copybyte:   lda ($11),Y      ;copy pixel to
             lda $12          ;if so, we\'ve
             cmp #$06         ;copied the
             bne copybyte     ;entire screen
- 
- 
+
+
 conway:     lda #$df         ;apply conway rules
             sta $11          ;reset the pointer
             sta $13          ;to $#01df/$#07df
@@ -169,7 +169,7 @@ conwayloop: cmp #$e0         ;if not last cell,
             ;jmp starttick    ;run next tick
             rts
 
- 
+
 inc1113:    lda $11          ;increment $01
             cmp #$ff         ;and $03 as 16-bit
             bne onlyinc01    ;pointers

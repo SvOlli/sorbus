@@ -137,7 +137,6 @@ kaleido_run:
    jmp   show4fb
 
 
-
 flip16to32:
    ldx   #$00
 .if IMPROVED

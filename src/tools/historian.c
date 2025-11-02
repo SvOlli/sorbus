@@ -70,7 +70,7 @@ cputype_t getcputype( const char *argi )
    {
       *c = toupper( *c );
    }
-   
+
    if( !strcmp( arg, "6502" ) )
    {
       retval = CPU_6502;
@@ -249,6 +249,6 @@ int main( int argc, char *argv[] )
    }
    disass_historian_done( dah );
    free( buffer );
-   
+
    return 0;
 }

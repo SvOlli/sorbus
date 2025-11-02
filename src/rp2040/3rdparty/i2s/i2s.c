@@ -26,7 +26,7 @@
 #include "hardware/dma.h"
 #include "hardware/irq.h"
 #include "i2s.pio.h"
-  
+
 const i2s_config i2s_config_default = {48000, 256, 32, 10, 6, 7, 8, true};
 
 static float pio_div(float freq, uint16_t* div, uint8_t* frac) {

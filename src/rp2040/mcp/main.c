@@ -494,7 +494,7 @@ cmd_t cmds[] = {
    { cmd_nmi,    3, "nmi",    "trigger non maskable interrupt (dec)" },
    { cmd_colon,  1, ":",      "write to memory <address> <value> .. (hex)" },
    { cmd_fill,   1, "f",      "fill memory <from> <to> <value> (hex)" },
-   { cmd_mem,    1, "m",      "dump memory (<from> (<to>))" },
+   { cmd_mem,    1, "m",      "dump memory (<from> (<to>)) (hex)" },
    { cmd_steps,  1, "s",      "run number of steps (dec)" },
    { 0, 0, 0, 0 }
 };

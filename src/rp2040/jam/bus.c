@@ -972,6 +972,7 @@ void bus_run()
 {
    bus_init();
    system_init();
+   system_cpu_detect();
    system_reboot();
 
    // when not running as speed test run main loop forever
@@ -1039,7 +1040,7 @@ void bus_run()
 }
 
 
-void system_init()
+void system_cpu_detect()
 {
    cputype = cpu_detect( false );
 retry:
@@ -1057,6 +1058,11 @@ retry:
 
       goto retry;
    }
+}
+
+
+void system_init()
+{
    memset( &ram[0x0000], 0x00, sizeof(ram) );
    memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof(rom) );
    srand( get_rand_32() );

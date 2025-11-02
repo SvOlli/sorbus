@@ -134,8 +134,10 @@ $(RELEASE_ARCHIVE): $(CC65_SDK_DIR) all
 	cp doc/README_release.txt README.txt
 	$(RM) $@
 	7z a -mx=9 -bd -sdel $@ README.txt *.uf2
+	7z a -mx=9 -bd $@ $(CC65_SDK_DIR)
 	make -C $(CC65_SDK_DIR) clean
-	7z a -mx=9 -bd $@ $(CC65_SDK_DIR) doc/apple1.md doc/monitors.md doc/sysmon.md doc/jam.rst doc/images/WS2812_order.gif
+	cd doc && mkdocs build --no-directory-urls -d ../build/docs
+	cd build && 7z a -mx=9 -bd ../$@ docs
 
 release: sanitycheck $(RELEASE_ARCHIVE)
 

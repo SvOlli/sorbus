@@ -380,7 +380,7 @@ L4098:
    lda   #$03
    sta   DSCLEN
    lda   #$2C
-   sta   TOKENCASE
+   stz   TOKENCASE
    sta   LINNUM+1
    jsr   CRDO
    ldx   #TEMPST
@@ -6201,3 +6201,79 @@ GENERIC_CHRGET_END:
 .out .sprintf( "   ZP end:     $%04x", ZPEND + GENERIC_CHRGET_END - GENERIC_CHRGET )
 .out .sprintf( "   number tokens: %d", NUM_TOKENS )
 .out "   ================="
+
+.out "address relocation:"
+.out "| Label | Old (hex) | Old (dec) | New (hex) | New (dec) |"
+.out "| ----- | --------: | --------: | --------: | --------: |"
+.if .defined(GORESTART)
+.out .sprintf( "| GORESTART | $00 | $%02X | 0 | %d |", GORESTART, GORESTART )
+.else
+.out .sprintf( "| GORESTART | $00 | (removed) | 0 | (removed) |" )
+.endif
+.out .sprintf( "| GOSTROUT | $03 | $%02X | 3 | %d |", GOSTROUT, GOSTROUT )
+.out .sprintf( "| GOAYINT | $06 | $%02X | 6 | %d |", GOAYINT, GOAYINT )
+.out .sprintf( "| GOGIVEAYF | $08 | $%02X | 8 | %d |", GOGIVEAYF, GOGIVEAYF )
+.out .sprintf( "| USR | $0A | $%02X | 10 | %d |", USR, USR )
+.if .defined(POSX)
+.out .sprintf( "| POSX | $0E | $%02X | 14 | %d |", POSX, POSX )
+.else
+.out .sprintf( "| POSX | $0E | (removed) | 14 | (removed) |" )
+.endif
+.out .sprintf( "| LINNUM | $11 | $%02X | 17 | %d |", LINNUM, LINNUM )
+.out .sprintf( "| INPUTBUFFER | $13 | $%02X | 19 | %d |", INPUTBUFFER, INPUTBUFFER )
+.out .sprintf( "| CHARAC | $5B | $%02X | 91 | %d |", CHARAC, CHARAC )
+.out .sprintf( "| ENDCHR | $5C | $%02X | 92 | %d |", ENDCHR, ENDCHR )
+.out .sprintf( "| EOLPNTR | $5D | $%02X | 93 | %d |", EOLPNTR, EOLPNTR )
+.out .sprintf( "| DIMFLG | $5E | $%02X | 94 | %d |", DIMFLG, DIMFLG )
+.out .sprintf( "| VALTYP | $5F | $%02X | 95 | %d |", VALTYP, VALTYP )
+.out .sprintf( "| DATAFLG | $60 | $%02X | 96 | %d |", DATAFLG, DATAFLG )
+.out .sprintf( "| SUBFLG | $61 | $%02X | 97 | %d |", SUBFLG, SUBFLG )
+.out .sprintf( "| INPUTFLG | $62 | $%02X | 98 | %d |", INPUTFLG, INPUTFLG )
+.out .sprintf( "| CPRMASK | $63 | $%02X | 99 | %d |", CPRMASK, CPRMASK )
+.out .sprintf( "| TEMPPT | $65 | $%02X | 101 | %d |", TEMPPT, TEMPPT )
+.out .sprintf( "| LASTPT | $66 | $%02X | 102 | %d |", LASTPT, LASTPT )
+.out .sprintf( "| TEMPST | $68 | $%02X | 104 | %d |", TEMPST, TEMPST )
+.out .sprintf( "| INDEX | $71 | $%02X | 113 | %d |", INDEX, INDEX )
+.out .sprintf( "| DEST | $73 | $%02X | 115 | %d |", DEST, DEST )
+.out .sprintf( "| RESULT | $75 | $%02X | 117 | %d |", RESULT, RESULT )
+.out .sprintf( "| TXTTAB | $79 | $%02X | 121 | %d |", TXTTAB, TXTTAB )
+.out .sprintf( "| VARTAB | $7B | $%02X | 123 | %d |", VARTAB, VARTAB )
+.out .sprintf( "| ARYTAB | $7D | $%02X | 125 | %d |", ARYTAB, ARYTAB )
+.out .sprintf( "| STREND | $7F | $%02X | 127 | %d |", STREND, STREND )
+.out .sprintf( "| FRETOP | $81 | $%02X | 129 | %d |", FRETOP, FRETOP )
+.out .sprintf( "| FRESPC | $83 | $%02X | 131 | %d |", FRESPC, FRESPC )
+.out .sprintf( "| MEMSIZ | $85 | $%02X | 133 | %d |", MEMSIZ, MEMSIZ )
+.out .sprintf( "| CURLIN | $87 | $%02X | 135 | %d |", CURLIN, CURLIN )
+.out .sprintf( "| OLDLIN | $89 | $%02X | 137 | %d |", OLDLIN, OLDLIN )
+.out .sprintf( "| OLDTEXT | $8B | $%02X | 139 | %d |", OLDTEXT, OLDTEXT )
+.out .sprintf( "| Z8C | $8D | $%02X | 141 | %d |", Z8C, Z8C )
+.out .sprintf( "| DATPTR | $8F | $%02X | 143 | %d |", DATPTR, DATPTR )
+.out .sprintf( "| INPTR | $91 | $%02X | 145 | %d |", INPTR, INPTR )
+.out .sprintf( "| VARNAM | $93 | $%02X | 147 | %d |", VARNAM, VARNAM )
+.out .sprintf( "| VARPNT | $95 | $%02X | 149 | %d |", VARPNT, VARPNT )
+.out .sprintf( "| FORPNT | $97 | $%02X | 151 | %d |", FORPNT, FORPNT )
+.out .sprintf( "| LASTOP | $99 | $%02X | 153 | %d |", LASTOP, LASTOP )
+.out .sprintf( "| CPRTYP | $9B | $%02X | 155 | %d |", CPRTYP, CPRTYP )
+.out .sprintf( "| FNCNAM | $9C | $%02X | 156 | %d |", FNCNAM, FNCNAM )
+.out .sprintf( "| DSCPTR | $9E | $%02X | 158 | %d |", DSCPTR, DSCPTR )
+.out .sprintf( "| DSCLEN | $A0 | $%02X | 160 | %d |", DSCLEN, DSCLEN )
+.out .sprintf( "| Z52 | $A2 | $%02X | 162 | %d |", Z52, Z52 )
+.out .sprintf( "| ARGEXTENSION | $A3 | $%02X | 163 | %d |", ARGEXTENSION, ARGEXTENSION )
+.out .sprintf( "| HIGHDS | $A4 | $%02X | 164 | %d |", HIGHDS, HIGHDS )
+.out .sprintf( "| HIGHTR | $A6 | $%02X | 166 | %d |", HIGHTR, HIGHTR )
+.out .sprintf( "| INDX | $A8 | $%02X | 168 | %d |", INDX, INDX )
+.out .sprintf( "| TMPEXP | $A8 | $%02X | 168 | %d |", TMPEXP, TMPEXP )
+.out .sprintf( "| EXPON | $A9 | $%02X | 169 | %d |", EXPON, EXPON )
+.out .sprintf( "| LOWTR | $AA | $%02X | 170 | %d |", LOWTR, LOWTR )
+.out .sprintf( "| LOWTRX | $AA | $%02X | 170 | %d |", LOWTRX, LOWTRX )
+.out .sprintf( "| EXPSGN | $AB | $%02X | 171 | %d |", EXPSGN, EXPSGN )
+.out .sprintf( "| FAC | $AC | $%02X | 172 | %d |", FAC, FAC )
+.out .sprintf( "| FACSIGN | $B0 | $%02X | 176 | %d |", FACSIGN, FACSIGN )
+.out .sprintf( "| SERLEN | $B1 | $%02X | 177 | %d |", SERLEN, SERLEN )
+.out .sprintf( "| SHIFTSIGNEXT | $B2 | $%02X | 178 | %d |", SHIFTSIGNEXT, SHIFTSIGNEXT )
+.out .sprintf( "| ARG | $B3 | $%02X | 179 | %d |", ARG, ARG )
+.out .sprintf( "| ARGSIGN | $B7 | $%02X | 183 | %d |", ARGSIGN, ARGSIGN )
+.out .sprintf( "| STRNG1 | $B8 | $%02X | 184 | %d |", STRNG1, STRNG1 )
+.out .sprintf( "| STRNG2 | $BA | $%02X | 186 | %d |", STRNG2, STRNG2 )
+.out .sprintf( "| CHRGET | $BC | $%02X | 188 | %d |", CHRGET, CHRGET )
+.out .sprintf( "| TOKENCASE | (new) | $%02X | (new) | %d |", TOKENCASE, TOKENCASE )

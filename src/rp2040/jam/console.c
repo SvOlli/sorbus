@@ -85,77 +85,89 @@ void console_type_set( console_type_t type )
 
 
 /* For xmodem receive, we need to provide the HW specific functions*/
-int _inbyte(int msec){
-
-
+int _inbyte(int msec)
+{
    int c = getchar_timeout_us( msec*1000 );
    if( c == PICO_ERROR_TIMEOUT )
    {
       return -1;
    }
-   return c; 
-
+   return c;
 }
-void _outbyte(unsigned char c){
 
+void _outbyte(unsigned char c)
+{
     putchar(c);
 }
 
-int received_chunk(unsigned char * buf, int size){
 
-   uint16_t offset=0;
-    /* Copy it to ram */    
-   if (mem_upload_p == 0 ){
+int received_chunk(unsigned char * buf, int size)
+{
+   /* handles the download of a chunk to memory */
+   uint16_t offset = 0;
+
+   /* Copy it to ram */
+   if (mem_upload_p == 0 )
+   {
       /* fetch loadadress */
-      mem_upload_p=buf[0]+(0x100*buf[1]);
-      offset=2;
-      size-=2;
-      mem_start_p=mem_upload_p;
+      mem_upload_p = buf[0]+(0x100*buf[1]);
+      offset = 2;
+      size -= 2;
+      mem_start_p = mem_upload_p;
    }
-   if ((mem_upload_p+size) < 0x10000){
-      memcpy(&ram[mem_upload_p],&buf[offset],size);
-      mem_upload_p+=size;   
-   }else{
+   if ((mem_upload_p+size) < 0x10000)
+   {
+      memcpy( &ram[mem_upload_p], &buf[offset], size );
+      mem_upload_p += size;
+   }
+   else
+   {
       //TODO:  Overflow detected , check how we can stop upload
    }
 
 }
 
 
-int32_t print_upload_menu(){
-
+int32_t print_upload_menu()
+{
    int32_t in_addr;
 
-   printf ("\n\nUploading file to address ? \n0: use load adress \n");    
+   printf ("\n\nUploading file to address ? \n0: use load adress \n");
    printf ("ctrl-c to cancel\n");
    in_addr= get_16bit_address(0xe000);
    if (in_addr<0){
      printf("\nTransfer canceled\n");
    }
    return in_addr;
-
-
 }
 
-void run_upload(uint32_t upload_address){
 
-/* Xmodem-upload */
-   mem_upload_p=upload_address;
-   mem_start_p=mem_upload_p;
-   printf("\nUploading to adress 0x%04X\n",mem_upload_p);
-   printf("Start XModem Transfer now:\n");
-   int32_t ret=xmodemReceive();            
-   printf("\n\n\npress a key \n\n");
-   int in_char= getchar_timeout_us(10000000);
-   if (ret<0){
-      printf("\n\n\nFailure in reception %d\n\n",ret);
-   }else{
-      printf("\n\n\nReception successful. 0x%04X - 0x%04X \n\n", mem_start_p, mem_start_p + ret);
+void run_upload(uint32_t upload_address)
+{
+   /* Xmodem-upload */
+   int32_t ret = -1;
+   int in_char;
+
+   mem_upload_p = upload_address;
+   mem_start_p  = mem_upload_p;
+   printf( "\nUploading to adress 0x%04X\n", mem_upload_p );
+   printf( "Start XModem Transfer now:\n" );
+   ret = xmodemReceive();
+   printf( "\n\n\npress a key \n\n" );
+   in_char = getchar_timeout_us(10000000);
+
+   if (ret<0)
+   {
+      printf( "\n\n\nFailure in reception %d\n\n", ret );
    }
-   return;
+   else
+   {
+      printf( "\n\n\nReception successful. 0x%04X - 0x%04X \n\n", mem_start_p, mem_start_p + ret );
+   }
 
+   return;
 }
-   
+
 
 void console_rp2040()
 {
@@ -220,6 +232,17 @@ void console_rp2040()
             printf( "%c\n", in );
             debug_clocks();
             break;
+         case 'U':
+            printf( "%c\n", in );
+            leave = true;
+            {
+               int32_t upload_addr = print_upload_menu();
+               if (upload_addr>=0)
+               {
+                  run_upload(upload_addr);
+               }
+            }
+            break;
          case 'C':
             printf( "%c\n", in );
             leave = true;
@@ -228,14 +251,6 @@ void console_rp2040()
             printf( "%c\n", in );
             leave = true;
             system_reboot();
-            break;
-         case 'U':
-            printf( "%c\n", in );
-            leave = true;
-            int32_t upload_addr=print_upload_menu();
-            if (upload_addr>=0){
-               run_upload(upload_addr);
-            }
             break;
       }
    }

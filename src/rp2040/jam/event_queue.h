@@ -34,9 +34,7 @@ static inline void queue_event_drop( queue_event_t *event )
 // process event queue
 static inline void queue_event_process()
 {
-   ++_queue_cycle_counter;
-   // while instead of if, because more than one entry may have same timestamp
-   if( _queue_cycle_counter == _queue_next_timestamp )
+   if( _queue_next_timestamp == ++_queue_cycle_counter )
    {
       queue_event_handler_t handler;
       void                  *data;

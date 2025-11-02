@@ -311,7 +311,7 @@ dmafile:
 
 @loop:
    lda   tmp16+0
-   and   #$0f
+   and   #$0f           ; 16 sector are in a block
    bne   @nonewblock
 
    lda   tmp16+1        ; get next block address from buffer
