@@ -6,11 +6,10 @@ Raspberry Pi Pico clone for the rest of the functionality. More
 documentation is available at
 [https://sorbus.xayax.net/](https://sorbus.xayax.net/).
 
-![Sorbus assembled](doc/images/SorbusAssembled.jpg)
-![Sorbus parts](doc/images/SorbusParts.jpg)
-![Sorbus Junior](doc/images/SorbusJunior.jpg)
+![Sorbus assembled](doc/site/images/SorbusAssembled.jpg)
+![Sorbus Junior](doc/site/images/SorbusJunior.jpg)
 
-The Project is capabile to run as an [Apple Computer 1](doc/apple1.md)
+The Project is capabile to run as an [Apple Computer 1](doc/site/apple1.md)
 as well as an own monitor command prompt (mcp) to learn about the 65C02
 processor and it siblings. However now the main focus is now on creating
 a custom computer, using a code called "JAM" (Just Another Machine).
@@ -23,7 +22,7 @@ The project is fully open source, licensend under GPL v3:
   - the 65C02 source code to run on the target is at src/65c02/
     - compiling requires the [cc65](https://cc65.github.io/), which
       needs to be preinstalled.
-  - the source code for the Raspberry Pi Pico clone is at src/rp2040/
+  - the source code for the Raspberry Pi Pico clone is at `src/rp2040/`
     - compiling requires the
       [Pico-SDK](https://github.com/raspberrypi/pico-sdk) from the
       Raspberry Pi Foundation, which will be downloaded if not previously
@@ -43,8 +42,8 @@ As part of creating a full featured computer, there are also two expansion
 boards developed here: a sound card, called "Sorbus Sound" and a graphics
 card, called "Sorbus VGA".
 
-![Sorbus Sound](doc/images/SorbusSound.jpg)
-![Sorbus VGA](doc/images/SorbusVGA.jpg)
+![Sorbus Sound](doc/site/images/SorbusSound.jpg)
+![Sorbus VGA](doc/site/images/SorbusVGA.jpg)
 
 To access the RP2040 without super user rights, make sure that your user is
 in the groups "plugdev" and "dialout". You also need to add a udev rule. This

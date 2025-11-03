@@ -63,11 +63,12 @@ can see here: [1k LEDs Is No Limit](https://xayax.net/1k_leds_is_no_limit/).
 
 I liked following the tradition to name it after a fruit. Think about it:
 it uses a Raspberry (Pi) and can run like an Apple (1). However most
-fruits were already "taken". So then I remembered about the German
+fruits were already "taken". So, then I remembered the German
 "Vogelbeeren" that were around in my childhood. My mother always told me:
 "Do not eat those, they are poisonous!" She was a bit exaggerating there,
-as the "only" make you sick, and don't kill you. However, I still played
-with them, throwing them around and other things that kids do.
+as the "only" make you sick in the stomach, and don't cause and serious
+health issue you. However, I still played with them, throwing them around
+and other things that kids do.
 
 So, this is a very fitting name for this computer: it's something you play
 with, but not for the "primary use" of a computer, like word processing.

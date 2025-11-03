@@ -27,7 +27,7 @@ Commands are case sensitive, hexadecimal numbers are not.
 ### Output:
 
 Let's use a fictional example to explain the output:
-```
+```txt
 100:fffc r 00 R  >
 ```
 

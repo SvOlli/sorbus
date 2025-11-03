@@ -24,7 +24,7 @@ nothing, because the output of the reset message was faster than your
 connect. Press space (or any other unused key) to get the message again.
 It looks something like this:
 
-```
+```txt
 Sorbus JAM V0.6: 1-4)Bootsector, 0)Exec RAM @ $E000,
 F)ilebrowser, B)ASIC, System M)onitor, T)IM, W)ozMon?
 ```

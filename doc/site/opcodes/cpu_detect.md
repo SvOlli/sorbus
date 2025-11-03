@@ -267,7 +267,7 @@ those CPUs.
 
 This is the initial memory configuration when starting the detection
 environment.
-```
+```txt
 0000: 18 5c 15 00 38 90 0d 8a 1a d0 05 6a b0 05 90 07  .\..8......j....
 0010: 97 ff e8 e8 e8 e8 e8 e8 86 ff ea 4c 1e 00 a2 00  ...........L....
 ```

@@ -20,7 +20,7 @@ and not on keeping code as original as possible.
 ### MOS TIM
 
 This is the Terminal Interface Monitor (TIM) of the MOS 6530-004.
-```
+```txt
 Copyright 1976 MOS Technology
 ```
 License terms: unknown
@@ -31,7 +31,7 @@ License terms: unknown
 ### WozMon
 
 This is WozMon of the Apple 1 Computer
-```
+```txt
 Written by Steve Wozniak
 Copyright 1976 Apple Computer Company
 ```
@@ -42,7 +42,7 @@ License terms: unknown
 
 ### Apple Direct Assembler/Disassembler And Monitor
 
-```
+```txt
 Apple //c & Apple II
 Monitor ROM Source
 
@@ -66,7 +66,7 @@ License terms: unknown
 
 ### Microsoft BASIC 1.0
 
-```
+```txt
 This is OSI BASIC V1.0 REV 3.2
 Written by Richard W. Weiland
 Copyright 1977 Microsoft Co.
@@ -84,7 +84,7 @@ License terms: MIT (version 1.1 which also includes OSI)
 ### Instant Assembler
 
 This is Instant 6502 Assembler for KIM-1
-```
+```txt
 Written by Alan Cashin
 ```
 License terms: released as public domain
@@ -96,7 +96,7 @@ License terms: released as public domain
 
 ### Dhara - NAND flash management layer
 
-```
+```txt
 Dhara - NAND flash management layer
 Copyright (C) 2013 Daniel Beer <dlbeer@gmail.com>
 ```
@@ -107,7 +107,7 @@ License terms: BSD-2-Clause
 
 ### Mod Player
 
-```
+```txt
 Christian Corti
 Neoart Costa Rica
 ```
@@ -118,7 +118,7 @@ License terms: Creative Commons Attribution-Noncommercial-Share Alike 3.0
 
 ### SID Emulation
 
-```
+```txt
 Dag Lem: Designed and programmed complete emulation engine.
 ```
 License terms: GPL 2.0
@@ -128,7 +128,7 @@ License terms: GPL 2.0
 
 ### FAT Filesystem
 
-```
+```txt
 Copyright (c) 2020-2021, Elehobica
 ```
 License terms: BSD-2-Clause
@@ -138,7 +138,7 @@ License terms: BSD-2-Clause
 
 ### PicoTerm
 
-```
+```txt
 Copyright 2023 by S.Dixon & D.Meurisse
 ```
 License terms: BSD-3-Clause
@@ -149,7 +149,7 @@ License terms: BSD-3-Clause
 ### Raspberry Pi Pico Examples
 
 On several occasions things were taken from Raspberry Pi Pico examples:
-```
+```txt
 Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
 ```
 License terms: BSD-3-Clause

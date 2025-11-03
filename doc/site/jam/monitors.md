@@ -37,7 +37,7 @@ The following descriptions lacks description of the paper tape and other I/O
 routines, besides mentioning them.
 
 Output: upon start you are typically greeted with
-```
+```txt
     ADDR P  A  X  Y  S
  *  E619 33 28 00 00 FF
 .
@@ -78,8 +78,7 @@ the `BRK $00` opcode, `RTS` will not work here, like it did in WozMon.
 A more detailed documentation is at the start of the
 TIM source code (src/65c02/jam/rom/tim.s). The following is a revised version.
 
-<div class='boxed'>
-```
+```txt
 PROMPTING CHARACTER IS A PERIOD (.)
 -----------------------------------
 
@@ -159,7 +158,6 @@ SETTING AND RESETTING PROGRAM BREAKPOINTS
         THE PROGRAM COUNTER VALUE DISPLAYED IS THE BRK
         INSTRUCTION LOCATION + 1.
 ```
-</div>
 
 
 ### Loading Software Via Papertape
@@ -170,7 +168,7 @@ switched the input to the papertape. For the machine it was like someone
 was typing in the data really fast.
 
 Format of papertape data is:
-```
+```txt
 ;CCAAAADD[DD..]SSSS
 ```
 Every character (except for the semicolon) stands for a hex digit.

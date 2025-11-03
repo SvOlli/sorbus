@@ -16,8 +16,8 @@ Enhancements as compared to an original Apple 1 are:
     - 2F0: print all characters
     - 280: detect CPU type (6502, 65C02 and 65816)
 
-Furthermore, it uses a terminal instead of Woz's video circuitry. So no
-blinking "@" as a cursor.
+Furthermore, it uses a terminal instead of trying to recreate Woz's
+video circuitry. So, no blinking "@" as a cursor.
 
 
 ## Meta-Keys
@@ -57,65 +57,90 @@ The first line of a box is what is entered, the rest is the output by WozMon.
 
 Dump a single byte of memory:
 
-```
+```txt
 FF00
 FF00: D8
 ```
 
 Dump more that one byte at a time
-```
+```txt
 FF00 FF03
 FF00: D8
 FF03: 7F
 ```
 
 Dump a range of bytes of memory:
-```
+```txt
 FF00.FF0F
 FF00: D8 58 A0 7F 8C 12 D0 A9
 FF08: A7 8D 11 D0 8D 13 D0 A9
 ```
 
 Write to memory:
-```
+```txt
 0: 53 56 4F 4C 4C 49
 0000: 05
 ```
 
 The output is from the dump command implied before the colon. Let's check
 if our write to memory was successful:
-```
+```txt
 0.5
 0000: 53 56 4F 4C 4C 49
 ```
 
 Without an address, data gets appended. First set pointer to memory by writing
 a single byte:
-```
+```txt
 6:20
 0006: 00
 ```
 
 Now append another one:
-```
-:21
+```txt
+:21 00
 ```
 
 And let's verify the full memory dump:
-```
-0.7
+```txt
+0.8
 0000: 20 56 4F 4C 4C 49 20 21
+0008: 00
 ```
 
-And we've just written " HELLO !" to the first 8 bytes to memory. However,
-the Apple 1 expects the bit 7 to be set to 1 for output.
+And we've just written " HELLO !" with a terminating $00 byte to the first
+8 bytes to memory. However, the Apple 1 expects the bit 7 to be set to 1
+for output.
 
-Execute a program in memory by appending to "R" the address
-```
-FF00 R
-FF00: D8\
+Let's write a small program that outputs that text:
+```asm6502
+ LDX #$00    ; A2 00    ; set start of string
+LOOP:
+ LDA $00,X   ; B5 00    ; load from start of string
+ BEQ END     ; F0 08    ; $00 marks end of string
+ ORA #$80    ; 09 80    ; add bit for output
+ JSR $FFEF   ; 20 EF FF ; echo character
+ INX         ; E8       ; advance index to next char
+ BNE LOOP    ; D0 F4    ; loop to get next char
+END:
+ JMP ($FFFC) ; 6C FC FF ; output done, reset machine for clean exit
 ```
 
+Let's enter our hand assembled code:
+```txt
+0200: A2 00 B5 00 F0 08 09 80 20 EF FF E8 D0 F4 6C FC FF
+```
+Yes, the Apple 1 does support "such a long line". Also the start address
+is freely selectable, since the code only uses relative addressing.
+
+
+Execute a program in memory by appending to "R" the address:
+```txt
+0200 R
+0200: A2 HELLO !\
+```
+
+Note how no newline was output, since no one was implementing one.
 Since we've just jumped back into WozMon, nothing interesting has happend
 besides the output of the backslash.
 

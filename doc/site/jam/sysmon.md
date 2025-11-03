@@ -144,6 +144,7 @@ pressing up/down on the keyboard:
 
 ASCII output is missing here. Memory can be edited here.
 
+
 #### Disassemble
 
 ```txt
@@ -291,7 +292,7 @@ not work.
 Also upon startup of the NMOS 6502 toolkit, you will be greeted with the
 [CPU detected](../opcodes/cpu_detect.md) upon cold boot. It should be one of the following:
 
-```
+```txt
 6502 CPU features: NMOS
 65SC02 CPU features: CMOS
 65C02 CPU features: CMOS BBSR
