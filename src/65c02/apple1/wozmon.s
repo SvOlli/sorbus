@@ -262,20 +262,23 @@ prhex:
 ;-------------------------------------------------------------------------
 
 echo:
-	bit   DSP      ; test if display is able to receive char
-	bmi   echo     ; loop until it does
-	sta   DSP      ; write char to display
-	rts
+   bit   DSP      ; test if display is able to receive char
+   bmi   echo     ; loop until it does
+   sta   DSP      ; write char to display
+   rts
 
 ;-------------------------------------------------------------------------
 ;  Vector area
 ;-------------------------------------------------------------------------
 
-        .byte $00,$00  ; padding
+   .byte $00,$00  ; padding
+   ; Question from SvOlli to Woz: you had two bytes to spare here, but
+   ; couldn't spend them on an ora #$80 before the sta DSP a few lines
+   ; above? Really? Too much of a convenience?
 
 NMI_VEC:
-	.word $0f00
+   .word $0f00
 RESET_VEC:
-	.word start
+   .word start
 IRQ_VEC:
-	.word $0000
+   .word $0000
