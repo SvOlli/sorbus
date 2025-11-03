@@ -44,3 +44,6 @@ sx4: $(targets)
 
 clean:
 	$(RM) */*.o $(SORBUS_LIB) $(targets)
+
+dist:	sx4
+	$(RM) */*.o

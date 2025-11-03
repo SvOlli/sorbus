@@ -129,14 +129,15 @@ setup-dev: setup-apt
 setup-external:
 	sudo apt install 64tass libreadline-dev libfmt-dev moreutils fp-compiler ninja-build zip unzip
 
-$(RELEASE_ARCHIVE): $(CC65_SDK_DIR) all
+$(RELEASE_ARCHIVE): all
+	make -C $(CC65_SDK_DIR) dist
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done
 	cp doc/README_release.txt README.txt
 	$(RM) $@
 	7z a -mx=9 -bd -sdel $@ README.txt *.uf2
 	7z a -mx=9 -bd $@ $(CC65_SDK_DIR)
 	make -C $(CC65_SDK_DIR) clean
-	cd doc && mkdocs build --no-directory-urls -d ../build/docs
+	src/tools/mkdocs.sh build --no-directory-urls -d ../build/docs
 	cd build && 7z a -mx=9 -bd ../$@ docs
 
 release: sanitycheck $(RELEASE_ARCHIVE)
@@ -144,4 +145,3 @@ release: sanitycheck $(RELEASE_ARCHIVE)
 sanitycheck:
 	: src/ should not contain filename with spaces
 	[ $$(find src/ -name "* *" | wc -l) -eq 0 ]
-
