@@ -42,6 +42,11 @@ only sniffes the bus and never actively drives it.
 
 If not all bits of a register are required, those will be masked out/ignored.
 
+All addresses have been named nicely in `fb32x32_regs.inc`. For convenience,
+you can just `.include 'fb32x32.inc'` which will include everything useful
+for writing effects: BIOS call, I/O addresses and `fb32x32_regs.inc`.
+
+
 ## Copy Mode
 
 Value written do $D300/1 indicades mode (can be or'ed together):
@@ -52,18 +57,24 @@ Value written do $D300/1 indicades mode (can be or'ed together):
 - $04: transparency: only copy when destination color = transparent
 - $06: do nothing
 
+
 ## Color Palettes
 
-- $00: Insane's RGBI2222
-- $01: Custom 1
-- $02: Custom 2
-- $03: Custom 3
-- $04: C64 like
-- $05: C16 like
-- $06: Atari 8-bit like
-- $07: Atari 8-bit like, ordered differently
-- $08: Veto's custom curated
-- $09: Coder colors (C128 VDC like)
+| Color | Description                           | Example                                |
+| :---: | :------------------------------------ | :------------------------------------- |
+|  $00  | Insane's RGBI2222                     | ![example](../images/colormaps/00.gif) |
+|  $01  | Custom 1                              |                                        |
+|  $02  | Custom 2                              |                                        |
+|  $03  | Custom 3                              |                                        |
+|  $04  | C64 like                              | ![example](../images/colormaps/04.gif) |
+|  $05  | C16 like                              | ![example](../images/colormaps/05.gif) |
+|  $06  | Atari 8-bit like                      | ![example](../images/colormaps/06.gif) |
+|  $07  | Atari 8-bit like, ordered differently | ![example](../images/colormaps/07.gif) |
+|  $08  | Veto's custom curated                 | ![example](../images/colormaps/08.gif) |
+|  $09  | Coder colors (C128 VDC like)          | ![example](../images/colormaps/09.gif) |
+
+Note that the example colormaps do not reflect the correct brightness of
+the colorvalues. Those are just the same values converted to RGB.
 
 Custom defined color palettes are always specified in RGB444. Writing
 to $D30D resets internal index of $D310-$D312 to $00, when a colorvalue

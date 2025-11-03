@@ -142,4 +142,6 @@ unused, though.
 
 Also all ROM functions have been moved due to the porting. However, this
 is not a problem, as the `SYS` command was only added by this port, so
-no original OSI BASIC code could be using it.
+no original OSI BASIC code could be using it. However this will be a
+problem with code that uses USR() to call subroutines in ROM. If you
+encounter such a problem, contact me, and I help you porting that code.
