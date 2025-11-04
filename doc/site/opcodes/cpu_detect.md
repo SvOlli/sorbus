@@ -62,7 +62,7 @@ This was most probably used to tell apart an Apple IIgs (using a 65816)
 from an Apple IIc/IIe enhanced (using a 65C02) and the original Apple
 II/II+/IIe (using an NMOS 6502).
 
-```asm6502
+```asm65816
 ;  65816       ; 65C02            ; 6502
    LDA   #$01  ; LDA   #$01       ; LDA   #$01
    XBA         ; .byte $EB ; NOP  ; .byte $EB, $EA ; "illegal" SBC #$EA
@@ -425,7 +425,7 @@ Eric Schlaepfer, who also built the
 
 ### Disassembly as seen on a 65C02
 
-```asm6502
+```asm65c02
   1:0032 r e8    :
   2:0032 r e8    :
   3:ffff r 00    :
@@ -480,7 +480,7 @@ for the return value.
 
 ### Disassembly as seen on a 65SC02
 
-```asm6502
+```asm65c02
   1:0001 r 5c    :
   2:0001 r 5c    :
   3:0001 r 5c    :
@@ -538,7 +538,7 @@ the `INX`-slide.
 
 ### Disassembly as seen on a 65816
 
-```asm6502
+```asm65816
   1:001b r 4c    :
   2:001b r 4c    :
   3:001b r 4c    :
@@ -573,7 +573,7 @@ required here.
 
 ### Disassembly as seen on a 65CE02
 
-```asm6502
+```asm65ce02
   1:01f8 r 86    :
   2:01f8 r 86    :
   3:01f8 r 86    :
@@ -672,7 +672,10 @@ with the 65C02. The table has a slightly more detailed description:
 
 So, there is no other CPU to be detected.
 
-However, getcpu.s does not support the 6502 without the ROR opcode.
+However, getcpu.s does not support the 6502 without the `ROR` opcode.
 As the output of the C compiler relies on this opcode, it does not make
 sense to add this detection to a library function. The code will most
-probably crash before running this function.
+probably crash before running this function. The Sorbus JAM on the other
+hand will fall back to a machine language monitor that is implemented
+without using any `ROR` opcodes, so the Rev.A CPU can be experimented
+with. If you can find one.

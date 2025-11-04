@@ -4,7 +4,11 @@
 This is intended to be the "go-to" system monitor to use. There are two
 different versions to invoke:
 
-- NMOS 6502 version in Bootsector 2, as part of "NMOS 6502 toolkit".
+- NMOS 6502 version in Bootsector 2, as part of "NMOS 6502 toolkit". This
+  version omits the usage of the `ROR` opcode deliberately, so it can be
+  used even with a 6502 Rev.A chip. There is an
+  [extra chapter](../opcodes/cpu_detect.md) that discusses the different
+  6502 variants (including the Rev.A) a bit more in detail
 - the standard version included in ROM and invoked either by pressing "m" in
   the reset menu or by invoking BRK #$0e (or BRK #$00, if user vector UVBRK
   wasn't changed)
