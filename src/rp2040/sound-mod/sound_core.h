@@ -16,15 +16,15 @@ enum player_states_e{
 /*****************************************************************************************************/
 /*             flash System   :
                                     1. page directory
-                                        256 Bytes per entry 
-                                        [0]  Valid Yes = 0x55 /No !=0x55 
+                                        256 Bytes per entry
+                                        [0]  Valid Yes = 0x55 /No !=0x55
                                         [1] Byte ununsed
-                                        [2..3] Crc / checksum  
+                                        [2..3] Crc / checksum
                                         [4..7] Size
                                         [8..11] Offset
                                         [12..15] unused
-                                        [16..36] mod-name / 0 terminated 
-                                        [255] 0 
+                                        [16..36] mod-name / 0 terminated
+                                        [255] 0
                                         200 bytes
                                     2. page - 257. page Flashdata MOD1  ( 1Mb )
                                     258. page - 513. page Flashdata MOD2  ( 1Mb )

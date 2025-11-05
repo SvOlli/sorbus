@@ -1,4 +1,4 @@
-  
+
 #include <tf_card.h>
 #include <ff.h>
 #include "fatfs/diskio.h"
@@ -6,7 +6,7 @@
 
 
 bool init_sd_card (void)  {
-  
+
   pico_fatfs_spi_config_t config = {
       spi0,
       CLK_SLOW_DEFAULT,
@@ -44,5 +44,5 @@ int get_mod_entries(void){
     do {
         res= f_readdir(&root_dir,&curr_file);
     }while (res == FR_OK);
-    
+
 }

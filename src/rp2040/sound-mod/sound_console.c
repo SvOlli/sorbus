@@ -36,7 +36,7 @@ int _inbyte(int msec){
    {
       return -1;
    }
-   return c; 
+   return c;
 
 }
 void _outbyte(unsigned char c){
@@ -48,16 +48,16 @@ int received_chunk(unsigned char * buf, int size){
 
     /* Write Flash here*/
     if (size<FLASH_SECTOR_SIZE){
-        memcpy(local_buf+mod_flash_rest,buf,size);  
-        mod_flash_rest+=size;  
-        if (mod_flash_rest>=FLASH_SECTOR_SIZE){  
-          erase_flash( mod_flashp, FLASH_SECTOR_SIZE); 
+        memcpy(local_buf+mod_flash_rest,buf,size);
+        mod_flash_rest+=size;
+        if (mod_flash_rest>=FLASH_SECTOR_SIZE){
+          erase_flash( mod_flashp, FLASH_SECTOR_SIZE);
           program_flash( mod_flashp, local_buf, FLASH_SECTOR_SIZE );
           mod_flashp+=FLASH_SECTOR_SIZE;
           mod_flash_rest=0;
         }
     }else{
-        erase_flash( mod_flashp, size); 
+        erase_flash( mod_flashp, size);
         program_flash( mod_flashp, buf, size );
         mod_flashp+=size;
 
@@ -126,21 +126,21 @@ int getkey( char *key )
 void sound_console(void){
 
     char read_char;
-    
+
     if (getkey(&read_char)){
         /* Xmodem-upload */
         if (menu_state==1){
            switch (read_char){
-                case '0':            
-                case '1':            
-                case '2':            
-                case '3':            
-                case '4':            
-                case '5':            
-                case '6':            
-                case '7':            
-                case '8':            
-                case '9':      
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
                     mod_slot=read_char-'0';
                     printf("Uploading to slot %d\n",mod_slot);
                     mod_flashp= get_mod_flash_offset(mod_slot);
@@ -177,25 +177,25 @@ void sound_console(void){
         /* Main-menu */
         if (menu_state==0){
             switch (read_char){
-                case '0':            
-                case '1':            
-                case '2':            
-                case '3':            
-                case '4':            
-                case '5':            
-                case '6':            
-                case '7':            
-                case '8':            
-                case '9':            
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
                     int mod_no=read_char-'0';
                     if (is_mod_data_valid(mod_no)){
                         play_mod=mod_no;
                         player_state= PLAYER_STATE_PLAY;
                     }else{
                         printf("No valid mod in slot %d\n\n",mod_no);
-                    }   
+                    }
                     print_menu();
-                break;    
+                break;
                 case 's':
                     printf("Stopping song \n");
                     player_state= PLAYER_STATE_STOP;
@@ -220,7 +220,7 @@ void sound_console(void){
                     menu_state=1;
                     print_upload_menu();
                     break;
-                case 'f':                     
+                case 'f':
                     filter_mode++;
                     filter_mode&=0x03;
                     gpio_put(SND_DEMP,filter_mode&0x01);  // no De-Emphasis
@@ -236,7 +236,7 @@ void sound_console(void){
                 default:
                     printf ("Hmmm ?? \n");
                     print_menu();
-                
+
                 break;
             }
         }

@@ -51,8 +51,9 @@ void hardware_init()
    int sm = 0;
    uint offset = pio_add_program( pio, &ws2812_program );
 
-   // slightly "overclocking" WS2812 from .8MHz to 1MHz, works for me
-   ws2812_program_init( pio, sm, offset, WS2812_PIN, 1000000, false );
+   // slightly "overclocking" WS2812 from .8MHz to .95MHz works for me
+   // 1MHz did not work for one kind of LEDs
+   ws2812_program_init( pio, sm, offset, WS2812_PIN, 950000, false );
 }
 
 

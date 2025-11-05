@@ -35,8 +35,8 @@ firmware (core) called [MCP](mcp/index.md) has been written.
 ### Running The Replica Of An Apple 1 Computer
 
 Ever wanted to know, how you would have worked with an Apple 1? Here
-you can [try this out](apple1.md). It's more cumbersome that you'd
-probably think.
+is how you can [try this out](apple1.md). It's more cumbersome that
+you'd probably think.
 
 
 ### Implement Your Own Design Of An 8-Bit Computer

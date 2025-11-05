@@ -21,7 +21,7 @@
 #include <pico/platform.h>
 #include <pico/binary_info.h>
 #include "i2s.h"
-#include "hardware/dma.h" 
+#include "hardware/dma.h"
 
 #include <hardware/clocks.h>
 #include <hardware/flash.h>
@@ -38,7 +38,7 @@
 #include "trsi_cracktro.h"
 
 #define SET_CLOCK_125MHZ set_sys_clock_pll( 1500000000, 6, 2 );
- // for ModPlayer we need a multiple of 44,1kHz *32 
+ // for ModPlayer we need a multiple of 44,1kHz *32
 #define SET_CLOCK_144MHZ    set_sys_clock_khz( 144000, true );
 #define SET_CLOCK_FAST   set_sys_clock_pll( 1500000000, 5, 1 );
 
@@ -67,8 +67,8 @@ uint16_t crc16(uint8_t *p, uint8_t l)
 
 
 
-/* For each mod , 1 Mb space ( minus 1 page ) is reserved in Flash 
-   the last page contains the direnty. This is written, when all mod-data has been flashed 
+/* For each mod , 1 Mb space ( minus 1 page ) is reserved in Flash
+   the last page contains the direnty. This is written, when all mod-data has been flashed
    The reserved space has to be a multiple of FLASH_PAGE_SIZE
 */
 
@@ -116,8 +116,8 @@ uint8_t * getNextDirEntry(uint8_t * currentEntry){
 
 void erase_flash(uint32_t offset, size_t size){
 
-    assert ((offset % FLASH_SECTOR_SIZE) == 0 ); 
-    assert ((size % FLASH_SECTOR_SIZE) == 0 ); 
+    assert ((offset % FLASH_SECTOR_SIZE) == 0 );
+    assert ((size % FLASH_SECTOR_SIZE) == 0 );
     multicore_lockout_start_blocking();
     uint32_t ints = save_and_disable_interrupts();
     SET_CLOCK_125MHZ
@@ -129,8 +129,8 @@ void erase_flash(uint32_t offset, size_t size){
 }
 void program_flash(uint32_t offset, const uint8_t* data, size_t size){
 
-    assert ((offset % FLASH_PAGE_SIZE) == 0 ); 
-    assert ((size % FLASH_PAGE_SIZE) == 0 ); 
+    assert ((offset % FLASH_PAGE_SIZE) == 0 );
+    assert ((size % FLASH_PAGE_SIZE) == 0 );
     multicore_lockout_start_blocking();
     uint32_t ints = save_and_disable_interrupts();
     SET_CLOCK_125MHZ
@@ -145,7 +145,7 @@ void readConfiguration()
 {
 	//memcpy( prgDirectory, prgDirectory_Flash, 16 * 24 );
 
-	memcpy( config, pConfigXIP, CFG_SIZE );	
+	memcpy( config, pConfigXIP, CFG_SIZE );
 
 	//DELAY_READ_BUS = busTimings[ 0 ];
 	//DELAY_PHI2     = busTimings[ 1 ];
@@ -185,7 +185,7 @@ void writeConfiguration()
 }
 
 uint32_t get_mod_flash_offset(int mod_no){
-    
+
     assert (mod_no<=MAX_MOD_NO);
     return mod_flash_offset[mod_no];
 
@@ -243,7 +243,7 @@ bool validate_mod_data(int mod_no,uint32_t size,uint16_t crc,bool use_crc){
     local_dir.crc=crc16((uint8_t*)(get_mod_flash_offset(mod_no)+XIP_BASE),size);
     memcpy(local_dir.mod_name,(uint8_t*)(get_mod_flash_offset(mod_no)+XIP_BASE),20);
     local_dir.mod_name[20]=0;
-    local_dir.terminate=0; // make sure it is 0 terminated    
+    local_dir.terminate=0; // make sure it is 0 terminated
     if ((local_dir.crc != crc)&&(use_crc)){
         // Flashing failed
         return false;
@@ -262,11 +262,11 @@ uint16_t write_mod_data(uint32_t * mod_data, uint32_t size , int mod_no){
 
     uint32_t flash_p = mod_flash_offset[mod_no];
     uint8_t local_page[FLASH_PAGE_SIZE];
-    
 
-    // We can erase the whole area    
+
+    // We can erase the whole area
     erase_flash( flash_p, size);
-    // TODO: make last sector copy only until the reminder of size  -FLASH_PAGE_SIZE 
+    // TODO: make last sector copy only until the reminder of size  -FLASH_PAGE_SIZE
     // but we cannot flash from flash to flash, so copy it to RAM first
     for(uint32_t i=0;i<size;i+=FLASH_PAGE_SIZE){
         uint8_t * mod_src=((uint8_t*)mod_data)+i;
@@ -310,18 +310,18 @@ static void dma_i2s_in_handler(void) {
             if (!play_chunk(i2s.output_buffer, STEREO_BUFFER_SIZE)){
 #ifndef STANDALONE_PLAYER
                 player_state=PLAYER_STATE_STOP;  // Or PLAYER_RESTART ???
-#else                 
+#else
                 player_state=PLAYER_STATE_NEXT;  // Or PLAYER_RESTART ???
-#endif                
+#endif
             }
         } else {
             // It is currently inputting the first buffer, so we write to the second
             if(!play_chunk(&i2s.output_buffer[STEREO_BUFFER_SIZE], STEREO_BUFFER_SIZE)){
 #ifndef STANDALONE_PLAYER
                 player_state=PLAYER_STATE_STOP;  // Or PLAYER_RESTART ???
-#else                 
+#else
                 player_state=PLAYER_STATE_NEXT;  // Or PLAYER_RESTART ???
-#endif                
+#endif
             }
         }
     }
@@ -335,12 +335,12 @@ void stop_dma_i2s(){
 
     // disable the dma-handler
     dma_channel_set_irq0_enabled(i2s.dma_ch_out_data, false);
- 
+
     // disable the channel on IRQ0
     dma_channel_abort(i2s.dma_ch_out_data);
     dma_channel_abort(i2s.dma_ch_out_ctrl);
     // clear the spurious IRQ (if there was one)
-    dma_channel_acknowledge_irq0(i2s.dma_ch_out_data);      
+    dma_channel_acknowledge_irq0(i2s.dma_ch_out_data);
     memset (i2s.output_buffer,0, STEREO_BUFFER_SIZE*2*4);
 
 
@@ -384,18 +384,18 @@ int main()
    }
 #else
    init_buttons();
-   // setup the bus and run the bus core    
+   // setup the bus and run the bus core
     multicore_launch_core1( read_buttons );
 #endif
 
 
 
-   // Check for valid mod in slot 0 
+   // Check for valid mod in slot 0
    if (!is_mod_data_valid(0)){
     // Nope, we got to flash it first
     uint16_t crc= write_mod_data((uint32_t*)mod_data,sizeof(mod_data)+FLASH_SECTOR_SIZE-(sizeof(mod_data)%FLASH_SECTOR_SIZE),0);
     validate_mod_data(0,sizeof(mod_data),crc,false);
-   }  
+   }
 
    while(1){
 
@@ -420,7 +420,7 @@ int main()
             case PLAYER_STATE_RESTART:
             case PLAYER_STATE_PLAY:
                 main_player_close();
-                // disable the dma-handler                
+                // disable the dma-handler
                 stop_dma_i2s();
                 // for ModPlayer we need a multiple of 44,1kHz *32
                 main_player((uint8_t*)(mod_flash_offset[play_mod]+XIP_BASE),get_mod_size(play_mod));

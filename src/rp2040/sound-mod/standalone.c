@@ -45,14 +45,14 @@ void read_buttons()
         tmp_button=gpio_get(SND_BUTTON_NEXT);
         if (!tmp_button){ // pressed ?
             sleep_ms(10);
-            tmp_button=gpio_get(SND_BUTTON_NEXT); 
+            tmp_button=gpio_get(SND_BUTTON_NEXT);
             if (!tmp_button){ // still pressed ?
                 play_button = 1;
             }
         }else{
             if (play_button){   // released ?
                 sleep_ms(10);
-                tmp_button=gpio_get(SND_BUTTON_NEXT); 
+                tmp_button=gpio_get(SND_BUTTON_NEXT);
                 if (tmp_button){ // still released ?
                     play_button = 0;
                     player_state=PLAYER_STATE_NEXT;
@@ -63,20 +63,20 @@ void read_buttons()
         tmp_button=gpio_get(SND_BUTTON_PLAY);
         if (!tmp_button){ // pressed ?
             sleep_ms(10);
-            tmp_button=gpio_get(SND_BUTTON_PLAY); 
+            tmp_button=gpio_get(SND_BUTTON_PLAY);
             if (!tmp_button){ // still pressed ?
                 if (player_state==PLAYER_STATE_PLAYING){
-                   player_state=PLAYER_STATE_STOP; 
-                } 
+                   player_state=PLAYER_STATE_STOP;
+                }
             }
         }else{
             sleep_ms(10);
-            tmp_button=gpio_get(SND_BUTTON_PLAY); 
+            tmp_button=gpio_get(SND_BUTTON_PLAY);
             if (tmp_button){ // still released ?
                 if (player_state==PLAYER_STATE_STOPPED){
-                   player_state=PLAYER_STATE_PLAY; 
-                } 
-  
+                   player_state=PLAYER_STATE_PLAY;
+                }
+
             }
         }
     };

@@ -13,7 +13,8 @@ Cores available are:
 - Apple 1
 - JAM (Just Another Machine) utilizing an internal flash drive
 
-For how to handle these cores, take a look at https://xayax.net/sorbus/
+For how to handle these cores, take a look at https://sorbus.xayax.net/
+A local copy is provided in the directory "docs/".
 
 These files are provided:
 
