@@ -17,7 +17,153 @@ typedef enum {
 } disass_show_t;
 
 typedef enum {
-   UNDEF = 0,
+   MNEMONIC_UNDEF = 0,
+   ADC,
+   AHX,
+   ALR,
+   ANC,
+   AND,
+   ARR,
+   ASL,
+   ASR,
+   ASW,
+   AUG,
+   AXS,
+   BBR,
+   BBS,
+   BCC,
+   BCS,
+   BEQ,
+   BIT,
+   BMI,
+   BNE,
+   BPL,
+   BRA,
+   BRK,
+   BRL,
+   BSR,
+   BVC,
+   BVS,
+   CLC,
+   CLD,
+   CLE,
+   CLI,
+   CLV,
+   CMP,
+   COP,
+   CPX,
+   CPY,
+   CPZ,
+   DCP,
+   DEC,
+   DEW,
+   DEX,
+   DEY,
+   DEZ,
+   EOR,
+   INC,
+   INW,
+   INX,
+   INY,
+   INZ,
+   ISC,
+   JML,
+   JMP,
+   JSL,
+   JSR,
+   KIL,
+   LAS,
+   LAX,
+   LDA,
+   LDX,
+   LDY,
+   LDZ,
+   LSR,
+   LXA,
+   MVN,
+   MVP,
+   NEG,
+   NOP,
+   ORA,
+   PEA,
+   PEI,
+   PER,
+   PHA,
+   PHB,
+   PHD,
+   PHK,
+   PHP,
+   PHW,
+   PHX,
+   PHY,
+   PHZ,
+   PLA,
+   PLB,
+   PLD,
+   PLP,
+   PLX,
+   PLY,
+   PLZ,
+   RAA,
+   REP,
+   RLA,
+   RMB,
+   ROL,
+   ROR,
+   ROW,
+   RRA,
+   RTI,
+   RTL,
+   RTN,
+   RTS,
+   SAX,
+   SBC,
+   SEC,
+   SED,
+   SEE,
+   SEI,
+   SEP,
+   SHX,
+   SHY,
+   SLO,
+   SMB,
+   SRE,
+   STA,
+   STP,
+   STX,
+   STY,
+   STZ,
+   TAB,
+   TAS,
+   TAX,
+   TAY,
+   TAZ,
+   TBA,
+   TCD,
+   TCS,
+   TDC,
+   TRB,
+   TSB,
+   TSC,
+   TSX,
+   TSY,
+   TXA,
+   TXS,
+   TXY,
+   TYA,
+   TYS,
+   TYX,
+   TZA,
+   WAI,
+   WDM,
+   XAA,
+   XBA,
+   XCE,
+   MNEMONIC_END
+} mnemonic_t;
+
+typedef enum {
+   ADDRMODE_UNDEF = 0,
    ABS,   // OPC $1234
    ABSIL, // OPC [$1234]
    ABSL,  // OPC $123456
@@ -49,7 +195,7 @@ typedef enum {
    ZPIX,  // OPC ($12,X)
    ZPIY,  // OPC ($12),Y
    ZPIZ,  // OPC ($12),Z
-   ADDREND
+   ADDRMODE_END
 } addrmode_t;
 
 typedef enum {
@@ -59,6 +205,21 @@ typedef enum {
    DISASS_JMP_RELL,
 } disass_jmp_t;
 
+extern const char *mnemonics[];
+extern uint32_t opcodes6502[0x100];
+extern uint32_t opcodes65c02[0x100];
+extern uint32_t opcodes65sc02[0x100];
+extern uint32_t opcodes65ce02[0x100];
+extern uint32_t opcodes65816[0x100];
+
+#define PICK_MNEMONIC(o) ((o >>  0) & 0xFF)
+#define PICK_ADDRMODE(o) ((o >>  8) & 0x3F)
+#define PICK_RESERVED(o) ((o >> 14) & 0x01)
+#define PICK_BYTES(o)    ((o >> 15) & 0x07)
+#define PICK_CYCLES(o)   ((o >> 18) & 0x0F)
+#define PICK_EXTRA(o)    ((o >> 22) & 0x03)
+#define PICK_JUMP(o)     ((o >> 24) & 0x01)
+#define PICK_MXE(o)      ((o >> 25) & 0x07)
 
 
 /* state of historian "class" */
@@ -70,14 +231,11 @@ typedef bool (*disass_is_vector_pull_t)( uint32_t addr0,
    uint32_t addr1, uint32_t addr2, uint32_t addr3, uint32_t addr4 );
 
 /* set cpu instruction set to disassemble */
-void disass_cpu( cputype_t cpu );
+void disass_set_cpu( cputype_t cpu );
+cputype_t disass_get_cpu();
 
 /* for 65816, set if accumulator or index register is running in 16 bit mode */
 void disass_mx816( bool m, bool x );
-
-/* get the offset of the final byte */
-/* 65CE02 jsr: 5, all other 6 cycles */
-uint8_t disass_jsr_offset( uint8_t opcode );
 
 /* what should disassembler show? (see typedef above for details) */
 void disass_show( disass_show_t show );

@@ -8,6 +8,8 @@
 
 static uint8_t mx_flag_816 = 0;
 static disass_show_t show_flags = DISASS_SHOW_NOTHING;
+static cputype_t cputype;
+
 void disass_mx816( bool m, bool x )
 {
    mx_flag_816 = (m ? 1 : 0) | (x ? 2 : 0);
@@ -18,11 +20,6 @@ void disass_show( disass_show_t show )
    show_flags = show;
 }
 
-typedef struct {
-   const char *name;
-   uint32_t variant;
-} opcode_t;
-
 /* at bit:
  *  |  bits used:                             expected values
  *  0: 6: addressmode (enum addrmode)         0-(ADDREND-1)
@@ -30,55 +27,183 @@ typedef struct {
  *  7: 3: bytes used                          0-7 (redundant, should be included in addressmode)
  * 10: 4: clock cycles used                   0-15
  * 14: 2: extra clock cycle                   0-2 (1=pagecross 2=branchtaken+pagecross)
- * 16: 2: extra byte used when 16 bit A,X,Y   0-2 (65816 only, 1=A 2=X,Y)
- * 18: 2: jump                                0-2 (for clairvoyant, 1=jump, 2=conditional)
+ * 16: 1: jump                                0-1 (1=jump or conditional)
+ * 17: 3: extra byte used when 16 bit A,X,Y   0,1,2,4 (65816 only, 1=A 2=X,Y 4=bank on stack)
  * 20:    unused
  */
 
-/*
- * jump types
- *  0: none
- *  1: branch
- *  2: long branch
- *  3: absolute
- *  4: long absolute
- *  5: indirect
- *  6: indirect,x
- *  7: stack (rts,rti)
- */
+/* needs to be aligned with mnemonic_t */
+const char *mnemonics[] = {
+   "???",
+   "ADC",
+   "AHX",
+   "ALR",
+   "ANC",
+   "AND",
+   "ARR",
+   "ASL",
+   "ASR",
+   "ASW",
+   "AUG",
+   "AXS",
+   "BBR",
+   "BBS",
+   "BCC",
+   "BCS",
+   "BEQ",
+   "BIT",
+   "BMI",
+   "BNE",
+   "BPL",
+   "BRA",
+   "BRK",
+   "BRL",
+   "BSR",
+   "BVC",
+   "BVS",
+   "CLC",
+   "CLD",
+   "CLE",
+   "CLI",
+   "CLV",
+   "CMP",
+   "COP",
+   "CPX",
+   "CPY",
+   "CPZ",
+   "DCP",
+   "DEC",
+   "DEW",
+   "DEX",
+   "DEY",
+   "DEZ",
+   "EOR",
+   "INC",
+   "INW",
+   "INX",
+   "INY",
+   "INZ",
+   "ISC",
+   "JML",
+   "JMP",
+   "JSL",
+   "JSR",
+   "KIL",
+   "LAS",
+   "LAX",
+   "LDA",
+   "LDX",
+   "LDY",
+   "LDZ",
+   "LSR",
+   "LXA",
+   "MVN",
+   "MVP",
+   "NEG",
+   "NOP",
+   "ORA",
+   "PEA",
+   "PEI",
+   "PER",
+   "PHA",
+   "PHB",
+   "PHD",
+   "PHK",
+   "PHP",
+   "PHW",
+   "PHX",
+   "PHY",
+   "PHZ",
+   "PLA",
+   "PLB",
+   "PLD",
+   "PLP",
+   "PLX",
+   "PLY",
+   "PLZ",
+   "RAA",
+   "REP",
+   "RLA",
+   "RMB",
+   "ROL",
+   "ROR",
+   "ROW",
+   "RRA",
+   "RTI",
+   "RTL",
+   "RTN",
+   "RTS",
+   "SAX",
+   "SBC",
+   "SEC",
+   "SED",
+   "SEE",
+   "SEI",
+   "SEP",
+   "SHX",
+   "SHY",
+   "SLO",
+   "SMB",
+   "SRE",
+   "STA",
+   "STP",
+   "STX",
+   "STY",
+   "STZ",
+   "TAB",
+   "TAS",
+   "TAX",
+   "TAY",
+   "TAZ",
+   "TBA",
+   "TCD",
+   "TCS",
+   "TDC",
+   "TRB",
+   "TSB",
+   "TSC",
+   "TSX",
+   "TSY",
+   "TXA",
+   "TXS",
+   "TXY",
+   "TYA",
+   "TYS",
+   "TYX",
+   "TZA",
+   "WAI",
+   "WDM",
+   "XAA",
+   "XBA",
+   "XCE",
+   0
+};
 
-#define OPCODE(name, am, reserved, bytes, cycles, extra, mxe, jump) \
-   { name, (uint32_t)am | reserved << 6 | bytes << 7 | cycles << 10 | extra << 14 | mxe << 16 | jump << 19 }
-#define PICK_OPCODE(o)   ( o->variant        & 0x3F)
-#define PICK_RESERVED(o) ((o->variant >> 6)  & 0x01)
-#define PICK_BYTES(o)    ((o->variant >> 7)  & 0x07)
-#define PICK_CYCLES(o)   ((o->variant >> 10) & 0x0F)
-#define PICK_EXTRA(o)    ((o->variant >> 14) & 0x03)
-#define PICK_MXE(o)      ((o->variant >> 16) & 0x07)
-#define PICK_JUMP(o)     ((o->variant >> 19) & 0x01)
+#define OPCODE(mn, am, reserved, bytes, cycles, extra, jump, mxe) \
+   (uint32_t)mn | (uint16_t)am << 8 | reserved << 14 | bytes << 15 | cycles << 18 | extra << 22 | jump << 24 | mxe << 25
 
-opcode_t opcodes6502[] = {
+uint32_t opcodes6502[0x100] = {
 #include "opcodes6502.tab"
 };
 
-opcode_t opcodes65c02[] = {
+uint32_t opcodes65c02[0x100] = {
 #include "opcodes65c02.tab"
 };
 
-opcode_t opcodes65816[] = {
+uint32_t opcodes65816[0x100] = {
 #include "opcodes65816.tab"
 };
 
-opcode_t opcodes65ce02[] = {
+uint32_t opcodes65ce02[0x100] = {
 #include "opcodes65ce02.tab"
 };
 
-opcode_t opcodes65sc02[] = {
+uint32_t opcodes65sc02[0x100] = {
 #include "opcodes65sc02.tab"
 };
 
 
-static opcode_t *disass_opcodes = 0;
+static uint32_t *disass_opcodes = 0;
 
 
 bool trace_is_write( uint32_t trace )
@@ -104,29 +229,16 @@ int disass_debug_info( uint32_t id )
    switch(id)
    {
       case 0:
-         return (int)ADDREND;
+         return (int)ADDRMODE_END;
       default:
          return 0;
    }
 }
 
 
-uint8_t disass_jsr_offset( uint8_t opcode )
+void disass_set_cpu( cputype_t cpu )
 {
-   opcode_t *o = &disass_opcodes[opcode];
-   switch( opcode )
-   {
-      case 0x20:
-         return ((o->variant >> 10) & 0xF) -1;
-      default:
-         return 0;
-   }
-}
-
-
-void disass_cpu( cputype_t cpu )
-{
-   //_disass_cpu = cpu;
+   cputype = cpu;
    switch( cpu )
    {
       case CPU_6502:
@@ -151,19 +263,22 @@ void disass_cpu( cputype_t cpu )
 }
 
 
+cputype_t disass_get_cpu()
+{
+   return cputype;
+}
+
+
 uint8_t disass_bytes( uint8_t p0 )
 {
    uint8_t retval = 0;
-   opcode_t *o = 0;
 
    if( !disass_opcodes )
    {
       return 0;
    }
 
-   o = disass_opcodes + p0;
-
-   switch( PICK_OPCODE(o) )
+   switch( PICK_ADDRMODE(disass_opcodes[p0]) )
    {
       case IMP:   // OPC
          retval = 1;
@@ -213,66 +328,73 @@ uint8_t disass_bytes( uint8_t p0 )
 
 uint8_t disass_bytes2( uint8_t p0 )
 {
-   opcode_t *o = 0;
    if( !disass_opcodes )
    {
       return 0;
    }
-   o = disass_opcodes + p0;
 
-   return PICK_BYTES(o);
+   return PICK_BYTES(disass_opcodes[p0]);
 }
 
 
 uint8_t disass_basecycles( uint8_t p0 )
 {
-   opcode_t *o = 0;
    if( !disass_opcodes )
    {
       return 0;
    }
-   o = disass_opcodes + p0;
 
-   return PICK_CYCLES(o);
+   return PICK_CYCLES(disass_opcodes[p0]);
 }
 
 
 addrmode_t disass_addrmode( uint8_t p0 )
 {
-   opcode_t *o = 0;
    if( !disass_opcodes )
    {
       return 0;
    }
-   o = disass_opcodes + p0;
 
-   return PICK_OPCODE(o);
+   return PICK_ADDRMODE(disass_opcodes[p0]);
+}
+
+
+mnemonic_t disass_mnemonic( uint8_t p0 )
+{
+   if( !disass_opcodes )
+   {
+      return 0;
+   }
+
+   return PICK_MNEMONIC(disass_opcodes[p0]);
+}
+
+
+const char *disass_mnemonic_string( uint8_t p0 )
+{
+   return mnemonics[disass_mnemonic( p0 )];
 }
 
 
 bool disass_is_jump( uint8_t p0 )
 {
-   opcode_t *o = 0;
    if( !disass_opcodes )
    {
       return 0;
    }
-   o = disass_opcodes + p0;
 
-   return PICK_JUMP(o);
+   return PICK_JUMP(disass_opcodes[p0]);
 }
 
 
 uint8_t disass_extracycles( uint8_t p0 )
 {
-   opcode_t *o = 0;
    if( !disass_opcodes )
    {
       return 0;
    }
-   o = disass_opcodes + p0;
 
-   return PICK_EXTRA(o);
+   return PICK_EXTRA(disass_opcodes[p0]);
 }
 
 
@@ -281,7 +403,6 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
    static char buffer[64] = { 0 };
    char *b = buffer;
    size_t bsize = sizeof(buffer)-1;
-   opcode_t *o = 0;
 
    if( !disass_opcodes )
    {
@@ -315,26 +436,26 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
       }
    }
 
-   o = disass_opcodes + p0;
-   if( (PICK_OPCODE(o) == ZPN) || (PICK_OPCODE(o) == ZPNR) )
+   if( (PICK_ADDRMODE(disass_opcodes[p0]) == ZPN) ||
+       (PICK_ADDRMODE(disass_opcodes[p0]) == ZPNR) )
    {
-      snprintf( b, bsize, "%s%d ", o->name, (p0 >> 4) & 7 );
+      snprintf( b, bsize, "%s%d ", disass_mnemonic_string(p0), (p0 >> 4) & 7 );
    }
    else
    {
-      bool reserved = PICK_RESERVED(o);
-      if( (disass_opcodes == &opcodes6502[0]) &&
-          (!strcmp( o->name, "ROR" )) )
+      bool reserved = PICK_RESERVED(disass_opcodes[p0]);
+      if( (cputype == CPU_6502RA) &&
+          (PICK_MNEMONIC(disass_opcodes[p0]) == ROR ) )
       {
          // we are running a Rev.A, so ROR is an undefined opcode
          reserved = true;
       }
-      snprintf( b, bsize, "%s%c ", o->name, reserved ? '.' : ' ' );
+      snprintf( b, bsize, "%s%c ", disass_mnemonic_string(p0), reserved ? '.' : ' ' );
    }
    b += 5;
    bsize -= 5;
 
-   switch( PICK_OPCODE(o) )
+   switch( PICK_ADDRMODE(disass_opcodes[p0]) )
    {
       case ABS:   // OPC $1234
          snprintf( b, bsize, "$%04X",         p1 | (p2 << 8) );

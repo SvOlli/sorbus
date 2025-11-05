@@ -1,12 +1,13 @@
 
 #include "disassemble.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
-
 #include <unistd.h>
+
+#define PREFETCH 0
 
 #ifndef count_of
 #define count_of(a) (sizeof(a)/sizeof(a[0]))
@@ -562,6 +563,7 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
             }
          }
 
+#if PREFETCH
          /* prefetch */
          if( addr1 == addr )
          {
@@ -576,6 +578,7 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
                }
             }
          }
+#endif
       }
 
       /* memory access */
@@ -688,7 +691,7 @@ disass_historian_t disass_historian_init( cputype_t cpu,
    d->text    = (char*)malloc( entries * DISASS_MAX_STR_LENGTH );
 
    memset( d->text, 0, entries * DISASS_MAX_STR_LENGTH );
-   disass_cpu( cpu );
+   disass_set_cpu( cpu );
    disass_historian_run( d, trace, start );
 
    return d;

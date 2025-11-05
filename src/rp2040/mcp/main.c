@@ -438,7 +438,7 @@ void cmd_cold( const char *input )
    cputype = cpu_detect( debug );
 
    cycles_left_reset = 5;
-   disass_cpu( cputype );
+   disass_set_cpu( cputype );
    disass_show( DISASS_SHOW_NOTHING );
    printf( "CPU detected as %s\n", cputype_name( cputype ) );
 }

@@ -22,7 +22,7 @@ opcode_cvs2md()
 
 EOH
    local header=1
-   while read opcode name mode reserved bytes cycles extracycles mxe jump; do
+   while read opcode name mode reserved bytes cycles extracycles jump mxe; do
       echo "| ${opcode} | ${name} | ${mode} | ${reserved} | ${bytes} | ${cycles} | ${extracycles} |"
       if [ ${header} -eq 1 ]; then
          echo "| :---- | :---- | :---- | ----: | ----: | ----: | ----: |"

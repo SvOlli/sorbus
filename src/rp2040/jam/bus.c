@@ -1067,7 +1067,7 @@ void system_init()
    memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof(rom) );
    srand( get_rand_32() );
    dhara_flash_size = dhara_flash_init();
-   disass_cpu( cputype );
+   disass_set_cpu( cputype );
 }
 
 
