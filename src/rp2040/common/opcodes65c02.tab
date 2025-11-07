@@ -128,7 +128,7 @@
    /* $7D */ OPCODE( ADC, ABSX, 0, 3, 4, 1, 0, 0 ),
    /* $7E */ OPCODE( ROR, ABSX, 0, 3, 7, 1, 0, 0 ),
    /* $7F */ OPCODE( BBR, ZPNR, 0, 3, 5, 2, 1, 0 ),
-   /* $80 */ OPCODE( BRA, REL, 0, 2, 3, 0, 1, 0 ),
+   /* $80 */ OPCODE( BRA, REL, 0, 2, 3, 2, 1, 0 ),
    /* $81 */ OPCODE( STA, ZPIX, 0, 2, 6, 0, 0, 0 ),
    /* $82 */ OPCODE( NOP, IMM, 1, 2, 2, 0, 0, 0 ),
    /* $83 */ OPCODE( NOP, IMP, 1, 1, 1, 0, 0, 0 ),

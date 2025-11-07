@@ -32,6 +32,11 @@ Those columns will be mapped onto a 32 bit config bit array, see
 First column allows for more "useful" order of opcodes.
 
 
+### Not in the tables
+
+- (65SC02, 65C02 only): when ADC/SBC is performed with BCD enabled, an
+  extra cycle is required to adjust flags
+
 ### Generation
 
 The CSV file will be used to generate some tables and documentation. Two

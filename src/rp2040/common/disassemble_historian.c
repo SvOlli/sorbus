@@ -565,7 +565,8 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
 
 #if PREFETCH
          /* prefetch */
-         if( addr1 == addr )
+         if( (addr1 == addr) &&
+             ((cpu == CPU_6502) || (cpu == CPU_6502RA)) )
          {
             eval[re(index-1)] = 0; // dummy read
             ++eval[re(index)];
@@ -632,6 +633,14 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
       if( eval[re(index)] > 3 )
       {
          int ni = getcycles( trace, entries, index );
+         if( disass_bcdextracycles( data ) )
+         {
+            /* check if an extra cycle was taken */
+            if( trace_address( re(index+ni) ) == trace_address( re(index+ni+1) ) )
+            {
+               ++ni;
+            }
+         }
          if( ni > 0 )
          {
             for( n = 1; n < ni; ++n )

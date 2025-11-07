@@ -212,6 +212,9 @@ extern uint32_t opcodes65sc02[0x100];
 extern uint32_t opcodes65ce02[0x100];
 extern uint32_t opcodes65816[0x100];
 
+/* oc can also by a 32 bit sample taken from GPIO, will be truncated */
+uint32_t disass_opcode( uint8_t oc );
+
 #define PICK_MNEMONIC(o) ((o >>  0) & 0xFF)
 #define PICK_ADDRMODE(o) ((o >>  8) & 0x3F)
 #define PICK_RESERVED(o) ((o >> 14) & 0x01)
@@ -252,6 +255,9 @@ uint8_t disass_basecycles( uint8_t p0 );
 
 /* get maximum number of extra clockcycles (e.g. for pagecrossing) */
 uint8_t disass_extracycles( uint8_t p0 );
+
+/* check if the 65(S)C02 might use extra clock cycle for BCD operations */
+bool disass_bcdextracycles( uint8_t p0 );
 
 /* get address mode */
 addrmode_t disass_addrmode( uint8_t p0 );

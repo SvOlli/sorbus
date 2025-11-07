@@ -326,6 +326,12 @@ uint8_t disass_bytes( uint8_t p0 )
 }
 
 
+uint32_t disass_opcode( uint8_t oc )
+{
+   return disass_opcodes[oc];
+}
+
+
 uint8_t disass_bytes2( uint8_t p0 )
 {
    if( !disass_opcodes )
@@ -395,6 +401,22 @@ uint8_t disass_extracycles( uint8_t p0 )
    }
 
    return PICK_EXTRA(disass_opcodes[p0]);
+}
+
+
+bool disass_bcdextracycles( uint8_t p0 )
+{
+   if( (cputype == CPU_65C02) ||
+       (cputype == CPU_65SC02) )
+   {
+      mnemonic_t mnemonic = PICK_MNEMONIC(disass_opcodes[p0]);
+
+      if( (mnemonic == ADC) || (mnemonic == SBC) )
+      {
+         return true;
+      }
+   }
+   return false;
 }
 
 

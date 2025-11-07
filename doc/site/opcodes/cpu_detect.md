@@ -288,7 +288,9 @@ using the first executed instruction as our example.
  10:001e r a2    :LDX  #$00
 ```
 The `10` is just a line number. Counting starts when the reset line is
-pulled high, so the CPU leaves reset state.
+pulled high, so the CPU leaves reset state. Code execution starts with
+the instruction after reading the reset vector at $FFFC/$FFFD, which
+is also the first line with disassembly.
 
 This is followed by an overview of the bus state at that time. `001e` is
 the address bus, `r` shows that the CPU is reading, and `a2` is the data
@@ -299,7 +301,9 @@ corresponding letter.
 `LDX  #$00` is the disassembly of the instruction starting at this
 memory address. (In this case "LoaD the X register with the value of
 $00".) A dot behind the opcode (like: `NOP.`) indicates that the opcode
-is a reserved (CMOS) or undocumented (NMOS) one.
+is a reserved (CMOS) or undocumented (NMOS) one. Not every line has a
+disassembly, because opcodes typically use more than a single cycle to
+execute.
 
 Every trace should end with a `00ff w XX`, which indicates the writing
 of the CPU id at the "end of memory". This also stops the runtime
@@ -393,7 +397,7 @@ price.
  25:0029 r d0    :
  26:0029 r d0    :BNE  $0030
  27:002a r 05    :
- 28:002b r 6a    :ROR
+ 28:002b r 6a    :ROR.
  29:002c r b0    :
  30:002c r b0    :BCS  $0033
  31:002d r 05    :
@@ -415,11 +419,12 @@ price.
 This is almost the same as before (6502), except that the `ROR`
 instruction in line 28 does not modify the carry flag, like it
 was supposed to. So this has to be one of those early and rare
-6502s with the `ROR`-instruction missing.
+6502s with the `ROR`-instruction missing. (Note the dot after
+the `ROR`.)
 
 For more details on this topic, I recommend watching the video
-["The 6502 Rotate Right Myth"](https://youtu.be/Uk_QC1eU0Fg) by
-Eric Schlaepfer, who also built the
+["The 6502 Rotate Right Myth"](https://youtu.be/Uk_QC1eU0Fg)
+by Eric Schlaepfer, who also built the
 [MOnSter 6502](https://monster6502.com/).
 
 
@@ -625,7 +630,7 @@ What has happend? Typically when processing the reset, the CPU does some
 dummy reads from the stack. However, take a look at lines 4-6 from the
 65SC02 disassembly. On some CPUs, these dummy reads are actually dummy
 writes. This destroys three subsequent bytes in memory. The start must
-be concidered random at start, as the stackpointer is not reset yet. But
+be concidered random, as the stackpointer is not reset yet. But
 after that the stackpointer seems to just stay where it was, moving by
 three bytes each reset. So during the retries, the stackpointer gets
 moved to a position, where the writes go to a part of memory that was
