@@ -4,10 +4,11 @@
 RP2040 Software used:   |  6502 Software used:
 C) C-Flod               |  A) WozMon
 D) Dhara                |  A) Apple //c Monitor ROM
-F) FatFS                |  B) Microsoft BASIC
-R) reSID16              |  M) TIM
-S) Pico SDK / Extras    |  P) CP/M 65
-                        |  T) Tali Forth 2
+U) MCurses              |  B) Microsoft BASIC
+F) FatFS                |  M) TIM
+R) reSID16              |  P) CP/M 65
+S) Pico SDK / Extras    |  T) Tali Forth 2
+
 Licenses used:
 2) GPL v2
 3) GPL v3

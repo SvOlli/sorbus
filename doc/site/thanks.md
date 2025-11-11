@@ -105,6 +105,18 @@ License terms: BSD-2-Clause
 * src/rp2040/3rdparty/dhara
 
 
+### mcurses lib
+
+```
+Copyright (c) 2011-2015 Frank Meyer - frank(at)fli4l.de
+```
+License terms: GPL v2 or later
+
+* src/rp2040/common/mcurses.c
+* src/rp2040/common/mcurses.h
+* src/rp2040/common/mcurses_hexedit.c
+
+
 ### Mod Player
 
 ```txt

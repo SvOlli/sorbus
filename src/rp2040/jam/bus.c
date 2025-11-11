@@ -968,11 +968,32 @@ static inline void handle_io()
 /******************************************************************************
  * public functions
  ******************************************************************************/
+void system_cpu_detect()
+{
+   cputype = cpu_detect( false );
+retry:
+   if( cputype == CPU_ERROR )
+   {
+      bool success;
+      uint8_t data;
+      printf( "  cpu could not be detected, retrying (SPACE for debug)\r" );
+      success = queue_try_remove( &queue_uart_read, &data );
+      if( success && (data == ' ') )
+      {
+         cputype = cpu_detect( true );
+         printf( "power jumper set?\n" );
+      }
+
+      goto retry;
+   }
+}
+
+
 void bus_run()
 {
    bus_init();
-   system_init();
    system_cpu_detect();
+   system_init();
    system_reboot();
 
    // when not running as speed test run main loop forever
@@ -1040,27 +1061,6 @@ void bus_run()
 }
 
 
-void system_cpu_detect()
-{
-   cputype = cpu_detect( false );
-retry:
-   if( cputype == CPU_ERROR )
-   {
-      bool success;
-      uint8_t data;
-      printf( "  cpu could not be detected, retrying (SPACE for debug)\r" );
-      success = queue_try_remove( &queue_uart_read, &data );
-      if( success && (data == ' ') )
-      {
-         cputype = cpu_detect( true );
-         printf( "power jumper set?\n" );
-      }
-
-      goto retry;
-   }
-}
-
-
 void system_init()
 {
    memset( &ram[0x0000], 0x00, sizeof(ram) );
@@ -1081,4 +1081,38 @@ void system_reboot()
 
    // pull reset line to system_reset gets executed
    gpio_clr_mask( bus_config.mask_reset );
+}
+
+
+uint8_t debug_banks()
+{
+   return sizeof(rom) >> 13; // ROMSIZE / 0x2000;
+}
+
+
+uint8_t debug_peek( uint8_t bank, uint16_t addr )
+{
+   if( addr < 0xE000 )
+   {
+      return ram[addr];
+   }
+   if( (bank > 0) && (bank <= debug_banks()) )
+   {
+      /* assembling address in ROM array is a bit more complicated */
+      return rom[((bank-1) << 13) | (addr & 0x1FFF)];
+   }
+   else
+   {
+      /* bank0: RAM under ROM */
+      return ram[addr];
+   }
+}
+
+
+void debug_poke( uint8_t bank, uint16_t addr, uint8_t value )
+{
+   if( (addr < 0xE000) || !bank )
+   {
+      ram[addr] = value;
+   }
 }

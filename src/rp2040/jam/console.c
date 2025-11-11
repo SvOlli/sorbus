@@ -22,6 +22,8 @@
 #include "generic_helper.h"
 
 #include "event_queue.h"
+#include "mcurses.h"
+
 extern void system_trap();
 
 console_type_t console_type;
@@ -41,6 +43,7 @@ uint32_t mem_start_p=0;
 
 uint8_t local_buf[XMODEM_BUFFER_SIZE];
 extern uint8_t ram[0x10000];
+static hexedit_t he_config;
 
 
 void console_reset()
@@ -82,6 +85,27 @@ void console_type_set( console_type_t type )
    console_type = type;
 }
 
+
+uint8_t hexedit_bank()
+{
+   if( ++(he_config.bank) > debug_banks() )
+   {
+      he_config.bank = 0;
+   }
+   return he_config.bank;
+}
+
+
+uint8_t hexedit_peek( uint16_t addr )
+{
+   return debug_peek( he_config.bank, addr );
+}
+
+
+void hexedit_poke( uint16_t addr, uint8_t value )
+{
+   debug_poke( he_config.bank, addr, value );
+}
 
 
 /* For xmodem receive, we need to provide the HW specific functions*/
@@ -242,6 +266,19 @@ void console_rp2040()
                   run_upload(upload_addr);
                }
             }
+            break;
+         case 'X':
+#if 0
+            hexedit( &he_config );
+#else
+            {
+               (void)screen_get_size( NULL, NULL );
+               initscr();
+               clear();
+               hexedit( &he_config );
+               endwin();
+            }
+#endif
             break;
          case 'C':
             printf( "%c\n", in );

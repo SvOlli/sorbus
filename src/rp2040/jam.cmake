@@ -39,6 +39,10 @@ add_executable(jam_alpha
    common/disassemble.c
    common/disassemble_historian.c
    common/generic_helper.c
+   common/mcurses.c
+   common/mcurses_hexedit.c
+   common/mcurses_phyio.c
+   common/mcurses_sorbus.c
    3rdparty/dhara/error.c
    3rdparty/dhara/journal.c
    3rdparty/dhara/map.c

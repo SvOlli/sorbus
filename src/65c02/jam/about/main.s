@@ -167,7 +167,7 @@ get_crunched_byte:
 
 keys:
    .byte "234567"
-   .byte "CDFRS"
+   .byte "CDUFRS"
    .byte "ABMPT"
 
 txttable:
@@ -180,6 +180,7 @@ txttable:
 
    .word C_FLOD
    .word DHARA
+   .word MCURSES
    .word FATFS
    .word RESID
    .word PICOSDK
@@ -210,6 +211,8 @@ C_FLOD:
    .incbin "c-flod.exo"
 DHARA:
    .incbin "dhara.exo"
+MCURSES:
+   .incbin "mcurses.exo"
 FATFS:
    .incbin "fatfs.exo"
 RESID:

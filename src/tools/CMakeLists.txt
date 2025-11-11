@@ -37,10 +37,20 @@ add_executable(binjoin
    binjoin.c
    )
 
-# tool to convert test disassembler
+# tool to test part of disassembler
 add_executable(historian
    historian.c
    )
+set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/disassemble.c)
+set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/disassemble_historian.c)
+
+# tool to test curses implementation
+add_executable(mcurses
+   mcurses.c
+   )
+set_property(SOURCE mcurses APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/mcurses.c)
+set_property(SOURCE mcurses APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/mcurses_hexedit.c)
+set_property(SOURCE mcurses APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/mcurses_sorbus.c)
 
 # tool to convert binary data to TIM paper tape format
 add_executable(timcat

@@ -2,6 +2,8 @@
 #ifndef _NATIVE_COMMON_H_
 #define _NATIVE_COMMON_H_ _NATIVE_COMMON_H_
 
+#include <stdint.h>
+
 typedef enum console_type_e {
    CONSOLE_TYPE_65C02,
    CONSOLE_TYPE_RP2040
@@ -35,5 +37,8 @@ void debug_internal_drive();
 void debug_memorydump();
 void debug_queue_event( const char *text );
 void debug_raw_backtrace();
+uint8_t debug_banks();
+uint8_t debug_peek( uint8_t bank, uint16_t addr );
+void debug_poke( uint8_t bank, uint16_t addr, uint8_t value );
 
 #endif
