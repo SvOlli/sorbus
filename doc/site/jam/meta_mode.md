@@ -1,9 +1,9 @@
 
 # Meta-Mode
 
-Pressing Ctrl+] will get you in a "meta-mode" where the CPU stops. Then
-a debug menu is shown which provides some developer information. A few
-entries there also relate to "monitor commands".
+Pressing Ctrl+] (or `^`) will get you in a "meta-mode" where the CPU
+stops. Then a debug menu is shown which provides some developer
+information. A few entries there also relate to "monitor commands".
 
 
 ## Backtrace 

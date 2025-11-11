@@ -271,7 +271,7 @@ void console_65c02()
    if( in == PICO_ERROR_TIMEOUT )
    {
       in = getchar_timeout_us(10);
-      if( ((in == 0x1d)|| (in == 0x5e)) && (console_crlf_enabled) ) /* 0x1d = CTRL+] */
+      if( ((in == 0x1d) || (in == '^')) && (console_crlf_enabled) ) /* 0x1d = CTRL+] */
       {
          invoke_type = in;
          console_wants_stop = true;
@@ -306,6 +306,7 @@ void console_65c02()
       }
       else if( out == 0x7f )
       {
+         /* full delete sequence: backspace, space, backspace */
          const char bs_seq[] = { 8, ' ', 8, 0 };
          printf( bs_seq );
       }

@@ -74,9 +74,14 @@ add_executable(sound_mod
    common/sound_gpio_config 
    3rdparty/i2s/i2s.c
    3rdparty/xmodem/xmodem.c
-
 )
 pico_generate_pio_header(sound_mod ${CMAKE_CURRENT_LIST_DIR}/3rdparty/i2s/i2s.pio)
+set_property(SOURCE sound_mod APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_BINARY_DIR}/rp2040/cream_of_the_earth.h)
+set_property(SOURCE sound_mod APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_BINARY_DIR}/rp2040/rsi_rise_up.h)
+set_property(SOURCE sound_mod APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_BINARY_DIR}/rp2040/phantasmagoria.h)
+set_property(SOURCE sound_mod APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_BINARY_DIR}/rp2040/bloodmoney_intro.h)
+set_property(SOURCE sound_mod APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_BINARY_DIR}/rp2040/trsi_cracktro.h)
+set_property(SOURCE sound_mod APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_BINARY_DIR}/rp2040/test_mod.h)
 
 
 

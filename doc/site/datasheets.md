@@ -87,9 +87,11 @@ directory that can be used to download these documents (PDFs only).
 
 ## VT100 Escape Sequences
 
-* [VT100](https://www2.ccs.neu.edu/research/gpc/VonaUtils/vona/terminal/vtansi.htm)
-* [VT100](https://github.com/0x5c/VT100-Examples/raw/master/vt_seq.md)
-
+* [VonaUtils VT100](https://www2.ccs.neu.edu/research/gpc/VonaUtils/vona/terminal/vtansi.htm)
+* [VT100-Examples](https://github.com/0x5c/VT100-Examples/raw/master/vt_seq.md)
+* [ANSI Escape Sequences](https://gist.github.com/ConnerWill/d4b6c776b509add763e17f9f113fd25b)
+* [German manual of MCURSES](https://www.mikrocontroller.net/articles/MCURSES)
+* [Arduino implementation of MCURSES](https://github.com/ChrisMicro/mcurses)
 
 ## Opcode Tables
 

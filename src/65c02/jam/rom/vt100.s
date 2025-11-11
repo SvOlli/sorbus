@@ -97,7 +97,8 @@ escfirst:
 escsecond:
    .byte "nJK",0,0,0,0,0
 esclast:
-   .byte "Hrm" ; 0) cursor, 1) scroll, 2) colors
+   .byte "Hrm" ; last bytes for parameter calls: ESC [ a ; b <esclast>
+               ; 0) cursor, 1) scroll, 2) colors
 
 vt100_2param:
 .ifp02
