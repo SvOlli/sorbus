@@ -78,35 +78,35 @@
  * mcurses variables
  *------------------------------------------------------------------------------
  */
-extern uint8_t             mcurses_is_up;                                      // flag: mcurses is up
-extern uint8_t             mcurses_cury;                                       // do not use, use getyx() instead!
-extern uint8_t             mcurses_curx;                                       // do not use, use getyx() instead!
+extern uint8_t    mcurses_is_up;                         // flag: mcurses is up
+extern uint8_t    mcurses_cury;                          // do not use, use getyx() instead!
+extern uint8_t    mcurses_curx;                          // do not use, use getyx() instead!
 
 /*------------------------------------------------------------------------------
  * mcurses functions
  *------------------------------------------------------------------------------
  */
-uint8_t             initscr();                                     // initialize mcurses
-void                     move (uint8_t, uint8_t);                  // move cursor to line, column (home = 0, 0)
-void                     attrset (uint_fast16_t);                            // set attribute(s)
-void                     addch (uint8_t);                               // add a character
-void                     addstr (const char *);                              // add a string
-void                     getnstr (char * str, uint8_t maxlen);          // read a string (with mini editor functionality)
-void                     setscrreg (uint8_t, uint8_t);             // set scrolling region
-void                     deleteln();                                    // delete line at current line position
-void                     insertln();                                    // insert a line at current line position
-void                     scroll();                                      // scroll line up
-void                     clear();                                       // clear total screen
-void                     clrtobot();                                    // clear screen from current line to bottom
-void                     clrtoeol();                                    // clear from current column to end of line
-void                     delch();                                       // delete character at current position
-void                     insch (uint8_t);                               // insert character at current position
-void                     nodelay (uint8_t);                             // set/reset nodelay
-void                     halfdelay (uint8_t);                           // set/reset halfdelay
-uint8_t             getch();                                       // read key
-void                     curs_set(uint8_t);                             // set cursor to: 0=invisible 1=normal 2=very visible
-void                     refresh();                                     // flush output
-void                     endwin();                                      // end mcurses
+uint8_t           initscr();                             // initialize mcurses
+void              move (uint8_t, uint8_t);               // move cursor to line, column (home = 0, 0)
+void              attrset (uint_fast16_t);               // set attribute(s)
+void              addch (uint8_t);                       // add a character
+void              addstr (const char *);                 // add a string
+void              getnstr (char * str, uint8_t maxlen);  // read a string (with mini editor functionality)
+void              setscrreg (uint8_t, uint8_t);          // set scrolling region
+void              deleteln();                            // delete line at current line position
+void              insertln();                            // insert a line at current line position
+void              scroll();                              // scroll line up
+void              clear();                               // clear total screen
+void              clrtobot();                            // clear screen from current line to bottom
+void              clrtoeol();                            // clear from current column to end of line
+void              delch();                               // delete character at current position
+void              insch (uint8_t);                       // insert character at current position
+void              nodelay (uint8_t);                     // set/reset nodelay
+void              halfdelay (uint8_t);                   // set/reset halfdelay
+uint8_t           getch();                               // read key
+void              curs_set(uint8_t);                     // set cursor to: 0=invisible 1=normal 2=very visible
+void              refresh();                             // flush output
+void              endwin();                              // end mcurses
 
 /*------------------------------------------------------------------------------
  * mcurses macros
@@ -115,7 +115,6 @@ void                     endwin();                                      // end m
 #define erase()                 clear()                                             // clear total screen, same as clear()
 #define mvaddch(y,x,c)          move((y),(x)), addch((c))                           // move cursor, then add character
 #define mvaddstr(y,x,s)         move((y),(x)), addstr((s))                          // move cursor, then add string
-#define mvaddstr_P(y,x,s)       move((y),(x)), addstr_P((s))                        // move cursor, then add string (PROGMEM)
 
 
 

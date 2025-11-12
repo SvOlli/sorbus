@@ -6,6 +6,8 @@
 
 #include "mcurses.h"
 
+#include <stdio.h>
+
 #include <pico/stdlib.h>
 
 static uint8_t mcurses_nodelay   = 0;

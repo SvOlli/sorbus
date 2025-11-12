@@ -52,16 +52,10 @@
 static uint8_t                   mcurses_scrl_start = 0; // start of scrolling region, default is 0
 static uint8_t                   mcurses_scrl_end = 0;   // end of scrolling region, default is last line
 static uint8_t                   mcurses_nodelay;        // nodelay flag
-static uint8_t                   mcurses_halfdelay;      // halfdelay value, in tenths of a second
 
 uint8_t                          mcurses_is_up = 0;      // flag: mcurses is up
 uint8_t                          mcurses_cury = 0xff;    // current y position of cursor, public (getyx())
 uint8_t                          mcurses_curx = 0xff;    // current x position of cursor, public (getyx())
-
-#define mcurses_puts(x) printf(x)
-
-char (*FunctionPointer_getchar)(void);
-void  (*FunctionPointer_putchar)(uint8_t ch);
 
 
 /*------------------------------------------------------------------------------
@@ -71,6 +65,15 @@ void  (*FunctionPointer_putchar)(uint8_t ch);
 static void mcurses_putc (uint8_t ch)
 {
    mcurses_phyio_putc (ch);
+}
+
+
+static void mcurses_puts( const char *s )
+{
+   while( *s )
+   {
+      mcurses_phyio_putc( *(s++) );
+   }
 }
 
 

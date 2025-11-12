@@ -38,7 +38,7 @@
 #define BYTES_PER_ROW   16
 #define FIRST_HEX_COL   7
 #define LAST_BYTE_COL   (FIRST_HEX_COL + 3 * BYTES_PER_ROW)
-#define FIRST_ASCII_COL (LAST_BYTE_COL + 1)
+#define FIRST_ASCII_COL (LAST_BYTE_COL + 2)
 #define IS_PRINT(ch)    (((ch) >= 32 &&( ch ) < 0x7F) || ((ch) >= 0xA0))
 
 #define MODE_HEX        0
@@ -331,6 +331,8 @@ void hexedit( hexedit_t *config )
          }
          case 0x07: /* Ctrl+G: enter address */
          {
+            move( 0, 0 );
+            (void)screen_get4hex( &address );
             redraw = true;
             break;
          }
@@ -372,6 +374,7 @@ void hexedit( hexedit_t *config )
          }   /* fall through */
          default:
          {
+            uint8_t check;
             if (mode == MODE_HEX)
             {
                if (IS_HEX(ch))
@@ -384,35 +387,40 @@ void hexedit( hexedit_t *config )
                   if (IS_HEX(ch))
                   {
                      value |= xtoi( ch );
-                     hexedit_poke( address++, value );
-                     move (line, FIRST_ASCII_COL + byte);
+                     hexedit_poke( address, value );
+                     check = hexedit_peek( address++ );
+                     if( check == value )
+                     {
+                        move (line, FIRST_ASCII_COL + byte);
 
-                     if (IS_PRINT(value))
-                     {
-                        addch (value);
-                     }
-                     else
-                     {
-                        addch ('.');
+                        if (IS_PRINT(value))
+                        {
+                           addch (value);
+                        }
+                        else
+                        {
+                           addch ('.');
+                        }
                      }
                      cmove = MOVE_RIGHT;
                   }
-                  else
-                  {
-                     /* revert */
-                     move( line, FIRST_HEX_COL + 3 * byte );
-                     itoxx( hexedit_peek( address ) );
-                  }
+                  /* re-read */
+                  move( line, FIRST_HEX_COL + 3 * byte );
+                  itoxx( hexedit_peek( address ) );
                }
             }
             else // MODE_ASCII
             {
                if (IS_PRINT(ch))
                {
-                  hexedit_poke(address++, ch);
-                  addch( ch );
-                  move (line, FIRST_HEX_COL + 3 * byte);
-                  itoxx( ch );
+                  hexedit_poke(address, ch);
+                  check = hexedit_peek( address++ );
+                  if( check == ch )
+                  {
+                     addch( ch );
+                     move (line, FIRST_HEX_COL + 3 * byte);
+                     itoxx( ch );
+                  }
                   cmove = MOVE_RIGHT;
                }
             }

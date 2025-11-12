@@ -625,6 +625,8 @@ void debug_backtrace()
    disass_historian_done( d );
 }
 
+
+#if 0
 void debug_memorydump()
 {
    const uint16_t show_size = 0x100;
@@ -647,6 +649,7 @@ void debug_memorydump()
       lastaddr = addr + show_size;
    }
 }
+#endif
 
 
 void debug_disassembler()
@@ -729,46 +732,62 @@ void debug_queue_event( const char *text )
    }
 }
 
-void debug_clocks()
+
+const char *debug_info_clocks()
 {
-   char cpu_clk[] = "                     ";
-   uint f_pll_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_SYS_CLKSRC_PRIMARY);
-   uint f_pll_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_USB_CLKSRC_PRIMARY);
-   uint f_rosc     = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_ROSC_CLKSRC);
+   static char buffer[90] = { 0 };
+
    uint f_clk_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_SYS);
    uint f_clk_peri = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_PERI);
-   uint f_clk_usb  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_USB);
-   uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
-   uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
    uint time_hz = (double)1000000.0 / ((double)(time_per_mcc) / CLOCKS_PER_SEC / 10000);
 
    check_cpu_is_halted();
 
-   cpu_clk[snprintf( &cpu_clk[0], sizeof(cpu_clk)-1, "%s CLK:", cputype_name( cputype ) )] = ' ';
-   printf("\n");
-   printf("PLL_SYS:             %3d.%03dMHz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
-   printf("PLL_USB:             %3d.%03dMHz\n", f_pll_usb / 1000, f_pll_usb % 1000 );
-   printf("ROSC:                %3d.%03dMHz\n", f_rosc    / 1000, f_rosc    % 1000 );
-   printf("CLK_SYS:             %3d.%03dMHz\n", f_clk_sys / 1000, f_clk_sys % 1000 );
-   printf("CLK_PERI:            %3d.%03dMHz\n", f_clk_peri / 1000, f_clk_peri % 1000 );
-   printf("CLK_USB:             %3d.%03dMHz\n", f_clk_usb / 1000, f_clk_usb % 1000 );
-   printf("CLK_ADC:             %3d.%03dMHz\n", f_clk_adc / 1000, f_clk_adc % 1000 );
-   printf("CLK_RTC:             %3d.%03dMHz\n", f_clk_rtc / 1000, f_clk_rtc % 1000 );
-   printf("%s%3d.%06dMHz\n", cpu_clk, time_hz / 1000000, time_hz % 1000000 );
+   snprintf( &buffer[0], sizeof(buffer)-1,
+             "  CLK_SYS: %3d.%03d   MHz\n"
+             " CLK_PERI: %3d.%03d   MHz\n"
+             "%9s: %3d.%06dMHz"
+             , f_clk_sys / 1000, (f_clk_sys % 1000)
+             , f_clk_peri / 1000, (f_clk_peri % 1000)
+             , cputype_name( cputype ), time_hz / 1000000, time_hz % 1000000 );
+
+   return &buffer[0];
 }
 
 
-void debug_heap()
+const char *debug_info_heap()
 {
+   static char buffer[80] = { 0 };
    extern char __StackLimit, __bss_end__;
    struct mallinfo m = mallinfo();
-
    uint32_t total_heap = &__StackLimit  - &__bss_end__;
    uint32_t free_heap = total_heap - m.uordblks;
 
-   printf("\n");
-   printf( "total heap: %08x (%d)\n", total_heap, total_heap );
-   printf( "free  heap: %08x (%d)\n", free_heap,  free_heap );
+   snprintf( &buffer[0], sizeof(buffer)-1,
+             "total heap: %6d\n"
+             "free  heap: %6d\n"
+             "allocated:  %6d"
+             , total_heap, free_heap, m.uordblks );
+
+   return &buffer[0];
+}
+
+
+const char *debug_info_sysvectors()
+{
+   static char buffer[50] = { 0 };
+
+   snprintf( &buffer[0], sizeof(buffer)-1,
+             "UVBRK:%04X\n"
+             "UVNMI:%04X\n"
+             "UVNBI:%04X\n"
+             "UVIRQ:%04X"
+             , *((uint16_t*)&ram[0xDF78])
+             , *((uint16_t*)&ram[0xDF7A])
+             , *((uint16_t*)&ram[0xDF7C])
+             , *((uint16_t*)&ram[0xDF7E]) );
+
+   return &buffer[0];
 }
 
 
@@ -806,17 +825,6 @@ void debug_internal_drive()
    hexdump( get_memory, (*mem)-0x80, SECTOR_SIZE );
 #endif
 }
-
-
-#if 0
-void debug_sysconfig()
-{
-   printf( "UVBRK:%04X  ", *((uint16_t*)&ram[0xDF78]) );
-   printf( "UVNMI:%04X  ", *((uint16_t*)&ram[0xDF7A]) );
-   printf( "UVNBK:%04X  ", *((uint16_t*)&ram[0xDF7C]) );
-   printf( "UVIRQ:%04X\n", *((uint16_t*)&ram[0xDF7E]) );
-}
-#endif
 
 
 static inline void handle_io()

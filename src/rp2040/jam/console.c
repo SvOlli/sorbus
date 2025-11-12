@@ -197,6 +197,7 @@ void console_rp2040()
 {
    int in;
    bool leave = false;
+   uint16_t lines, cols;
 
    const char *invoke = "magic key combo";
 
@@ -213,51 +214,77 @@ void console_rp2040()
       default:
          break;
    }
+
+   screen_save();
+   screen_get_size( &lines, &cols );
+   /* TODO: check if cols and lines are sufficiant */
+   initscr();
+
+#if 0
    printf( "\n%s triggered! CPU stopped using RDY\n"
            , invoke );
+#endif
 
    while( !leave )
-   {          /* 12345678901234567890123456789012345678901234567890123456789012345678901234567890 */
-      printf( "\nB)acktrace, D)isassemble, E)vent queue, H)eap, I)nternal drive, M)emory dump,"
-              "\nS)peeds, U)pload"
-              "\nC)ontinue, R)eboot ? " );
+   {
+      clear();
+      screen_border( 0, 0, lines-1, cols-1 );
+      move( 1, 1 );
+      addstr( "The Sorbus Computer Meta Menu invoked via " );
+      addstr( invoke );
+      addstr( ", CPU on RDY" );
+      screen_textbox( lines-6,  1, debug_info_heap() );
+      screen_textbox( lines-6, 21, debug_info_clocks() );
+      screen_textbox( lines-7, cols-13, debug_info_sysvectors() );
+
+      move( 3, 1 );
+           /* 12345678901234567890123456789012345678901234567890123456789012345678901234567890 */
+      addstr( "B)acktrace, D)isassemble, E)vent queue, I)nternal drive, M)emory, U)pload" );
+      move( 4, 1 );
+      addstr( "C)ontinue, R)eboot ? " );
       in = toupper( getchar() );
       switch( in )
       {
          case '!':
-            printf( "%c\n", in );
+            endwin();
+            /* TODO: find solution for handling */
             debug_raw_backtrace();
+            getch();
+            initscr();
             break;
          case 'B':
-            printf( "%c\n", in );
+            endwin();
+            /* move backtrace to own viewer */
             debug_backtrace();
+            getch();
+            initscr();
             break;
          case 'D':
-            printf( "%c\n", in );
+            endwin();
+            /* move memory disassember to own viewer */
             debug_disassembler();
+            getch();
+            initscr();
             break;
          case 'E':
-            printf( "%c\n", in );
+            endwin();
+            /* show on title screen? */
             debug_queue_event( "Event queue" );
-            break;
-         case 'H':
-            printf( "%c\n", in );
-            debug_heap();
+            getch();
+            initscr();
             break;
          case 'I':
-            printf( "%c\n", in );
+            endwin();
+            /* show on title screen? */
             debug_internal_drive();
+            getch();
+            initscr();
             break;
          case 'M':
-            printf( "%c\n", in );
-            debug_memorydump();
-            break;
-         case 'S':
-            printf( "%c\n", in );
-            debug_clocks();
+            hexedit( &he_config );
             break;
          case 'U':
-            printf( "%c\n", in );
+            endwin();
             leave = true;
             {
                int32_t upload_addr = print_upload_menu();
@@ -266,19 +293,8 @@ void console_rp2040()
                   run_upload(upload_addr);
                }
             }
-            break;
-         case 'X':
-#if 0
-            hexedit( &he_config );
-#else
-            {
-               (void)screen_get_size( NULL, NULL );
-               initscr();
-               clear();
-               hexedit( &he_config );
-               endwin();
-            }
-#endif
+            getch();
+            initscr();
             break;
          case 'C':
             printf( "%c\n", in );
@@ -298,6 +314,8 @@ void console_rp2040()
 
    // restore CRLF setting for 65C02
    uart_set_translate_crlf( uart0, console_crlf_enabled );
+
+   screen_restore();
 }
 
 

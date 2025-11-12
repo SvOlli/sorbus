@@ -29,10 +29,16 @@ uint8_t hexedit_peek( uint16_t addr );
 void hexedit_poke( uint16_t addr, uint8_t value );
 
 /* implemented in mcurses_sorbus.c */
-bool screen_get_size( uint16_t *columns, uint16_t *lines );
-void screen_save( uint16_t lines );
-void screen_restore( uint16_t lines );
+bool screen_get_size( uint16_t *lines, uint16_t *columns );
+void screen_save();
+void screen_restore();
+void screen_alternative_buffer_enable();
+void screen_alternative_buffer_disable();
 uint16_t screen_get_columns();
 uint16_t screen_get_rows();
+void screen_border( uint16_t top, uint16_t left,
+                    uint16_t bottom, uint16_t right );
+void screen_textbox( uint16_t line, uint16_t column, const char *text );
+bool screen_get4hex( uint16_t *value );
 
 #endif

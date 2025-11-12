@@ -117,16 +117,14 @@ void mcurses_phyio_halfdelay (uint8_t tenths)
 {
    if (tenths == 0)
    {
-      mcurses_newmode.c_cc[VMIN] = 1;                  /* block input:    */
-      mcurses_newmode.c_cc[VTIME] = 0;                  /* one character   */
+      mcurses_newmode.c_cc[VMIN] = 1;        /* block input:     */
+      mcurses_newmode.c_cc[VTIME] = 0;       /* one character    */
    }
    else
    {
-      mcurses_newmode.c_cc[VMIN] = 0;                  /* set timeout     */
-      mcurses_newmode.c_cc[VTIME] = tenths;              /* in tenths of sec */
+      mcurses_newmode.c_cc[VMIN] = 0;        /* set timeout      */
+      mcurses_newmode.c_cc[VTIME] = tenths;  /* in tenths of sec */
    }
-
-   mcurses_halfdelay = tenths;
 
    (void) ioctl (0, TCSETAW, &mcurses_newmode);
 }
@@ -160,6 +158,29 @@ void hexedit_poke( uint16_t address, uint8_t value )
    memory[address] = value;
 }
 
+const char *speeds[] = {
+   "CLK_SYS:", "133.000MHz",
+   "CLK_PERI:", "48.000MHz",
+   "CLK_65C02:", "1.181816MHz",
+   NULL
+};
+
+
+const char *debug_info_heap()
+{
+   static char buffer[80] = { 0 };
+
+   uint32_t total_heap = 150596;
+   uint32_t free_heap  = 149104;
+
+   snprintf( &buffer[0], sizeof(buffer)-1,
+             "total heap: %06x (%d)\n"
+             "free  heap: %06x (%d)"
+             , total_heap, total_heap, free_heap,  free_heap );
+
+   return &buffer[0];
+}
+
 
 int main( int argc, char *argv[] )
 {
@@ -173,20 +194,36 @@ int main( int argc, char *argv[] )
    newt.c_lflag &= ~(ICANON | ECHO);
    tcsetattr( STDIN_FILENO, TCSANOW, &newt );
 
-   rv = screen_get_size( &x, &y );
+   screen_save();
+   rv = screen_get_size( &y, &x );
    initscr();
-   clear();
-   move( 0, 0 );
 
+   move( 0, 0 );
+   clear();
+   screen_border( 0, 0, y-1, x-1 );
+#if 0
+   screen_table( 2, 2, speeds );
+#else
+   screen_textbox( 2, 2, debug_info_heap() );
+#endif
+
+
+
+   getch();
+
+#if 0
    hexedit( &config );
-   hexedit( &config );
-   
+#endif
+
    endwin();
    tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
 
+#if 1
+   screen_restore();
+#else
    printf( "columns=%d rows=%d return=%d\n", x, y, rv );
    printf( "bank=%02x address=%04x topleft=%04x\n",
             config.bank, config.address, config.topleft );
-
+#endif
    return 0;
 }
