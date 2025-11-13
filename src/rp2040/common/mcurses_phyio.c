@@ -10,8 +10,8 @@
 
 #include <pico/stdlib.h>
 
-static uint8_t mcurses_nodelay   = 0;
-static uint8_t mcurses_halfdelay = 0;
+static uint8_t  mcurses_nodelay   = 0;
+static uint16_t mcurses_halfdelay = 0;
 
 
 uint8_t mcurses_phyio_init()
@@ -65,7 +65,7 @@ void mcurses_phyio_nodelay( uint8_t flag )
 }
 
 
-void mcurses_phyio_halfdelay( uint8_t tenths )
+void mcurses_phyio_halfdelay( uint16_t tenths )
 {
     mcurses_halfdelay = tenths;
 }

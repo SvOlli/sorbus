@@ -13,6 +13,26 @@
 #include <unistd.h>
 
 #if 0
+#define BORDER_TOP          '-'
+#define BORDER_BOTTOM       '-'
+#define BORDER_LEFT         '|'
+#define BORDER_RIGHT        '|'
+#define BORDER_TOP_LEFT     '+'
+#define BORDER_TOP_RIGHT    '+'
+#define BORDER_BOTTOM_LEFT  '+'
+#define BORDER_BOTTOM_RIGHT '+'
+#else
+#define BORDER_TOP          0x2500
+#define BORDER_BOTTOM       0x2500
+#define BORDER_LEFT         0x2502
+#define BORDER_RIGHT        0x2502
+#define BORDER_TOP_LEFT     0x250c
+#define BORDER_TOP_RIGHT    0x2510
+#define BORDER_BOTTOM_LEFT  0x2514
+#define BORDER_BOTTOM_RIGHT 0x2518
+#endif
+
+#if 0
 static const char save_sequence[] = "\33[?1049h\33[22;0;0t\33[1;24r\33[4l\33(B\33[m\33[39m\33[49m\33[1;24r\33[H\33[2J\33[1;1H";
 static const char restore_sequence[] = "\33[24;1H\33(B\33[m\33[39;49m\r\33[K\r\33[?1049l\33[23;0;0t";
 #endif
@@ -99,43 +119,41 @@ bool screen_get_size( uint16_t *lines, uint16_t *columns )
 
    uint16_t i=32, x=i, y=i, sx, sy;
 
+   /* get old cursor position */
    if( !screen_get_cursor_pos( &sx, &sy ) )
    {
       return false;
    }
-   do
+
+   /* set cursor to maximal bottom right */
+   screen_set_cursor_pos( 0xFFFF, 0xFFFF );
+   if( !screen_get_cursor_pos( &x, &y ) )
    {
-      i <<= 1;
-      if( !i ) /* bit shifted out of range */
-      {
-         /* consider a screen of 32768x32768 end of line */
-         screen.columns = 0xFFFF;
-         screen.rows    = 0xFFFF;
-         return false;
-      }
-      screen_set_cursor_pos( i, i );
-      if( !screen_get_cursor_pos( &x, &y ) )
-      {
-         return false;
-      }
+      return false;
    }
-   while( (x == i) || (y == i) );
+
    screen_set_cursor_pos( sx, sy );
 
-   screen.columns = (x+1);
-   screen.rows    = (y+1);
+   /* screen_get_cursor_pos() uses 0-offset */
+   screen.columns = ++x;
+   screen.rows    = ++y;
    if( columns )
    {
-      *columns = x+1;
+      *columns = x;
    }
    if( lines )
    {
-      *lines = y+1;
+      *lines = y;
+   }
+   if( !x || !y )
+   {
+      return false;
    }
    return true;
 }
 
 
+#if 0
 void _screen_save( uint16_t lines )
 {
    /* this is a very evil hack:
@@ -171,6 +189,7 @@ void _screen_restore( uint16_t lines )
            "\033[?1049l"    // disable the alternative buffer
            "\033[23;0;0t", lines );
 }
+#endif
 
 
 void screen_save()
@@ -205,28 +224,28 @@ void screen_border( uint16_t top, uint16_t left,
    int i;
 
    move( top, left );
-   addch( 0x8c );
+   addch( BORDER_TOP_LEFT );
    for( i = left+1; i < right; ++i )
    {
-      addch( 0x91 );
+      addch( BORDER_TOP );
    }
-   addch( 0x8b );
+   addch( BORDER_TOP_RIGHT );
 
    for( i = top+1; i < bottom; ++i )
    {
       move( i, left );
-      addch( 0x98 );
+      addch( BORDER_LEFT );
       move( i, right );
-      addch( 0x98 );
+      addch( BORDER_RIGHT );
    }
 
    move( bottom, left );
-   addch( 0x8d );
+   addch( BORDER_BOTTOM_LEFT );
    for( i = left+1; i < right; ++i )
    {
-      addch( 0x91 );
+      addch( BORDER_BOTTOM );
    }
-   addch( 0x8a );
+   addch( BORDER_BOTTOM_RIGHT );
 }
 
 
@@ -274,7 +293,7 @@ void screen_textbox( uint16_t line, uint16_t column, const char *text )
 }
 
 
-static uint8_t hex1ascii( uint8_t val )
+static void hex1ascii( uint8_t val )
 {
    uint8_t ch;
    val &= 0x0F;

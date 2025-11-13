@@ -46,25 +46,24 @@
 #define SEQ_INSERT_MODE          ("\033[4h")             // set insert mode
 #define SEQ_REPLACE_MODE         ("\033[4l")             // set replace mode
 #define SEQ_RESET_SCRREG         ("\033[r")              // reset scrolling region
-#define SEQ_LOAD_G1              ("\033)0")              // load G1 character set
 #define SEQ_CURSOR_VIS           ("\033[?25")            // set cursor visible/not visible
 
-static uint8_t                   mcurses_scrl_start = 0; // start of scrolling region, default is 0
-static uint8_t                   mcurses_scrl_end = 0;   // end of scrolling region, default is last line
+static uint16_t                  mcurses_scrl_start = 0; // start of scrolling region, default is 0
+static uint16_t                  mcurses_scrl_end = 0;   // end of scrolling region, default is last line
 static uint8_t                   mcurses_nodelay;        // nodelay flag
 
 uint8_t                          mcurses_is_up = 0;      // flag: mcurses is up
-uint8_t                          mcurses_cury = 0xff;    // current y position of cursor, public (getyx())
-uint8_t                          mcurses_curx = 0xff;    // current x position of cursor, public (getyx())
+uint8_t                          mcurses_cury  = 0xff;   // current y position of cursor, public (getyx())
+uint8_t                          mcurses_curx  = 0xff;   // current x position of cursor, public (getyx())
 
 
 /*------------------------------------------------------------------------------
  * INTERN: put a character (raw)
  *------------------------------------------------------------------------------
  */
-static void mcurses_putc (uint8_t ch)
+static void mcurses_putc( uint8_t ch )
 {
-   mcurses_phyio_putc (ch);
+   mcurses_phyio_putc( ch );
 }
 
 
@@ -77,31 +76,32 @@ static void mcurses_puts( const char *s )
 }
 
 
+
 /*------------------------------------------------------------------------------
  * INTERN: put a 3/2/1 digit integer number (raw)
  *
  * Here we don't want to use sprintf (too big on AVR/Z80) or itoa (not available on Z80)
  *------------------------------------------------------------------------------
  */
-static void mcurses_puti (uint8_t i)
+static void mcurses_puti( uint16_t value )
 {
-   uint8_t ii;
+   uint8_t digits[6] = { 0 };
+   int pos;
 
-   if (i >= 10)
+   for( pos = 4; pos >= 0; --pos )
    {
-      if (i >= 100)
-      {
-         ii = i / 100;
-         mcurses_putc (ii + '0');
-         i -= 100 * ii;
-      }
-
-      ii = i / 10;
-      mcurses_putc (ii + '0');
-      i -= 10 * ii;
+      digits[pos] = '0' + (value % 10);
+      value /= 10;
    }
 
-   mcurses_putc (i + '0');
+   for( pos = 0; pos < 4; ++pos )
+   {
+      if( digits[pos] != '0' )
+      {
+         break;
+      }
+   }
+   mcurses_puts( &digits[pos] );
 }
 
 
@@ -109,47 +109,20 @@ static void mcurses_puti (uint8_t i)
  * INTERN: addch or insch a character
  *-----------------------------------------------------------------------------
  */
-#define CHARSET_G0     0
-#define CHARSET_G1     1
-
-static void mcurses_addch_or_insch (uint8_t ch, bool insert)
+static void mcurses_addch_or_insch( uint16_t ch, bool insert )
 {
-   /* TODO: convert this to UTF-8 output */
-   static uint8_t  charset = 0xff;
    static bool    insert_mode = false;
 
-   if (ch >= 0x80 && ch <= 0x9F)
+   if( insert_mode != insert )
    {
-      if (charset != CHARSET_G1)
+      insert_mode = insert;
+      if( insert )
       {
-         mcurses_putc ('\016');                                   // switch to G1 set
-         charset = CHARSET_G1;
+         mcurses_puts( SEQ_INSERT_MODE );
       }
-      ch -= 0x20;                                              // subtract offset to G1 characters
-   }
-   else
-   {
-      if (charset != CHARSET_G0)
+      else
       {
-         mcurses_putc ('\017');                                   // switch to G0 set
-         charset = CHARSET_G0;
-      }
-   }
-
-   if (insert)
-   {
-      if (! insert_mode)
-      {
-         mcurses_puts (SEQ_INSERT_MODE);
-         insert_mode = true;
-      }
-   }
-   else
-   {
-      if (insert_mode)
-      {
-         mcurses_puts (SEQ_REPLACE_MODE);
-         insert_mode = false;
+         mcurses_puts( SEQ_REPLACE_MODE );
       }
    }
 
@@ -157,11 +130,29 @@ static void mcurses_addch_or_insch (uint8_t ch, bool insert)
    {
       mcurses_putc( ch );
    }
+   else if( ch < 0x800 )
+   {
+      /* write UTF-8 2-byte sequence
+       * 110y yyxx 10xx xxxx
+       * ^^^---------------- 2-byte encoding
+       *           ^^------- followup data
+       *    ^ ^^^^   ^^ ^^^^ 11 bits of data
+       */
+      mcurses_putc( 0xc0 | ((ch & 0x07c0) >> 6) );
+      mcurses_putc( 0x80 |  (ch & 0x003f) );
+   }
    else
    {
-      /* write UTF-8 sequence */
-      mcurses_putc( 0xC0 | (ch >> 6) );
-      mcurses_putc( 0x80 | (ch & 0x3F) );
+      /* write UTF-8 3-byte sequence
+       * 1110 yyyy 10yy yyxx 10xx xxxx
+       * ^^^-------------------------- 3-byte encoding
+       *           ^^----------------- followup data
+       *                     ^^------- followup data
+       *      ^^^^   ^^ ^^^^   ^^ ^^^^ 16 bits of data
+       */
+      mcurses_putc( 0xe0 | ((ch & 0xf000) >> 12) );
+      mcurses_putc( 0x80 | ((ch & 0x0fc0) >> 6) );
+      mcurses_putc( 0x80 |  (ch & 0x003f) );
    }
    mcurses_curx++;
 }
@@ -172,19 +163,19 @@ static void mcurses_addch_or_insch (uint8_t ch, bool insert)
  * INTERN: set scrolling region (raw)
  *-----------------------------------------------------------------------------
  */
-static void mysetscrreg (uint8_t top, uint8_t bottom)
+static void mysetscrreg( uint16_t top, uint16_t bottom )
 {
-   if (top == bottom)
+   if( top == bottom )
    {
       mcurses_puts (SEQ_RESET_SCRREG);                             // reset scrolling region
    }
    else
    {
-      mcurses_puts (SEQ_CSI);
-      mcurses_puti (top + 1);
-      mcurses_putc (';');
-      mcurses_puti (bottom + 1);
-      mcurses_putc ('r');
+      mcurses_puts( SEQ_CSI );
+      mcurses_puti( top + 1 );
+      mcurses_putc( ';' );
+      mcurses_puti( bottom + 1 );
+      mcurses_putc( 'r' );
    }
 }
 
@@ -192,13 +183,13 @@ static void mysetscrreg (uint8_t top, uint8_t bottom)
  * move cursor (raw)
  *------------------------------------------------------------------------------
  */
-static void mymove (uint8_t y, uint8_t x)
+static void mymove( uint16_t y, uint16_t x )
 {
-   mcurses_puts (SEQ_CSI);
-   mcurses_puti (y + 1);
-   mcurses_putc (';');
-   mcurses_puti (x + 1);
-   mcurses_putc ('H');
+   mcurses_puts( SEQ_CSI );
+   mcurses_puti( y + 1 );
+   mcurses_putc( ';' );
+   mcurses_puti( x + 1 );
+   mcurses_putc( 'H' );
 }
 
 
@@ -208,24 +199,23 @@ static void mymove (uint8_t y, uint8_t x)
  */
 uint8_t initscr()
 {
-   uint8_t rtc;
-   screen_get_size( NULL, NULL );
+   if( !screen_get_rows() )
+   {
+      /* never requested screen size, do it now */
+      screen_get_size( NULL, NULL );
+   }
    mcurses_scrl_end = screen_get_rows() - 1;
 
    if (mcurses_phyio_init ())
    {
-      mcurses_puts (SEQ_LOAD_G1);                                    // load graphic charset into G1
+      //mcurses_puts (SEQ_LOAD_G1);                                    // load graphic charset into G1
       attrset (A_NORMAL);
       clear ();
       move (0, 0);
       mcurses_is_up = 1;
-      rtc = OK;
+      return OK;
    }
-   else
-   {
-      rtc = ERR;
-   }
-   return rtc;
+   return ERR;
 }
 
 
@@ -233,9 +223,9 @@ uint8_t initscr()
  * MCURSES: add character
  *------------------------------------------------------------------------------
  */
-void addch (uint8_t ch)
+void addch( uint16_t ch )
 {
-   mcurses_addch_or_insch (ch, false);
+   mcurses_addch_or_insch( ch, false );
 }
 
 
@@ -243,11 +233,11 @@ void addch (uint8_t ch)
  * MCURSES: add string
  *------------------------------------------------------------------------------
  */
-void addstr (const char * str)
+void addstr( const char * str )
 {
    while (*str)
    {
-      mcurses_addch_or_insch (*str++, false);
+      mcurses_addch_or_insch( *str++, false );
    }
 }
 
@@ -256,7 +246,7 @@ void addstr (const char * str)
  * MCURSES: set attribute(s)
  *------------------------------------------------------------------------------
  */
-void attrset (uint_fast16_t attr)
+void attrset( uint16_t attr )
 {
    static uint8_t mcurses_attr = 0xff;               // current attributes
    uint8_t      idx;
@@ -311,7 +301,7 @@ void attrset (uint_fast16_t attr)
  * MCURSES: move cursor
  *------------------------------------------------------------------------------
  */
-void move (uint8_t y, uint8_t x)
+void move( uint16_t y, uint16_t x )
 {
    if (mcurses_cury != y || mcurses_curx != x)
    {
@@ -407,7 +397,7 @@ void delch()
  * MCURSES: insert character
  *------------------------------------------------------------------------------
  */
-void insch (uint8_t ch)
+void insch( uint16_t ch )
 {
    mcurses_addch_or_insch (ch, true);
 }
@@ -417,7 +407,7 @@ void insch (uint8_t ch)
  * MCURSES: set scrolling region
  *------------------------------------------------------------------------------
  */
-void setscrreg (uint8_t t, uint8_t b)
+void setscrreg( uint16_t t, uint16_t b )
 {
    mcurses_scrl_start = t;
    mcurses_scrl_end = b;
@@ -466,7 +456,7 @@ void nodelay (uint8_t flag)
  * MCURSES: set/reset halfdelay
  *------------------------------------------------------------------------------
  */
-void halfdelay (uint8_t tenths)
+void halfdelay( uint16_t tenths )
 {
    mcurses_phyio_halfdelay (tenths);
 }
@@ -586,7 +576,7 @@ uint8_t getch()
  * MCURSES: read string (with mini editor built-in)
  *------------------------------------------------------------------------------
  */
-void getnstr (char * str, uint8_t maxlen)
+void getnstr (char * str, uint16_t maxlen)
 {
    uint8_t ch;
    uint8_t curlen = 0;
@@ -676,7 +666,7 @@ void endwin()
 {
    move( LINES - 1, 0 );               // move cursor to last line
    clrtoeol();                         // clear this line
-   mcurses_putc( '\017' );             // switch to G0 set
+   //mcurses_putc( '\017' );             // switch to G0 set
    curs_set( TRUE );                   // show cursor
    mcurses_puts( SEQ_REPLACE_MODE );   // reset insert mode
    refresh();                          // flush output

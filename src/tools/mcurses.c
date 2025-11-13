@@ -65,16 +65,16 @@ void mcurses_phyio_done (void)
  * PHYIO: putc (unix/linux)
  *------------------------------------------------------------------------------
  */
-void mcurses_phyio_putc (uint8_t ch)
+void mcurses_phyio_putc( uint8_t ch )
 {
-   putchar (ch);
+   putchar( ch );
 }
 
 /*------------------------------------------------------------------------------
  * PHYIO: getc (unix/linux)
  *------------------------------------------------------------------------------
  */
-uint8_t mcurses_phyio_getc (void)
+uint8_t mcurses_phyio_getc()
 {
    uint8_t ch;
 
@@ -87,7 +87,7 @@ uint8_t mcurses_phyio_getc (void)
  * PHYIO: set/reset nodelay (unix/linux)
  *------------------------------------------------------------------------------
  */
-void mcurses_phyio_nodelay (uint8_t flag)
+void mcurses_phyio_nodelay( uint8_t flag )
 {
    int    fd;
    int    fl;
@@ -113,20 +113,20 @@ void mcurses_phyio_nodelay (uint8_t flag)
  * PHYIO: set/reset halfdelay (unix/linux)
  *------------------------------------------------------------------------------
  */
-void mcurses_phyio_halfdelay (uint8_t tenths)
+void mcurses_phyio_halfdelay( uint16_t tenths )
 {
-   if (tenths == 0)
+   if( tenths == 0 )
    {
-      mcurses_newmode.c_cc[VMIN] = 1;        /* block input:     */
+      mcurses_newmode.c_cc[VMIN]  = 1;       /* block input:     */
       mcurses_newmode.c_cc[VTIME] = 0;       /* one character    */
    }
    else
    {
-      mcurses_newmode.c_cc[VMIN] = 0;        /* set timeout      */
+      mcurses_newmode.c_cc[VMIN]  = 0;       /* set timeout      */
       mcurses_newmode.c_cc[VTIME] = tenths;  /* in tenths of sec */
    }
 
-   (void) ioctl (0, TCSETAW, &mcurses_newmode);
+   (void) ioctl( 0, TCSETAW, &mcurses_newmode );
 }
 
 /*------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ void mcurses_phyio_halfdelay (uint8_t tenths)
  */
 void mcurses_phyio_flush_output ()
 {
-   fflush (stdout);
+   fflush( stdout );
 }
 
 
@@ -220,7 +220,6 @@ int main( int argc, char *argv[] )
 
 #if 1
    screen_restore();
-#else
    printf( "columns=%d rows=%d return=%d\n", x, y, rv );
    printf( "bank=%02x address=%04x topleft=%04x\n",
             config.bank, config.address, config.topleft );

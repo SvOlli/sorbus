@@ -215,15 +215,23 @@ void console_rp2040()
          break;
    }
 
-   screen_save();
    screen_get_size( &lines, &cols );
-   /* TODO: check if cols and lines are sufficiant */
+   screen_save();
    initscr();
-
-#if 0
-   printf( "\n%s triggered! CPU stopped using RDY\n"
-           , invoke );
-#endif
+   while( (lines < 20) || (cols < 77) )
+   {
+      uint8_t ch;
+      move( 0, 0 );
+      addstr( "Meta-Mode requires at least 77x20." );
+      move( 1, 0 );
+      addstr( "Press 'Q' to quit or other key to retry." );
+      ch = getch();
+      if( (ch | 0x20) == 'q' ) // make lowercase
+      {
+         goto done;
+      }
+      screen_get_size( &lines, &cols );
+   }
 
    while( !leave )
    {
@@ -247,37 +255,47 @@ void console_rp2040()
       {
          case '!':
             endwin();
+            screen_restore();
             /* TODO: find solution for handling */
             debug_raw_backtrace();
             getch();
+            screen_save();
             initscr();
             break;
          case 'B':
             endwin();
+            screen_restore();
             /* move backtrace to own viewer */
             debug_backtrace();
             getch();
+            screen_save();
             initscr();
             break;
          case 'D':
             endwin();
+            screen_restore();
             /* move memory disassember to own viewer */
             debug_disassembler();
             getch();
+            screen_save();
             initscr();
             break;
          case 'E':
             endwin();
+            screen_restore();
             /* show on title screen? */
             debug_queue_event( "Event queue" );
             getch();
+            screen_save();
             initscr();
             break;
          case 'I':
             endwin();
+            screen_restore();
             /* show on title screen? */
             debug_internal_drive();
             getch();
+            screen_save();
             initscr();
             break;
          case 'M':
@@ -308,6 +326,7 @@ void console_rp2040()
       }
    }
 
+done:
    console_cpu_pause( false );
 
    console_type = CONSOLE_TYPE_65C02;

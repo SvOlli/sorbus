@@ -87,12 +87,12 @@ extern uint8_t    mcurses_curx;                          // do not use, use gety
  *------------------------------------------------------------------------------
  */
 uint8_t           initscr();                             // initialize mcurses
-void              move (uint8_t, uint8_t);               // move cursor to line, column (home = 0, 0)
-void              attrset (uint_fast16_t);               // set attribute(s)
-void              addch (uint8_t);                       // add a character
-void              addstr (const char *);                 // add a string
-void              getnstr (char * str, uint8_t maxlen);  // read a string (with mini editor functionality)
-void              setscrreg (uint8_t, uint8_t);          // set scrolling region
+void              move( uint16_t, uint16_t );            // move cursor to line, column (home = 0, 0)
+void              attrset( uint16_t );                   // set attribute(s)
+void              addch( uint16_t );                     // add a character
+void              addstr( const char * );                // add a string
+void              getnstr( char * str, uint16_t maxlen );// read a string (with mini editor functionality)
+void              setscrreg( uint16_t, uint16_t );       // set scrolling region
 void              deleteln();                            // delete line at current line position
 void              insertln();                            // insert a line at current line position
 void              scroll();                              // scroll line up
@@ -100,11 +100,11 @@ void              clear();                               // clear total screen
 void              clrtobot();                            // clear screen from current line to bottom
 void              clrtoeol();                            // clear from current column to end of line
 void              delch();                               // delete character at current position
-void              insch (uint8_t);                       // insert character at current position
-void              nodelay (uint8_t);                     // set/reset nodelay
-void              halfdelay (uint8_t);                   // set/reset halfdelay
+void              insch( uint16_t );                     // insert character at current position
+void              nodelay( uint8_t );                    // set/reset nodelay
+void              halfdelay( uint16_t );                 // set/reset halfdelay
 uint8_t           getch();                               // read key
-void              curs_set(uint8_t);                     // set cursor to: 0=invisible 1=normal 2=very visible
+void              curs_set( uint8_t );                   // set cursor to: 0=invisible 1=normal 2=very visible
 void              refresh();                             // flush output
 void              endwin();                              // end mcurses
 
@@ -190,7 +190,7 @@ void mcurses_phyio_done();
 void mcurses_phyio_putc( uint8_t ch );
 uint8_t mcurses_phyio_getc();
 void mcurses_phyio_nodelay( uint8_t flag );
-void mcurses_phyio_halfdelay( uint8_t tenths );
+void mcurses_phyio_halfdelay( uint16_t tenths );
 void mcurses_phyio_flush_output ();
 
 #endif
