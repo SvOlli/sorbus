@@ -71,7 +71,7 @@ static void mcurses_puts( const char *s )
 {
    while( *s )
    {
-      mcurses_phyio_putc( *(s++) );
+      mcurses_phyio_putc( (uint8_t)*(s++) );
    }
 }
 
@@ -85,7 +85,7 @@ static void mcurses_puts( const char *s )
  */
 static void mcurses_puti( uint16_t value )
 {
-   uint8_t digits[6] = { 0 };
+   char digits[6] = { 0 };
    int pos;
 
    for( pos = 4; pos >= 0; --pos )
@@ -307,7 +307,7 @@ void move( uint16_t y, uint16_t x )
    {
       mcurses_cury = y;
       mcurses_curx = x;
-      mymove (y, x);
+      mymove( y, x );
    }
 }
 
@@ -317,11 +317,11 @@ void move( uint16_t y, uint16_t x )
  */
 void deleteln()
 {
-   mysetscrreg (mcurses_scrl_start, mcurses_scrl_end);   // set scrolling region
-   mymove (mcurses_cury, 0);                             // goto to current line
-   mcurses_puts (SEQ_DELETELINE);                        // delete line
-   mysetscrreg (0, 0);                                   // reset scrolling region
-   mymove (mcurses_cury, mcurses_curx);                  // restore position
+   mysetscrreg( mcurses_scrl_start, mcurses_scrl_end );  // set scrolling region
+   mymove( mcurses_cury, 0 );                            // goto to current line
+   mcurses_puts( SEQ_DELETELINE );                       // delete line
+   mysetscrreg( 0, 0 );                                  // reset scrolling region
+   mymove( mcurses_cury, mcurses_curx );                 // restore position
 }
 
 
@@ -331,11 +331,11 @@ void deleteln()
  */
 void insertln()
 {
-   mysetscrreg (mcurses_cury, mcurses_scrl_end-1);    // set scrolling region
-   mymove (mcurses_cury, 0);                          // goto to current line
-   mcurses_puts (SEQ_INSERTLINE);                     // insert line
-   mysetscrreg (0, 0);                                // reset scrolling region
-   mymove (mcurses_cury, mcurses_curx);               // restore position
+   mysetscrreg( mcurses_cury, mcurses_scrl_end-1 );      // set scrolling region
+   mymove( mcurses_cury, 0 );                            // goto to current line
+   mcurses_puts( SEQ_INSERTLINE );                       // insert line
+   mysetscrreg( 0, 0 );                                  // reset scrolling region
+   mymove( mcurses_cury, mcurses_curx );                 // restore position
 }
 
 
@@ -345,11 +345,11 @@ void insertln()
  */
 void scroll()
 {
-   mysetscrreg (mcurses_scrl_start, mcurses_scrl_end);   // set scrolling region
-   mymove (mcurses_scrl_end, 0);                         // goto to last line of scrolling region
-   mcurses_puts (SEQ_NEXTLINE);                          // next line
-   mysetscrreg (0, 0);                                   // reset scrolling region
-   mymove (mcurses_cury, mcurses_curx);                  // restore position
+   mysetscrreg( mcurses_scrl_start, mcurses_scrl_end );  // set scrolling region
+   mymove( mcurses_scrl_end, 0 );                        // goto to last line of scrolling region
+   mcurses_puts( SEQ_NEXTLINE );                         // next line
+   mysetscrreg( 0, 0 );                                  // reset scrolling region
+   mymove( mcurses_cury, mcurses_curx );                 // restore position
 }
 
 
@@ -359,7 +359,7 @@ void scroll()
  */
 void clear()
 {
-   mcurses_puts (SEQ_CLEAR);
+   mcurses_puts( SEQ_CLEAR );
 }
 
 
@@ -369,7 +369,7 @@ void clear()
  */
 void clrtobot()
 {
-   mcurses_puts (SEQ_CLRTOBOT);
+   mcurses_puts( SEQ_CLRTOBOT );
 }
 
 
@@ -379,7 +379,7 @@ void clrtobot()
  */
 void clrtoeol()
 {
-   mcurses_puts (SEQ_CLRTOEOL);
+   mcurses_puts( SEQ_CLRTOEOL );
 }
 
 
@@ -389,7 +389,7 @@ void clrtoeol()
  */
 void delch()
 {
-   mcurses_puts (SEQ_DELCH);
+   mcurses_puts( SEQ_DELCH );
 }
 
 
