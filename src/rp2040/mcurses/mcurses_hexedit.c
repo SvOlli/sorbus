@@ -32,6 +32,10 @@
 #include "mcurses.h"
 #include "mcurses_sorbus.h"
 
+static hexedit_handler_bank_t hexedit_bank;
+static hexedit_handler_peek_t hexedit_peek;
+static hexedit_handler_poke_t hexedit_poke;
+
 #define FIRST_LINE      1
 #define LAST_LINE       (LINES - 1)
 
@@ -218,26 +222,37 @@ void hexedit( hexedit_t *config )
    uint8_t     bank    = config->bank;
    bool        redraw  = true;
 
-   clear ();
-   setscrreg (FIRST_LINE, LAST_LINE);
+   hexedit_bank = config->nextbank;
+   hexedit_peek = config->peek;
+   hexedit_poke = config->poke;
 
+   clear();
+   setscrreg( FIRST_LINE, LAST_LINE-1 );
+
+   attrset( B_RED | F_WHITE );
+
+   move ( LINES-1, 0 );
+   addstr( "Hex Editor" );
+   // col needs to start with number of chars in above
+   for( col = 10; col < (FIRST_ASCII_COL + BYTES_PER_ROW); ++col )
+   {
+      addch( ' ' );
+   }
    move (0, 0);
-   attrset (A_REVERSE);
-
    for (col = 0; col < FIRST_HEX_COL; col++)
    {
-      addch (' ');
+      addch( ' ' );
    }
 
    for (byte = 0; byte < BYTES_PER_ROW; byte++)
    {
       if( byte >> 4 )
       {
-         itox (byte);
+         itox( byte );
       }
       else
       {
-         addch (' ');
+         addch( ' ' );
       }
       itox (byte);
       addch (' ');
@@ -254,18 +269,20 @@ void hexedit( hexedit_t *config )
       itox (byte);
    }
 
-   attrset (A_NORMAL);
+   attrset( B_DEFAULT | F_DEFAULT );
 
    do
    {
-      attrset( A_REVERSE );
       move( 0, 0 );
-      itoxx(address >> 8);
-      itoxx(address & 0xFF);
-      addch(':');
-      itox(bank);
-      attrset( A_NORMAL );
-      
+      attrset( B_RED | F_WHITE );
+
+      itoxx( address >> 8 );
+      itoxx( address & 0xFF );
+      addch( ':' );
+      itox( bank );
+
+      attrset( B_DEFAULT | F_DEFAULT );
+
       if( redraw )
       {
          topleft = print_hex_page( topleft, address );
@@ -388,7 +405,7 @@ void hexedit( hexedit_t *config )
                   {
                      value |= xtoi( ch );
                      hexedit_poke( address, value );
-                     check = hexedit_peek( address++ );
+                     check = hexedit_peek( address );
                      if( check == value )
                      {
                         move (line, FIRST_ASCII_COL + byte);
@@ -406,7 +423,7 @@ void hexedit( hexedit_t *config )
                   }
                   /* re-read */
                   move( line, FIRST_HEX_COL + 3 * byte );
-                  itoxx( hexedit_peek( address ) );
+                  itoxx( hexedit_peek( address++ ) );
                }
             }
             else // MODE_ASCII
@@ -447,7 +464,7 @@ void hexedit( hexedit_t *config )
          if (line == FIRST_LINE)
          {
             insertln();
-            print_hex_line (FIRST_LINE, address - (address % BYTES_PER_ROW));
+            print_hex_line( FIRST_LINE, address - (address % BYTES_PER_ROW) );
             topleft -= BYTES_PER_ROW;
          }
          else
@@ -459,8 +476,8 @@ void hexedit( hexedit_t *config )
       {
          if (line == LAST_LINE - 1)
          {
-            scroll ();
-            print_hex_line (line, address - (address % BYTES_PER_ROW));
+            scroll();
+            print_hex_line( line, address - (address % BYTES_PER_ROW) );
             topleft += BYTES_PER_ROW;
          }
          else

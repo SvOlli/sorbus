@@ -1,9 +1,12 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
+#include <unistd.h>
 
 #define SHOW_CONFIDENCE 1
 
@@ -58,6 +61,9 @@ const bus_config_t bus_config = {
 #include "../rp2040/common/generic_helper.c"
 #include "../rp2040/common/disassemble.c"
 #include "../rp2040/common/disassemble_historian.c"
+#include "loadfile.c"
+
+#include "../rp2040/mcurses/mcurses.h"
 
 
 cputype_t getcputype( const char *argi )
@@ -123,35 +129,173 @@ void help( const char *progname, int retval )
      "\t-d:\tshow hexdump\n"
      "\t-e:\tshow estimated confidence\n"
      "\t-t:\tshow trace info\n"
+     "\t-b:\tinteractive browser\n"
      "\t-h:\tshow help\n"
      , progname );
    exit( retval );
 }
+
+
+void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
+{
+   struct termios oldt, newt;
+
+   tcgetattr( STDIN_FILENO, &oldt );
+   newt = oldt;
+   newt.c_lflag &= ~(ICANON | ECHO);
+   tcsetattr( STDIN_FILENO, TCSANOW, &newt );
+   initscr();
+
+   mcurses_historian( cpu, trace, entries, start );
+
+   endwin();
+   tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
+}
+
+
+const uint8_t *get_start( const uint8_t *start, const uint8_t *end, cputype_t *cputype )
+{
+   const uint8_t *c;
+   const uint8_t magic[] = { 'T','R','A','C','E','_','S','T','A','R','T' };
+
+   for( c = start; c < end - sizeof(magic); ++c )
+   {
+      if( !memcmp( c, &magic[0], sizeof(magic) ) )
+      {
+         break;
+      }
+   }
+   /* nothing found: assume data start at file start */
+   if( c == (end - sizeof(magic)) )
+   {
+      return start;
+   }
+
+   c += sizeof(magic);
+   switch( *c )
+   {
+      case ' ':
+         if( cputype )
+         {
+            if( *cputype == CPU_ERROR )
+            {
+               if( (end - c) > 6 )
+               {
+                  *cputype = getcputype( (const char*)(c+1) );
+               }
+            }
+         }
+         while( *(c++) != '\n' )
+         {
+            if( c >= end )
+            {
+               return end;
+            }
+         }
+         return c;
+      case '\n':
+         return c+1;
+      default:
+         return end;
+   }
+}
+
+
+const uint8_t *get_end( const uint8_t *start, const uint8_t *end )
+{
+   const uint8_t *c;
+   const uint8_t magic[] = { 'T','R','A','C','E','_','E','N','D' };
+
+   for( c = start; c < end - sizeof(magic); ++c )
+   {
+      if( !memcmp( c, &magic[0], sizeof(magic) ) )
+      {
+         return c;
+      }
+   }
+   return end;
+}
+
+
+uint32_t *get_trace( const uint8_t *start, const uint8_t *end, uint32_t *size )
+{
+   const uint8_t *c;
+   uint32_t entries = 0;
+   uint32_t allocsize = 1;
+   uint32_t *sample = 0, *s;
+
+   for( c = start; c < end; ++c )
+   {
+      if( *c == '\n' )
+      {
+         ++entries;
+      }
+   }
+   if( !(*end == '\n') && !(*(end-1) == '\n') )
+   {
+      ++entries;
+   }
+   /* entries needs to be power of 2 */
+   while( entries >= allocsize )
+   {
+      allocsize <<= 1;
+   }
+   sample = (uint32_t*)calloc( allocsize, sizeof(uint32_t) );
+
+   s = sample;
+   for( c = start; c < end; ++c )
+   {
+      errno = 0;
+      *(s++) = strtol( (const char*)c, 0, 16 );
+      if( errno )
+      {
+         perror( "strtol" );
+         exit(30);
+      }
+      while( *c != '\n' )
+      {
+         ++c;
+      }
+   }
+   if( size )
+   {
+      *size = allocsize;
+   }
+   return sample;
+}
+
 
 int main( int argc, char *argv[] )
 {
    const char *progname = argv[0];
    cputype_t cpu = CPU_ERROR;
    disass_historian_t dah;
-   int size = 16;
+
+   const uint8_t *start, *end;
+   uint32_t size;
+   uint32_t *buffer = 0;
+
    int count = 0;
-   int elements;
    const char *filename = 0;
-   FILE *f;
-   uint32_t *buffer = malloc( sizeof(uint32_t) * size );
+   uint8_t *filedata = 0;
+   ssize_t filesize;
 
    int opt;
    bool fail = false;
+   bool interactive = false;
    bool show_trace = false;
    bool show_confidence = false;
    disass_show_t show_extra = DISASS_SHOW_NOTHING;
 
-   while ((opt = getopt(argc, argv, "ac:def:ht")) != -1)
+   while ((opt = getopt(argc, argv, "abc:def:ht")) != -1)
    {
       switch( opt )
       {
          case 'a':
             show_extra |= DISASS_SHOW_ADDRESS;
+            break;
+         case 'b':
+            interactive = true;
             break;
          case 'c':
             cpu = getcputype( optarg );
@@ -183,14 +327,26 @@ int main( int argc, char *argv[] )
       }
    }
 
-   if( cpu == CPU_ERROR )
-   {
-      fprintf( stderr, "CPU type not set\n" );
-      fail = true;
-   }
    if( !filename )
    {
       fprintf( stderr, "filename not set\n" );
+      fail = true;
+   }
+   if( !fail )
+   {
+      filedata = loadfile( filename, &filesize );
+      start    = get_start( filedata, filedata + filesize, &cpu );
+      end      = get_end( start, filedata + filesize );
+      buffer   = get_trace( start, end, &size );
+      if( filedata )
+      {
+         free( filedata );
+      }
+   }
+
+   if( cpu == CPU_ERROR )
+   {
+      fprintf( stderr, "CPU type not set\n" );
       fail = true;
    }
 
@@ -199,55 +355,36 @@ int main( int argc, char *argv[] )
       help( progname, 1 );
    }
 
-   f = fopen( filename, "rb" );
-   if( !f )
-   {
-      fprintf( stderr, "could not read file '%s': %s\n",
-               filename, strerror(errno) );
-      return 10;
-   }
-   while(!feof(f))
-   {
-      if( count >= size )
-      {
-         size <<= 1;
-         buffer = realloc( buffer, sizeof(uint32_t) * size );
-      }
-      elements = fscanf( f, "%x\n", buffer + count );
-      if( elements < 1 )
-      {
-         fprintf( stderr, "could not scan file '%s' (line %d): %s\n",
-                  filename, count+1, strerror(errno) );
-         fclose( f );
-         return 10;
-      }
-      ++count;
-   }
-   fclose( f );
-
    disass_show( show_extra );
-   dah = disass_historian_init( cpu, buffer, size, 0 );
-   for( count = 0; count < size; ++count )
+   if( interactive )
    {
-      if( ! *(buffer + count) )
-      {
-         /* empty entry -> end of input */
-         break;
-      }
-      printf( "%5d:", count );
-      if( show_trace )
-      {
-         printf( "%s:",
-                 decode_trace( *(buffer + count), false, 0 ) );
-      }
-      if( disass_historian_entry( dah, count ) )
-      {
-         printf( "%s\n", show_confidence ?
-                 disass_historian_entry( dah, count ) :
-                 disass_historian_entry( dah, count ) + 2 );
-      }
+      mcurses( cpu, buffer, size, 0 );
    }
-   disass_historian_done( dah );
+   else
+   {
+      dah = disass_historian_init( cpu, buffer, size, 0 );
+      for( count = 0; count < size; ++count )
+      {
+         if( ! *(buffer + count) )
+         {
+            /* empty entry -> end of input */
+            break;
+         }
+         printf( "%5d:", count );
+         if( show_trace )
+         {
+            printf( "%s:",
+                    decode_trace( *(buffer + count), false, 0 ) );
+         }
+         if( disass_historian_entry( dah, count ) )
+         {
+            printf( "%s\n", show_confidence ?
+                    disass_historian_entry( dah, count ) :
+                    disass_historian_entry( dah, count ) + 2 );
+         }
+      }
+      disass_historian_done( dah );
+   }
    free( buffer );
 
    return 0;

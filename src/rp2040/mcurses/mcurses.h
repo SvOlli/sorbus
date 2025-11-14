@@ -61,6 +61,7 @@
 #define F_CYAN                  0x0700                                              // foreground cyan
 #define F_WHITE                 0x0800                                              // foreground white
 #define F_YELLOW                F_BROWN                                             // some terminals show brown as yellow (with A_BOLD)
+#define F_DEFAULT               0x0A00                                              // foreground white
 #define F_COLOR                 0x0F00                                              // foreground mask
 
 #define B_BLACK                 0x1000                                              // background black
@@ -72,6 +73,7 @@
 #define B_CYAN                  0x7000                                              // background cyan
 #define B_WHITE                 0x8000                                              // background white
 #define B_YELLOW                B_BROWN                                             // some terminals show brown as yellow (with A_BOLD)
+#define B_DEFAULT               0xA000                                              // background white
 #define B_COLOR                 0xF000                                              // background mask
 
 /*------------------------------------------------------------------------------

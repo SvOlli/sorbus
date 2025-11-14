@@ -50,7 +50,6 @@
 
 static uint16_t                  mcurses_scrl_start = 0; // start of scrolling region, default is 0
 static uint16_t                  mcurses_scrl_end = 0;   // end of scrolling region, default is last line
-static uint8_t                   mcurses_nodelay;        // nodelay flag
 
 uint8_t                          mcurses_is_up = 0;      // flag: mcurses is up
 uint8_t                          mcurses_cury  = 0xff;   // current y position of cursor, public (getyx())
@@ -249,49 +248,47 @@ void addstr( const char * str )
 void attrset( uint16_t attr )
 {
    static uint8_t mcurses_attr = 0xff;               // current attributes
-   uint8_t      idx;
+   uint8_t        idx;
 
    if (attr != mcurses_attr)
    {
-      mcurses_puts (SEQ_ATTRSET);
+      mcurses_puts( SEQ_ATTRSET );
 
       idx = (attr & F_COLOR) >> 8;
-
-      if (idx >= 1 && idx <= 8)
+      if (idx >= 1 && idx <= 10)
       {
-         mcurses_puts (SEQ_ATTRSET_FCOLOR);
-         mcurses_putc (idx - 1 + '0');
+         mcurses_puts( SEQ_ATTRSET_FCOLOR );
+         mcurses_putc( idx - 1 + '0' );
       }
 
       idx = (attr & B_COLOR) >> 12;
-
-      if (idx >= 1 && idx <= 8)
+      if (idx >= 1 && idx <= 10)
       {
-         mcurses_puts (SEQ_ATTRSET_BCOLOR);
-         mcurses_putc (idx - 1 + '0');
+         mcurses_puts( SEQ_ATTRSET_BCOLOR );
+         mcurses_putc( idx - 1 + '0' );
       }
 
-      if (attr & A_REVERSE)
+      if( attr & A_REVERSE )
       {
-         mcurses_puts (SEQ_ATTRSET_REVERSE);
+         mcurses_puts( SEQ_ATTRSET_REVERSE );
       }
-      if (attr & A_UNDERLINE)
+      if( attr & A_UNDERLINE )
       {
-         mcurses_puts (SEQ_ATTRSET_UNDERLINE);
+         mcurses_puts( SEQ_ATTRSET_UNDERLINE );
       }
-      if (attr & A_BLINK)
+      if( attr & A_BLINK )
       {
-         mcurses_puts (SEQ_ATTRSET_BLINK);
+         mcurses_puts( SEQ_ATTRSET_BLINK );
       }
-      if (attr & A_BOLD)
+      if( attr & A_BOLD )
       {
-         mcurses_puts (SEQ_ATTRSET_BOLD);
+         mcurses_puts( SEQ_ATTRSET_BOLD );
       }
-      if (attr & A_DIM)
+      if( attr & A_DIM )
       {
-         mcurses_puts (SEQ_ATTRSET_DIM);
+         mcurses_puts( SEQ_ATTRSET_DIM );
       }
-      mcurses_putc ('m');
+      mcurses_putc( 'm' );
       mcurses_attr = attr;
    }
 }
@@ -303,7 +300,7 @@ void attrset( uint16_t attr )
  */
 void move( uint16_t y, uint16_t x )
 {
-   if (mcurses_cury != y || mcurses_curx != x)
+   if( mcurses_cury != y || mcurses_curx != x )
    {
       mcurses_cury = y;
       mcurses_curx = x;
@@ -331,7 +328,7 @@ void deleteln()
  */
 void insertln()
 {
-   mysetscrreg( mcurses_cury, mcurses_scrl_end-1 );      // set scrolling region
+   mysetscrreg( mcurses_cury, mcurses_scrl_end );        // set scrolling region
    mymove( mcurses_cury, 0 );                            // goto to current line
    mcurses_puts( SEQ_INSERTLINE );                       // insert line
    mysetscrreg( 0, 0 );                                  // reset scrolling region
@@ -414,17 +411,17 @@ void setscrreg( uint16_t t, uint16_t b )
 }
 
 
-void curs_set (uint8_t visibility)
+void curs_set( uint8_t visibility )
 {
-   mcurses_puts (SEQ_CURSOR_VIS);
+   mcurses_puts( SEQ_CURSOR_VIS );
 
    if (visibility == 0)
    {
-      mcurses_putc ('l');
+      mcurses_putc( 'l' );
    }
    else
    {
-      mcurses_putc ('h');
+      mcurses_putc( 'h' );
    }
 }
 
@@ -435,7 +432,7 @@ void curs_set (uint8_t visibility)
  */
 void refresh()
 {
-   mcurses_phyio_flush_output ();
+   mcurses_phyio_flush_output();
 }
 
 
@@ -443,12 +440,9 @@ void refresh()
  * MCURSES: set/reset nodelay
  *------------------------------------------------------------------------------
  */
-void nodelay (uint8_t flag)
+void nodelay( uint8_t flag )
 {
-   if (mcurses_nodelay != flag)
-   {
-      mcurses_phyio_nodelay (flag);
-   }
+   mcurses_phyio_nodelay( flag );
 }
 
 
@@ -458,7 +452,7 @@ void nodelay (uint8_t flag)
  */
 void halfdelay( uint16_t tenths )
 {
-   mcurses_phyio_halfdelay (tenths);
+   mcurses_phyio_halfdelay( tenths );
 }
 
 

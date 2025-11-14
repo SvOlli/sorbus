@@ -32,15 +32,12 @@
 #define BORDER_BOTTOM_RIGHT 0x2518
 #endif
 
-#if 0
-static const char save_sequence[] = "\33[?1049h\33[22;0;0t\33[1;24r\33[4l\33(B\33[m\33[39m\33[49m\33[1;24r\33[H\33[2J\33[1;1H";
-static const char restore_sequence[] = "\33[24;1H\33(B\33[m\33[39;49m\r\33[K\r\33[?1049l\33[23;0;0t";
-#endif
 
 static struct {
    uint16_t columns;
    uint16_t rows;
 } screen = { 0 };
+
 
 static struct {
    uint16_t column;

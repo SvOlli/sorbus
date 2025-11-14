@@ -2,144 +2,26 @@
 #include <fcntl.h>
 #include <termio.h>
 #include <termios.h>         //termios, TCSANOW, ECHO, ICANON
+#include <stdio.h>
+#include <unistd.h>
 
-#include "../rp2040/common/mcurses_sorbus.c"
-#include "../rp2040/common/mcurses.c"
-#include "../rp2040/common/mcurses_hexedit.c"
+#if 0
+#include "../rp2040/mcurses/mcurses_sorbus.c"
+#include "../rp2040/mcurses/mcurses.c"
+#include "../rp2040/mcurses/mcurses_hexedit.c"
+#include "../rp2040/mcurses/mcurses_view.c"
+#endif
+#include "../rp2040/mcurses/mcurses.h"
 
 uint8_t memory[0x10000] = { 0 };
 
 
-/*------------------------------------------------------------------------------
- * PHYIO: init, done, putc, getc, nodelay, halfdelay, flush for UNIX or LINUX
- *------------------------------------------------------------------------------
+/*
+ *****************************************************************************
+ * hexedit callbacks
+ *****************************************************************************
  */
-static struct termio                     mcurses_oldmode;
-static struct termio                     mcurses_newmode;
-
-/*------------------------------------------------------------------------------
- * PHYIO: init (unix/linux)
- *------------------------------------------------------------------------------
- */
-uint8_t mcurses_phyio_init (void)
-{
-   uint8_t  rtc = 0;
-   int      fd;
-
-   fd = fileno (stdin);
-
-   if (ioctl (fd, TCGETA, &mcurses_oldmode) >= 0 || ioctl (fd, TCGETA, &mcurses_newmode) >= 0)
-   {
-      mcurses_newmode.c_lflag &= ~ICANON;                               // switch off canonical input
-      mcurses_newmode.c_lflag &= ~ECHO;                                 // switch off echo
-      mcurses_newmode.c_iflag &= ~ICRNL;                                // switch off CR->NL mapping
-      mcurses_newmode.c_oflag &= ~TAB3;                                 // switch off TAB conversion
-      mcurses_newmode.c_cc[VINTR] = '\377';                              // disable VINTR VQUIT
-      mcurses_newmode.c_cc[VQUIT] = '\377';                              // but don't touch VSWTCH
-      mcurses_newmode.c_cc[VMIN] = 1;                                  // block input:
-      mcurses_newmode.c_cc[VTIME] = 0;                                 // one character
-
-      if (ioctl (fd, TCSETAW, &mcurses_newmode) >= 0)
-      {
-         rtc = 1;
-      }
-   }
-
-   return rtc;
-}
-
-/*------------------------------------------------------------------------------
- * PHYIO: done (unix/linux)
- *------------------------------------------------------------------------------
- */
-void mcurses_phyio_done (void)
-{
-   int    fd;
-
-   fd = fileno (stdin);
-
-   (void) ioctl (fd, TCSETAW, &mcurses_oldmode);
-}
-
-/*------------------------------------------------------------------------------
- * PHYIO: putc (unix/linux)
- *------------------------------------------------------------------------------
- */
-void mcurses_phyio_putc( uint8_t ch )
-{
-   putchar( ch );
-}
-
-/*------------------------------------------------------------------------------
- * PHYIO: getc (unix/linux)
- *------------------------------------------------------------------------------
- */
-uint8_t mcurses_phyio_getc()
-{
-   uint8_t ch;
-
-   ch = getchar ();
-
-   return (ch);
-}
-
-/*------------------------------------------------------------------------------
- * PHYIO: set/reset nodelay (unix/linux)
- *------------------------------------------------------------------------------
- */
-void mcurses_phyio_nodelay( uint8_t flag )
-{
-   int    fd;
-   int    fl;
-
-   fd = fileno (stdin);
-
-   if ((fl = fcntl (fd, F_GETFL, 0)) >= 0)
-   {
-      if (flag)
-      {
-         fl |= O_NDELAY;
-      }
-      else
-      {
-         fl &= ~O_NDELAY;
-      }
-      (void) fcntl (fd, F_SETFL, fl);
-      mcurses_nodelay = flag;
-   }
-}
-
-/*------------------------------------------------------------------------------
- * PHYIO: set/reset halfdelay (unix/linux)
- *------------------------------------------------------------------------------
- */
-void mcurses_phyio_halfdelay( uint16_t tenths )
-{
-   if( tenths == 0 )
-   {
-      mcurses_newmode.c_cc[VMIN]  = 1;       /* block input:     */
-      mcurses_newmode.c_cc[VTIME] = 0;       /* one character    */
-   }
-   else
-   {
-      mcurses_newmode.c_cc[VMIN]  = 0;       /* set timeout      */
-      mcurses_newmode.c_cc[VTIME] = tenths;  /* in tenths of sec */
-   }
-
-   (void) ioctl( 0, TCSETAW, &mcurses_newmode );
-}
-
-/*------------------------------------------------------------------------------
- * PHYIO: flush output (unix/linux)
- *------------------------------------------------------------------------------
- */
-void mcurses_phyio_flush_output ()
-{
-   fflush( stdout );
-}
-
-
-uint8_t hexedit_bank()
+uint8_t _hexedit_bank()
 {
    static uint8_t bank = 0;
    bank = !bank;
@@ -147,13 +29,13 @@ uint8_t hexedit_bank()
 }
 
 
-uint8_t hexedit_peek( uint16_t address )
+uint8_t _hexedit_peek( uint16_t address )
 {
    return memory[address];
 }
 
 
-void hexedit_poke( uint16_t address, uint8_t value )
+void _hexedit_poke( uint16_t address, uint8_t value )
 {
    memory[address] = value;
 }
@@ -182,12 +64,43 @@ const char *debug_info_heap()
 }
 
 
+static int32_t lv_offset = 0;
+
+bool lv_move( int32_t lines )
+{
+   if( ((lv_offset + lines) < 0) || ((lv_offset + lines) > 1000) )
+   {
+      return false;
+   }
+   lv_offset += lines;
+   return true;
+}
+
+
+const char *lv_data( int32_t line )
+{
+   static char buffer[256];
+   switch( line )
+   {
+      case LINEVIEW_FIRSTLINE:
+         return "title";
+      case LINEVIEW_LASTLINE:
+         return "footer";
+      default:
+         break;
+   }
+   snprintf( &buffer[0], sizeof(buffer)-1,
+             "line: %d", line + lv_offset );
+   return &buffer[0];
+}
+
 int main( int argc, char *argv[] )
 {
    static struct termios oldt, newt;
    uint16_t x, y;
    bool rv;
-   hexedit_t config = { 0x00, 0x0000, 0x0000 };
+   hexedit_t config = { _hexedit_bank, _hexedit_peek, _hexedit_poke, 0x00, 0x0000, 0x0000 };
+   lineview_t lvconfig = { NULL, lv_move, lv_data, F_WHITE | B_BLUE, 0, 0 };
 
    tcgetattr( STDIN_FILENO, &oldt );
    newt = oldt;
@@ -200,6 +113,9 @@ int main( int argc, char *argv[] )
 
    move( 0, 0 );
    clear();
+#if 1
+   lineview( &lvconfig );
+#else
    screen_border( 0, 0, y-1, x-1 );
 #if 0
    screen_table( 2, 2, speeds );
@@ -208,11 +124,11 @@ int main( int argc, char *argv[] )
 #endif
 
 
-
    getch();
 
 #if 0
    hexedit( &config );
+#endif
 #endif
 
    endwin();
@@ -221,6 +137,7 @@ int main( int argc, char *argv[] )
 #if 1
    screen_restore();
    printf( "columns=%d rows=%d return=%d\n", x, y, rv );
+#else
    printf( "bank=%02x address=%04x topleft=%04x\n",
             config.bank, config.address, config.topleft );
 #endif
