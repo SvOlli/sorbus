@@ -37,7 +37,7 @@ static void printlines( const lineview_t *config, int len )
    for( l = 0; l < lines; ++l )
    {
       move( l+FIRST_LINE, 0 );
-      printline( config->data( l ), len );
+      printline( config->data( config->d, l ), len );
    }
 }
 
@@ -52,9 +52,9 @@ void lineview( lineview_t *config )
 
    attrset( config->attributes );
    move( 0, 0 );
-   printline( config->data( LINEVIEW_FIRSTLINE ), COLS );
+   printline( config->data( config->d, LINEVIEW_FIRSTLINE ), COLS );
    move( LAST_LINE+1, 0 );
-   printline( config->data( LINEVIEW_LASTLINE  ), COLS );
+   printline( config->data( config->d, LINEVIEW_LASTLINE  ), COLS );
    attrset( A_NORMAL | F_DEFAULT | B_DEFAULT );
 
    printlines( config, COLS );
@@ -66,41 +66,41 @@ void lineview( lineview_t *config )
       switch( ch )
       {
          case KEY_UP:
-            if( config->move( -1 ) )
+            if( config->move( config->d, -1 ) )
             {
                move( FIRST_LINE, 0 );
                insertln();
-               printline( config->data( 0 ), COLS-1 );
+               printline( config->data( config->d, 0 ), COLS-1 );
             }
             break;
          case KEY_DOWN:
-            if( config->move( +1 ) )
+            if( config->move( config->d, +1 ) )
             {
                move( LAST_LINE-1, 0 );
                scroll();
-               printline( config->data( LAST_LINE-FIRST_LINE-1 ), COLS-1 );
+               printline( config->data( config->d, LAST_LINE-FIRST_LINE-1 ), COLS-1 );
             }
             break;
          case KEY_PPAGE:
-            if( config->move( -page ) )
+            if( config->move( config->d, -page ) )
             {
                printlines( config, COLS );
             }
             break;
          case KEY_NPAGE:
-            if( config->move( +page ) )
+            if( config->move( config->d, +page ) )
             {
                printlines( config, COLS );
             }
             break;
          case KEY_HOME:
-            if( config->move( LINEVIEW_FIRSTLINE ) )
+            if( config->move( config->d, LINEVIEW_FIRSTLINE ) )
             {
                printlines( config, COLS );
             }
             break;
          case KEY_END:
-            if( config->move( LINEVIEW_LASTLINE ) )
+            if( config->move( config->d, LINEVIEW_LASTLINE ) )
             {
                printlines( config, COLS );
             }
@@ -108,7 +108,7 @@ void lineview( lineview_t *config )
          case 0x02:     // CTRL+B
             if( config->nextbank )
             {
-               config->nextbank();
+               config->nextbank( config->d );
             }
             break;
          default:

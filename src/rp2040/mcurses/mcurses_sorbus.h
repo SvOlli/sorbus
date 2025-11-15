@@ -31,19 +31,19 @@ void hexedit( hexedit_t *config );
 
 
 /* toggle through banks */
-typedef uint8_t(*lineview_handler_bank_t)();
+typedef uint8_t(*lineview_handler_bank_t)( void *d );
 /* move current view */
-typedef int32_t(*lineview_handler_move_t)(int32_t);
+typedef int32_t(*lineview_handler_move_t)( void *d, int32_t step );
 /* get data for a specific offset from current view */
-typedef const char*(*lineview_handler_data_t)(int32_t);
+typedef const char*(*lineview_handler_data_t)( void *d, int32_t offset );
 typedef struct {
    /* callback functions */
    lineview_handler_bank_t nextbank;
    lineview_handler_move_t move;
    lineview_handler_data_t data;
+   /* data structure handed back to move, bank and data */
+   void     *d;
    uint16_t attributes;
-   uint8_t  bank;
-   uint32_t current;
 } lineview_t;
 
 #define LINEVIEW_FIRSTLINE INT32_MIN
