@@ -600,6 +600,15 @@ void debug_raw_backtrace()
 }
 
 
+void debug_backtrace_get( cputype_t *cpu, uint32_t **trace, uint32_t *entries, uint32_t *start )
+{
+   *cpu     = cputype ? cputype : CPU_6502;
+   *trace   = &buslog_states[0];
+   *entries = BUSLOG_SIZE;
+   *start   = buslog_index & (BUSLOG_SIZE)-1;
+}
+
+
 void debug_backtrace()
 {
    check_cpu_is_halted();
@@ -775,17 +784,18 @@ const char *debug_info_heap()
 
 const char *debug_info_sysvectors()
 {
-   static char buffer[50] = { 0 };
+   static char buffer[70] = { 0 };
 
    snprintf( &buffer[0], sizeof(buffer)-1,
-             "UVBRK:%04X\n"
-             "UVNMI:%04X\n"
-             "UVNBI:%04X\n"
-             "UVIRQ:%04X"
+             "UVBRK:%04X UVNBI:%04X\n"
+             "UVNMI:%04X UVIRQ:%04X\n"
+             "B0NMI:%04X B0IRQ:%04X"
              , *((uint16_t*)&ram[0xDF78])
-             , *((uint16_t*)&ram[0xDF7A])
              , *((uint16_t*)&ram[0xDF7C])
-             , *((uint16_t*)&ram[0xDF7E]) );
+             , *((uint16_t*)&ram[0xDF7A])
+             , *((uint16_t*)&ram[0xDF7E])
+             , *((uint16_t*)&ram[0xFFFA])
+             , *((uint16_t*)&ram[0xFFFE]) );
 
    return &buffer[0];
 }

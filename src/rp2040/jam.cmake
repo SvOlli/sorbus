@@ -41,8 +41,10 @@ add_executable(jam_alpha
    common/generic_helper.c
    mcurses/mcurses.c
    mcurses/mcurses_hexedit.c
+   mcurses/mcurses_historian.c
    mcurses/mcurses_phyio.c
    mcurses/mcurses_sorbus.c
+   mcurses/mcurses_view.c
    3rdparty/dhara/error.c
    3rdparty/dhara/journal.c
    3rdparty/dhara/map.c

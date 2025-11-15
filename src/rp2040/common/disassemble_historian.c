@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #define PREFETCH 0
+#define BOUNDSBUFFER (8)
 
 #ifndef count_of
 #define count_of(a) (sizeof(a)/sizeof(a[0]))
@@ -20,21 +21,22 @@
 #define ring(x,s) ((x) & (s-1))
 #define re(x) ring(x,entries)
 
+
 struct disass_historian_s
 {
    cputype_t   cpu;
    uint32_t    entries;
-   char        *text;
+   fullinfo_t  *fullinfo;
 };
 
-
-static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
+static uint16_t getcycles( disass_historian_t d, int index )
 {
-   uint16_t address  = trace_address( trace[index] );
-   uint8_t  data     = trace_data( trace[index] );
+   fullinfo_t *fullinfo = d->fullinfo;
+   uint16_t address     = fullinfo[index].address;
+   uint8_t  data        = fullinfo[index].data;
 
-   uint16_t nextaddr = address + disass_bytes( data );
-   uint8_t  bc       = disass_basecycles( data );
+   uint16_t nextaddr    = address + disass_bytes( data );
+   uint8_t  bc          = disass_basecycles( data );
 
    if( disass_is_jump( data ) )
    {
@@ -44,34 +46,34 @@ static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
          uint16_t indirect;
          case AI: /* JMP ($0000) */
          case AIX: /* JMP ($0000,X) */
-            nextaddr = trace_address( trace[re(index+bc)] );
-            indirect = trace_data( trace[re(index+bc-2)] ) | (trace_data( trace[re(index+bc-1)] ) << 8);
+            nextaddr = fullinfo[index+bc].address;
+            indirect = fullinfo[index+bc-2].data | (fullinfo[index+bc-1].data << 8);
             if( indirect == nextaddr )
             {
                return bc;
             }
             /* let's check if we need one cycle more */
-            nextaddr = trace_address( trace[re(index+bc+1)] );
-            indirect = trace_data( trace[re(index+bc-1)] ) | (trace_data( trace[re(index+bc)] ) << 8);
+            nextaddr = fullinfo[index+bc+1].address;
+            indirect = fullinfo[index+bc-1].data | (fullinfo[index+bc].data << 8);
             if( indirect == nextaddr )
             {
                return bc + 1;
             }
             break;
          case REL: /* 8-bit branch */
-            offset = trace_data( trace[re(index+1)] );
+            offset = fullinfo[index+1].data;
             nextaddr = address + 2 + offset;
-            if( trace_address( trace[re(index+2)] ) == nextaddr )
+            if( fullinfo[index+2].address == nextaddr )
             {
                /* 65CE02 branch taken */
                return 2;
             }
-            else if( trace_address( trace[re(index+3)] ) == nextaddr )
+            else if( fullinfo[index+3].address == nextaddr )
             {
                /* branch taken */
                return 3;
             }
-            else if( trace_address( trace[re(index+4)] ) == nextaddr )
+            else if( fullinfo[index+4].address == nextaddr )
             {
                /* branch taken crossing page */
                return 4;
@@ -80,19 +82,19 @@ static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
             return 2;
             break;
          case ZPNR:
-            offset = trace_data( trace[re(index+4)] );
+            offset = fullinfo[index+4].data;
             nextaddr = address + 3 + offset;
-            if( trace_address( trace[re(index+4)] ) == nextaddr )
+            if( fullinfo[index+4].address == nextaddr )
             {
                /* 65CE02 branch taken... or not, who cares? */
                return 4;
             }
-            else if( trace_address( trace[re(index+6)] ) == nextaddr )
+            else if( fullinfo[index+6].address == nextaddr )
             {
                /* branch taken */
                return 6;
             }
-            else if( trace_address( trace[re(index+6)] ) == nextaddr )
+            else if( fullinfo[index+7].address == nextaddr )
             {
                /* branch taken crossing page */
                return 7;
@@ -107,6 +109,7 @@ static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
    }
    else
    {
+      /* todo add BCD check for 65(S)C02 here! */
       switch( disass_extracycles( data ) )
       {
          case 0:
@@ -114,15 +117,15 @@ static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
             break;
          case 1:
          case 2:
-            if( trace_address( trace[re(index+bc)] ) == nextaddr )
+            if( fullinfo[index+bc].address == nextaddr )
             {
                return bc;
             }
-            else if( trace_address( trace[re(index+bc+1)] ) == nextaddr )
+            else if( fullinfo[index+bc+2].address == nextaddr )
             {
                return bc+1;
             }
-            else if( trace_address( trace[re(index+bc+2)] ) == nextaddr )
+            else if( fullinfo[index+bc+2].address == nextaddr )
             {
                return bc+2;
             }
@@ -136,79 +139,83 @@ static uint16_t getcycles( uint32_t *trace, uint32_t entries, uint32_t index )
 }
 
 
-static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_t start )
+static void disass_historian_fulldata( disass_historian_t d, const uint32_t *trace, uint32_t start )
 {
-   int index = 0, offset, i, n;
-   uint16_t address, expectedaddress;
-   uint8_t data[4];
+   fullinfo_t *fullinfo = (fullinfo_t*)(d->fullinfo);
+   int index = start, offset, i, n;
+   uint16_t expectedaddress;
    bool done;
    const uint32_t entries = d->entries;
-   const cputype_t cpu = d->cpu;
-   int8_t *eval = calloc( entries, sizeof(uint8_t) );
 
-   /* step 1: disassemble everything */
-   for( index = 0; index < entries; ++index )
+   for( i = BOUNDSBUFFER; i < (entries+BOUNDSBUFFER); ++i )
    {
-      /* set some sane confidence */
-      eval[index] = 3;
-
-      address = trace_address( trace[index] );
-      data[0] = trace_data( trace[index] );
-      data[1] = 0x00;
-      data[2] = 0x00;
-      data[3] = 0x00;
-      offset = 1;
+      // set up bits 31-0: flags, data, address
+      fullinfo[i].raw   = trace[index];
+      fullinfo[i].eval  = 3;
 
       /* find arguments */
-      expectedaddress = address+1;
+      expectedaddress   = fullinfo[i].address+1;
       done = false;
-      i = 1;
+      n = 1;
       offset = 0;
       while( !done )
       {
-         uint32_t addr = trace_address( trace[re(index+i)] );
+         uint32_t addr = trace_address( trace[re(index+n)] );
          if( addr == expectedaddress )
          {
-            data[++offset] = trace_data( trace[re(index+i)] );
-            ++expectedaddress;
-            if( offset > (count_of(data) - 1) )
+            switch( ++offset )
             {
-               // found all parameters
-               done = true;
+               case 1:
+                  fullinfo[i].data1 = trace_data( trace[re(index+n)] );
+                  break;
+               case 2:
+                  fullinfo[i].data2 = trace_data( trace[re(index+n)] );
+                  break;
+               case 3:
+                  fullinfo[i].data3 = trace_data( trace[re(index+n)] );
+                  // found all parameters
+                  done = true;
+                  break;
+               default:
+                  break;
             }
+            fullinfo[i].bits30_31 = offset > 3 ? 3 : offset;
+            ++expectedaddress;
          }
 
-         if( ++i > 10 ) // longest 65xx instuction takes 8 clock cycles
+         if( ++n > 10 ) // longest 65xx instuction takes 8 clock cycles
          {
-            // could not find all parameters, d'oh!
+            // could not find all parameters, well duh!
             done = true;
          }
       }
-#if SHOW_CONFIDENCE
-      strncpy( 2 + d->text + (index * DISASS_MAX_STR_LENGTH),
-               disass( address, data[0], data[1], data[2], data[3] ),
-               DISASS_MAX_STR_LENGTH-1 );
-#else
-      strncpy( d->text + (index * DISASS_MAX_STR_LENGTH),
-               disass( address, data[0], data[1], data[2], data[3] ),
-               DISASS_MAX_STR_LENGTH-1 );
-#endif
-      /* make sure string is null terminated */
-      *(d->text + ((index + 1) * DISASS_MAX_STR_LENGTH - 1)) = '\0';
+
+      if( ++index >= entries )
+      {
+         // clean wrap around
+         index = 0;
+      }
    }
+}
 
+
+static void disass_historian_assumptions( disass_historian_t d )
+{
+   cputype_t cpu = d->cpu;
+   fullinfo_t *fullinfo = d->fullinfo;
+   int i, n;
    /* step 2: run some assumptions */
-   index = start;
-   for( i = 0; i < entries; ++i )
-   {
-      uint32_t addr5 = trace_address( trace[re(index-5)] );
-      uint32_t addr4 = trace_address( trace[re(index-4)] );
-      uint32_t addr3 = trace_address( trace[re(index-3)] );
-      uint32_t addr2 = trace_address( trace[re(index-2)] );
-      uint32_t addr1 = trace_address( trace[re(index-1)] );
 
-      uint16_t addr  = trace_address( trace[re(index)] );
-      uint8_t  data  = trace_data( trace[re(index)] );
+   for( i = 5; i < d->entries; ++i )
+   {
+      uint32_t addr5 = fullinfo[i-5].address;
+      uint32_t addr4 = fullinfo[i-4].address;
+      uint32_t addr3 = fullinfo[i-3].address;
+      uint32_t addr2 = fullinfo[i-2].address;
+      uint32_t addr1 = fullinfo[i-1].address;
+
+      uint16_t addr  = fullinfo[i].address;
+      uint8_t  data  = fullinfo[i].data;
 
       uint16_t vector, target;
 
@@ -216,9 +223,7 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
       {
          /* check for IRQ or NMI on 65CE02 */
              /* first check writing to stack, which can be 16-bit */
-         if( trace_is_write( trace[re(index-5)] ) &&
-             trace_is_write( trace[re(index-4)] ) &&
-             trace_is_write( trace[re(index-3)] ) &&
+         if( !fullinfo[i-5].rw && !fullinfo[i-4].rw && !fullinfo[i-3].rw &&
              ((addr5-1) == addr4) &&
              ((addr4-1) == addr3) &&
              /* then check fetching the vector */
@@ -227,9 +232,9 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
          {
             for( n = 1; n <= 5; ++n )
             {
-               eval[re(index-n)] = 0;
+               fullinfo[i-n].eval = 0;
             }
-            eval[re(index)] = 9;
+            fullinfo[i].eval = 9;
          }
 
          if( data == 0x23 )
@@ -244,32 +249,29 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
              * 6: read target high
              */
             int bc = 7;
-            vector = trace_data( trace[re(index+1)] ) |
-                    (trace_data( trace[re(index+4)] ) << 8);
-            target = trace_data( trace[re(index+5)] ) |
-                    (trace_data( trace[re(index+6)] ) << 8);
-            if( (trace_address( trace[re(index+1)] ) == addr+1) &&
-                (trace_address( trace[re(index+4)] ) == addr+2) &&
-                trace_is_write( trace[re(index+2)] ) &&
-                trace_is_write( trace[re(index+3)] ) &&
-                (trace_address( trace[re(index+5)] ) == vector) &&
-                (trace_address( trace[re(index+bc)] ) == target)
+            vector = fullinfo[i+1].data | (fullinfo[i+4].data << 8);
+            target = fullinfo[i+5].data | (fullinfo[i+6].data << 8);
+            if( (fullinfo[i+1].address == addr+1) &&
+                (fullinfo[i+4].address == addr+2) &&
+                !fullinfo[i+2].rw &&!fullinfo[i+2].rw &&
+                (fullinfo[i+5].address == vector) &&
+                (fullinfo[i+bc].address == target)
                )
             {
-               eval[re(index)] = 9;
+               fullinfo[i].eval = 9;
                for( n = 1; n < bc; ++n )
                {
-                  eval[re(index+n)] = 0;
+                  fullinfo[i+n].eval = 0;
                }
-               eval[re(index+bc)] = 9;
+               fullinfo[i+bc].eval = 9;
             }
          }
       }
 
       if( cpu == CPU_65816 )
       {
-         vector = trace_data( trace[re(index-2)] ) |
-                 (trace_data( trace[re(index-1)] ) << 8);
+#if 0
+         vector = fullinfo[i-2].data | (fullinfo[i-1].data << 8);
          if( vector >= 0xFFF0 )
          {
             /* emulation mode vector table (8-bit mode) */
@@ -277,14 +279,14 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
             if( ((addr5 & 0xFF00) == 0x0100) &&
                 ((addr4 & 0xFF00) == 0x0100) &&
                 ((addr3 & 0xFF00) == 0x0100) &&
-                (vector == trace_address(addr)) )
+                (vector == addr) )
             {
                /* a false positive could be a JMP ($FFFx) stored in stack page */
                for( n = 1; n <= 6; ++n )
                {
-                  eval[re(index-n)] = 0;
+                  fullinfo[i-n].eval = 0;
                }
-               eval[re(index)] = 9; // executing first instruction
+               fullinfo[i].eval = 9; // executing first instruction
             }
          }
          else if( vector >= 0xFFE0 )
@@ -292,18 +294,16 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
             /* native mode vector table (16-bit mode) */
             uint32_t addr6 = trace_address( trace[re(index-6)] );
                 /* check if four byte get written to the stack */
-            if( trace_is_write( trace[re(index-6)] ) &&
-                trace_is_write( trace[re(index-5)] ) &&
-                trace_is_write( trace[re(index-4)] ) &&
-                trace_is_write( trace[re(index-3)] ) &&
+            if( !fullinfo[i-6].rw && !fullinfo[i-5].rw
+                !fullinfo[i-4].rw && !fullinfo[i-3].rw
                 (addr6 == (addr5+1)) &&
                 (addr5 == (addr4+1)) &&
                 (addr4 == (addr3+1)) &&
-                (vector == trace_address(addr)) )
+                (vector == addr) )
             {
                for( n = 1; n <= 6; ++n )
                {
-                  eval[re(index-n)] = 0;
+                  fullinfo[i-n].eval = 0;
                }
             }
          }
@@ -322,9 +322,9 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
              */
             int bc = 8;
             vector = trace_data( trace[re(index+1)] ) |
-                    (trace_data( trace[re(index+4)] ) << 8);
+                    (trace_data( trace[re(index+4)] << 8);
             target = trace_data( trace[re(index+5)] ) |
-                    (trace_data( trace[re(index+6)] ) << 8);
+                    (trace_data( trace[re(index+6)] << 8);
             if( (trace_address( trace[re(index+1)] ) == addr+1) &&
                 (trace_address( trace[re(index+4)] ) == addr+2) &&
                 trace_is_write( trace[re(index+2)] ) &&
@@ -342,6 +342,7 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
                eval[re(index+bc)] = 9;
             }
          }
+#endif
       }
 
       /* check for reset on all
@@ -357,12 +358,12 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
          /* a false positive could be a JMP ($FFFx) stored in stack page */
          for( n = 1; n <= 5; ++n )
          {
-            eval[re(index-n)] = 0;
+            fullinfo[i-n].eval = 0;
          }
-         eval[re(index  )] = 9; // executing first instruction
+         fullinfo[i].eval = 9; // executing first instruction
       }
 
-      if( eval[re(index)] > 0 )
+      if( fullinfo[i].eval > 0 )
       {
          if( data == 0x20 )
          {
@@ -375,21 +376,19 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
              * 5: read high
              */
             const int bc = disass_basecycles(data); /* can't be hardcoded due to 65CE02 */
-            target = trace_data( trace[re(index+1)] ) |
-                    (trace_data( trace[re(index+bc-1)] ) << 8);
-            if( (trace_address( trace[re(index+   1)] ) == addr+1) &&
-                (trace_address( trace[re(index+bc-1)] ) == addr+2) &&
-                trace_is_write( trace[re(index+bc-2)] ) &&
-                trace_is_write( trace[re(index+bc-3)] ) &&
-                (trace_address( trace[re(index+bc  )] ) == target)
+            target = fullinfo[i+1].data | (fullinfo[i+bc-1].data << 8);
+            if( (fullinfo[i+   1].address == addr+1) &&
+                (fullinfo[i+bc-1].address == addr+2) &&
+                !fullinfo[i+bc-2].rw && !fullinfo[i+bc-3].rw &&
+                (fullinfo[i+bc  ].address == target)
                )
             {
-               eval[re(index)] = 9;
+               fullinfo[i].eval = 9;
                for( n = 1; n < bc; ++n )
                {
-                  eval[re(index+n)] = 0;
+                  fullinfo[i+n].eval = 0;
                }
-               eval[re(index+bc)] = 9;
+               fullinfo[i+bc].eval = 9;
             }
          }
          else if( data == 0x40 )
@@ -403,20 +402,19 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
              * 4: stack+2 target low
              * 5: stack+3 target high
              */
-            target = trace_data( trace[re(index+bc-2)] ) |
-                    (trace_data( trace[re(index+bc-1)] ) << 8);
-            if( (trace_address( trace[re(index+   1)] ) == addr+1) &&
-                (trace_address( trace[re(index+bc-4)] ) == (trace_address( trace[re(index+bc-3)] ) - 1) ) &&
-                (trace_address( trace[re(index+bc-3)] ) == (trace_address( trace[re(index+bc-2)] ) - 1) ) &&
-                (trace_address( trace[re(index+bc-2)] ) == (trace_address( trace[re(index+bc-1)] ) - 1) ) &&
-                (trace_address( trace[re(index+bc  )] ) == target) )
+            target = fullinfo[i+bc-2].data | (fullinfo[i+bc-1].data << 8);
+            if( (fullinfo[i+   1].address == addr+1) &&
+                (fullinfo[i+bc-4].address == (fullinfo[i+bc-3].address - 1)) &&
+                (fullinfo[i+bc-3].address == (fullinfo[i+bc-2].address - 1)) &&
+                (fullinfo[i+bc-2].address == (fullinfo[i+bc-1].address - 1)) &&
+                (fullinfo[i+bc  ].address == target) )
             {
-               eval[re(index)] = 9;
+               fullinfo[i].eval = 9;
                for( n = 1; n < bc; ++n )
                {
-                  eval[re(index)+n] = 0;
+                  fullinfo[i+n].eval = 0;
                }
-               eval[re(index+bc)] = 9;
+               fullinfo[i+bc].eval = 9;
             }
          }
          else if( data == 0x4c )
@@ -427,19 +425,17 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
              * 1: read low addr
              * 2: read high addr
              */
-            target  = trace_data( trace[re(index+1)] ) |
-                     (trace_data( trace[re(index+2)] ) << 8);
-            if( ( trace_address( trace[re(index+1)] ) == addr+1 ) &&
-                ( trace_address( trace[re(index+2)] ) == addr+2 ) &&
-                ( trace_address( trace[re(index+bc)] ) == target )
-               )
+            target = fullinfo[i+1].data | (fullinfo[i+2].data << 8);
+            if( ( fullinfo[i+ 1].address == addr+1 ) &&
+                ( fullinfo[i+ 2].address == addr+2 ) &&
+                ( fullinfo[i+bc].address == target ) )
             {
-               eval[re(index)] = 9;
+               fullinfo[i].eval = 9;
                for( n = 1; n < bc; ++n )
                {
-                  eval[re(index)+n] = 0;
+                  fullinfo[i+n].eval = 0;
                }
-               eval[re(index+bc)] = 9;
+               fullinfo[i+bc].eval = 9;
             }
          }
          else if( data == 0x60 )
@@ -455,21 +451,20 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
              */
             if( bc == 6 )
             {
-               target = trace_data( trace[re(index+3)] ) |
-                       (trace_data( trace[re(index+4)] ) << 8);
-               if( (trace_address( trace[re(index+1)] ) == addr+1) &&
-                   (trace_address( trace[re(index+2)] ) == (trace_address( trace[re(index+3)] ) - 1) ) &&
-                   (trace_address( trace[re(index+3)] ) == (trace_address( trace[re(index+4)] ) - 1) ) &&
-                   (trace_address( trace[re(index+5)] ) == target ) &&
-                   (trace_address( trace[re(index+bc)] ) == target+1 )
+               target = fullinfo[i+3].data | (fullinfo[i+4].data << 8);
+               if( (fullinfo[i+ 1].address == addr+1) &&
+                   (fullinfo[i+ 2].address == (fullinfo[i+3].address - 1) ) &&
+                   (fullinfo[i+ 3].address == (fullinfo[i+4].address - 1) ) &&
+                   (fullinfo[i+ 5].address == target ) &&
+                   (fullinfo[i+bc].address == target+1 )
                   )
                {
-                  eval[re(index)] = 9;
+                  fullinfo[i].eval = 9;
                   for( n = 1; n < bc; ++n )
                   {
-                     eval[re(index)+n] = 0;
+                     fullinfo[i+n].eval = 0;
                   }
-                  eval[re(index+bc)] = 9;
+                  fullinfo[i+bc].eval = 9;
                }
             }
             else if( bc == 4 )
@@ -480,18 +475,17 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
                 * 2: stack+0 target high
                 * 3: stack+1 target low
                 */
-               target = trace_data( trace[re(index+2)] ) |
-                       (trace_data( trace[re(index+3)] ) << 8);
-               if( (trace_address( trace[re(index+1)] ) == addr+1) &&
-                   (trace_address( trace[re(index+2)] ) == (trace_address( trace[re(index+3)] ) - 1) ) &&
-                   (trace_address( trace[re(index+bc)] ) == target+1 ) )
+               target = fullinfo[i+2].data | (fullinfo[i+3].data << 8);
+               if( (fullinfo[i+ 1].address == addr+1) &&
+                   (fullinfo[i+ 2].address == (fullinfo[i+3].address - 1) ) &&
+                   (fullinfo[i+bc].address == target+1 ) )
                {
-                  eval[re(index)] = 9;
+                  fullinfo[i].eval = 9;
                   for( n = 1; n < bc; ++n )
                   {
-                     eval[re(index)+n] = 0;
+                     fullinfo[i+n].eval = 0;
                   }
-                  eval[re(index+bc)] = 9;
+                  fullinfo[i+bc].eval = 9;
                }
             }
          }
@@ -506,30 +500,27 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
              * 4: target low
              * 5: target high
              */
-            vector = trace_data( trace[re(index+1)] ) |
-                    (trace_data( trace[re(index+2)] ) << 8);
-            target = trace_data( trace[re(index+bc-2)] ) |
-                    (trace_data( trace[re(index+bc-1)] ) << 8);
-            if( target != trace_address( trace[re(index+bc)] ) )
+            vector = fullinfo[i+1].data    | (fullinfo[i+2].data << 8);
+            target = fullinfo[i+bc-2].data | (fullinfo[i+bc-1].data << 8);
+            if( target != fullinfo[i+bc].address )
             {
-               /* with dummy read did not succeed, try without */
+               /* with dummy read did not succeed, retry without */
                --bc;
-               target = trace_data( trace[re(index+bc-2)] ) |
-                       (trace_data( trace[re(index+bc-1)] ) << 8);
+               target = fullinfo[i+bc-2].data | (fullinfo[i+bc-1].data << 8);
             }
-            if( ( trace_address( trace[re(index+   1)] ) == addr+1 ) &&
-                ( trace_address( trace[re(index+   2)] ) == addr+2 ) &&
-                ( trace_address( trace[re(index+bc-2)] ) == vector ) &&
-                ( trace_address( trace[re(index+bc-1)] ) == vector+1 ) &&
-                ( trace_address( trace[re(index+bc  )] ) == target )
+            if( ( fullinfo[i+   1].address == addr+1 ) &&
+                ( fullinfo[i+   2].address == addr+2 ) &&
+                ( fullinfo[i+bc-2].address == vector ) &&
+                ( fullinfo[i+bc-1].address == vector+1 ) &&
+                ( fullinfo[i+bc  ].address == target )
                )
             {
-               eval[re(index)] = 9;
+               fullinfo[i].eval = 9;
                for( n = 1; n < bc; ++n )
                {
-                  eval[re(index)+n] = 0;
+                  fullinfo[i+n].eval = 0;
                }
-               eval[re(index+bc)] = 9;
+               fullinfo[i+bc].eval = 9;
             }
          }
          else if( data == 0x7c )
@@ -543,23 +534,21 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
              * 4: target low
              * 5: target high
              */
-            vector = trace_data( trace[re(index+1)] ) |
-                    (trace_data( trace[re(index+2)] ) << 8);
-            target = trace_data( trace[re(index+bc-2)] ) |
-                    (trace_data( trace[re(index+bc-1)] ) << 8);
-            if( ( trace_address( trace[re(index+   1)] ) == addr+1 ) &&
-                ( trace_address( trace[re(index+   2)] ) == addr+2 ) &&
-                ( trace_address( trace[re(index+bc-2)] ) < (vector + 0x100) ) &&
-                ( trace_address( trace[re(index+bc-2)] ) == (trace_address( trace[re(index+bc-1)] ) - 1) ) &&
-                ( trace_address( trace[re(index+bc  )] ) == target )
+            vector = fullinfo[i+1].data    | (fullinfo[i+2].data << 8);
+            target = fullinfo[i+bc-2].data | (fullinfo[i+bc-1].data << 8);
+            if( ( fullinfo[i+   1].address == addr+1 ) &&
+                ( fullinfo[i+   2].address == addr+2 ) &&
+                ( fullinfo[i+bc-2].address < (vector + 0x100) ) &&
+                ( fullinfo[i+bc-2].address == (fullinfo[i+bc-1].address - 1) ) &&
+                ( fullinfo[i+bc  ].address == target )
                )
             {
-               eval[re(index)] = 9;
+               fullinfo[i].eval = 9;
                for( n = 1; n < bc; ++n )
                {
-                  eval[re(index)+n] = 0;
+                  fullinfo[i+n].eval = 0;
                }
-               eval[re(index+bc)] = 9;
+               fullinfo[i+bc].eval = 9;
             }
          }
 
@@ -568,14 +557,15 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
          if( (addr1 == addr) &&
              ((cpu == CPU_6502) || (cpu == CPU_6502RA)) )
          {
-            eval[re(index-1)] = 0; // dummy read
-            ++eval[re(index)];
+            fullinfo[i-1].eval = 0; // dummy read
+            ++(fullinfo[i].eval);
             if( cpu != CPU_65CE02 )
             {
                // every CPU except for 65CE02 does a read after opcode fetch
-               if( trace_address(trace[re(index+1)]) == (addr+1) )
+               if( (fullinfo[i].eval > 2 ) &&
+                   (fullinfo[i+1].address == (addr+1)) )
                {
-                  eval[re(index+1)] = 0;
+                  fullinfo[i+1].eval = 0;
                }
             }
          }
@@ -585,58 +575,54 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
       /* memory access */
       if( addr3+1 == addr ) /* LDA $1234,X */
       {
-         --eval[re(index-2)]; // dummy read
-         --eval[re(index-1)]; // read/write memory
-         ++eval[re(index)];
+         --(fullinfo[i-2].eval); // dummy read
+         --(fullinfo[i-1].eval); // read/write memory
+         ++(fullinfo[i  ].eval);
       }
       else if( addr2+1 == addr ) /* LDA $1234 */
       {
-         --eval[re(index-1)]; // read/write memory
-         ++eval[re(index)];
+         --(fullinfo[i-1].eval); // read/write memory
+         ++(fullinfo[i  ].eval);
       }
 
       /* follow sure tracks */
-      if( eval[re(index)] >= 9 )
+      if( fullinfo[i].eval >= 9 )
       {
-         int ni = getcycles( trace, entries, index );
+         int ni = getcycles( d, i );
          if( ni > 0 )
          {
             for( n = 1; n < ni; ++n )
             {
-               eval[re(index+n)] = 0;
-            }
-            if( re(index+ni) != start )
-            {
-               eval[re(index+ni)] = 9;
+               fullinfo[i+n].eval = 0;
             }
          }
       }
 
-      if( trace_is_write( trace[re(index)] ) )
+      if( !fullinfo[i].rw )
       {
          /* after a write it's more likely an opcode fetch */
-         if( eval[re(index+1)] > 0 )
+         if( fullinfo[i+1].eval > 0 )
          {
-            ++eval[re(index+1)];
+            ++(fullinfo[i+1].eval);
          }
 
          /* a read before a write at the same address can't be an opcode */
-         if( trace_address( trace[re(index-1)] ) == trace_address( trace[re(index)] ) )
+         if( fullinfo[i-1].address == fullinfo[i].address )
          {
-            eval[re(index-1)] = 0;
+            fullinfo[i-1].eval = 0;
          }
 
          /* writes can never be opcodes */
-         eval[re(index)] = 0;
+         fullinfo[i].eval = 0;
       }
 
-      if( eval[re(index)] > 3 )
+      if( fullinfo[i].eval > 3 )
       {
-         int ni = getcycles( trace, entries, index );
+         int ni = getcycles( d, i );
          if( disass_bcdextracycles( data ) )
          {
             /* check if an extra cycle was taken */
-            if( trace_address( re(index+ni) ) == trace_address( re(index+ni+1) ) )
+            if( fullinfo[i+ni].address == fullinfo[i+ni+1].address )
             {
                ++ni;
             }
@@ -645,45 +631,20 @@ static void disass_historian_run( disass_historian_t d, uint32_t *trace, uint32_
          {
             for( n = 1; n < ni; ++n )
             {
-               --eval[re(index+n)];
-            }
-            if( re(index+ni) != start )
-            {
-               ++eval[re(index+ni)];
+               --(fullinfo[i+n].eval);
             }
          }
       }
-
-      index = re(index+1);
+      
+      if( fullinfo[i].eval < 0 )
+      {
+         fullinfo[i].eval = 0;
+      }
+      if( fullinfo[i].eval > 9 )
+      {
+         fullinfo[i].eval = 9;
+      }
    }
-
-   /* final step: clear unused */
-   for( i = 0; i < entries; ++i )
-   {
-      if( eval[i] < 0 )
-      {
-         eval[i] = 0;
-      }
-      else if( eval[i] > 9 )
-      {
-         eval[i] = 9;
-      }
-#if SHOW_CONFIDENCE
-      *(d->text + (i * DISASS_MAX_STR_LENGTH) + 0) = '0' + eval[i];
-      *(d->text + (i * DISASS_MAX_STR_LENGTH) + 1) = ':';
-      if( eval[i] < 3 )
-      {
-         *(2 + d->text + (i * DISASS_MAX_STR_LENGTH)) = '\0';
-      }
-#else
-      if( eval[i] < 3 )
-      {
-         *(d->text + (i * DISASS_MAX_STR_LENGTH)) = '\0';
-      }
-#endif
-   }
-
-   free( eval );
 }
 
 
@@ -695,13 +656,17 @@ disass_historian_t disass_historian_init( cputype_t cpu,
    // TODO: find something better than assert (or somewhere else to check?)
    assert( (entries & (entries-1)) == 0 );
 
-   d->cpu     = cpu;
-   d->entries = entries;
-   d->text    = (char*)malloc( entries * DISASS_MAX_STR_LENGTH );
+   d->cpu      = cpu;
+   d->entries  = entries;
+   d->fullinfo = (fullinfo_t*)calloc( entries+2*BOUNDSBUFFER, sizeof(fullinfo_t) );
 
-   memset( d->text, 0, entries * DISASS_MAX_STR_LENGTH );
    disass_set_cpu( cpu );
+#if 1
+   disass_historian_fulldata( d, trace, start );
+   disass_historian_assumptions( d );
+#else
    disass_historian_run( d, trace, start );
+#endif
 
    return d;
 }
@@ -709,17 +674,27 @@ disass_historian_t disass_historian_init( cputype_t cpu,
 
 void disass_historian_done( disass_historian_t d )
 {
-   memset( d->text, 0, d->entries * DISASS_MAX_STR_LENGTH );
-   free( d->text );
+   memset( d->fullinfo, 0, d->entries * sizeof(uint64_t) );
+   free( d->fullinfo );
    free( d );
 }
 
 
 const char *disass_historian_entry( disass_historian_t d, uint32_t entry )
 {
-   if( entry >= d->entries )
+   static char buffer[80];
+   *buffer = 0;
+   
+   if( entry < d->entries )
    {
-      return 0;
+      fullinfo_t fullinfo = d->fullinfo[entry+BOUNDSBUFFER];
+
+      snprintf( &buffer[0], sizeof(buffer)-1,
+                "%5d:%s:%d:%s",
+                entry,
+                decode_trace( fullinfo.trace, false, 0 ),
+                fullinfo.eval,
+                fullinfo.eval < 3 ? "" : disass_trace( fullinfo ) );
    }
-   return &(d->text[entry * DISASS_MAX_STR_LENGTH]);
+   return &buffer[0];
 }

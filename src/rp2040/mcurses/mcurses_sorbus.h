@@ -33,7 +33,7 @@ void hexedit( hexedit_t *config );
 /* toggle through banks */
 typedef uint8_t(*lineview_handler_bank_t)();
 /* move current view */
-typedef bool(*lineview_handler_move_t)(int32_t);
+typedef int32_t(*lineview_handler_move_t)(int32_t);
 /* get data for a specific offset from current view */
 typedef const char*(*lineview_handler_data_t)(int32_t);
 typedef struct {

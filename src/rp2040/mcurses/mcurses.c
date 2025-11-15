@@ -461,6 +461,7 @@ void halfdelay( uint16_t tenths )
  *------------------------------------------------------------------------------
  */
 #define MAX_KEYS            ((KEY_F1 + 12) - 0x80)
+#define VT400 0
 
 static const char * function_keys[MAX_KEYS] =
 {
@@ -468,14 +469,22 @@ static const char * function_keys[MAX_KEYS] =
    "A",     // KEY_UP               0x81            // Up arrow key
    "D",     // KEY_LEFT             0x82            // Left arrow key
    "C",     // KEY_RIGHT            0x83            // Right arrow key
+#if VT400
    "1~",    // KEY_HOME             0x84            // Home key
+#else // Linux console
+   "H",     // KEY_HOME             0x84            // Home key
+#endif
    "3~",    // KEY_DC               0x85            // Delete character key
    "2~",    // KEY_IC               0x86            // Ins char/toggle ins mode key
    "6~",    // KEY_NPAGE            0x87            // Next-page key
    "5~",    // KEY_PPAGE            0x88            // Previous-page key
+#if VT400
    "4~",    // KEY_END              0x89            // End key
+#else // Linux console
+   "F",     // KEY_END              0x89            // End key
+#endif
    "Z",     // KEY_BTAB             0x8A            // Back tab key
-#if 0 // VT400:
+#if VT400
    "11~",   // KEY_F(1)             0x8B            // Function key F1
    "12~",   // KEY_F(2)             0x8C            // Function key F2
    "13~",   // KEY_F(3)             0x8D            // Function key F3

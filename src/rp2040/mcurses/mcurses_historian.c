@@ -13,45 +13,46 @@
 static disass_historian_t historian;
 static uint32_t _entries;
 static uint32_t _current;
+static uint16_t _datalines;
 
 
-static bool mcurses_historian_move( int32_t move )
+static int32_t mcurses_historian_move( int32_t movelines )
 {
-   switch( move )
+   int32_t retval = 0;
+   switch( movelines )
    {
       case LINEVIEW_FIRSTLINE:
+         retval = -_current;
          _current = 0;
          break;
       case LINEVIEW_LASTLINE:
-         _current = _entries - screen_get_rows() - 2;
+         retval = (_entries - _datalines) - _current;
+         _current = _entries - _datalines;
          break;
       default:
-         _current += move;
-         if( (_current < 0) || (_current > (_entries - screen_get_rows() - 2)) )
+         _current += movelines;
+         retval = movelines;
+         if( (_current < 0) || (_current > (_entries - _datalines)) )
          {
-            _current -= move;
-            return false;
+            _current -= movelines;
+            retval = 0;
          }
          break;
    }
-   return true;
+   return retval;
 }
 
 
 const char* mcurses_historian_data( int32_t offset )
 {
-   static char buffer[80] = { 0 };
    switch( offset )
    {
       case LINEVIEW_FIRSTLINE:
-         return "steps";
+         return "cycle:addr r da flg:C:disassembly";
       case LINEVIEW_LASTLINE:
          return "Backtrace Viewer";
    }
-   snprintf( &buffer[0], sizeof(buffer)-1,
-             "%5d:%s", _current + offset, disass_historian_entry( historian, _current + offset ) );
-fprintf( stderr, "%s\n", &buffer[0] );
-   return &buffer[0];
+   return disass_historian_entry( historian, _current + offset );
 }
 
 
@@ -61,13 +62,15 @@ void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32
    config.nextbank   = 0;
    config.move       = mcurses_historian_move;
    config.data       = mcurses_historian_data;
-   config.attributes = F_WHITE | B_BLUE;
+   config.attributes = F_WHITE | B_YELLOW;
    config.bank       = 0;
    config.current    = entries - (screen_get_rows() - 2);
    _entries          = entries;
    _current          = 0;
+   _datalines        = screen_get_rows()-2;
 
    historian = disass_historian_init( cpu, trace, entries, start );
+   mcurses_historian_move( LINEVIEW_LASTLINE );
    lineview( &config );
    disass_historian_done( historian );
 }

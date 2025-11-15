@@ -205,6 +205,56 @@ typedef enum {
    DISASS_JMP_RELL,
 } disass_jmp_t;
 
+
+/**
+ * fullinfo_t is a 64 bit value wrapping whole evaluation and disassembly
+ * of trace entry into one. The lower 32bits are the trace as taken from
+ * GPIOs and defined in src/rp2040/common/bus.h.
+ *
+ * The value is layed out like this:
+ * 0x7766554433221111
+ * 1111: address
+ * 22:   data
+ * 33:   control lines: r/w(0), clock(1), rdy(2), irq(3), nmi(4), reset(5)
+ * 44:   data at adress + 1
+ * 55:   data at adress + 2
+ * 66:   data at adress + 3
+ * 77:   evaluation (details to be defined: two bits for number of extra data being valid)
+ */
+
+typedef union
+{
+   uint64_t             raw     : 64;
+   struct {
+      union {
+         uint32_t       trace   : 32;
+         struct {
+            uint16_t    address : 16;
+            uint8_t     data    :  8;
+            union {
+               uint8_t  signals :  8;
+               struct {
+                  bool  rw       : 1;
+                  bool  clock    : 1;
+                  bool  rdy      : 1;
+                  bool  ieq      : 1;
+                  bool  nmi      : 1;
+                  bool  reset    : 1;
+                uint8_t bits30_31: 2;
+               };
+            };
+         };
+      };
+      uint8_t           data1    : 8;
+      uint8_t           data2    : 8;
+      uint8_t           data3    : 8;
+      union {
+         uint8_t        bits56_63: 8;
+         int8_t         eval     : 8;
+      };
+   };
+} fullinfo_t;
+
 extern const char *mnemonics[];
 extern uint32_t opcodes6502[0x100];
 extern uint32_t opcodes65c02[0x100];
@@ -245,6 +295,9 @@ void disass_show( disass_show_t show );
 
 /* run disassembler for bytes of continuous memory */
 const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 );
+
+/* wrapper for call above to pull everything from trace entry */
+const char *disass_trace( fullinfo_t fullinfo );
 
 /* for debugging purposes only */
 uint8_t disass_bytes( uint8_t opcode );

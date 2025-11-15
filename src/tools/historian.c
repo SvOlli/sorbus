@@ -77,23 +77,23 @@ cputype_t getcputype( const char *argi )
       *c = toupper( *c );
    }
 
-   if( !strcmp( arg, "6502" ) )
+   if( !strncasecmp( arg, "6502", 4 ) )
    {
       retval = CPU_6502;
    }
-   else if( !strcmp( arg, "65C02" ) )
+   else if( !strncasecmp( arg, "65C02", 5 ) )
    {
       retval = CPU_65C02;
    }
-   else if( !strcmp( arg, "65SC02" ) )
+   else if( !strncasecmp( arg, "65SC02", 6 ) )
    {
       retval = CPU_65SC02;
    }
-   else if( !strcmp( arg, "65816" ) )
+   else if( !strncasecmp( arg, "65816", 5) )
    {
       retval = CPU_65816;
    }
-   else if( !strcmp( arg, "65CE02" ) )
+   else if( !strncasecmp( arg, "65CE02", 6 ) )
    {
       retval = CPU_65CE02;
    }
@@ -127,9 +127,7 @@ void help( const char *progname, int retval )
      "\t-f file:\ttrace file (mandatory)\n"
      "\t-a:\tshow addresses\n"
      "\t-d:\tshow hexdump\n"
-     "\t-e:\tshow estimated confidence\n"
-     "\t-t:\tshow trace info\n"
-     "\t-b:\tinteractive browser\n"
+     "\t-p:\tinteractive pager\n"
      "\t-h:\tshow help\n"
      , progname );
    exit( retval );
@@ -144,11 +142,13 @@ void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
    newt = oldt;
    newt.c_lflag &= ~(ICANON | ECHO);
    tcsetattr( STDIN_FILENO, TCSANOW, &newt );
+
+   screen_save();
    initscr();
-
    mcurses_historian( cpu, trace, entries, start );
-
    endwin();
+   screen_restore();
+
    tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
 }
 
@@ -156,22 +156,22 @@ void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
 const uint8_t *get_start( const uint8_t *start, const uint8_t *end, cputype_t *cputype )
 {
    const uint8_t *c;
-   const uint8_t magic[] = { 'T','R','A','C','E','_','S','T','A','R','T' };
+   const uint8_t magic[] = "TRACE_START";
 
-   for( c = start; c < end - sizeof(magic); ++c )
+   for( c = start; c < end - sizeof(magic)-1; ++c )
    {
-      if( !memcmp( c, &magic[0], sizeof(magic) ) )
+      if( !memcmp( c, &magic[0], sizeof(magic)-1 ) )
       {
          break;
       }
    }
    /* nothing found: assume data start at file start */
-   if( c == (end - sizeof(magic)) )
+   if( c == (end - sizeof(magic)-1) )
    {
       return start;
    }
 
-   c += sizeof(magic);
+   c += sizeof(magic)-1;
    switch( *c )
    {
       case ' ':
@@ -204,11 +204,11 @@ const uint8_t *get_start( const uint8_t *start, const uint8_t *end, cputype_t *c
 const uint8_t *get_end( const uint8_t *start, const uint8_t *end )
 {
    const uint8_t *c;
-   const uint8_t magic[] = { 'T','R','A','C','E','_','E','N','D' };
+   const uint8_t magic[] = "TRACE_END";
 
-   for( c = start; c < end - sizeof(magic); ++c )
+   for( c = start; c < end - sizeof(magic)-1; ++c )
    {
-      if( !memcmp( c, &magic[0], sizeof(magic) ) )
+      if( !memcmp( c, &magic[0], sizeof(magic)-1 ) )
       {
          return c;
       }
@@ -221,7 +221,6 @@ uint32_t *get_trace( const uint8_t *start, const uint8_t *end, uint32_t *size )
 {
    const uint8_t *c;
    uint32_t entries = 0;
-   uint32_t allocsize = 1;
    uint32_t *sample = 0, *s;
 
    for( c = start; c < end; ++c )
@@ -236,11 +235,7 @@ uint32_t *get_trace( const uint8_t *start, const uint8_t *end, uint32_t *size )
       ++entries;
    }
    /* entries needs to be power of 2 */
-   while( entries >= allocsize )
-   {
-      allocsize <<= 1;
-   }
-   sample = (uint32_t*)calloc( allocsize, sizeof(uint32_t) );
+   sample = (uint32_t*)calloc( entries, sizeof(uint32_t) );
 
    s = sample;
    for( c = start; c < end; ++c )
@@ -259,7 +254,7 @@ uint32_t *get_trace( const uint8_t *start, const uint8_t *end, uint32_t *size )
    }
    if( size )
    {
-      *size = allocsize;
+      *size = entries;
    }
    return sample;
 }
@@ -282,20 +277,15 @@ int main( int argc, char *argv[] )
 
    int opt;
    bool fail = false;
-   bool interactive = false;
-   bool show_trace = false;
-   bool show_confidence = false;
+   bool pager = false;
    disass_show_t show_extra = DISASS_SHOW_NOTHING;
 
-   while ((opt = getopt(argc, argv, "abc:def:ht")) != -1)
+   while ((opt = getopt(argc, argv, "ac:df:hp")) != -1)
    {
       switch( opt )
       {
          case 'a':
             show_extra |= DISASS_SHOW_ADDRESS;
-            break;
-         case 'b':
-            interactive = true;
             break;
          case 'c':
             cpu = getcputype( optarg );
@@ -309,17 +299,14 @@ int main( int argc, char *argv[] )
          case 'd':
             show_extra |= DISASS_SHOW_HEXDUMP;
             break;
-         case 'e':
-            show_confidence = true;
-            break;
          case 'f':
             filename = optarg;
             break;
+         case 'p':
+            pager = true;
+            break;
          case 'h':
             help( progname, 0 );
-            break;
-         case 't':
-            show_trace = true;
             break;
          default:
             fail = true;
@@ -356,7 +343,7 @@ int main( int argc, char *argv[] )
    }
 
    disass_show( show_extra );
-   if( interactive )
+   if( pager )
    {
       mcurses( cpu, buffer, size, 0 );
    }
@@ -371,16 +358,9 @@ int main( int argc, char *argv[] )
             break;
          }
          printf( "%5d:", count );
-         if( show_trace )
-         {
-            printf( "%s:",
-                    decode_trace( *(buffer + count), false, 0 ) );
-         }
          if( disass_historian_entry( dah, count ) )
          {
-            printf( "%s\n", show_confidence ?
-                    disass_historian_entry( dah, count ) :
-                    disass_historian_entry( dah, count ) + 2 );
+            puts( disass_historian_entry( dah, count ) );
          }
       }
       disass_historian_done( dah );

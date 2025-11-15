@@ -582,3 +582,9 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
 
    return buffer;
 }
+
+
+const char *disass_trace( fullinfo_t fullinfo )
+{
+   return disass( fullinfo.address, fullinfo.data, fullinfo.data1, fullinfo.data2, fullinfo.data3 );
+}

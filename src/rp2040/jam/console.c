@@ -43,7 +43,19 @@ uint32_t mem_start_p=0;
 
 uint8_t local_buf[XMODEM_BUFFER_SIZE];
 extern uint8_t ram[0x10000];
-static hexedit_t he_config;
+
+static uint8_t hexedit_bank();
+static uint8_t hexedit_peek(uint16_t);
+static void hexedit_poke(uint16_t,uint8_t);
+
+static hexedit_t he_config = {
+   hexedit_bank,
+   hexedit_peek,
+   hexedit_poke,
+   0,
+   0,
+   0
+};
 
 
 void console_reset()
@@ -241,9 +253,9 @@ void console_rp2040()
       addstr( "The Sorbus Computer Meta Menu invoked via " );
       addstr( invoke );
       addstr( ", CPU on RDY" );
-      screen_textbox( lines-6,  1, debug_info_heap() );
-      screen_textbox( lines-6, 21, debug_info_clocks() );
-      screen_textbox( lines-7, cols-13, debug_info_sysvectors() );
+      screen_textbox( lines-6,  1, debug_info_clocks() );
+      screen_textbox( lines-6, 27, debug_info_sysvectors() );
+      screen_textbox( lines-6, cols-21, debug_info_heap() );
 
       move( 3, 1 );
            /* 12345678901234567890123456789012345678901234567890123456789012345678901234567890 */
@@ -263,13 +275,12 @@ void console_rp2040()
             initscr();
             break;
          case 'B':
-            endwin();
-            screen_restore();
-            /* move backtrace to own viewer */
-            debug_backtrace();
-            getch();
-            screen_save();
-            initscr();
+            {
+               cputype_t cpu;
+               uint32_t *trace, entries, start;
+               debug_backtrace_get( &cpu, &trace, &entries, &start );
+               mcurses_historian( cpu, trace, entries, start );
+            }
             break;
          case 'D':
             endwin();

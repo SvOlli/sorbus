@@ -3,6 +3,7 @@
 #define _NATIVE_COMMON_H_ _NATIVE_COMMON_H_
 
 #include <stdint.h>
+#include "common/generic_helper.h"
 
 typedef enum console_type_e {
    CONSOLE_TYPE_65C02,
@@ -40,5 +41,6 @@ void debug_poke( uint8_t bank, uint16_t addr, uint8_t value );
 const char *debug_info_heap();
 const char *debug_info_clocks();
 const char *debug_info_sysvectors();
+void debug_backtrace_get( cputype_t *cpu, uint32_t **trace, uint32_t *entries, uint32_t *start );
 
 #endif
