@@ -198,19 +198,18 @@ static void mymove( uint16_t y, uint16_t x )
  */
 uint8_t initscr()
 {
-   if( !screen_get_rows() )
+   if( !screen_get_lines() )
    {
       /* never requested screen size, do it now */
       screen_get_size( NULL, NULL );
    }
-   mcurses_scrl_end = screen_get_rows() - 1;
+   mcurses_scrl_end = screen_get_lines() - 1;
 
    if (mcurses_phyio_init ())
    {
-      //mcurses_puts (SEQ_LOAD_G1);                                    // load graphic charset into G1
-      attrset (A_NORMAL);
-      clear ();
-      move (0, 0);
+      attrset( A_NORMAL );
+      clear();
+      move( 0, 0 );
       mcurses_is_up = 1;
       return OK;
    }
@@ -669,7 +668,6 @@ void endwin()
 {
    move( LINES - 1, 0 );               // move cursor to last line
    clrtoeol();                         // clear this line
-   //mcurses_putc( '\017' );             // switch to G0 set
    curs_set( TRUE );                   // show cursor
    mcurses_puts( SEQ_REPLACE_MODE );   // reset insert mode
    refresh();                          // flush output

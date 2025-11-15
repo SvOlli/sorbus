@@ -35,13 +35,13 @@
 
 static struct {
    uint16_t columns;
-   uint16_t rows;
+   uint16_t lines;
 } screen = { 0 };
 
 
 static struct {
    uint16_t column;
-   uint16_t row;
+   uint16_t line;
 } saved = { 0 };
 
 
@@ -60,9 +60,9 @@ uint16_t screen_get_columns()
 }
 
 
-uint16_t screen_get_rows()
+uint16_t screen_get_lines()
 {
-   return screen.rows;
+   return screen.lines;
 }
 
 
@@ -133,7 +133,7 @@ bool screen_get_size( uint16_t *lines, uint16_t *columns )
 
    /* screen_get_cursor_pos() uses 0-offset */
    screen.columns = ++x;
-   screen.rows    = ++y;
+   screen.lines   = ++y;
    if( columns )
    {
       *columns = x;
@@ -191,7 +191,7 @@ void _screen_restore( uint16_t lines )
 
 void screen_save()
 {
-   screen_get_cursor_pos( &saved.column, &saved.row );
+   screen_get_cursor_pos( &saved.column, &saved.line );
    screen_puts( "\033[?47h" );
 }
 
@@ -199,7 +199,7 @@ void screen_save()
 void screen_restore()
 {
    screen_puts( "\033[?47l" );
-   screen_set_cursor_pos( saved.column, saved.row );
+   screen_set_cursor_pos( saved.column, saved.line );
 }
 
 

@@ -79,7 +79,7 @@ void screen_restore();
 void screen_alternative_buffer_enable();
 void screen_alternative_buffer_disable();
 uint16_t screen_get_columns();
-uint16_t screen_get_rows();
+uint16_t screen_get_lines();
 void screen_border( uint16_t top, uint16_t left,
                     uint16_t bottom, uint16_t right );
 void screen_textbox( uint16_t line, uint16_t column, const char *text );
