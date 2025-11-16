@@ -27,7 +27,7 @@ reset:
    .byte "SBC23"
 
 _mon_init:
-   jmp   mon_init
+   jmp   mon_restart
 _getkeytest:
    jmp   getkeytest
 

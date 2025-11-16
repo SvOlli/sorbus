@@ -851,17 +851,17 @@ static void debug_info_internaldrive( char *buffer, size_t size )
    snprintf( buffer, size,
       /*01*/ "hw sector size:  %08x (%d)\n"
       /*02*/ "hw num sectors:  %08x (%d)\n"
-      /*03*/ "hw size:         %.2fMB\n"
+      /*03*/ "hw size:         %6.2fMB\n"
       /*04*/ "page size:       %08x (%d)\n"
       /*05*/ "pages:           %08x (%d)\n"
       /*06*/ "lba sector size: %08x (%d)\n"
       /*07*/ "lba num sectors: %08x (%d)\n"
-      /*08*/ "lba size:        %.2fMB\n"
+      /*08*/ "lba size:        %6.2fMB\n"
       /*09*/ "gc ratio         %08x (%d)\n"
       /*10*/ "read status:     %d\n"
       /*11*/ "read error:      %s\n"
       /*12*/ "ID_LBA ($DF70):  %04x (sector used for next transfer)\n"
-      /*13*/ "ID_MEM ($DF80):  %04x (memory used for next transfer)\n"
+      /*13*/ "ID_MEM ($DF72):  %04x (memory used for next transfer)\n"
       /*01*/ , dhara_info.erase_size, dhara_info.erase_size
       /*02*/ , dhara_info.erase_cells, dhara_info.erase_cells
       /*03*/ , (float)hw_size / (1024*1024)
@@ -1096,7 +1096,7 @@ void debug_disassembler()
 
 void debug_raw_backtrace()
 {
-   printf( "TRACE_START %s\n", cputype_name( cputype ) );
+   printf( "\nTRACE_START %s\n", cputype_name( cputype ) );
    for( int i = buslog_index; i < (buslog_index + BUSLOG_SIZE); ++i )
    {
       printf( "%08x\n", buslog_states[i & (BUSLOG_SIZE-1)] );

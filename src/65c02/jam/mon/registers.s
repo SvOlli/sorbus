@@ -158,6 +158,7 @@ mon_hello:
    iny
    bne   :-
 :
+mon_restart:
 .if CONFIG_BRK_HAS_PARAMETER
    ; on CMOS get interrupt number
    pla                  ; get BRK parameter in case it needs to be printed

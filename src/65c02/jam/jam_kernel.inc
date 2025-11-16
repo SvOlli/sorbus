@@ -26,6 +26,7 @@
 
 ; entry points for the monitor
 .global  mon_init       ; called from reset menu / clean init
+.global  mon_restart    ; called in NMOS 6502 toolkit for getting to prompt
 .global  mon_irq        ; called via IRQ (either UVNBI or raw on NMOS)
 .global  mon_nmi        ; called via NMI
 .global  mon_brk        ; called via BRK handler (UVBRK or int MON)

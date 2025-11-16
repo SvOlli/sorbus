@@ -270,7 +270,7 @@ void console_rp2040()
                             "Backtrace Dumper",
                             "Turn on logging now\n"
                             "Press any key\n"
-                            "Save capture to disk for later use\n"
+                            "Save capture for later use\n"
                             "Turn off logging\n"
                             "Press any key to return to menu"
                           );
