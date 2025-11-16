@@ -63,6 +63,14 @@ void lineview( lineview_t *config )
    {
       move( LINES-1, COLS-1 );
       ch = getch();
+
+      if( config->keypress )
+      {
+         if( config->keypress( config->d, &ch ) )
+         {
+            printlines( config, COLS );
+         }
+      }
       switch( ch )
       {
          case KEY_UP:
@@ -103,12 +111,6 @@ void lineview( lineview_t *config )
             if( config->move( config->d, LINEVIEW_LASTLINE ) )
             {
                printlines( config, COLS );
-            }
-            break;
-         case 0x02:     // CTRL+B
-            if( config->nextbank )
-            {
-               config->nextbank( config->d );
             }
             break;
          default:

@@ -26,6 +26,8 @@ reset:
    jmp   start
    .byte "SBC23"
 
+_mon_init:
+   jmp   mon_init
 _getkeytest:
    jmp   getkeytest
 
@@ -97,6 +99,7 @@ start:
 :
    jsr   PRINT
    .byte $0a,$0a,"Routines:"
+   .byte $0a,.sprintf( "$%04x: monitor",    $e000+_mon_init-reset )
    .byte $0a,.sprintf( "$%04x: getkeytest", $e000+_getkeytest-reset )
    .byte $0a,$00
    jmp   mon_init

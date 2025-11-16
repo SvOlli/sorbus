@@ -73,7 +73,7 @@ void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32
    mch.current       = entries - (screen_get_lines() - 2);
    mch.datalines     = screen_get_lines()-2;
 
-   config.nextbank   = 0;
+   config.keypress   = 0;
    config.move       = mcurses_historian_move;
    config.data       = mcurses_historian_data;
    config.d          = (void*)(&mch);

@@ -266,13 +266,20 @@ void console_rp2040()
       switch( in )
       {
          case '!':
-            endwin();
-            screen_restore();
-            /* TODO: find solution for handling */
-            debug_raw_backtrace();
-            getch();
-            screen_save();
-            initscr();
+            screen_infobox( SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
+                            "Backtrace Dumper",
+                            "Turn on logging now\n"
+                            "Press any key\n"
+                            "Save capture to disk for later use\n"
+                            "Turn off logging\n"
+                            "Press any key to return to menu"
+                          );
+            move( lines - 1, 0 );
+            if( getch() != 0x03 )
+            {
+               debug_raw_backtrace();
+               getch();
+            }
             break;
          case 'B':
             {
