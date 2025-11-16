@@ -30,17 +30,19 @@ void system_init();
 void system_reboot();
 
 // Core1: debug output routines called from Core0 when CPU is stopped
-void debug_backtrace();
-void debug_disassembler();
-void debug_internal_drive();
-void debug_queue_event( const char *text );
+typedef enum {
+   DEBUG_INFO_ERR = 0,
+   DEBUG_INFO_HEAP,
+   DEBUG_INFO_CLOCKS,
+   DEBUG_INFO_SYSVECTORS,
+   DEBUG_INFO_INTERNALDRIVE,
+   DEBUG_INFO_EVENTQUEUE
+} debug_info_t;
+const char *debug_get_info( debug_info_t page );
+void debug_get_backtrace( cputype_t *cpu, uint32_t **trace, uint32_t *entries, uint32_t *start );
 void debug_raw_backtrace();
 uint8_t debug_banks();
 uint8_t debug_peek( uint8_t bank, uint16_t addr );
 void debug_poke( uint8_t bank, uint16_t addr, uint8_t value );
-const char *debug_info_heap();
-const char *debug_info_clocks();
-const char *debug_info_sysvectors();
-void debug_backtrace_get( cputype_t *cpu, uint32_t **trace, uint32_t *entries, uint32_t *start );
 
 #endif

@@ -22,6 +22,6 @@ int dhara_flash_read( uint16_t lba, uint8_t *data );
 int dhara_flash_write( uint16_t lba, const uint8_t *data );
 int dhara_flash_trim( uint16_t lba );
 void dhara_flash_sync();
-void dhara_flash_info( uint16_t lba, uint8_t *data, dhara_flash_info_t *info );
+void dhara_flash_info( dhara_flash_info_t *info );
 
 #endif

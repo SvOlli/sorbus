@@ -53,8 +53,8 @@ static hexedit_t he_config = {
    hexedit_peek,
    hexedit_poke,
    0,
-   0,
-   0
+   0x400,
+   0x400
 };
 
 
@@ -253,9 +253,9 @@ void console_rp2040()
       addstr( "The Sorbus Computer Meta Menu invoked via " );
       addstr( invoke );
       addstr( ", CPU on RDY" );
-      screen_textbox( lines-6,  1, debug_info_clocks() );
-      screen_textbox( lines-6, 27, debug_info_sysvectors() );
-      screen_textbox( lines-6, cols-21, debug_info_heap() );
+      screen_textbox( lines-6,  1, debug_get_info( DEBUG_INFO_CLOCKS ) );
+      screen_textbox( lines-6, (screen_get_columns()+1)/2 - 9, debug_get_info( DEBUG_INFO_SYSVECTORS ) );
+      screen_textbox( lines-6, cols-21, debug_get_info( DEBUG_INFO_HEAP ) );
 
       move( 3, 1 );
            /* 12345678901234567890123456789012345678901234567890123456789012345678901234567890 */
@@ -278,7 +278,7 @@ void console_rp2040()
             {
                cputype_t cpu;
                uint32_t *trace, entries, start;
-               debug_backtrace_get( &cpu, &trace, &entries, &start );
+               debug_get_backtrace( &cpu, &trace, &entries, &start );
                mcurses_historian( cpu, trace, entries, start );
             }
             break;
@@ -292,22 +292,14 @@ void console_rp2040()
             initscr();
             break;
          case 'E':
-            endwin();
-            screen_restore();
-            /* show on title screen? */
-            debug_queue_event( "Event queue" );
+            screen_infobox( SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
+                            "Event Queue", debug_get_info( DEBUG_INFO_EVENTQUEUE ) );
             getch();
-            screen_save();
-            initscr();
             break;
          case 'I':
-            endwin();
-            screen_restore();
-            /* show on title screen? */
-            debug_internal_drive();
+            screen_infobox( SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
+                            "Internal Drive", debug_get_info( DEBUG_INFO_INTERNALDRIVE ) );
             getch();
-            screen_save();
-            initscr();
             break;
          case 'M':
             hexedit( &he_config );

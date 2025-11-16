@@ -70,15 +70,16 @@ uint16_t dhara_flash_init()
 
 
 /* get some info for debugging purposes */
-void dhara_flash_info( uint16_t lba, uint8_t *data, dhara_flash_info_t *info )
+void dhara_flash_info( dhara_flash_info_t *info )
 {
    dhara_error_t err = DHARA_E_NONE;
+   char sector[SECTOR_SIZE];
    int retval = 0;
    if( !info )
    {
       return;
    }
-   retval = dhara_flash_read( lba, data );
+   retval = dhara_flash_read( 0, &sector[0] );
    info->sector_size    = SECTOR_SIZE;
    info->page_size      = PAGE_SIZE;
    info->erase_size     = BLOCK_SIZE;

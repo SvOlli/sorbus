@@ -246,9 +246,11 @@ void screen_border( uint16_t top, uint16_t left,
 }
 
 
-void screen_textbox( uint16_t line, uint16_t column, const char *text )
+void screen_textsize( uint16_t *lines, uint16_t *columns, const char *text )
 {
-   int rows=1, row=1, width=0, len=0;
+   uint16_t len   = 0;
+   uint16_t width = 0;
+   uint16_t rows  = 1;
    const char *c;
 
    /* count rows and get max line size */
@@ -268,25 +270,120 @@ void screen_textbox( uint16_t line, uint16_t column, const char *text )
          ++len;
       }
    }
+
+   /* evaluate last line */
+   if( len > width )
+   {
+      width = len;
+   }
+   /* new empty line caused by newline at end will not get added */
    if( !len )
    {
-      --row;
+      --rows;
    }
 
-   screen_border( line, column, line + rows + 1, column + width + 1 );
-   move( line + row, column + 1 );
+   /* check if return values */
+   if( lines )
+   {
+      *lines = rows;
+   }
+   if( columns )
+   {
+      *columns = width;
+   }
+}
+
+
+static void screen_printtext( uint16_t line, uint16_t column,
+                              const char *text )
+{
+   const char *c;
+
+   move( line, column );
    for( c = text; *c; ++c )
    {
       if( *c == '\n' )
       {
-         ++row;
-         move( line + row, column + 1 );
+         ++line;
+         move( line, column );
       }
       else
       {
          addch( *c );
       }
    }
+   if( *(c-1) == '\n' )
+   {
+      --line;
+   }
+   move( line, column );
+}
+
+
+void screen_infobox( uint16_t line, uint16_t column,
+                     const char *header, const char *text )
+{
+   uint16_t rows, width, row = 3;
+   const char *c;
+   uint16_t i;
+
+   screen_textsize( &rows, &width, text );
+
+   if( line == SCREEN_TEXT_CENTER )
+   {
+      line = (screen_get_lines() - rows) / 2 - 2;
+      //line = 1;
+   }
+   if( column == SCREEN_TEXT_CENTER )
+   {
+      column = (screen_get_columns() - width) / 2 - 1;
+      //column = 1;
+   }
+
+   screen_border( line, column, line + rows + 3, column + width + 1 );
+   move( line+2, column );
+   addch( 0x251c );
+   for( i = 0; i < width; ++i )
+   {
+      addch( 0x2500 );
+   }
+   addch( 0x2524 );
+
+   move( line+1, column+1 );
+   i = 1;
+   for( c = header; *c; ++c )
+   {
+      addch( *c );
+      if( (++i) > (width-1) )
+      {
+         /* header wider than text, cut off */
+         break;
+      }
+   }
+
+   screen_printtext( line + row, column + 1, text );
+}
+
+
+void screen_textbox( uint16_t line, uint16_t column,
+                     const char *text )
+{
+   uint16_t rows, width, row = 1;
+   const char *c;
+
+   screen_textsize( &rows, &width, text );
+
+   if( line == SCREEN_TEXT_CENTER )
+   {
+      line = (screen_get_lines() - rows) - 1;
+   }
+   if( column == SCREEN_TEXT_CENTER )
+   {
+      column = (screen_get_columns() - width) - 1;
+   }
+
+   screen_border( line, column, line + rows + 1, column + width + 1 );
+   screen_printtext( line + row, column + 1, text );
 }
 
 

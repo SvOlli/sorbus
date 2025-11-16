@@ -56,7 +56,7 @@ const char* mcurses_historian_data( void *d, int32_t offset )
       case LINEVIEW_FIRSTLINE:
          return "cycle:addr r da flg:C:disassembly";
       case LINEVIEW_LASTLINE:
-         return "Backtrace Viewer";
+         return "Backtrace Viewer  (Ctrl+C to leave)";
    }
 
    return disass_historian_entry( mch->historian, mch->current + offset );

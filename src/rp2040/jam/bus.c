@@ -66,7 +66,7 @@ bool cpu_running               = false;
 bool cpu_running_request       = true;
 
 // number of states should be power of 2
-#define BUSLOG_SIZE (512)
+#define BUSLOG_SIZE (1024)
 #if (BUSLOG_SIZE & (BUSLOG_SIZE-1))
 #error BUSLOG_SIZE is not a power of 2
 #endif
@@ -557,286 +557,6 @@ static inline void handle_flash_dma()
 }
 
 
-static inline uint32_t getaddr( uint32_t _state )
-{
-   return (_state & bus_config.mask_address) >> (bus_config.shift_address);
-}
-
-
-static inline uint32_t getdata( uint32_t _state )
-{
-   return (_state & bus_config.mask_data) >> (bus_config.shift_data);
-}
-
-
-uint32_t debug_getbus( int i )
-{
-   uint32_t state = buslog_states[(i + buslog_index) & (BUSLOG_SIZE-1)];
-   uint32_t prev2 = buslog_states[(i + buslog_index - 2) & (BUSLOG_SIZE-1)];
-   uint32_t prev  = buslog_states[(i + buslog_index - 1) & (BUSLOG_SIZE-1)];
-   uint32_t next  = buslog_states[(i + buslog_index + 1) & (BUSLOG_SIZE-1)];
-
-   bool has_follow = ((getaddr( state ) + 1) == getaddr( next ));
-   bool is_read = (state & bus_config.mask_rw) && (next & bus_config.mask_rw);
-   bool is_follow = ((getaddr( prev ) + 1) == getaddr( state ));
-   bool is_rts_stack = (getdata( prev2 ) == 0x60 );
-   if( is_read && has_follow && !is_follow && !is_rts_stack )
-   {
-      state |= 0x80000000;
-   }
-   return state;
-}
-
-
-
-void debug_raw_backtrace()
-{
-   printf( "TRACE_START %s\n", cputype_name( cputype ) );
-   for( int i = buslog_index; i < (buslog_index + BUSLOG_SIZE); ++i )
-   {
-      printf( "%08x\n", buslog_states[i & (BUSLOG_SIZE-1)] );
-   }
-   printf( "TRACE_END\n" );
-}
-
-
-void debug_backtrace_get( cputype_t *cpu, uint32_t **trace, uint32_t *entries, uint32_t *start )
-{
-   *cpu     = cputype ? cputype : CPU_6502;
-   *trace   = &buslog_states[0];
-   *entries = BUSLOG_SIZE;
-   *start   = buslog_index & (BUSLOG_SIZE)-1;
-}
-
-
-void debug_backtrace()
-{
-   check_cpu_is_halted();
-
-   printf( "historian:\n" );
-
-   disass_show( DISASS_SHOW_NOTHING );
-   disass_historian_t d = disass_historian_init( cputype ? cputype : CPU_6502,
-                                                 &buslog_states[0],
-                                                 BUSLOG_SIZE,
-                                                 buslog_index & (BUSLOG_SIZE)-1 );
-   for( int i = 0; i < BUSLOG_SIZE; ++i )
-   {
-      int index = (i+buslog_index) & (BUSLOG_SIZE-1);
-      if( !disass_historian_entry( d, index ) )
-      {
-         break;
-      }
-      printf( "%3d:%s:%s\n", BUSLOG_SIZE-i,
-              decode_trace( buslog_states[index], false, 0 ),
-              disass_historian_entry( d, index ) );
-   }
-   disass_historian_done( d );
-}
-
-
-#if 0
-void debug_memorydump()
-{
-   const uint16_t show_size = 0x100;
-   static uint16_t lastaddr = 0x0400;
-
-   check_cpu_is_halted();
-
-   for(;;)
-   {
-      printf( "%s mem ($%04X): ", cputype_name( cputype ), lastaddr );
-      int32_t addr = get_16bit_address( lastaddr );
-      printf( "\n" );
-      if( addr < 0 )
-      {
-         lastaddr -= show_size;
-         return;
-      }
-      // TODO: switch this somehow to get_memory()
-      hexdump( get_memory, addr, show_size );
-      lastaddr = addr + show_size;
-   }
-}
-#endif
-
-
-void debug_disassembler()
-{
-   static uint16_t lastaddr = 0x0400;
-   uint16_t addr = 0;
-   int count = 0;
-
-   check_cpu_is_halted();
-
-   for(;;)
-   {
-      printf( "%s disass ($%04X): ", cputype_name( cputype ), lastaddr );
-      int32_t getaddr = get_16bit_address( lastaddr );
-      printf( "\n" );
-      if( getaddr < 0 )
-      {
-         return;
-      }
-
-      addr = (uint16_t)(getaddr & 0xFFFF);
-      for( count = 0; count < 16; ++count )
-      {
-         disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
-         puts( disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ) );
-         //printf( "%s ; %d\n",
-         //   disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ),
-         //   disass_bytes( get_memory(addr) );
-         addr += disass_bytes( get_memory(addr) );
-      }
-      lastaddr = addr;
-   }
-}
-
-
-const char* debug_handler_name( queue_event_handler_t h )
-{
-   if( h == event_clear_reset )
-   {
-      return "event_clear_reset";
-   }
-   if( h == event_estimate_cpufreq )
-   {
-      return "event_estimate_cpufreq";
-   }
-   if( h == event_flash_sync )
-   {
-      return "event_flash_sync";
-   }
-   if( h == event_timer_cycle )
-   {
-      return "event_timer_cycle";
-   }
-   if( h == event_watchdog )
-   {
-      return "event_watchdog";
-   }
-}
-
-
-void debug_queue_event( const char *text )
-{
-   queue_event_t *event;
-   int i = 0;
-   printf( "%s: %016llx:%016llx\n", text, _queue_cycle_counter, _queue_next_timestamp );
-   for( event = _queue_next_event; event; event = event->next )
-   {
-      printf( "%02d:%016llx:%p:%-24s:%08x\n",
-              i++,
-              event->timestamp,
-              event->handler,
-              debug_handler_name( event->handler ),
-              event->data );
-   }
-   for( i = 0; i < 2; ++i )
-   {
-      printf( "timer%d (%s): id=%d us=%lld d=%u\n", i, i ? "NMI" : "IRQ",
-              timer_ms[i].alarm_id, timer_ms[i].delay_us,
-              (uint32_t)timer_ms[i].user_data );
-   }
-}
-
-
-const char *debug_info_clocks()
-{
-   static char buffer[90] = { 0 };
-
-   uint f_clk_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_SYS);
-   uint f_clk_peri = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_PERI);
-   uint time_hz = (double)1000000.0 / ((double)(time_per_mcc) / CLOCKS_PER_SEC / 10000);
-
-   check_cpu_is_halted();
-
-   snprintf( &buffer[0], sizeof(buffer)-1,
-             "  CLK_SYS: %3d.%03d   MHz\n"
-             " CLK_PERI: %3d.%03d   MHz\n"
-             "%9s: %3d.%06dMHz"
-             , f_clk_sys / 1000, (f_clk_sys % 1000)
-             , f_clk_peri / 1000, (f_clk_peri % 1000)
-             , cputype_name( cputype ), time_hz / 1000000, time_hz % 1000000 );
-
-   return &buffer[0];
-}
-
-
-const char *debug_info_heap()
-{
-   static char buffer[80] = { 0 };
-   extern char __StackLimit, __bss_end__;
-   struct mallinfo m = mallinfo();
-   uint32_t total_heap = &__StackLimit  - &__bss_end__;
-   uint32_t free_heap = total_heap - m.uordblks;
-
-   snprintf( &buffer[0], sizeof(buffer)-1,
-             "total heap: %6d\n"
-             "free  heap: %6d\n"
-             "allocated:  %6d"
-             , total_heap, free_heap, m.uordblks );
-
-   return &buffer[0];
-}
-
-
-const char *debug_info_sysvectors()
-{
-   static char buffer[70] = { 0 };
-
-   snprintf( &buffer[0], sizeof(buffer)-1,
-             "UVBRK:%04X UVNBI:%04X\n"
-             "UVNMI:%04X UVIRQ:%04X\n"
-             "B0NMI:%04X B0IRQ:%04X"
-             , *((uint16_t*)&ram[0xDF78])
-             , *((uint16_t*)&ram[0xDF7C])
-             , *((uint16_t*)&ram[0xDF7A])
-             , *((uint16_t*)&ram[0xDF7E])
-             , *((uint16_t*)&ram[0xFFFA])
-             , *((uint16_t*)&ram[0xFFFE]) );
-
-   return &buffer[0];
-}
-
-
-void debug_internal_drive()
-{
-   dhara_flash_info_t dhara_info;
-   uint8_t dhara_buffer[SECTOR_SIZE];
-   uint16_t dhara_sector = 0;
-
-   check_cpu_is_halted();
-
-   dhara_flash_info( dhara_sector, &dhara_buffer[0], &dhara_info );
-   uint64_t hw_size  = dhara_info.erase_cells * dhara_info.erase_size;
-   uint64_t lba_size = dhara_info.sectors * dhara_info.sector_size;
-   printf("\n");
-   printf("dhara hw sector size:  %08x (%d)\n", dhara_info.erase_size, dhara_info.erase_size );
-   printf("dhara hw num sectors:  %08x (%d)\n", dhara_info.erase_cells, dhara_info.erase_cells );
-   printf("dhara hw size:         %.2fMB\n", (float)hw_size / (1024*1024) );
-   printf("dhara page size:       %08x (%d)\n", dhara_info.page_size, dhara_info.page_size );
-   printf("dhara pages:           %08x (%d)\n", dhara_info.pages, dhara_info.pages );
-   printf("dhara lba sector size: %08x (%d)\n", dhara_info.sector_size, dhara_info.sector_size );
-   printf("dhara lba num sectors: %08x (%d)\n", dhara_info.sectors, dhara_info.sectors );
-   printf("dhara lba size:        %.2fMB\n", (float)lba_size / (1024*1024) );
-   printf("dhara gc ratio         %08x (%d)\n", dhara_info.gc_ratio, dhara_info.gc_ratio );
-   printf("dhara read status:     %d\n", dhara_info.read_status );
-   printf("dhara read error:      %s\n", dhara_strerror( dhara_info.read_errcode ) );
-#if 0
-   printf("dhara read sector $%04x:\n", dhara_sector );
-
-   hexdump_buffer( dhara_buffer, SECTOR_SIZE );
-#else
-   uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
-   uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
-   printf("dhara last used sector: $%04x\n", *lba );
-   hexdump( get_memory, (*mem)-0x80, SECTOR_SIZE );
-#endif
-}
-
-
 static inline void handle_io()
 {
    static union {
@@ -982,6 +702,182 @@ static inline void handle_io()
       }
    }
 }
+
+
+/******************************************************************************
+ * debug functions
+ ******************************************************************************/
+static const char* debug_handler_name( queue_event_handler_t h )
+{
+   if( h == event_clear_reset )
+   {
+      return "event_clear_reset";
+   }
+   if( h == event_estimate_cpufreq )
+   {
+      return "event_estimate_cpufreq";
+   }
+   if( h == event_flash_sync )
+   {
+      return "event_flash_sync";
+   }
+   if( h == event_timer_cycle )
+   {
+      return "event_timer_cycle";
+   }
+   if( h == event_watchdog )
+   {
+      return "event_watchdog";
+   }
+   return "(unknown?)";
+}
+
+
+static void debug_info_eventqueue( char *buffer, size_t size )
+{
+   int printed;
+   queue_event_t *event;
+   int i = 0;
+   const char *timer_names[2] = { "NMI", "IRQ" };
+
+   printed = snprintf( buffer, size,
+                       "cycle counter:   %016llx\n"
+                       "next timerstamp: %016llx\n"
+                       , _queue_cycle_counter
+                       , _queue_next_timestamp
+                     );
+   buffer += printed;
+   size   -= printed;
+
+   for( i = 0; i < count_of(timer_names); ++i )
+   {
+      printed = snprintf( buffer, size,
+                          "timer%d (%s):    id=%d us=%lld d=%u\n"
+                          , i, timer_names[i]
+                          , timer_ms[i].alarm_id, timer_ms[i].delay_us
+                          , (uint32_t)timer_ms[i].user_data
+                        );
+      buffer += printed;
+      size   -= printed;
+      if( size <= 0 )
+      {
+         /* buffer is full */
+         return;
+      }
+   }
+
+   i = 0;
+   for( event = _queue_next_event; event; event = event->next )
+   {
+      printed = snprintf( buffer, size,
+                          "event %02d: %016llx:%p:%-24s:%08x"
+                          , i++
+                          , event->timestamp
+                          , event->handler
+                          , debug_handler_name( event->handler )
+                          , event->data
+                        );
+      buffer += printed;
+      size   -= printed;
+      if( size <= 0 )
+      {
+         /* buffer is full */
+         return;
+      }
+   }
+}
+
+
+static void debug_info_clocks( char *buffer, size_t size )
+{
+   uint f_clk_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_SYS);
+   uint f_clk_peri = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_PERI);
+   uint time_hz = (double)1000000.0 / ((double)(time_per_mcc) / CLOCKS_PER_SEC / 10000);
+
+   check_cpu_is_halted();
+
+   snprintf( buffer, size,
+             "  CLK_SYS: %3d.%03d   MHz\n"
+             " CLK_PERI: %3d.%03d   MHz\n"
+             "%9s: %3d.%06dMHz"
+             , f_clk_sys / 1000, (f_clk_sys % 1000)
+             , f_clk_peri / 1000, (f_clk_peri % 1000)
+             , cputype_name( cputype ), time_hz / 1000000, time_hz % 1000000 );
+}
+
+
+static void debug_info_heap( char *buffer, size_t size )
+{
+   extern char __StackLimit, __bss_end__;
+   struct mallinfo m = mallinfo();
+   uint32_t total_heap = &__StackLimit  - &__bss_end__;
+   uint32_t free_heap = total_heap - m.uordblks;
+
+   snprintf( buffer, size,
+             "total heap: %6d\n"
+             "free  heap: %6d\n"
+             "allocated:  %6d"
+             , total_heap, free_heap, m.uordblks );
+}
+
+
+const void debug_info_sysvectors( char *buffer, size_t size )
+{
+   snprintf( buffer, size,
+             "UVBRK:%04X UVNBI:%04X\n"
+             "UVNMI:%04X UVIRQ:%04X\n"
+             "B0NMI:%04X B0IRQ:%04X"
+             , *((uint16_t*)&ram[0xDF78])
+             , *((uint16_t*)&ram[0xDF7C])
+             , *((uint16_t*)&ram[0xDF7A])
+             , *((uint16_t*)&ram[0xDF7E])
+             , *((uint16_t*)&ram[0xFFFA])
+             , *((uint16_t*)&ram[0xFFFE]) );
+}
+
+
+static void debug_info_internaldrive( char *buffer, size_t size )
+{
+   dhara_flash_info_t dhara_info;
+   uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
+   uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
+
+   check_cpu_is_halted();
+
+   dhara_flash_info( &dhara_info );
+   uint64_t hw_size  = dhara_info.erase_cells * dhara_info.erase_size;
+   uint64_t lba_size = dhara_info.sectors * dhara_info.sector_size;
+
+   snprintf( buffer, size,
+      /*01*/ "hw sector size:  %08x (%d)\n"
+      /*02*/ "hw num sectors:  %08x (%d)\n"
+      /*03*/ "hw size:         %.2fMB\n"
+      /*04*/ "page size:       %08x (%d)\n"
+      /*05*/ "pages:           %08x (%d)\n"
+      /*06*/ "lba sector size: %08x (%d)\n"
+      /*07*/ "lba num sectors: %08x (%d)\n"
+      /*08*/ "lba size:        %.2fMB\n"
+      /*09*/ "gc ratio         %08x (%d)\n"
+      /*10*/ "read status:     %d\n"
+      /*11*/ "read error:      %s\n"
+      /*12*/ "ID_LBA ($DF70):  %04x (sector used for next transfer)\n"
+      /*13*/ "ID_MEM ($DF80):  %04x (memory used for next transfer)\n"
+      /*01*/ , dhara_info.erase_size, dhara_info.erase_size
+      /*02*/ , dhara_info.erase_cells, dhara_info.erase_cells
+      /*03*/ , (float)hw_size / (1024*1024)
+      /*04*/ , dhara_info.page_size, dhara_info.page_size
+      /*05*/ , dhara_info.pages, dhara_info.pages
+      /*06*/ , dhara_info.sector_size, dhara_info.sector_size
+      /*07*/ , dhara_info.sectors, dhara_info.sectors
+      /*08*/ , (float)lba_size / (1024*1024)
+      /*09*/ , dhara_info.gc_ratio, dhara_info.gc_ratio
+      /*10*/ , dhara_info.read_status
+      /*11*/ , dhara_strerror( dhara_info.read_errcode )
+      /*12*/ , *lba
+      /*13*/ , *mem
+   );
+}
+
 
 /******************************************************************************
  * public functions
@@ -1133,4 +1029,86 @@ void debug_poke( uint8_t bank, uint16_t addr, uint8_t value )
    {
       ram[addr] = value;
    }
+}
+
+
+const char *debug_get_info( debug_info_t page )
+{
+   static char buffer[1024] = { 0 };
+
+   buffer[0] = '\0';
+   switch( page )
+   {
+      case DEBUG_INFO_HEAP:
+         debug_info_heap( &buffer[0], sizeof(buffer)-1 );
+         break;
+      case DEBUG_INFO_CLOCKS:
+         debug_info_clocks( &buffer[0], sizeof(buffer)-1 );
+         break;
+      case DEBUG_INFO_SYSVECTORS:
+         debug_info_sysvectors( &buffer[0], sizeof(buffer)-1 );
+         break;
+      case DEBUG_INFO_INTERNALDRIVE:
+         debug_info_internaldrive( &buffer[0], sizeof(buffer)-1 );
+         break;
+      case DEBUG_INFO_EVENTQUEUE:
+         debug_info_eventqueue( &buffer[0], sizeof(buffer)-1 );
+         break;
+      default:
+         break;
+   }
+   return &buffer[0];
+}
+
+
+void debug_disassembler()
+{
+   static uint16_t lastaddr = 0x0400;
+   uint16_t addr = 0;
+   int count = 0;
+
+   check_cpu_is_halted();
+
+   for(;;)
+   {
+      printf( "%s disass ($%04X): ", cputype_name( cputype ), lastaddr );
+      int32_t getaddr = get_16bit_address( lastaddr );
+      printf( "\n" );
+      if( getaddr < 0 )
+      {
+         return;
+      }
+
+      addr = (uint16_t)(getaddr & 0xFFFF);
+      for( count = 0; count < 16; ++count )
+      {
+         disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
+         puts( disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ) );
+         //printf( "%s ; %d\n",
+         //   disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ),
+         //   disass_bytes( get_memory(addr) );
+         addr += disass_bytes( get_memory(addr) );
+      }
+      lastaddr = addr;
+   }
+}
+
+
+void debug_raw_backtrace()
+{
+   printf( "TRACE_START %s\n", cputype_name( cputype ) );
+   for( int i = buslog_index; i < (buslog_index + BUSLOG_SIZE); ++i )
+   {
+      printf( "%08x\n", buslog_states[i & (BUSLOG_SIZE-1)] );
+   }
+   printf( "TRACE_END\n" );
+}
+
+
+void debug_get_backtrace( cputype_t *cpu, uint32_t **trace, uint32_t *entries, uint32_t *start )
+{
+   *cpu     = cputype ? cputype : CPU_6502;
+   *trace   = &buslog_states[0];
+   *entries = BUSLOG_SIZE;
+   *start   = buslog_index & (BUSLOG_SIZE)-1;
 }

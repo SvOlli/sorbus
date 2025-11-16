@@ -232,9 +232,10 @@ void hexedit( hexedit_t *config )
    attrset( B_RED | F_WHITE );
 
    move ( LINES-1, 0 );
-   addstr( "Hex Editor" );
+   addstr( "Hex Editor  (Ctrl+C to leave)" );
+   //       0123456789012345678901234567890
    // col needs to start with number of chars in above
-   for( col = 10; col < (FIRST_ASCII_COL + BYTES_PER_ROW); ++col )
+   for( col = 29; col < (FIRST_ASCII_COL + BYTES_PER_ROW); ++col )
    {
       addch( ' ' );
    }
