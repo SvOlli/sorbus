@@ -206,7 +206,7 @@ static void disass_historian_assumptions( disass_historian_t d )
    int i, n;
    /* step 2: run some assumptions */
 
-   for( i = 5; i < d->entries; ++i )
+   for( i = BOUNDSBUFFER; i < (d->entries + BOUNDSBUFFER); ++i )
    {
       uint32_t addr5 = fullinfo[i-5].address;
       uint32_t addr4 = fullinfo[i-4].address;
@@ -636,6 +636,10 @@ static void disass_historian_assumptions( disass_historian_t d )
          }
       }
       
+   }
+
+   for( i = BOUNDSBUFFER; i < (d->entries + BOUNDSBUFFER); ++i )
+   {
       if( fullinfo[i].eval < 0 )
       {
          fullinfo[i].eval = 0;
