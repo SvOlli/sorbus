@@ -32,9 +32,8 @@ static void printline( const char *line, int len )
 static void printlines( const lineview_t *config, int len )
 {
    uint16_t l;
-   int32_t  lines  = (LAST_LINE - FIRST_LINE);
 
-   for( l = 0; l < lines; ++l )
+   for( l = 0; l < (LAST_LINE - FIRST_LINE); ++l )
    {
       move( l+FIRST_LINE, 0 );
       printline( config->data( config->d, l ), len );
@@ -44,8 +43,10 @@ static void printlines( const lineview_t *config, int len )
 
 void lineview( lineview_t *config )
 {
+   uint16_t       line, column;
    uint8_t        ch    = 0;
    const int32_t  page  = (LAST_LINE - FIRST_LINE) / 2;
+   int32_t        step;
 
    clear();
    setscrreg( FIRST_LINE, LAST_LINE-1 );
@@ -61,59 +62,72 @@ void lineview( lineview_t *config )
 
    do
    {
-      move( LINES-1, COLS-1 );
+      line = LINES-1;
+      column = COLS-1;
+      if( config->cpos )
+      {
+         config->cpos( config->d, &line, &column );
+      }
+      move( line, column );
       ch = getch();
 
       if( config->keypress )
       {
          if( config->keypress( config->d, &ch ) )
          {
-            printlines( config, COLS );
+            printlines( config, COLS-1 );
          }
       }
+
+#if 0
+      {
+         char hex[3] = { 0 };
+         move( LINES-1, COLS-3 );
+         snprintf( hex, 3, "%02x", ch );
+         addstr( hex );
+      }
+#endif
+      step = 0;
       switch( ch )
       {
          case KEY_UP:
-            if( config->move( config->d, -1 ) )
-            {
-               move( FIRST_LINE, 0 );
-               insertln();
-               printline( config->data( config->d, 0 ), COLS-1 );
-            }
+            step = -1;
             break;
          case KEY_DOWN:
-            if( config->move( config->d, +1 ) )
-            {
-               move( LAST_LINE-1, 0 );
-               scroll();
-               printline( config->data( config->d, LAST_LINE-FIRST_LINE-1 ), COLS-1 );
-            }
+            step = +1;
             break;
          case KEY_PPAGE:
-            if( config->move( config->d, -page ) )
-            {
-               printlines( config, COLS );
-            }
+            step = -page;
             break;
          case KEY_NPAGE:
-            if( config->move( config->d, +page ) )
-            {
-               printlines( config, COLS );
-            }
+            step = +page;
             break;
          case KEY_HOME:
-            if( config->move( config->d, LINEVIEW_FIRSTLINE ) )
-            {
-               printlines( config, COLS );
-            }
+            step = LINEVIEW_FIRSTLINE;
             break;
          case KEY_END:
-            if( config->move( config->d, LINEVIEW_LASTLINE ) )
-            {
-               printlines( config, COLS );
-            }
+            step = LINEVIEW_LASTLINE;
             break;
          default:
+            break;
+      }
+      step = config->move( config->d, step );
+      switch( step )
+      {
+         case 0:
+            break;
+         case -1:
+            move( FIRST_LINE, 0 );
+            insertln();
+            printline( config->data( config->d, 0 ), COLS-1 );
+            break;
+         case +1:
+            move( LAST_LINE-1, 0 );
+            scroll();
+            printline( config->data( config->d, LAST_LINE-FIRST_LINE-1 ), COLS-1 );
+            break;
+         default:
+            printlines( config, COLS-1 );
             break;
       }
    }

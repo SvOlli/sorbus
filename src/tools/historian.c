@@ -137,6 +137,7 @@ void help( const char *progname, int retval )
 void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
 {
    struct termios oldt, newt;
+   uint32_t count;
 
    tcgetattr( STDIN_FILENO, &oldt );
    newt = oldt;
@@ -145,7 +146,15 @@ void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
 
    screen_save();
    initscr();
-   mcurses_historian( cpu, trace, entries, start );
+   for( count = 0; count < entries; ++count )
+   {
+      if( ! *(trace + count) )
+      {
+         /* empty entry -> end of input */
+         break;
+      }
+   }
+   mcurses_historian( cpu, trace, count, start );
    endwin();
    screen_restore();
 

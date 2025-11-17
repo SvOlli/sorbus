@@ -301,7 +301,6 @@ const char *disass_trace( fullinfo_t fullinfo );
 
 /* for debugging purposes only */
 uint8_t disass_bytes( uint8_t opcode );
-int disass_debug_info( uint32_t id );
 
 /* get minimum clockcycles used by an opcode */
 uint8_t disass_basecycles( uint8_t p0 );
@@ -337,25 +336,5 @@ void disass_historian_done( disass_historian_t d );
 
 /*  */
 const char *disass_historian_entry( disass_historian_t d, uint32_t entry );
-
-
-#if 0
-/* basic idea is to have two different algorithmic disassemblers
- * historian looks at a decides on a tracelog what was executed
- * clairvoyant look at memory and guesses what will be executed and what
- * the next instruction will be */
-
-/* callback function for clairvoyant to get memory data */
-/* address is typically uint16_t, but can be 24 bit when 65816 is used */
-/* note: peek function MUST NOT trigger any events */
-typedef uint8_t(*disass_peek_t)(uint16_t);
-
-/* tries to guess if a new instruction is executed */
-/* needs to be fed every cycle of bus activity */
-/* on 65816, disass_mx816() needs to be run beforehand (not implemented) */
-bool clairvoyant( uint32_t address, uint32_t flags, disass_peek_t peek );
-
-
-#endif
 
 #endif

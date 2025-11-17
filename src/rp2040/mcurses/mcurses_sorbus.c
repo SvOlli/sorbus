@@ -369,7 +369,6 @@ void screen_textbox( uint16_t line, uint16_t column,
                      const char *text )
 {
    uint16_t rows, width, row = 1;
-   const char *c;
 
    screen_textsize( &rows, &width, text );
 

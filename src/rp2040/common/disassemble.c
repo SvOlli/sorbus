@@ -224,18 +224,6 @@ uint8_t trace_data( uint32_t trace )
 }
 
 
-int disass_debug_info( uint32_t id )
-{
-   switch(id)
-   {
-      case 0:
-         return (int)ADDRMODE_END;
-      default:
-         return 0;
-   }
-}
-
-
 void disass_set_cpu( cputype_t cpu )
 {
    cputype = cpu;
@@ -269,7 +257,8 @@ cputype_t disass_get_cpu()
 }
 
 
-uint8_t disass_bytes( uint8_t p0 )
+#if 0
+uint8_t disass_bytes_by_addrmode( uint8_t p0 )
 {
    uint8_t retval = 0;
 
@@ -324,6 +313,7 @@ uint8_t disass_bytes( uint8_t p0 )
    }
    return retval;
 }
+#endif
 
 
 uint32_t disass_opcode( uint8_t oc )
@@ -332,7 +322,7 @@ uint32_t disass_opcode( uint8_t oc )
 }
 
 
-uint8_t disass_bytes2( uint8_t p0 )
+uint8_t disass_bytes( uint8_t p0 )
 {
    if( !disass_opcodes )
    {

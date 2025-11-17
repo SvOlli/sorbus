@@ -530,6 +530,23 @@ uint8_t getch()
       {
          return KEY_ESCAPE;
       }
+      else if (ch == 'O')
+      {
+         /* hack for alternative keystrokes */
+         while ((ch = mcurses_phyio_getc ()) == ERR)
+         {
+            ;
+         }
+         switch( ch )
+         {
+            case 'F':
+               return KEY_END;
+            case 'H':
+               return KEY_HOME;
+            default:
+               return ERR;
+         }
+      }
       else if (ch == '[')
       {
          for (idx = 0; idx < 3; idx++)

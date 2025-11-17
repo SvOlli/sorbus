@@ -124,7 +124,6 @@ target_compile_definitions(sound_mod_player PUBLIC -DSTANDALONE_PLAYER)
 target_include_directories(sound_mod_player PUBLIC
    ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/i2s
    ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/xmodem
-
 )
 
 

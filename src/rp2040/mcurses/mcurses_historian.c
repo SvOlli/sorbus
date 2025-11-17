@@ -7,10 +7,8 @@
 #include "mcurses.h"
 #include "../common/disassemble.h"
 
-#include <stdio.h>
 
-
-static struct mc_historian {
+struct mc_historian {
    disass_historian_t historian;
    uint32_t entries;
    uint32_t current;
@@ -50,32 +48,36 @@ static int32_t mcurses_historian_move( void *d, int32_t movelines )
 const char* mcurses_historian_data( void *d, int32_t offset )
 {
    struct mc_historian *mch = (struct mc_historian *)d;
+   disass_historian_t   dah = (disass_historian_t)(mch->historian);
 
    switch( offset )
    {
       case LINEVIEW_FIRSTLINE:
          return "cycle:addr r da flg:C:disassembly";
       case LINEVIEW_LASTLINE:
-         return "Backtrace Viewer  (Ctrl+C to leave)";
+         return "  Backtrace Viewer  (Ctrl+C to leave)";
+      default:
+         break;
    }
 
-   return disass_historian_entry( mch->historian, mch->current + offset );
+   return disass_historian_entry( dah, mch->current + offset );
 }
 
 
 void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
 {
-   lineview_t config;
-   struct mc_historian mch;
+   lineview_t config       = { 0 };
+   struct mc_historian mch = { 0 };
 
    mch.historian     = disass_historian_init( cpu, trace, entries, start );
    mch.entries       = entries;
    mch.current       = entries - (screen_get_lines() - 2);
    mch.datalines     = screen_get_lines()-2;
 
-   config.keypress   = 0;
-   config.move       = mcurses_historian_move;
    config.data       = mcurses_historian_data;
+   config.move       = mcurses_historian_move;
+   config.cpos       = 0;
+   config.keypress   = 0;
    config.d          = (void*)(&mch);
    config.attributes = F_WHITE | B_YELLOW;
 
