@@ -46,5 +46,10 @@ const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank );
 /* Read a 4-digt address from console and check if it is below "lastaddr" */
 int32_t get_16bit_address( uint16_t lastaddr );
 
+/* on RP2040 does two things:
+ * check if current free memory is below recoded minimum
+ * return recorded minimum of free memory
+ * on host should return 0 */
+uint32_t mf_checkheap();
 
 #endif

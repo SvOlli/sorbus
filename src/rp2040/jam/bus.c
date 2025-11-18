@@ -814,10 +814,10 @@ static void debug_info_heap( char *buffer, size_t size )
    uint32_t free_heap = total_heap - m.uordblks;
 
    snprintf( buffer, size,
-             "total heap: %6d\n"
-             "free  heap: %6d\n"
-             "allocated:  %6d"
-             , total_heap, free_heap, m.uordblks );
+             "heap total: %6d\n"
+             "      free: %6d\n"
+             "   minimum: %6d"
+             , total_heap, free_heap, mf_checkheap() );
 }
 
 

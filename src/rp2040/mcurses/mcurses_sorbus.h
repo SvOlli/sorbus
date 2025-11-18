@@ -90,7 +90,7 @@ typedef uint8_t(*daview_handler_bank_t)();
 typedef uint8_t(*daview_handler_peek_t)(uint8_t,uint16_t);
 typedef struct {
    /* callback functions */
-   daview_handler_bank_t   nextbank;
+   daview_handler_bank_t   banks;
    daview_handler_peek_t   peek;
    /* initial/return values */
    cputype_t               cpu;

@@ -45,7 +45,7 @@ void lineview( lineview_t *config )
 {
    uint16_t       line, column;
    uint8_t        ch    = 0;
-   const int32_t  page  = (LAST_LINE - FIRST_LINE) / 2;
+   const int32_t  page  = LAST_LINE - FIRST_LINE - 1;
    int32_t        step;
 
    clear();

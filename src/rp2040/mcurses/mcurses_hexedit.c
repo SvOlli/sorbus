@@ -229,7 +229,7 @@ void hexedit( hexedit_t *config )
    clear();
    setscrreg( FIRST_LINE, LAST_LINE-1 );
 
-   attrset( B_RED | F_WHITE );
+   attrset( F_WHITE | B_RED );
 
    move ( LINES-1, 0 );
    addstr( "  Hex Editor  (Ctrl+C to leave)" );
@@ -350,7 +350,10 @@ void hexedit( hexedit_t *config )
          case 0x07: /* Ctrl+G: enter address */
          {
             move( 0, 0 );
-            (void)screen_get4hex( &address );
+            if( screen_get4hex( &address ) )
+            {
+               topleft = address;
+            }
             redraw = true;
             break;
          }

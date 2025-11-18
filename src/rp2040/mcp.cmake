@@ -14,6 +14,7 @@ add_executable(mcp
    common/disassemble_historian.c
    common/generic_helper.c
    common/getaline.c
+   common/mf_checkheap.c
    mcp/main.c
    )
 target_link_libraries(mcp
