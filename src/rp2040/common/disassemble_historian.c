@@ -29,6 +29,13 @@ struct disass_historian_s
    fullinfo_t  *fullinfo;
 };
 
+#define EVAL_MIN (0)
+#define EVAL_MAX (7)
+
+#define deceval(x) if(x > EVAL_MIN) { --x; }
+#define inceval(x) if(x < EVAL_MAX) { ++x; }
+
+
 static uint16_t getcycles( disass_historian_t d, int index )
 {
    fullinfo_t *fullinfo = d->fullinfo;
@@ -232,9 +239,9 @@ static void disass_historian_assumptions( disass_historian_t d )
          {
             for( n = 1; n <= 5; ++n )
             {
-               fullinfo[i-n].eval = 0;
+               fullinfo[i-n].eval = EVAL_MIN;
             }
-            fullinfo[i].eval = 9;
+            fullinfo[i].eval = EVAL_MAX;
          }
 
          if( data == 0x23 )
@@ -258,19 +265,18 @@ static void disass_historian_assumptions( disass_historian_t d )
                 (fullinfo[i+bc].address == target)
                )
             {
-               fullinfo[i].eval = 9;
+               fullinfo[i].eval = EVAL_MAX;
                for( n = 1; n < bc; ++n )
                {
-                  fullinfo[i+n].eval = 0;
+                  fullinfo[i+n].eval = EVAL_MIN;
                }
-               fullinfo[i+bc].eval = 9;
+               fullinfo[i+bc].eval = EVAL_MAX;
             }
          }
       }
 
       if( cpu == CPU_65816 )
       {
-#if 0
          vector = fullinfo[i-2].data | (fullinfo[i-1].data << 8);
          if( vector >= 0xFFF0 )
          {
@@ -284,18 +290,18 @@ static void disass_historian_assumptions( disass_historian_t d )
                /* a false positive could be a JMP ($FFFx) stored in stack page */
                for( n = 1; n <= 6; ++n )
                {
-                  fullinfo[i-n].eval = 0;
+                  fullinfo[i-n].eval = EVAL_MIN;
                }
-               fullinfo[i].eval = 9; // executing first instruction
+               fullinfo[i].eval = EVAL_MAX; // executing first instruction
             }
          }
          else if( vector >= 0xFFE0 )
          {
             /* native mode vector table (16-bit mode) */
-            uint32_t addr6 = trace_address( trace[re(index-6)] );
+            uint32_t addr6 = fullinfo[i-6].address;
                 /* check if four byte get written to the stack */
-            if( !fullinfo[i-6].rw && !fullinfo[i-5].rw
-                !fullinfo[i-4].rw && !fullinfo[i-3].rw
+            if( !fullinfo[i-6].rw && !fullinfo[i-5].rw &&
+                !fullinfo[i-4].rw && !fullinfo[i-3].rw &&
                 (addr6 == (addr5+1)) &&
                 (addr5 == (addr4+1)) &&
                 (addr4 == (addr3+1)) &&
@@ -303,7 +309,7 @@ static void disass_historian_assumptions( disass_historian_t d )
             {
                for( n = 1; n <= 6; ++n )
                {
-                  fullinfo[i-n].eval = 0;
+                  fullinfo[i-n].eval = EVAL_MIN;
                }
             }
          }
@@ -321,28 +327,25 @@ static void disass_historian_assumptions( disass_historian_t d )
              * 7: read target high
              */
             int bc = 8;
-            vector = trace_data( trace[re(index+1)] ) |
-                    (trace_data( trace[re(index+4)] << 8);
-            target = trace_data( trace[re(index+5)] ) |
-                    (trace_data( trace[re(index+6)] << 8);
-            if( (trace_address( trace[re(index+1)] ) == addr+1) &&
-                (trace_address( trace[re(index+4)] ) == addr+2) &&
-                trace_is_write( trace[re(index+2)] ) &&
-                trace_is_write( trace[re(index+3)] ) &&
-                (trace_address( trace[re(index+3)] ) == trace_address( trace[re(index+4)] )) &&
-                (trace_address( trace[re(index+7)] ) == vector) &&
-                (trace_address( trace[re(index+bc)] ) == target)
+            vector = fullinfo[i+1].data | (fullinfo[i+4].data << 8);
+            target = fullinfo[i+5].data | (fullinfo[i+6].data << 8);
+            if( (fullinfo[i+1].address == addr+1) &&
+                (fullinfo[i+4].address == addr+2) &&
+                !fullinfo[i+2].rw &&
+                !fullinfo[i+3].rw &&
+                (fullinfo[i+4].address == fullinfo[i+5].address) &&
+                (fullinfo[i+7].address == vector) &&
+                (fullinfo[i+bc].address == target)
                )
             {
-               eval[re(index)] = 9;
+               fullinfo[i].eval = EVAL_MAX;
                for( n = 1; n < bc; ++n )
                {
-                  eval[re(index+n)] = 0;
+                  fullinfo[i+n].eval = EVAL_MIN;
                }
-               eval[re(index+bc)] = 9;
+               fullinfo[i+bc].eval = EVAL_MAX;
             }
          }
-#endif
       }
 
       /* check for reset on all
@@ -358,9 +361,9 @@ static void disass_historian_assumptions( disass_historian_t d )
          /* a false positive could be a JMP ($FFFx) stored in stack page */
          for( n = 1; n <= 5; ++n )
          {
-            fullinfo[i-n].eval = 0;
+            fullinfo[i-n].eval = EVAL_MIN;
          }
-         fullinfo[i].eval = 9; // executing first instruction
+         fullinfo[i].eval = EVAL_MAX; // executing first instruction
       }
 
       if( fullinfo[i].eval > 0 )
@@ -383,12 +386,12 @@ static void disass_historian_assumptions( disass_historian_t d )
                 (fullinfo[i+bc  ].address == target)
                )
             {
-               fullinfo[i].eval = 9;
+               fullinfo[i].eval = EVAL_MAX;
                for( n = 1; n < bc; ++n )
                {
-                  fullinfo[i+n].eval = 0;
+                  fullinfo[i+n].eval = EVAL_MIN;
                }
-               fullinfo[i+bc].eval = 9;
+               fullinfo[i+bc].eval = EVAL_MAX;
             }
          }
          else if( data == 0x40 )
@@ -409,12 +412,12 @@ static void disass_historian_assumptions( disass_historian_t d )
                 (fullinfo[i+bc-2].address == (fullinfo[i+bc-1].address - 1)) &&
                 (fullinfo[i+bc  ].address == target) )
             {
-               fullinfo[i].eval = 9;
+               fullinfo[i].eval = EVAL_MAX;
                for( n = 1; n < bc; ++n )
                {
-                  fullinfo[i+n].eval = 0;
+                  fullinfo[i+n].eval = EVAL_MIN;
                }
-               fullinfo[i+bc].eval = 9;
+               fullinfo[i+bc].eval = EVAL_MAX;
             }
          }
          else if( data == 0x4c )
@@ -430,12 +433,12 @@ static void disass_historian_assumptions( disass_historian_t d )
                 ( fullinfo[i+ 2].address == addr+2 ) &&
                 ( fullinfo[i+bc].address == target ) )
             {
-               fullinfo[i].eval = 9;
+               fullinfo[i].eval = EVAL_MAX;
                for( n = 1; n < bc; ++n )
                {
-                  fullinfo[i+n].eval = 0;
+                  fullinfo[i+n].eval = EVAL_MIN;
                }
-               fullinfo[i+bc].eval = 9;
+               fullinfo[i+bc].eval = EVAL_MAX;
             }
          }
          else if( data == 0x60 )
@@ -459,12 +462,12 @@ static void disass_historian_assumptions( disass_historian_t d )
                    (fullinfo[i+bc].address == target+1 )
                   )
                {
-                  fullinfo[i].eval = 9;
+                  fullinfo[i].eval = EVAL_MAX;
                   for( n = 1; n < bc; ++n )
                   {
-                     fullinfo[i+n].eval = 0;
+                     fullinfo[i+n].eval = EVAL_MIN;
                   }
-                  fullinfo[i+bc].eval = 9;
+                  fullinfo[i+bc].eval = EVAL_MAX;
                }
             }
             else if( bc == 4 )
@@ -480,12 +483,12 @@ static void disass_historian_assumptions( disass_historian_t d )
                    (fullinfo[i+ 2].address == (fullinfo[i+3].address - 1) ) &&
                    (fullinfo[i+bc].address == target+1 ) )
                {
-                  fullinfo[i].eval = 9;
+                  fullinfo[i].eval = EVAL_MAX;
                   for( n = 1; n < bc; ++n )
                   {
-                     fullinfo[i+n].eval = 0;
+                     fullinfo[i+n].eval = EVAL_MIN;
                   }
-                  fullinfo[i+bc].eval = 9;
+                  fullinfo[i+bc].eval = EVAL_MAX;
                }
             }
          }
@@ -515,12 +518,12 @@ static void disass_historian_assumptions( disass_historian_t d )
                 ( fullinfo[i+bc  ].address == target )
                )
             {
-               fullinfo[i].eval = 9;
+               fullinfo[i].eval = EVAL_MAX;
                for( n = 1; n < bc; ++n )
                {
-                  fullinfo[i+n].eval = 0;
+                  fullinfo[i+n].eval = EVAL_MIN;
                }
-               fullinfo[i+bc].eval = 9;
+               fullinfo[i+bc].eval = EVAL_MAX;
             }
          }
          else if( data == 0x7c )
@@ -543,12 +546,12 @@ static void disass_historian_assumptions( disass_historian_t d )
                 ( fullinfo[i+bc  ].address == target )
                )
             {
-               fullinfo[i].eval = 9;
+               fullinfo[i].eval = EVAL_MAX;
                for( n = 1; n < bc; ++n )
                {
-                  fullinfo[i+n].eval = 0;
+                  fullinfo[i+n].eval = EVAL_MIN;
                }
-               fullinfo[i+bc].eval = 9;
+               fullinfo[i+bc].eval = EVAL_MAX;
             }
          }
 
@@ -557,15 +560,15 @@ static void disass_historian_assumptions( disass_historian_t d )
          if( (addr1 == addr) &&
              ((cpu == CPU_6502) || (cpu == CPU_6502RA)) )
          {
-            fullinfo[i-1].eval = 0; // dummy read
-            ++(fullinfo[i].eval);
+            fullinfo[i-1].eval = EVAL_MIN; // dummy read
+            inceval(fullinfo[i].eval);
             if( cpu != CPU_65CE02 )
             {
                // every CPU except for 65CE02 does a read after opcode fetch
                if( (fullinfo[i].eval > 2 ) &&
                    (fullinfo[i+1].address == (addr+1)) )
                {
-                  fullinfo[i+1].eval = 0;
+                  fullinfo[i+1].eval = EVAL_MIN;
                }
             }
          }
@@ -575,25 +578,25 @@ static void disass_historian_assumptions( disass_historian_t d )
       /* memory access */
       if( addr3+1 == addr ) /* LDA $1234,X */
       {
-         --(fullinfo[i-2].eval); // dummy read
-         --(fullinfo[i-1].eval); // read/write memory
-         ++(fullinfo[i  ].eval);
+         deceval(fullinfo[i-2].eval); // dummy read
+         deceval(fullinfo[i-1].eval); // read/write memory
+         inceval(fullinfo[i  ].eval);
       }
       else if( addr2+1 == addr ) /* LDA $1234 */
       {
-         --(fullinfo[i-1].eval); // read/write memory
-         ++(fullinfo[i  ].eval);
+         deceval(fullinfo[i-1].eval); // read/write memory
+         inceval(fullinfo[i  ].eval);
       }
 
       /* follow sure tracks */
-      if( fullinfo[i].eval >= 9 )
+      if( fullinfo[i].eval >= EVAL_MAX )
       {
          int ni = getcycles( d, i );
          if( ni > 0 )
          {
             for( n = 1; n < ni; ++n )
             {
-               fullinfo[i+n].eval = 0;
+               fullinfo[i+n].eval = EVAL_MIN;
             }
          }
       }
@@ -603,17 +606,17 @@ static void disass_historian_assumptions( disass_historian_t d )
          /* after a write it's more likely an opcode fetch */
          if( fullinfo[i+1].eval > 0 )
          {
-            ++(fullinfo[i+1].eval);
+            inceval(fullinfo[i+1].eval);
          }
 
          /* a read before a write at the same address can't be an opcode */
          if( fullinfo[i-1].address == fullinfo[i].address )
          {
-            fullinfo[i-1].eval = 0;
+            fullinfo[i-1].eval = EVAL_MIN;
          }
 
          /* writes can never be opcodes */
-         fullinfo[i].eval = 0;
+         fullinfo[i].eval = EVAL_MIN;
       }
 
       if( fullinfo[i].eval > 3 )
@@ -631,22 +634,9 @@ static void disass_historian_assumptions( disass_historian_t d )
          {
             for( n = 1; n < ni; ++n )
             {
-               --(fullinfo[i+n].eval);
+               deceval(fullinfo[i+n].eval);
             }
          }
-      }
-      
-   }
-
-   for( i = BOUNDSBUFFER; i < (d->entries + BOUNDSBUFFER); ++i )
-   {
-      if( fullinfo[i].eval < 0 )
-      {
-         fullinfo[i].eval = 0;
-      }
-      if( fullinfo[i].eval > 9 )
-      {
-         fullinfo[i].eval = 9;
       }
    }
 }

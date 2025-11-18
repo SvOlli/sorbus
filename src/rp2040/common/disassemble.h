@@ -250,7 +250,7 @@ typedef union
       uint8_t           data3    : 8;
       union {
          uint8_t        bits56_63: 8;
-         int8_t         eval     : 8;
+         uint8_t        eval     : 3;
       };
    };
 } fullinfo_t;
