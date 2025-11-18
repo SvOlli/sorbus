@@ -60,16 +60,47 @@ const bus_config_t bus_config = {
 
 #include "../rp2040/common/generic_helper.c"
 #include "../rp2040/common/disassemble.c"
-#include "../rp2040/common/disassemble_historian.c"
-#include "../rp2040/mcurses/mcurses_historian.c"
+#include "../rp2040/mcurses/mcurses_disassemble.c"
 #include "loadfile.c"
 
 #include "../rp2040/mcurses/mcurses.h"
+
+#include "jam_kernel.h"
+#include "jam_tools.h"
+#include "jam_basic.h"
+
+uint8_t ram[0x10000] = { 0 };
 
 
 uint32_t mf_checkheap()
 {
    return 0;
+}
+
+
+uint8_t debug_banks()
+{
+   return 3;
+}
+
+
+uint8_t debug_peek( uint8_t bank, uint16_t addr )
+{
+   if( addr < 0xE000 )
+   {
+      return ram[addr];
+   }
+   switch( bank )
+   {
+      case 1:
+         return jam_kernel[addr & 0x1FFF];
+      case 2:
+         return jam_tools[addr & 0x1FFF];
+      case 3:
+         return jam_basic[addr & 0x1FFF];
+      default:
+         return ram[addr];
+   }
 }
 
 
@@ -129,22 +160,25 @@ void help( const char *progname, int retval )
    }
 
    fprintf( f,
-     "%s: test tool for historian disassembler\n"
+     "%s: test tool for testing disassembler\n"
      "\t-c cpu:\tcputype (mandatory)\n"
      "\t-f file:\ttrace file (mandatory)\n"
-     "\t-a:\tshow addresses\n"
-     "\t-d:\tshow hexdump\n"
-     "\t-p:\tinteractive pager\n"
-     "\t-h:\tshow help\n"
+     "\t-a addr:\tstart addresses of file in memory\n"
      , progname );
    exit( retval );
 }
 
 
-void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
+void mcurses( cputype_t cpu, uint16_t address )
 {
    struct termios oldt, newt;
-   uint32_t count;
+   daview_t dav = { 0 };
+
+   dav.banks      = debug_banks;
+   dav.peek       = debug_peek;
+   dav.cpu        = cpu;
+   dav.bank       = 0;
+   dav.address    = address;
 
    tcgetattr( STDIN_FILENO, &oldt );
    newt = oldt;
@@ -153,15 +187,8 @@ void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
 
    screen_save();
    initscr();
-   for( count = 0; count < entries; ++count )
-   {
-      if( ! *(trace + count) )
-      {
-         /* empty entry -> end of input */
-         break;
-      }
-   }
-   mcurses_historian( cpu, trace, count, start );
+
+   mcurses_disassemble( &dav );
    endwin();
    screen_restore();
 
@@ -169,139 +196,25 @@ void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
 }
 
 
-const uint8_t *get_start( const uint8_t *start, const uint8_t *end, cputype_t *cputype )
-{
-   const uint8_t *c;
-   const uint8_t magic[] = "TRACE_START";
-
-   for( c = start; c < end - sizeof(magic)-1; ++c )
-   {
-      if( !memcmp( c, &magic[0], sizeof(magic)-1 ) )
-      {
-         break;
-      }
-   }
-   /* nothing found: assume data start at file start */
-   if( c == (end - sizeof(magic)-1) )
-   {
-      return start;
-   }
-
-   c += sizeof(magic)-1;
-   switch( *c )
-   {
-      case ' ':
-         if( cputype )
-         {
-            if( *cputype == CPU_ERROR )
-            {
-               if( (end - c) > 6 )
-               {
-                  *cputype = getcputype( (const char*)(c+1) );
-               }
-            }
-         }
-         while( *(c++) != '\n' )
-         {
-            if( c >= end )
-            {
-               return end;
-            }
-         }
-         return c;
-      case '\n':
-         return c+1;
-      default:
-         return end;
-   }
-}
-
-
-const uint8_t *get_end( const uint8_t *start, const uint8_t *end )
-{
-   const uint8_t *c;
-   const uint8_t magic[] = "TRACE_END";
-
-   for( c = start; c < end - sizeof(magic)-1; ++c )
-   {
-      if( !memcmp( c, &magic[0], sizeof(magic)-1 ) )
-      {
-         return c;
-      }
-   }
-   return end;
-}
-
-
-uint32_t *get_trace( const uint8_t *start, const uint8_t *end, uint32_t *size )
-{
-   const uint8_t *c;
-   uint32_t entries = 0;
-   uint32_t *sample = 0, *s;
-
-   for( c = start; c < end; ++c )
-   {
-      if( *c == '\n' )
-      {
-         ++entries;
-      }
-   }
-   if( !(*end == '\n') && !(*(end-1) == '\n') )
-   {
-      ++entries;
-   }
-   /* entries needs to be power of 2 */
-   sample = (uint32_t*)calloc( entries, sizeof(uint32_t) );
-
-   s = sample;
-   for( c = start; c < end; ++c )
-   {
-      errno = 0;
-      *(s++) = strtol( (const char*)c, 0, 16 );
-      if( errno )
-      {
-         perror( "strtol" );
-         exit(30);
-      }
-      while( *c != '\n' )
-      {
-         ++c;
-      }
-   }
-   if( size )
-   {
-      *size = entries;
-   }
-   return sample;
-}
-
-
 int main( int argc, char *argv[] )
 {
    const char *progname = argv[0];
    cputype_t cpu = CPU_ERROR;
-   disass_historian_t dah;
 
-   const uint8_t *start, *end;
-   uint32_t size;
-   uint32_t *buffer = 0;
-
-   int count = 0;
    const char *filename = 0;
    uint8_t *filedata = 0;
    ssize_t filesize;
+   uint16_t address;
 
    int opt;
    bool fail = false;
-   bool pager = false;
-   disass_show_t show_extra = DISASS_SHOW_NOTHING;
 
-   while ((opt = getopt(argc, argv, "ac:df:hp")) != -1)
+   while ((opt = getopt(argc, argv, "a:c:f:h")) != -1)
    {
       switch( opt )
       {
          case 'a':
-            show_extra |= DISASS_SHOW_ADDRESS;
+            address = strtol( optarg, 0, 0 );
             break;
          case 'c':
             cpu = getcputype( optarg );
@@ -312,14 +225,8 @@ int main( int argc, char *argv[] )
                fail = true;
             }
             break;
-         case 'd':
-            show_extra |= DISASS_SHOW_HEXDUMP;
-            break;
          case 'f':
             filename = optarg;
-            break;
-         case 'p':
-            pager = true;
             break;
          case 'h':
             help( progname, 0 );
@@ -338,9 +245,11 @@ int main( int argc, char *argv[] )
    if( !fail )
    {
       filedata = loadfile( filename, &filesize );
-      start    = get_start( filedata, filedata + filesize, &cpu );
-      end      = get_end( start, filedata + filesize );
-      buffer   = get_trace( start, end, &size );
+      if( filesize > (sizeof(ram) - address) )
+      {
+         filesize = sizeof(ram) - address;
+      }
+      memcpy( &ram[address], filedata, filesize );
       if( filedata )
       {
          free( filedata );
@@ -358,30 +267,6 @@ int main( int argc, char *argv[] )
       help( progname, 1 );
    }
 
-   disass_show( show_extra );
-   if( pager )
-   {
-      mcurses( cpu, buffer, size, 0 );
-   }
-   else
-   {
-      dah = disass_historian_init( cpu, buffer, size, 0 );
-      for( count = 0; count < size; ++count )
-      {
-         if( ! *(buffer + count) )
-         {
-            /* empty entry -> end of input */
-            break;
-         }
-         printf( "%5d:", count );
-         if( disass_historian_entry( dah, count ) )
-         {
-            puts( disass_historian_entry( dah, count ) );
-         }
-      }
-      disass_historian_done( dah );
-   }
-   free( buffer );
-
+   mcurses( cpu, address );
    return 0;
 }

@@ -669,6 +669,7 @@ disass_historian_t disass_historian_init( cputype_t cpu,
 void disass_historian_done( disass_historian_t d )
 {
    memset( d->fullinfo, 0, d->entries * sizeof(uint64_t) );
+   (void)mf_checkheap();
    free( d->fullinfo );
    free( d );
 }

@@ -6,6 +6,13 @@ pkg_check_modules(GD REQUIRED gdlib)
 
 include(host-toolchain.cmake)
 
+function(bin2h h_file bin_file label dep)
+   add_custom_command(OUTPUT ${h_file}
+      COMMAND $<TARGET_FILE:bin2h> "${bin_file}" "${h_file}" "${label}"
+      DEPENDS ${bin_file} ${BIN2H} ${dep}
+   )
+endfunction()
+
 # tool to convert binary data to header file for including in source code
 add_executable(bin2h
    bin2h.c
@@ -42,22 +49,44 @@ add_executable(historian
    historian.c
    mcurses_phyio.c
    ../rp2040/mcurses/mcurses.c
-   ../rp2040/mcurses/mcurses_historian.c
    ../rp2040/mcurses/mcurses_sorbus.c
    ../rp2040/mcurses/mcurses_view.c
 )
 set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/disassemble.c)
 set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/disassemble_historian.c)
 
-# tool to test curses implementation
-add_executable(mcurses
-   mcurses.c
+# tool to test memory disassembler
+bin2h(jam_kernel.h ${CMAKE_BINARY_DIR}/65c02/jam_kernel.bin jam_kernel jam_kernel)
+bin2h(jam_tools.h ${CMAKE_BINARY_DIR}/65c02/jam_tools.bin jam_tools jam_tools)
+bin2h(jam_basic.h ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin jam_basic jam_basic)
+add_executable(disass
+   disass.c
+   jam_kernel.h
+   jam_tools.h
+   jam_basic.h
    mcurses_phyio.c
    ../rp2040/mcurses/mcurses.c
-   ../rp2040/mcurses/mcurses_hexedit.c
    ../rp2040/mcurses/mcurses_sorbus.c
    ../rp2040/mcurses/mcurses_view.c
-   )
+)
+target_include_directories(disass PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+set_property(SOURCE ${CMAKE_BINARY_DIR}/65c02/jam_kernel.bin APPEND PROPERTY OBJECT_DEPENDS jam_kernel)
+set_property(SOURCE ${CMAKE_BINARY_DIR}/65c02/jam_tools.bin APPEND PROPERTY OBJECT_DEPENDS jam_tools)
+set_property(SOURCE ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin APPEND PROPERTY OBJECT_DEPENDS jam_basic)
+set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/disassemble.c)
+set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/jam_kernel.h)
+set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/jam_tools.h)
+set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/jam_basic.h)
+
+# tool to test curses implementation
+#add_executable(mcurses
+#   mcurses.c
+#   mcurses_phyio.c
+#   ../rp2040/mcurses/mcurses.c
+#   ../rp2040/mcurses/mcurses_hexedit.c
+#   ../rp2040/mcurses/mcurses_sorbus.c
+#   ../rp2040/mcurses/mcurses_view.c
+#   )
 
 # tool to convert binary data to TIM paper tape format
 add_executable(timcat

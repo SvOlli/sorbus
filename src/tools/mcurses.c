@@ -12,9 +12,16 @@
 #include "../rp2040/mcurses/mcurses_view.c"
 #endif
 #include "../rp2040/mcurses/mcurses.h"
+#include "../rp2040/mcurses/mcurses_disassemble.c"
+#include "../rp2040/mcurses/mcurses_historian.c"
 
 uint8_t memory[0x10000] = { 0 };
 
+
+uint32_t mf_checkheap()
+{
+   return 0;
+}
 
 /*
  *****************************************************************************
