@@ -6,12 +6,28 @@ pkg_check_modules(GD REQUIRED gdlib)
 
 include(host-toolchain.cmake)
 
-function(bin2h h_file bin_file label dep)
+function(bin2h h_file bin_file label c_file)
+# NOTE: label is used twice here:
+# 1) label in output.h file
+# 2) name of the dependency label in 65c02 CMakeFiles.txt
    add_custom_command(OUTPUT ${h_file}
-      COMMAND $<TARGET_FILE:bin2h> "${bin_file}" "${h_file}" "${label}"
-      DEPENDS ${bin_file} ${BIN2H} ${dep}
+      COMMAND $<TARGET_FILE:bin2h> "${bin_file}" "${CMAKE_CURRENT_BINARY_DIR}/${h_file}" "${label}"
+      DEPENDS ${bin_file} ${BIN2H} ${label}
    )
+   set_property(SOURCE ${c_file} APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${h_file})
 endfunction()
+
+bin2h(jam_kernel.h ${CMAKE_BINARY_DIR}/65c02/jam_kernel.bin jam_kernel sorbus_rte_memory.c)
+bin2h(jam_tools.h  ${CMAKE_BINARY_DIR}/65c02/jam_tools.bin  jam_tools  sorbus_rte_memory.c)
+bin2h(jam_basic.h  ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin  jam_basic  sorbus_rte_memory.c)
+add_library(sorbus_rte STATIC
+   mcurses_phyio.c
+   sorbus_rte_memory.c
+   ../rp2040/mcurses/mcurses.c
+   ../rp2040/mcurses/mcurses_sorbus.c
+   ../rp2040/mcurses/mcurses_view.c
+   )
+target_include_directories(sorbus_rte PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 # tool to convert binary data to header file for including in source code
 add_executable(bin2h
@@ -21,6 +37,11 @@ add_executable(bin2h
 # tool to convert binary data to hex files for WozMon
 add_executable(bin2hex
    bin2hex.c
+   )
+
+# tool to output UTF-8 sequences for any 16-bit glyphs
+add_executable(unicode
+   unicode.c
    )
 
 # tool to convert to and from wear leveling format
@@ -47,36 +68,18 @@ add_executable(binjoin
 # tool to test part of disassembler
 add_executable(historian
    historian.c
-   mcurses_phyio.c
-   ../rp2040/mcurses/mcurses.c
-   ../rp2040/mcurses/mcurses_sorbus.c
-   ../rp2040/mcurses/mcurses_view.c
 )
+target_link_libraries(historian PRIVATE sorbus_rte)
 set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/disassemble.c)
 set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/disassemble_historian.c)
 
 # tool to test memory disassembler
-bin2h(jam_kernel.h ${CMAKE_BINARY_DIR}/65c02/jam_kernel.bin jam_kernel jam_kernel)
-bin2h(jam_tools.h ${CMAKE_BINARY_DIR}/65c02/jam_tools.bin jam_tools jam_tools)
-bin2h(jam_basic.h ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin jam_basic jam_basic)
 add_executable(disass
    disass.c
-   jam_kernel.h
-   jam_tools.h
-   jam_basic.h
-   mcurses_phyio.c
-   ../rp2040/mcurses/mcurses.c
-   ../rp2040/mcurses/mcurses_sorbus.c
-   ../rp2040/mcurses/mcurses_view.c
 )
+target_link_libraries(disass PRIVATE sorbus_rte)
 target_include_directories(disass PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-set_property(SOURCE ${CMAKE_BINARY_DIR}/65c02/jam_kernel.bin APPEND PROPERTY OBJECT_DEPENDS jam_kernel)
-set_property(SOURCE ${CMAKE_BINARY_DIR}/65c02/jam_tools.bin APPEND PROPERTY OBJECT_DEPENDS jam_tools)
-set_property(SOURCE ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin APPEND PROPERTY OBJECT_DEPENDS jam_basic)
 set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/disassemble.c)
-set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/jam_kernel.h)
-set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/jam_tools.h)
-set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/jam_basic.h)
 
 # tool to test curses implementation
 #add_executable(mcurses

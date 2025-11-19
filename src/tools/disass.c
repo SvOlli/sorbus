@@ -8,6 +8,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "sorbus_rte.h"
+
 #define SHOW_CONFIDENCE 1
 
 typedef unsigned int uint;
@@ -61,47 +63,8 @@ const bus_config_t bus_config = {
 #include "../rp2040/common/generic_helper.c"
 #include "../rp2040/common/disassemble.c"
 #include "../rp2040/mcurses/mcurses_disassemble.c"
-#include "loadfile.c"
 
 #include "../rp2040/mcurses/mcurses.h"
-
-#include "jam_kernel.h"
-#include "jam_tools.h"
-#include "jam_basic.h"
-
-uint8_t ram[0x10000] = { 0 };
-
-
-uint32_t mf_checkheap()
-{
-   return 0;
-}
-
-
-uint8_t debug_banks()
-{
-   return 3;
-}
-
-
-uint8_t debug_peek( uint8_t bank, uint16_t addr )
-{
-   if( addr < 0xE000 )
-   {
-      return ram[addr];
-   }
-   switch( bank )
-   {
-      case 1:
-         return jam_kernel[addr & 0x1FFF];
-      case 2:
-         return jam_tools[addr & 0x1FFF];
-      case 3:
-         return jam_basic[addr & 0x1FFF];
-      default:
-         return ram[addr];
-   }
-}
 
 
 cputype_t getcputype( const char *argi )
@@ -202,8 +165,6 @@ int main( int argc, char *argv[] )
    cputype_t cpu = CPU_ERROR;
 
    const char *filename = 0;
-   uint8_t *filedata = 0;
-   ssize_t filesize;
    uint16_t address;
 
    int opt;
@@ -237,6 +198,11 @@ int main( int argc, char *argv[] )
       }
    }
 
+   if( cpu == CPU_ERROR )
+   {
+      fprintf( stderr, "CPU type not set\n" );
+      fail = true;
+   }
    if( !filename )
    {
       fprintf( stderr, "filename not set\n" );
@@ -244,22 +210,7 @@ int main( int argc, char *argv[] )
    }
    if( !fail )
    {
-      filedata = loadfile( filename, &filesize );
-      if( filesize > (sizeof(ram) - address) )
-      {
-         filesize = sizeof(ram) - address;
-      }
-      memcpy( &ram[address], filedata, filesize );
-      if( filedata )
-      {
-         free( filedata );
-      }
-   }
-
-   if( cpu == CPU_ERROR )
-   {
-      fprintf( stderr, "CPU type not set\n" );
-      fail = true;
+      fail = !debug_loadfile( address, filename );
    }
 
    if( fail )
