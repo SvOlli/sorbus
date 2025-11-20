@@ -410,7 +410,7 @@ bool disass_bcdextracycles( uint8_t p0 )
 }
 
 
-const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
+static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3, bool brkoverride )
 {
    static char buffer[64] = { 0 };
    char *b = buffer;
@@ -433,6 +433,10 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
    {
       int i, s = disass_bytes( p0 );
       uint8_t bytes[] = { p0, p1, p2, p3 };
+      if( brkoverride && (p0 == 0x00) )
+      {
+         s = 1;
+      }
       for( i = 0; i < (sizeof(bytes)/sizeof(bytes[0])); ++i )
       {
          if( i < s )
@@ -448,8 +452,9 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
       }
    }
 
-   if( (PICK_ADDRMODE(disass_opcodes[p0]) == ZPN) ||
-       (PICK_ADDRMODE(disass_opcodes[p0]) == ZPNR) )
+   addrmode_t addrmode = PICK_ADDRMODE(disass_opcodes[p0]);
+
+   if( (addrmode == ZPN) || (addrmode == ZPNR) )
    {
       snprintf( b, bsize, "%s%d ", disass_mnemonic_string(p0), (p0 >> 4) & 7 );
    }
@@ -467,7 +472,11 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
    b += 5;
    bsize -= 5;
 
-   switch( PICK_ADDRMODE(disass_opcodes[p0]) )
+   if( brkoverride && (p0 == 0x00) )
+   {
+      addrmode = IMP;
+   }
+   switch( addrmode )
    {
       case ABS:   // OPC $1234
          snprintf( b, bsize, "$%04X",         p1 | (p2 << 8) );
@@ -571,6 +580,18 @@ const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p
    }
 
    return buffer;
+}
+
+
+const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
+{
+   return _disass( addr, p0, p1, p2, p3, false );
+}
+
+
+const char *disass_brk1( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 )
+{
+   return _disass( addr, p0, p1, p2, p3, true );
 }
 
 

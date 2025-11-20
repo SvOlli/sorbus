@@ -82,6 +82,7 @@ void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32
    config.attributes = F_BLACK | B_YELLOW;
 
    mcurses_historian_move( config.d, LINEVIEW_LASTLINE );
+   disass_show( DISASS_SHOW_NOTHING );
    lineview( &config );
    disass_historian_done( mch.historian );
 }

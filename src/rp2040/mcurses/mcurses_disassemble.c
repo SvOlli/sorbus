@@ -9,6 +9,9 @@
 
 #include <stdlib.h>
 
+#define PRECACHE (16)
+
+
 #if 0
 typedef struct {
    /* callback functions */
@@ -38,6 +41,7 @@ typedef struct {
    daview_t       *dav;
    linecache_t    *linecache;
    uint16_t       lines;
+   uint16_t       firstline;
    mcd_mode_t     mode;
 } mc_disassemble_t;
 
@@ -45,6 +49,9 @@ typedef struct {
 static void mcurses_disassemble_alloc( void *d, uint16_t lines )
 {
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
+
+   // add extra lines for scrollback
+   lines += PRECACHE;
 
    if( !(mcd->linecache) )
    {
@@ -63,13 +70,41 @@ static void mcurses_disassemble_alloc( void *d, uint16_t lines )
 }
 
 
+static uint16_t mcurses_disassemble_prevaddress( void *d )
+{
+   mc_disassemble_t *mcd = (mc_disassemble_t*)d;
+   daview_t *dav = mcd->dav;
+   uint16_t l;
+   linecache_t *linecache = mcd->linecache;
+
+   switch( mcd->mode )
+   {
+      case MCD_MODE_SINGLEBYTE:
+         return dav->address - 1;
+         break;
+      case MCD_MODE_FULLOPCODE:
+         for( l = 1; l < mcd->lines; ++l )
+         {
+            if( linecache[l].address == dav->address )
+            {
+               return linecache[l-1].address;
+            }
+         }
+         break;
+      default:
+         break;
+   }
+   return 0;
+}
+
+
 static void mcurses_disassemble_populate( void *d )
 {
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
    daview_t *dav = mcd->dav;
    uint16_t l;
-   uint16_t nextaddress = dav->address;
-   uint16_t address = dav->address;
+   uint16_t nextaddress = dav->address - PRECACHE;
+   uint16_t address = dav->address - PRECACHE;
    linecache_t *linecache = mcd->linecache;
 
 fprintf( stderr, "populate: %04x %s\n", address, mcd->mode ? "singlebyte" : "fullopcode" );
@@ -79,6 +114,10 @@ fprintf( stderr, "%2d: %04x %04x ", l, address, nextaddress );
       switch( mcd->mode )
       {
          case MCD_MODE_SINGLEBYTE:
+            if( address == dav->address )
+            {
+               mcd->firstline = l;
+            }
             if( address == nextaddress )
             {
                linecache[l].disass8 = true;
@@ -93,8 +132,24 @@ fprintf( stderr, "%2d: %04x %04x ", l, address, nextaddress );
             ++address;
             break;
          case MCD_MODE_FULLOPCODE:
+            if( address <= dav->address )
+            {
+               mcd->firstline = l;
+            }
             linecache[l].address = address;
-            address += disass_bytes( dav->peek( dav->bank, address ) );
+            {
+               uint16_t prevaddress = address - 1;
+               if( (dav->peek( dav->bank, prevaddress ) == 0) &&
+                   (dav->peek( dav->bank, address ) == 0) )
+               {
+                  // workaround BRK #$00 is most likely just zeroed RAM
+                  address += 1;
+               }
+               else
+               {
+                  address += disass_bytes( dav->peek( dav->bank, address ) );
+               }
+            }
             break;
          default:
             break;
@@ -117,12 +172,14 @@ fprintf( stderr, "move: %d\n", movelines );
          dav->address += movelines;
          break;
       case MCD_MODE_FULLOPCODE:
-         if( movelines < 0 )
+         if( !movelines )
          {
-            /* implemented later */
-            return 0;
          }
-         for( l = 0; l < movelines; ++l )
+         else if( movelines < 0 )
+         {
+            dav->address = mcurses_disassemble_prevaddress( d );
+         }
+         else for( l = 0; l < movelines; ++l )
          {
             dav->address += disass_bytes( dav->peek( dav->bank, dav->address ) );
          }
@@ -194,7 +251,7 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
 
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
    daview_t *dav = mcd->dav;
-   uint16_t address = mcd->linecache[offset].address;
+   uint16_t address;
 
    switch( offset )
    {
@@ -206,6 +263,8 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
          break;
    }
 
+   offset += mcd->firstline;
+   address = mcd->linecache[offset].address;
 fprintf( stderr, "data: %2d: %04x\n", offset, address );
    if( offset > mcd->lines )
    {
@@ -236,12 +295,25 @@ fprintf( stderr, "data: %2d: %04x\n", offset, address );
          return output;
       case MCD_MODE_FULLOPCODE:
          disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
-         return disass( address,
-                        dav->peek( dav->bank, address + 0 ),
-                        dav->peek( dav->bank, address + 1 ),
-                        dav->peek( dav->bank, address + 2 ),
-                        dav->peek( dav->bank, address + 3 )
-                      );
+         if( (dav->peek( dav->bank, address + 0 ) == 0) &&
+             (dav->peek( dav->bank, address - 1 ) == 0) )
+         {
+            return disass_brk1( address,
+                           dav->peek( dav->bank, address + 0 ),
+                           dav->peek( dav->bank, address + 1 ),
+                           dav->peek( dav->bank, address + 2 ),
+                           dav->peek( dav->bank, address + 3 )
+                         );
+         }
+         else
+         {
+            return disass( address,
+                           dav->peek( dav->bank, address + 0 ),
+                           dav->peek( dav->bank, address + 1 ),
+                           dav->peek( dav->bank, address + 2 ),
+                           dav->peek( dav->bank, address + 3 )
+                         );
+         }
       default:
          break;
    }
@@ -269,7 +341,6 @@ void mcurses_disassemble( daview_t *dav )
    disass_set_cpu( dav->cpu );
    mcurses_disassemble_alloc( &mcd, mcd.lines );
    mcurses_disassemble_populate( &mcd );
-   //disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );    // needs to be done here
    lineview( &config );
 
    if( mcd.linecache )

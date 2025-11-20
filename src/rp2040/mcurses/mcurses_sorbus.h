@@ -23,13 +23,13 @@ void screen_restore();
 void screen_alternative_buffer_enable();
 void screen_alternative_buffer_disable();
 #define SCREEN_TEXT_CENTER ((uint16_t)0xFFFF)
-void screen_border( uint16_t top, uint16_t left,
+void screen_border( bool dframe, uint16_t top, uint16_t left,
                     uint16_t bottom, uint16_t right );
 void screen_textsize( uint16_t *lines, uint16_t *columns,
                       const char *text );
-void screen_infobox( uint16_t line, uint16_t column,
+void screen_infobox( bool dframe, uint16_t line, uint16_t column,
                      const char *header, const char *text );
-void screen_textbox( uint16_t line, uint16_t column,
+void screen_textbox( bool dframe, uint16_t line, uint16_t column,
                      const char *text );
 bool screen_get4hex( uint16_t *value );
 

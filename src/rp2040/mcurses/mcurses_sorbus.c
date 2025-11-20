@@ -12,25 +12,23 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#if 0
-#define BORDER_TOP          '-'
-#define BORDER_BOTTOM       '-'
-#define BORDER_LEFT         '|'
-#define BORDER_RIGHT        '|'
-#define BORDER_TOP_LEFT     '+'
-#define BORDER_TOP_RIGHT    '+'
-#define BORDER_BOTTOM_LEFT  '+'
-#define BORDER_BOTTOM_RIGHT '+'
-#else
-#define BORDER_TOP          0x2500
-#define BORDER_BOTTOM       0x2500
-#define BORDER_LEFT         0x2502
-#define BORDER_RIGHT        0x2502
-#define BORDER_TOP_LEFT     0x250c
-#define BORDER_TOP_RIGHT    0x2510
-#define BORDER_BOTTOM_LEFT  0x2514
-#define BORDER_BOTTOM_RIGHT 0x2518
-#endif
+
+#define BORDER_TOP                  0x2500
+#define BORDER_BOTTOM               0x2500
+#define BORDER_LEFT                 0x2502
+#define BORDER_RIGHT                0x2502
+#define BORDER_TOP_LEFT             0x250c
+#define BORDER_TOP_RIGHT            0x2510
+#define BORDER_BOTTOM_LEFT          0x2514
+#define BORDER_BOTTOM_RIGHT         0x2518
+#define DOUBLE_BORDER_TOP           0x2550
+#define DOUBLE_BORDER_BOTTOM        0x2550
+#define DOUBLE_BORDER_LEFT          0x2551
+#define DOUBLE_BORDER_RIGHT         0x2551
+#define DOUBLE_BORDER_TOP_LEFT      0x2554
+#define DOUBLE_BORDER_TOP_RIGHT     0x2557
+#define DOUBLE_BORDER_BOTTOM_LEFT   0x255A
+#define DOUBLE_BORDER_BOTTOM_RIGHT  0x255D
 
 
 static struct {
@@ -215,34 +213,34 @@ void screen_disable_alternative_buffer()
 }
 
 
-void screen_border( uint16_t top, uint16_t left,
+void screen_border( bool dframe, uint16_t top, uint16_t left,
                     uint16_t bottom, uint16_t right )
 {
    int i;
 
    move( top, left );
-   addch( BORDER_TOP_LEFT );
+   addch( dframe ? DOUBLE_BORDER_TOP_LEFT : BORDER_TOP_LEFT );
    for( i = left+1; i < right; ++i )
    {
-      addch( BORDER_TOP );
+      addch( dframe ? DOUBLE_BORDER_TOP : BORDER_TOP );
    }
-   addch( BORDER_TOP_RIGHT );
+   addch( dframe ? DOUBLE_BORDER_TOP_RIGHT : BORDER_TOP_RIGHT );
 
    for( i = top+1; i < bottom; ++i )
    {
       move( i, left );
-      addch( BORDER_LEFT );
+      addch( dframe ? DOUBLE_BORDER_LEFT : BORDER_LEFT );
       move( i, right );
-      addch( BORDER_RIGHT );
+      addch( dframe ? DOUBLE_BORDER_RIGHT : BORDER_RIGHT );
    }
 
    move( bottom, left );
-   addch( BORDER_BOTTOM_LEFT );
+   addch( dframe ? DOUBLE_BORDER_BOTTOM_LEFT : BORDER_BOTTOM_LEFT );
    for( i = left+1; i < right; ++i )
    {
-      addch( BORDER_BOTTOM );
+      addch( dframe ? DOUBLE_BORDER_BOTTOM : BORDER_BOTTOM );
    }
-   addch( BORDER_BOTTOM_RIGHT );
+   addch( dframe ? DOUBLE_BORDER_BOTTOM_RIGHT : BORDER_BOTTOM_RIGHT );
 }
 
 
@@ -320,7 +318,7 @@ static void screen_printtext( uint16_t line, uint16_t column,
 }
 
 
-void screen_infobox( uint16_t line, uint16_t column,
+void screen_infobox( bool dframe, uint16_t line, uint16_t column,
                      const char *header, const char *text )
 {
    uint16_t rows, width, row = 3;
@@ -332,22 +330,20 @@ void screen_infobox( uint16_t line, uint16_t column,
    if( line == SCREEN_TEXT_CENTER )
    {
       line = (screen_get_lines() - rows) / 2 - 2;
-      //line = 1;
    }
    if( column == SCREEN_TEXT_CENTER )
    {
       column = (screen_get_columns() - width) / 2 - 1;
-      //column = 1;
    }
 
-   screen_border( line, column, line + rows + 3, column + width + 1 );
+   screen_border( dframe, line, column, line + rows + 3, column + width + 1 );
    move( line+2, column );
-   addch( 0x251c );
+   addch( dframe ? 0x2560 : 0x251c );
    for( i = 0; i < width; ++i )
    {
-      addch( 0x2500 );
+      addch( dframe ? 0x2550 : 0x2500 );
    }
-   addch( 0x2524 );
+   addch( dframe ? 0x2563 : 0x2524 );
 
    move( line+1, column+1 );
    i = 1;
@@ -365,7 +361,7 @@ void screen_infobox( uint16_t line, uint16_t column,
 }
 
 
-void screen_textbox( uint16_t line, uint16_t column,
+void screen_textbox( bool dframe, uint16_t line, uint16_t column,
                      const char *text )
 {
    uint16_t rows, width, row = 1;
@@ -381,7 +377,7 @@ void screen_textbox( uint16_t line, uint16_t column,
       column = (screen_get_columns() - width) - 1;
    }
 
-   screen_border( line, column, line + rows + 1, column + width + 1 );
+   screen_border( dframe, line, column, line + rows + 1, column + width + 1 );
    screen_printtext( line + row, column + 1, text );
 }
 

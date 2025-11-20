@@ -232,26 +232,25 @@ typedef union
             uint16_t    address : 16;
             uint8_t     data    :  8;
             union {
-               uint8_t  signals :  8;
+               uint8_t  signals :  6;
                struct {
                   bool  rw       : 1;
                   bool  clock    : 1;
                   bool  rdy      : 1;
-                  bool  ieq      : 1;
+                  bool  irq      : 1;
                   bool  nmi      : 1;
                   bool  reset    : 1;
-                uint8_t bits30_31: 2;
                };
             };
+            uint8_t     bits30_31: 2;
          };
       };
       uint8_t           data1    : 8;
       uint8_t           data2    : 8;
       uint8_t           data3    : 8;
-      union {
-         uint8_t        bits56_63: 8;
-         uint8_t        eval     : 3;
-      };
+      uint8_t           dataused : 2;
+      uint8_t           eval     : 3;
+      uint8_t           bits61_63: 3;
    };
 } fullinfo_t;
 
@@ -295,6 +294,7 @@ void disass_show( disass_show_t show );
 
 /* run disassembler for bytes of continuous memory */
 const char *disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 );
+const char *disass_brk1( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3 );
 
 /* wrapper for call above to pull everything from trace entry */
 const char *disass_trace( fullinfo_t fullinfo );

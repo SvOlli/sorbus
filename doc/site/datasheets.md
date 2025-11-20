@@ -85,13 +85,22 @@ directory that can be used to download these documents (PDFs only).
 * [OSI 6502 8K BASIC Ver 1.0 Users Manual (Text Only)](https://archive.org/download/osi-6502-8-k-basic-ver-1.0-users-manual/OSI%206502%208K%20BASIC%20Ver%201.0%20Users%20Manual_text.pdf)
 
 
-## VT100 Escape Sequences
+## Terminal Related Stuff
 
 * [VonaUtils VT100](https://www2.ccs.neu.edu/research/gpc/VonaUtils/vona/terminal/vtansi.htm)
 * [VT100-Examples](https://github.com/0x5c/VT100-Examples/raw/master/vt_seq.md)
 * [ANSI Escape Sequences](https://gist.github.com/ConnerWill/d4b6c776b509add763e17f9f113fd25b)
 * [German manual of MCURSES](https://www.mikrocontroller.net/articles/MCURSES)
 * [Arduino implementation of MCURSES](https://github.com/ChrisMicro/mcurses)
+* [Unicode Page U0000](https://www.unicode.org/charts/PDF/U0000.pdf)
+* [Unicode Page U0080](https://www.unicode.org/charts/PDF/U0080.pdf)
+* [Unicode Page U0100](https://www.unicode.org/charts/PDF/U0100.pdf)
+* [Unicode Page U0180](https://www.unicode.org/charts/PDF/U0180.pdf)
+* [Unicode Page U2000](https://www.unicode.org/charts/PDF/U2000.pdf)
+* [Unicode Page U2100](https://www.unicode.org/charts/PDF/U2100.pdf)
+* [Unicode Page U2500](https://www.unicode.org/charts/PDF/U2500.pdf)
+* [Unicode Page U2600](https://www.unicode.org/charts/PDF/U2600.pdf)
+* [Unicode Page U1FB00](https://www.unicode.org/charts/PDF/U1FB00.pdf)
 
 ## Opcode Tables
 

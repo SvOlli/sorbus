@@ -248,14 +248,14 @@ void console_rp2040()
    while( !leave )
    {
       clear();
-      screen_border( 0, 0, lines-1, cols-1 );
+      screen_border( true, 0, 0, lines-1, cols-1 );
       move( 1, 1 );
       addstr( "The Sorbus Computer Meta Menu invoked via " );
       addstr( invoke );
       addstr( ", CPU on RDY" );
-      screen_textbox( lines-6,  1, debug_get_info( DEBUG_INFO_CLOCKS ) );
-      screen_textbox( lines-6, (screen_get_columns()+1)/2 - 9, debug_get_info( DEBUG_INFO_SYSVECTORS ) );
-      screen_textbox( lines-6, cols-21, debug_get_info( DEBUG_INFO_HEAP ) );
+      screen_textbox( false, lines-6,  1, debug_get_info( DEBUG_INFO_CLOCKS ) );
+      screen_textbox( false, lines-6, (screen_get_columns()+1)/2 - 9, debug_get_info( DEBUG_INFO_SYSVECTORS ) );
+      screen_textbox( false, lines-6, cols-21, debug_get_info( DEBUG_INFO_HEAP ) );
 
       move( 3, 1 );
            /* 12345678901234567890123456789012345678901234567890123456789012345678901234567890 */
@@ -266,7 +266,7 @@ void console_rp2040()
       switch( in )
       {
          case '!':
-            screen_infobox( SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
+            screen_infobox( true, SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
                             "Backtrace Dumper",
                             "Turn on logging now\n"
                             "Press any key\n"
@@ -299,12 +299,12 @@ void console_rp2040()
             initscr();
             break;
          case 'E':
-            screen_infobox( SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
+            screen_infobox( false, SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
                             "Event Queue", debug_get_info( DEBUG_INFO_EVENTQUEUE ) );
             getch();
             break;
          case 'I':
-            screen_infobox( SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
+            screen_infobox( false, SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
                             "Internal Drive", debug_get_info( DEBUG_INFO_INTERNALDRIVE ) );
             getch();
             break;

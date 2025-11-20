@@ -18,8 +18,9 @@
 #ifndef SHOW_CONFIDENCE
 #define SHOW_CONFIDENCE 0
 #endif
+
+// to handle the ringbuffer input
 #define ring(x,s) ((x) & (s-1))
-#define re(x) ring(x,entries)
 
 
 struct disass_historian_s
@@ -167,30 +168,30 @@ static void disass_historian_fulldata( disass_historian_t d, const uint32_t *tra
       offset = 0;
       while( !done )
       {
-         uint32_t addr = trace_address( trace[re(index+n)] );
+         uint32_t addr = trace_address( trace[ring(index+n,entries)] );
          if( addr == expectedaddress )
          {
             switch( ++offset )
             {
                case 1:
-                  fullinfo[i].data1 = trace_data( trace[re(index+n)] );
+                  fullinfo[i].data1 = trace_data( trace[ring(index+n,entries)] );
                   break;
                case 2:
-                  fullinfo[i].data2 = trace_data( trace[re(index+n)] );
+                  fullinfo[i].data2 = trace_data( trace[ring(index+n,entries)] );
                   break;
                case 3:
-                  fullinfo[i].data3 = trace_data( trace[re(index+n)] );
+                  fullinfo[i].data3 = trace_data( trace[ring(index+n,entries)] );
                   // found all parameters
                   done = true;
                   break;
                default:
                   break;
             }
-            fullinfo[i].bits30_31 = offset > 3 ? 3 : offset;
+            fullinfo[i].dataused = offset > 3 ? 3 : offset;
             ++expectedaddress;
          }
 
-         if( ++n > 10 ) // longest 65xx instuction takes 8 clock cycles
+         if( ++n > BOUNDSBUFFER ) // longest 65xx instuction takes 8 clock cycles
          {
             // could not find all parameters, well duh!
             done = true;
