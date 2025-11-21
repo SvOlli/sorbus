@@ -293,9 +293,10 @@ void screen_textsize( uint16_t *lines, uint16_t *columns, const char *text )
 
 
 static void screen_printtext( uint16_t line, uint16_t column,
-                              const char *text )
+                              uint16_t columns, const char *text )
 {
    const char *c;
+   uint16_t col;
 
    move( line, column );
    for( c = text; *c; ++c )
@@ -303,10 +304,17 @@ static void screen_printtext( uint16_t line, uint16_t column,
       if( *c == '\n' )
       {
          ++line;
+         while( col < columns )
+         {
+            addch( ' ' );
+            ++col;
+         }
+         col = 0;
          move( line, column );
       }
       else
       {
+         ++col;
          addch( *c );
       }
    }
@@ -346,18 +354,20 @@ void screen_infobox( bool dframe, uint16_t line, uint16_t column,
    addch( dframe ? 0x2563 : 0x2524 );
 
    move( line+1, column+1 );
-   i = 1;
-   for( c = header; *c; ++c )
+   c = header;
+   for( i = 0; i < width; ++i )
    {
-      addch( *c );
-      if( (++i) > (width-1) )
+      if( *c )
       {
-         /* header wider than text, cut off */
-         break;
+         addch( *(c++) );
+      }
+      else
+      {
+         addch( ' ' );
       }
    }
 
-   screen_printtext( line + row, column + 1, text );
+   screen_printtext( line + row, column + 1, width, text );
 }
 
 
@@ -378,7 +388,7 @@ void screen_textbox( bool dframe, uint16_t line, uint16_t column,
    }
 
    screen_border( dframe, line, column, line + rows + 1, column + width + 1 );
-   screen_printtext( line + row, column + 1, text );
+   screen_printtext( line + row, column + 1, width, text );
 }
 
 
