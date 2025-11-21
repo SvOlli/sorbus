@@ -6,30 +6,32 @@
 - $0000-$0001: graphics port
 - $0002-$0003: reserved for later use
 - $0004-$0007: zeropage RAM reserved for kernel
-    - $04/5: temporary vector used for PRINT and CP/M fs
-    - $06: save processor status for PRINT
-    - $07: save accumulator for PRINT
+  - $04/5: temporary vector used for PRINT and CP/M fs
+  - $06: save processor status for PRINT
+  - $07: save accumulator for PRINT
 - $0008-$00FF: zeropage RAM for generic use
-    - $0008-$000F: zeropage RAM used by WozMon
-    - $00E3-$00FF: zeropage RAM used by TIM
-    - $00F6-$00FF: zeropage RAM used by System Monitor
+  - $0008-$000F: zeropage RAM used by WozMon
+  - $00E3-$00FF: zeropage RAM used by TIM
+  - $00F6-$00FF: zeropage RAM used by System Monitor
 - $0100-$01FF: stack
 - $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs, VT100)
 - $0400-$CFFF: RAM for generic use
 - $D000-$DEFF: I/O provided by external boards
 - $D000-$D3FF: scratch RAM that can by exchanged with $0000-$03FF
-   by writing to $DF03 (not accessable directly from 65C02)
+  by writing to $DF03 (not accessable directly from 65C02)
 - $D300-$D3FF: I/O area suggested to be used by 32x32 framebuffer
+  (write-only, as the FB32X32 hardware only handles writes on the bus)
 - $DF00-$DFFF: I/O provided by main RP2040 board
-   (this can change to $DE00-$DFFF, when $DFxx area is not sufficiant)
+  (this can change to $DE00-$DFFF, when $DFxx area is not sufficiant)
 - $E000-$FFFF: bank 0 (RAM, used to load CP/M 65)
 - $E000-$FFFF: bank 1 (ROM, kernal, custom firmware)
 - $E000-$FFFF: bank 2 (ROM, tools e.g. filebrowser)
 - $E000-$FFFF: bank 3 (ROM, OSI BASIC)
 - $FF00-$FFFF: bankswitching code, BRK handler, I/O routines (BIOS)
-    -  same on all ROM banks
-    -  can be copied to RAM using code at $0100 after loading a bootblock
-    -  is copied to RAM before running SX4 file
+  - same on all ROM banks
+  - can be copied to RAM using code at $0100 after loading a bootblock
+  - is copied to RAM before running SX4 file
+  - can also copied to RAM by using BRK #$0B (see below)
 
 
 ## I/O Registers
@@ -225,7 +227,7 @@ of the `BRK` opcode for kernel interrupts. Possible arguments are:
 - $08: CP/M-fs erase: delete file
 - $09: CP/M-fs directory: load directory to address in ($030c/d) or console ($030d=$00)
 - $0A: VT100: several screen functions: Y=specify function (see below)
-- $0B: copy BIOS from ROM to RAM
+- $0B: copy BIOS ($FF00-$FFFF) from ROM to RAM
 - $0C: input a text line from console (pointer in X/A, Y: size of input ($00-$7F), add $80 for only upper case)
 - $0D: fill a page of RAM with sine data (X: bits 7,6 offset, 5 fractions, 4-0 amplitude ($01-$10), A: page)
 - $0E: jump to System Monitor

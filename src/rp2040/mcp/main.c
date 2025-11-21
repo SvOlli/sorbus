@@ -565,7 +565,7 @@ void run_bus()
       gpio_set_dir_in_masked( bus_config.mask_data );
       // wait for the RP2040 to adjust
       sleep_us(1);
-	  // for 65816 only: read bank address
+      // for 65816 only: read bank address
       bank = (gpio_get_all() >> bus_config.shift_data); // truncate is intended;
       gpio_set_mask( bus_config.mask_clock );
 

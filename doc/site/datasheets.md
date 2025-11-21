@@ -92,15 +92,19 @@ directory that can be used to download these documents (PDFs only).
 * [ANSI Escape Sequences](https://gist.github.com/ConnerWill/d4b6c776b509add763e17f9f113fd25b)
 * [German manual of MCURSES](https://www.mikrocontroller.net/articles/MCURSES)
 * [Arduino implementation of MCURSES](https://github.com/ChrisMicro/mcurses)
-* [Unicode Page U0000](https://www.unicode.org/charts/PDF/U0000.pdf)
-* [Unicode Page U0080](https://www.unicode.org/charts/PDF/U0080.pdf)
-* [Unicode Page U0100](https://www.unicode.org/charts/PDF/U0100.pdf)
-* [Unicode Page U0180](https://www.unicode.org/charts/PDF/U0180.pdf)
-* [Unicode Page U2000](https://www.unicode.org/charts/PDF/U2000.pdf)
-* [Unicode Page U2100](https://www.unicode.org/charts/PDF/U2100.pdf)
-* [Unicode Page U2500](https://www.unicode.org/charts/PDF/U2500.pdf)
-* [Unicode Page U2600](https://www.unicode.org/charts/PDF/U2600.pdf)
-* [Unicode Page U1FB00](https://www.unicode.org/charts/PDF/U1FB00.pdf)
+* [Unicode Range 0000–007F: C0 Controls and Basic Latin](https://www.unicode.org/charts/PDF/U0000.pdf)
+* [Unicode Range 0080–00FF: C1 Controls and Latin-1 Supplement](https://www.unicode.org/charts/PDF/U0080.pdf)
+* [Unicode Range 0100–017F: Latin Extended-A](https://www.unicode.org/charts/PDF/U0100.pdf)
+* [Unicode Range 0180–024F: Latin Extended-B](https://www.unicode.org/charts/PDF/U0180.pdf)
+* [Unicode Range 2070–209F: Superscripts and Subscripts](https://www.unicode.org/charts/PDF/U2070.pdf)
+* [Unicode Range 2100–214F: Letterlike Symbols](https://www.unicode.org/charts/PDF/U2100.pdf)
+* [Unicode Range 2190–21FF: Arrows](https://www.unicode.org/charts/PDF/U2190.pdf)
+* [Unicode Range 2500–257F: Box Drawing](https://www.unicode.org/charts/PDF/U2500.pdf)
+* [Unicode Range 2580–259F: Block Elements](https://www.unicode.org/charts/PDF/U2580.pdf)
+* [Unicode Range 25A0–25FF: Geometric Shapes](https://www.unicode.org/charts/PDF/U25A0.pdf)
+* [Unicode Range 2600–26FF: Miscellaneous Symbols](https://www.unicode.org/charts/PDF/U2600.pdf)
+* [Unicode Range 1FB00–1FBFF: Symbols for Legacy Computing](https://www.unicode.org/charts/PDF/U1FB00.pdf)
+
 
 ## Opcode Tables
 

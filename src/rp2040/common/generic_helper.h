@@ -47,9 +47,19 @@ const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank );
 int32_t get_16bit_address( uint16_t lastaddr );
 
 /* on RP2040 does two things:
- * check if current free memory is below recoded minimum
- * return recorded minimum of free memory
+ * - check if current free memory is below recoded minimum
+ * - return recorded minimum of free memory
  * on host should return 0 */
 uint32_t mf_checkheap();
+
+
+/*
+ * like putchar, print a character
+ * unlike putchar, it can print an UTF-8 sequence of a predefined charset
+ * defined charsets:
+ * 0: pass through; native UTF-8
+ * 1: Sorbus handpicked configuration
+ */
+int putcharset( uint8_t ch, uint8_t cs );
 
 #endif
