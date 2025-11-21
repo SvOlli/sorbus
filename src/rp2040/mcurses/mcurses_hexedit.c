@@ -2,7 +2,7 @@
  * ----------------------------------------------------------------------------
  * @file hexedit.c - full screen hex editor
  *
- * Copyright (c) 2014 Frank Meyer - frank(at)fli4l.de
+ * Copyright (c) 2014 Frank Meyer - frank(at)uclock.de
  *
  * Revision History:
  * V1.0 2015 xx xx Frank Meyer, original version

@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
  * mcurses.h - include file for mcurses lib
  *
- * Copyright (c) 2011-2015 Frank Meyer - frank(at)fli4l.de
+ * Copyright (c) 2011-2015 Frank Meyer - frank(at)uclock.de
  *
  * Revision History:
  * V1.0 2015 xx xx Frank Meyer, original version
