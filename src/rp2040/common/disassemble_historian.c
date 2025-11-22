@@ -20,7 +20,7 @@
 #endif
 
 // to handle the ringbuffer input
-#define ring(x,s) ((x) & (s-1))
+#define ring(x,s) ((x) % (s))
 
 
 struct disass_historian_s
@@ -315,7 +315,31 @@ static void disass_historian_assumptions( disass_historian_t d )
             }
          }
 
-         if( data == 0xFC )
+         if( data == 0x5C )
+         {
+            /* JMP $000000 are four cycles on 65816:
+             * 0: opcode
+             * 1: read target low
+             * 2: read target high
+             * 3: read target bank
+             */
+            int bc = 4;
+            target = fullinfo[i+1].data | (fullinfo[i+2].data << 8);
+            if( (fullinfo[i+1].address == addr+1) &&
+                (fullinfo[i+2].address == addr+2) &&
+                (fullinfo[i+3].address == addr+3) &&
+                (fullinfo[i+bc].address == target)
+              )
+            {
+               fullinfo[i].eval = EVAL_MAX;
+               for( n = 1; n < bc; ++n )
+               {
+                  fullinfo[i+n].eval = EVAL_MIN;
+               }
+               fullinfo[i+bc].eval = EVAL_MAX;
+            }
+         }
+         else if( data == 0xFC )
          {
             /* JSR (IND,X) cycles are on 65816:
              * 0: opcode
@@ -656,12 +680,8 @@ disass_historian_t disass_historian_init( cputype_t cpu,
    d->fullinfo = (fullinfo_t*)calloc( entries+2*BOUNDSBUFFER, sizeof(fullinfo_t) );
 
    disass_set_cpu( cpu );
-#if 1
    disass_historian_fulldata( d, trace, start );
    disass_historian_assumptions( d );
-#else
-   disass_historian_run( d, trace, start );
-#endif
 
    return d;
 }
@@ -685,12 +705,22 @@ const char *disass_historian_entry( disass_historian_t d, uint32_t entry )
    {
       fullinfo_t fullinfo = d->fullinfo[entry+BOUNDSBUFFER];
 
+#if 1
       snprintf( &buffer[0], sizeof(buffer)-1,
                 "%5d:%s:%d:%s",
                 entry,
-                decode_trace( fullinfo.trace, false, 0 ),
+                decode_trace( (uint32_t)fullinfo.raw, false, 0 ),
                 fullinfo.eval,
                 fullinfo.eval < 3 ? "" : disass_trace( fullinfo ) );
+#else
+      snprintf( &buffer[0], sizeof(buffer)-1,
+                "%5d:%s:%016llx:%d:%s",
+                entry,
+                decode_trace( (uint32_t)fullinfo.raw, false, 0 ),
+                fullinfo.raw,
+                fullinfo.eval,
+                fullinfo.eval < 3 ? "" : disass_trace( fullinfo ) );
+#endif
    }
    return &buffer[0];
 }

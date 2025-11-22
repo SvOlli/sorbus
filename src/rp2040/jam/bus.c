@@ -1105,8 +1105,14 @@ void debug_raw_backtrace()
 
 void debug_get_backtrace( cputype_t *cpu, uint32_t **trace, uint32_t *entries, uint32_t *start )
 {
-   *cpu     = cputype ? cputype : CPU_6502;
+   *cpu     = cputype ? cputype : CPU_65SC02;
    *trace   = &buslog_states[0];
    *entries = BUSLOG_SIZE;
    *start   = buslog_index & (BUSLOG_SIZE)-1;
+}
+
+
+cputype_t debug_get_cpu()
+{
+   return cputype;
 }

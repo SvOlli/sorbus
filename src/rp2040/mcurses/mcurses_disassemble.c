@@ -43,20 +43,21 @@ static void mcurses_disassemble_alloc( void *d, uint16_t lines )
    // add extra lines for scrollback
    lines += PRECACHE;
 
-   if( !(mcd->linecache) )
+   if( mcd->linecache )
    {
-      mcd->linecache = malloc( mcd->lines * sizeof(linecache_t) );
-      mf_checkheap();
-   }
-   else if( lines > mcd->lines )
-   {
-      if( mcd->lines < lines )
+      if( lines > mcd->lines )
       {
-         mcd->lines = lines;
+         /* allocated memory so far is no enough */
+         mcd->linecache = realloc( mcd->linecache, lines * sizeof(linecache_t) );
       }
-      mcd->linecache = realloc( mcd->linecache, mcd->lines * sizeof(linecache_t) );
-      mf_checkheap();
    }
+   else
+   {
+      /* nothing allocated so far */
+      mcd->linecache = malloc( lines * sizeof(linecache_t) );
+   }
+   mcd->lines = lines;
+   mf_checkheap();
 }
 
 
@@ -318,7 +319,7 @@ void mcurses_disassemble( mc_disass_t *dav )
    config.move       = mcurses_disassemble_move;
    config.data       = mcurses_disassemble_data;
    config.d          = (void*)(&mcd);
-   config.attributes = F_WHITE | B_GREEN;
+   config.attributes = MC_ATTRIBUTES_DISASS;
 
    disass_set_cpu( dav->cpu );
    mcurses_disassemble_alloc( &mcd, mcd.lines );

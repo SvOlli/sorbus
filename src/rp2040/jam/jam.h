@@ -40,6 +40,7 @@ typedef enum {
 const char *debug_get_info( debug_info_t page );
 void debug_get_backtrace( cputype_t *cpu, uint32_t **trace, uint32_t *entries, uint32_t *start );
 void debug_raw_backtrace();
+cputype_t debug_get_cpu();
 void debug_disassembler();
 uint8_t debug_banks();
 uint8_t debug_peek( uint8_t bank, uint16_t addr );

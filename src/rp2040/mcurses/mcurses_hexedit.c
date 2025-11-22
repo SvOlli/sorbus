@@ -234,7 +234,7 @@ void hexedit( mc_hexedit_t *config )
    clear();
    setscrreg( FIRST_LINE, LAST_LINE-1 );
 
-   attrset( F_WHITE | B_RED );
+   attrset( MC_ATTRIBUTES_HEXEDIT );
 
    move ( LINES-1, 0 );
    addstr( "  Hex Editor  (Ctrl+C to leave)" );

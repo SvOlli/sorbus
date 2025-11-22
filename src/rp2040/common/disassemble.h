@@ -224,33 +224,24 @@ typedef enum {
 
 typedef union
 {
-   uint64_t             raw     : 64;
+   uint64_t       raw     : 64;
    struct {
-      union {
-         uint32_t       trace   : 32;
-         struct {
-            uint16_t    address : 16;
-            uint8_t     data    :  8;
-            union {
-               uint8_t  signals :  6;
-               struct {
-                  bool  rw       : 1;
-                  bool  clock    : 1;
-                  bool  rdy      : 1;
-                  bool  irq      : 1;
-                  bool  nmi      : 1;
-                  bool  reset    : 1;
-               };
-            };
-            uint8_t     bits30_31: 2;
-         };
-      };
-      uint8_t           data1    : 8;
-      uint8_t           data2    : 8;
-      uint8_t           data3    : 8;
-      uint8_t           dataused : 2;
-      uint8_t           eval     : 3;
-      uint8_t           bits61_63: 3;
+      uint16_t    address : 16;
+      uint8_t     data    :  8;
+      bool        rw       : 1;
+      bool        clock    : 1;
+      bool        rdy      : 1;
+      bool        irq      : 1;
+      bool        nmi      : 1;
+      bool        reset    : 1;
+      uint8_t     bits30_31: 2;
+
+      uint8_t     data1    : 8;
+      uint8_t     data2    : 8;
+      uint8_t     data3    : 8;
+      uint8_t     dataused : 2;
+      uint8_t     bits58_60: 3;
+      uint8_t     eval     : 3;
    };
 } fullinfo_t;
 

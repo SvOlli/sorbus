@@ -42,6 +42,7 @@ add_executable(jam_alpha
    common/mf_checkheap.c
    common/putcharset.c
    mcurses/mcurses.c
+   mcurses/mcurses_disassemble.c
    mcurses/mcurses_hexedit.c
    mcurses/mcurses_historian.c
    mcurses/mcurses_phyio.c

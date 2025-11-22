@@ -51,9 +51,17 @@ static mc_hexedit_t he_config = {
    hexedit_bank,
    debug_peek,
    debug_poke,
-   0,
-   0x400,
-   0x400
+   0x00,
+   0x0400,
+   0x0400
+};
+
+static mc_disass_t da_config = {
+   debug_banks,
+   debug_peek,
+   CPU_65SC02,
+   0x00,
+   0x0400
 };
 
 
@@ -279,13 +287,10 @@ void console_rp2040()
             }
             break;
          case 'D':
-            endwin();
-            screen_restore();
-            /* move memory disassember to own viewer */
-            debug_disassembler();
-            getch();
-            screen_save();
-            initscr();
+            {
+               cputype_t cpu = debug_get_cpu();
+               mcurses_disassemble( &da_config );
+            }
             break;
          case 'E':
             mcurses_titlebox( false, MCURSES_TEXT_CENTER, MCURSES_TEXT_CENTER,

@@ -12,6 +12,11 @@
 
 #include "../common/generic_helper.h"
 
+#define  MC_ATTRIBUTES_DISASS    (F_WHITE | B_GREEN)
+#define  MC_ATTRIBUTES_HEXEDIT   (F_WHITE | B_RED)
+#define  MC_ATTRIBUTES_BACKTRACE (F_BLACK | B_YELLOW)
+#define  MC_ATTRIBUTES_XMODEM    (F_BLACK | B_PURPLE)
+
 
 /* basic screen/mcurses functions implemented in mcurses_sorbus.c */
 bool screen_get_size( uint16_t *lines, uint16_t *columns );
@@ -42,6 +47,10 @@ void mcurses_line_horizontal( bool dframe, uint16_t top, uint16_t left,
 /* within this border draw a nice vertical line */
 void mcurses_line_vertical( bool dframe, uint16_t top, uint16_t left,
                             uint16_t bottom );
+
+/* mcurses text line (padded with spaces) */
+void mcurses_textline( uint16_t line, uint16_t left, uint16_t right,
+                       const char *text );
 
 /* determine the size of a text in lines and (largest) columns */
 void mcurses_textsize( uint16_t *lines, uint16_t *columns,

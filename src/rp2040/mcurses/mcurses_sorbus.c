@@ -323,6 +323,17 @@ void mcurses_line_vertical( bool dframe, uint16_t top, uint16_t left,
 }
 
 
+void mcurses_textline( uint16_t line, uint16_t left, uint16_t right,
+                       const char *text )
+{
+   const uint8_t *c = (const uint8_t*)text;
+   uint16_t i;
+   for( i = left; i <= right; ++i )
+   {
+      addch( *c ? *(c++) : ' ' );
+   }
+}
+
 
 void mcurses_textsize( uint16_t *lines, uint16_t *columns, const char *text )
 {
