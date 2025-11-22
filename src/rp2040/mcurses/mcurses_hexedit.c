@@ -32,10 +32,6 @@
 #include "mcurses.h"
 #include "mcurses_sorbus.h"
 
-static hexedit_handler_bank_t hexedit_bank;
-static hexedit_handler_peek_t hexedit_peek;
-static hexedit_handler_poke_t hexedit_poke;
-
 #define FIRST_LINE      1
 #define LAST_LINE       (LINES - 1)
 
@@ -57,6 +53,19 @@ static hexedit_handler_poke_t hexedit_poke;
 #define MOVE_PAGEUP     6
 
 #define IS_HEX(ch)     (((ch) >= 'A' &&( ch ) <= 'F') || ((ch) >= 'a' &&( ch ) <= 'f') || ((ch) >= '0' &&( ch ) <= '9'))
+
+
+uint8_t hexedit_peek( hexedit_t *config, uint16_t address )
+{
+   return config->peek( config->bank, address );
+}
+
+
+void hexedit_poke( hexedit_t *config, uint16_t address, uint8_t data )
+{
+   config->poke( config->bank, address, data );
+}
+
 
 /*-----------------------------------------------------------------------------
  * itox: convert a decimal value 0-15 into hexadecimal digit
@@ -111,7 +120,7 @@ uint8_t xtoi (uint8_t ch)
    return val;
 }
 
-void print_hex_line (uint8_t line, uint16_t off)
+void print_hex_line( hexedit_t *config, uint8_t line, uint16_t off )
 {
    uint8_t       col;
    uint8_t       ch;
@@ -124,7 +133,7 @@ void print_hex_line (uint8_t line, uint16_t off)
    move (line, FIRST_HEX_COL);
    for (col = 0; col < BYTES_PER_ROW; col++)
    {
-      itoxx (hexedit_peek(off));
+      itoxx (hexedit_peek( config,off));
       addch (' ');
       off++;
    }
@@ -135,7 +144,7 @@ void print_hex_line (uint8_t line, uint16_t off)
 
    for (col = 0; col < BYTES_PER_ROW; col++)
    {
-      ch = hexedit_peek(off);
+      ch = hexedit_peek( config,off);
 
       if (IS_PRINT(ch))
       {
@@ -180,7 +189,7 @@ static uint16_t fix_topleft( uint16_t topleft, uint16_t address )
 }
 
 
-static uint16_t print_hex_page( uint16_t topleft, uint16_t address )
+static uint16_t print_hex_page( hexedit_t *config, uint16_t topleft, uint16_t address )
 {
    uint8_t     line;
    uint16_t    off;
@@ -189,7 +198,7 @@ static uint16_t print_hex_page( uint16_t topleft, uint16_t address )
    off = topleft;
    for (line = FIRST_LINE; line < LAST_LINE; line++)
    {
-      print_hex_line (line, off);
+      print_hex_line( config, line, off );
       off += BYTES_PER_ROW;
    }
 
@@ -221,10 +230,6 @@ void hexedit( hexedit_t *config )
    uint8_t     cmove   = MOVE_NONE;
    uint8_t     bank    = config->bank;
    bool        redraw  = true;
-
-   hexedit_bank = config->nextbank;
-   hexedit_peek = config->peek;
-   hexedit_poke = config->poke;
 
    clear();
    setscrreg( FIRST_LINE, LAST_LINE-1 );
@@ -286,7 +291,7 @@ void hexedit( hexedit_t *config )
 
       if( redraw )
       {
-         topleft = print_hex_page( topleft, address );
+         topleft = print_hex_page( config, topleft, address );
          redraw = false;
       }
 
@@ -343,7 +348,7 @@ void hexedit( hexedit_t *config )
          }
          case 0x02: /* Ctrl+B: select bank */
          {
-            bank = hexedit_bank();
+            bank = config->nextbank();
             redraw = true;
             break;
          }
@@ -408,8 +413,8 @@ void hexedit( hexedit_t *config )
                   if (IS_HEX(ch))
                   {
                      value |= xtoi( ch );
-                     hexedit_poke( address, value );
-                     check = hexedit_peek( address );
+                     hexedit_poke( config, address, value );
+                     check = hexedit_peek( config, address );
                      if( check == value )
                      {
                         move (line, FIRST_ASCII_COL + byte);
@@ -427,15 +432,15 @@ void hexedit( hexedit_t *config )
                   }
                   /* re-read */
                   move( line, FIRST_HEX_COL + 3 * byte );
-                  itoxx( hexedit_peek( address++ ) );
+                  itoxx( hexedit_peek( config, address++ ) );
                }
             }
             else // MODE_ASCII
             {
                if (IS_PRINT(ch))
                {
-                  hexedit_poke(address, ch);
-                  check = hexedit_peek( address++ );
+                  hexedit_poke( config, address, ch );
+                  check = hexedit_peek( config, address++ );
                   if( check == ch )
                   {
                      addch( ch );
@@ -468,7 +473,7 @@ void hexedit( hexedit_t *config )
          if (line == FIRST_LINE)
          {
             insertln();
-            print_hex_line( FIRST_LINE, address - (address % BYTES_PER_ROW) );
+            print_hex_line( config, FIRST_LINE, address - (address % BYTES_PER_ROW) );
             topleft -= BYTES_PER_ROW;
          }
          else
@@ -481,7 +486,7 @@ void hexedit( hexedit_t *config )
          if (line == LAST_LINE - 1)
          {
             scroll();
-            print_hex_line( line, address - (address % BYTES_PER_ROW) );
+            print_hex_line( config, line, address - (address % BYTES_PER_ROW) );
             topleft += BYTES_PER_ROW;
          }
          else

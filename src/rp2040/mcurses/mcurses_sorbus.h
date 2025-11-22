@@ -37,13 +37,11 @@ bool screen_get4hex( uint16_t *value );
 /* API for hex editor
  * should be refactored to be more generic, like lineview */
 typedef uint8_t(*hexedit_handler_bank_t)();
-typedef uint8_t(*hexedit_handler_peek_t)(uint16_t);
-typedef void(*hexedit_handler_poke_t)(uint16_t,uint8_t);
 typedef struct {
    /* callback functions */
    hexedit_handler_bank_t  nextbank;
-   hexedit_handler_peek_t  peek;
-   hexedit_handler_poke_t  poke;
+   peek_t                  peek;
+   poke_t                  poke;
    /* initial/return values */
    uint8_t                 bank;
    uint16_t                address;
@@ -87,11 +85,10 @@ void mcurses_historian( cputype_t cpu, uint32_t *trace,
 
 /* disassembly viewer utilizing lineview */
 typedef uint8_t(*daview_handler_bank_t)();
-typedef uint8_t(*daview_handler_peek_t)(uint8_t,uint16_t);
 typedef struct {
    /* callback functions */
    daview_handler_bank_t   banks;
-   daview_handler_peek_t   peek;
+   peek_t                  peek;
    /* initial/return values */
    cputype_t               cpu;
    uint8_t                 bank;

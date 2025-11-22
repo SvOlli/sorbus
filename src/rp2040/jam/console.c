@@ -45,13 +45,11 @@ uint8_t local_buf[XMODEM_BUFFER_SIZE];
 extern uint8_t ram[0x10000];
 
 static uint8_t hexedit_bank();
-static uint8_t hexedit_peek(uint16_t);
-static void hexedit_poke(uint16_t,uint8_t);
 
 static hexedit_t he_config = {
    hexedit_bank,
-   hexedit_peek,
-   hexedit_poke,
+   debug_peek,
+   debug_poke,
    0,
    0x400,
    0x400
@@ -105,18 +103,6 @@ uint8_t hexedit_bank()
       he_config.bank = 0;
    }
    return he_config.bank;
-}
-
-
-uint8_t hexedit_peek( uint16_t addr )
-{
-   return debug_peek( he_config.bank, addr );
-}
-
-
-void hexedit_poke( uint16_t addr, uint8_t value )
-{
-   debug_poke( he_config.bank, addr, value );
 }
 
 

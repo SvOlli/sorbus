@@ -33,26 +33,30 @@ const char *cputype_name( cputype_t cputype )
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 /* disable pedantic as it warns about non ISO C usage of nested functions */
-void hexdump_buffer( const uint8_t *memory, uint32_t size )
+void print_hexdump_buffer( uint8_t bank, uint8_t *memory, uint32_t size, bool showbank )
 {
    /* I think that's the first time in anything I coded,
     * where a function within a function actually makes totally sense.
     * Today is a good day. */
    /* Note: nested functions are not C standard, but a GCC extension */
-   uint8_t peek( uint16_t a )
+   uint8_t peek( uint8_t /*bank*/, uint16_t a )
    {
       return memory[a];
    }
 
-   hexdump( peek, 0, size );
+   print_hexdump( peek, bank, 0, size, showbank );
 }
 #pragma GCC diagnostic pop
 
 
-void hexdump( peek_t peek, uint16_t address, uint32_t size )
+void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size, bool showbank )
 {
    for( uint32_t i = 0; i < size; i += 0x10 )
    {
+      if( showbank )
+      {
+         printf( "%02x:", bank );
+      }
       printf( "%04x:", address + i );
 
       for( uint8_t j = 0; j < 0x10; ++j )
@@ -64,7 +68,7 @@ void hexdump( peek_t peek, uint16_t address, uint32_t size )
          }
          else
          {
-            printf( " %02x", peek(a) );
+            printf( " %02x", peek(bank,a) );
          }
          if( j == 7 )
          {
@@ -79,7 +83,7 @@ void hexdump( peek_t peek, uint16_t address, uint32_t size )
          {
             break;
          }
-         uint8_t v = peek(a);
+         uint8_t v = peek(bank,a);
          if( (v >= 32) && (v <= 127) )
          {
             printf( "%c", v );

@@ -114,7 +114,7 @@ cputype_t cpu_detect( bool debug )
 #endif
       disass_historian_t d = disass_historian_init( cputype ? cputype : CPU_6502,
                                                     &trace[0], CYCLES_TOTAL, 0 );
-      hexdump_buffer( &cpudetect[0], sizeof(cpudetect) );
+      print_hexdump_buffer( 0, &cpudetect[0], sizeof(cpudetect), false );
       for( int i = 0; i < cycles_run; ++i )
       {
          if( !disass_historian_entry( d, i ) )
@@ -130,7 +130,7 @@ cputype_t cpu_detect( bool debug )
                  disass_historian_entry( d, i ) );
       }
       disass_historian_done( d );
-      hexdump_buffer( &memory[0], sizeof(memory) );
+      print_hexdump_buffer( 0, &memory[0], sizeof(memory), false );
    }
 
    // run complete, evaluate detected code

@@ -296,7 +296,7 @@ static void screen_printtext( uint16_t line, uint16_t column,
                               uint16_t columns, const char *text )
 {
    const char *c;
-   uint16_t col;
+   uint16_t col = 0;
 
    move( line, column );
    for( c = text; *c; ++c )

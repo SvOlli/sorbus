@@ -20,11 +20,12 @@ typedef enum {
 
 /*
  * callback function for hexdump to get/set memory data
- * address is typically uint16_t, but can be 24 bit when 65816 is used
+ * bank is either bank of 65816 or custom banking
+ * address is typically uint16_t
  * note: functions MUST NOT trigger any events
  */
-typedef uint8_t (*peek_t)(uint16_t);
-typedef void (*poke_t)(uint16_t,uint8_t);
+typedef uint8_t (*peek_t)(uint8_t,uint16_t);
+typedef void (*poke_t)(uint8_t,uint16_t,uint8_t);
 
 /*
  * convert enum to a string for display purposes
@@ -35,8 +36,8 @@ const char *cputype_name( cputype_t cputype );
 /*
  * hexdump some data
  */
-void hexdump_buffer( const uint8_t *memory, uint32_t size );
-void hexdump( peek_t peek, uint16_t address, uint32_t size );
+void print_hexdump_buffer( uint8_t bank, uint8_t *memory, uint32_t size, bool showbank );
+void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size, bool showbank );
 
 /*
  * print trace data in format: aaaa r dd
