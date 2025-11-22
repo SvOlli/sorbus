@@ -55,13 +55,13 @@
 #define IS_HEX(ch)     (((ch) >= 'A' &&( ch ) <= 'F') || ((ch) >= 'a' &&( ch ) <= 'f') || ((ch) >= '0' &&( ch ) <= '9'))
 
 
-uint8_t hexedit_peek( hexedit_t *config, uint16_t address )
+uint8_t hexedit_peek( mc_hexedit_t *config, uint16_t address )
 {
    return config->peek( config->bank, address );
 }
 
 
-void hexedit_poke( hexedit_t *config, uint16_t address, uint8_t data )
+void hexedit_poke( mc_hexedit_t *config, uint16_t address, uint8_t data )
 {
    config->poke( config->bank, address, data );
 }
@@ -120,7 +120,7 @@ uint8_t xtoi (uint8_t ch)
    return val;
 }
 
-void print_hex_line( hexedit_t *config, uint8_t line, uint16_t off )
+void print_hex_line( mc_hexedit_t *config, uint8_t line, uint16_t off )
 {
    uint8_t       col;
    uint8_t       ch;
@@ -189,7 +189,7 @@ static uint16_t fix_topleft( uint16_t topleft, uint16_t address )
 }
 
 
-static uint16_t print_hex_page( hexedit_t *config, uint16_t topleft, uint16_t address )
+static uint16_t print_hex_page( mc_hexedit_t *config, uint16_t topleft, uint16_t address )
 {
    uint8_t     line;
    uint16_t    off;
@@ -218,7 +218,7 @@ void ito4x( uint16_t address )
  * hexdit: hex editor
  *-----------------------------------------------------------------------------
  */
-void hexedit( hexedit_t *config )
+void hexedit( mc_hexedit_t *config )
 {
    uint8_t     ch;
    uint8_t     line;
@@ -355,7 +355,7 @@ void hexedit( hexedit_t *config )
          case 0x07: /* Ctrl+G: enter address */
          {
             move( 0, 0 );
-            if( screen_get4hex( &address ) )
+            if( mcurses_get4hex( &address ) )
             {
                topleft = address;
             }

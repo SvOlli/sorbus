@@ -135,7 +135,7 @@ void help( const char *progname, int retval )
 void mcurses( cputype_t cpu, uint16_t address )
 {
    struct termios oldt, newt;
-   daview_t dav = { 0 };
+   mc_disass_t dav   = { 0 };
 
    dav.banks      = debug_banks;
    dav.peek       = debug_peek;

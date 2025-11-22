@@ -46,7 +46,7 @@ extern uint8_t ram[0x10000];
 
 static uint8_t hexedit_bank();
 
-static hexedit_t he_config = {
+static mc_hexedit_t he_config = {
    hexedit_bank,
    debug_peek,
    debug_poke,
@@ -234,31 +234,37 @@ void console_rp2040()
    while( !leave )
    {
       clear();
-      screen_border( true, 0, 0, lines-1, cols-1 );
-      move( 1, 1 );
-      addstr( "The Sorbus Computer Meta Menu invoked via " );
-      addstr( invoke );
-      addstr( ", CPU on RDY" );
-      screen_textbox( false, lines-6,  1, debug_get_info( DEBUG_INFO_CLOCKS ) );
-      screen_textbox( false, lines-6, (screen_get_columns()+1)/2 - 9, debug_get_info( DEBUG_INFO_SYSVECTORS ) );
-      screen_textbox( false, lines-6, cols-21, debug_get_info( DEBUG_INFO_HEAP ) );
+      mcurses_border( true, 0, 0, lines-1, cols-1 );
 
-      move( 3, 1 );
-           /* 12345678901234567890123456789012345678901234567890123456789012345678901234567890 */
+      mcurses_textbox( false, lines-6, 1, debug_get_info( DEBUG_INFO_CLOCKS ) );
+      mcurses_textbox( false, lines-6, ((screen_get_columns()+1)>>1) - 9, debug_get_info( DEBUG_INFO_SYSVECTORS ) );
+      mcurses_textbox( false, lines-6, cols-21, debug_get_info( DEBUG_INFO_HEAP ) );
+
+      move( 1, 5 );
+      addstr( "The" );
+      mcurses_sorbus_logo( 2, 2 );
+      mcurses_line_horizontal( true, 6, 0, cols-1 );
+      move( 7, 2 );
+      addstr( "Meta Menu invoked via " );
+      addstr( invoke );
+      addstr( ", CPU stopped on RDY" );
+
+      move( 9, 2 );
       addstr( "B)acktrace, D)isassemble, E)vent queue, I)nternal drive, M)emory, U)pload" );
-      move( 4, 1 );
+      move( 10, 2 );
       addstr( "C)ontinue, R)eboot ? " );
+
       in = toupper( getchar() );
       switch( in )
       {
          case '!':
-            screen_infobox( true, SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
-                            "Backtrace Dumper",
-                            "Turn on logging now\n"
-                            "Press any key\n"
-                            "Save capture for later use\n"
-                            "Turn off logging\n"
-                            "Press any key to return to menu"
+            mcurses_titlebox( true, MCURSES_TEXT_CENTER, MCURSES_TEXT_CENTER,
+                              "Backtrace Dumper",
+                              "Turn on logging now\n"
+                              "Press any key\n"
+                              "Save capture for later use\n"
+                              "Turn off logging\n"
+                              "Press any key to return to menu"
                           );
             move( lines - 1, 0 );
             if( getch() != 0x03 )
@@ -285,13 +291,13 @@ void console_rp2040()
             initscr();
             break;
          case 'E':
-            screen_infobox( false, SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
-                            "Event Queue", debug_get_info( DEBUG_INFO_EVENTQUEUE ) );
+            mcurses_titlebox( false, MCURSES_TEXT_CENTER, MCURSES_TEXT_CENTER,
+                              "Event Queue", debug_get_info( DEBUG_INFO_EVENTQUEUE ) );
             getch();
             break;
          case 'I':
-            screen_infobox( false, SCREEN_TEXT_CENTER, SCREEN_TEXT_CENTER,
-                            "Internal Drive", debug_get_info( DEBUG_INFO_INTERNALDRIVE ) );
+            mcurses_titlebox( false, MCURSES_TEXT_CENTER, MCURSES_TEXT_CENTER,
+                              "Internal Drive", debug_get_info( DEBUG_INFO_INTERNALDRIVE ) );
             getch();
             break;
          case 'M':

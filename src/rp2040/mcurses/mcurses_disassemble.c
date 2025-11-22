@@ -12,18 +12,6 @@
 #define PRECACHE (16)
 
 
-#if 0
-typedef struct {
-   /* callback functions */
-   daview_handler_bank_t   banks;
-   daview_handler_peek_t   peek;
-   /* initial/return values */
-   cputype_t               cputype;
-   uint8_t                 bank;
-   uint16_t                address;
-} daview_t;
-#endif
-
 typedef union {
    uint16_t       address  : 16;
    struct {
@@ -32,13 +20,15 @@ typedef union {
    };
 } linecache_t;
 
+
 typedef enum {
    MCD_MODE_FULLOPCODE = 0,
    MCD_MODE_SINGLEBYTE
 } mcd_mode_t;
 
+
 typedef struct {
-   daview_t       *dav;
+   mc_disass_t    *dav;
    linecache_t    *linecache;
    uint16_t       lines;
    uint16_t       firstline;
@@ -72,8 +62,8 @@ static void mcurses_disassemble_alloc( void *d, uint16_t lines )
 
 static uint16_t mcurses_disassemble_prevaddress( void *d )
 {
-   mc_disassemble_t *mcd = (mc_disassemble_t*)d;
-   daview_t *dav = mcd->dav;
+   mc_disassemble_t  *mcd = (mc_disassemble_t*)d;
+   mc_disass_t       *dav = mcd->dav;
    uint16_t l;
    linecache_t *linecache = mcd->linecache;
 
@@ -101,16 +91,14 @@ static uint16_t mcurses_disassemble_prevaddress( void *d )
 static void mcurses_disassemble_populate( void *d )
 {
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
-   daview_t *dav = mcd->dav;
+   mc_disass_t *dav = mcd->dav;
    uint16_t l;
    uint16_t nextaddress = dav->address - PRECACHE;
    uint16_t address = dav->address - PRECACHE;
    linecache_t *linecache = mcd->linecache;
 
-fprintf( stderr, "populate: %04x %s\n", address, mcd->mode ? "singlebyte" : "fullopcode" );
    for( l = 0; l < mcd->lines; ++l )
    {
-fprintf( stderr, "%2d: %04x %04x ", l, address, nextaddress );
       switch( mcd->mode )
       {
          case MCD_MODE_SINGLEBYTE:
@@ -154,7 +142,6 @@ fprintf( stderr, "%2d: %04x %04x ", l, address, nextaddress );
          default:
             break;
       }
-fprintf( stderr, "%04x\n", linecache[l].address );
    }
 }
 
@@ -162,30 +149,29 @@ fprintf( stderr, "%04x\n", linecache[l].address );
 static int32_t mcurses_disassemble_move( void *d, int32_t movelines )
 {
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
-   daview_t *dav = mcd->dav;
+   mc_disass_t *dav = mcd->dav;
    int32_t l;
 
-fprintf( stderr, "move: %d\n", movelines );
-   switch( mcd->mode )
+   if( movelines )
    {
-      case MCD_MODE_SINGLEBYTE:
-         dav->address += movelines;
-         break;
-      case MCD_MODE_FULLOPCODE:
-         if( !movelines )
-         {
-         }
-         else if( movelines < 0 )
-         {
-            dav->address = mcurses_disassemble_prevaddress( d );
-         }
-         else for( l = 0; l < movelines; ++l )
-         {
-            dav->address += disass_bytes( dav->peek( dav->bank, dav->address ) );
-         }
-         break;
-      default:
-         break;
+      switch( mcd->mode )
+      {
+         case MCD_MODE_SINGLEBYTE:
+            dav->address += movelines;
+            break;
+         case MCD_MODE_FULLOPCODE:
+            if( movelines < 0 )
+            {
+               dav->address = mcurses_disassemble_prevaddress( d );
+            }
+            else for( l = 0; l < movelines; ++l )
+            {
+               dav->address += disass_bytes( dav->peek( dav->bank, dav->address ) );
+            }
+            break;
+         default:
+            break;
+      }
    }
 
    mcurses_disassemble_populate( d );
@@ -194,18 +180,14 @@ fprintf( stderr, "move: %d\n", movelines );
    {
       return 0;
    }
-   if( movelines < 0 )
-   {
-      return LINEVIEW_FIRSTLINE;
-   }
-   return 1;
+   return LINEVIEW_FIRSTLINE;
 }
 
 
 int32_t mcurses_disassemble_keypress( void *d, uint8_t *ch )
 {
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
-   daview_t *dav = mcd->dav;
+   mc_disass_t *dav = mcd->dav;
    switch( *ch )
    {
       case 0x02: // Ctrl+B
@@ -218,7 +200,7 @@ int32_t mcurses_disassemble_keypress( void *d, uint8_t *ch )
          break;
       case 0x07: // Ctrl+G
          move( 1, 1 );
-         if( screen_get4hex( &(dav->address) ) )
+         if( mcurses_get4hex( &(dav->address) ) )
          {
             mcurses_disassemble_populate( d );
             return LINEVIEW_FIRSTLINE; // force full redraw
@@ -250,7 +232,7 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
    static char output[80];
 
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
-   daview_t *dav = mcd->dav;
+   mc_disass_t *dav = mcd->dav;
    uint16_t address;
 
    switch( offset )
@@ -265,7 +247,6 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
 
    offset += mcd->firstline;
    address = mcd->linecache[offset].address;
-fprintf( stderr, "data: %2d: %04x\n", offset, address );
    if( offset > mcd->lines )
    {
       mcurses_disassemble_alloc( d, offset );
@@ -296,7 +277,8 @@ fprintf( stderr, "data: %2d: %04x\n", offset, address );
       case MCD_MODE_FULLOPCODE:
          disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
          if( (dav->peek( dav->bank, address + 0 ) == 0) &&
-             (dav->peek( dav->bank, address - 1 ) == 0) )
+             (dav->peek( dav->bank, address - 1 ) == 0) &&
+             (address != dav->address) )
          {
             return disass_brk1( address,
                            dav->peek( dav->bank, address + 0 ),
@@ -321,10 +303,10 @@ fprintf( stderr, "data: %2d: %04x\n", offset, address );
 }
 
 
-void mcurses_disassemble( daview_t *dav )
+void mcurses_disassemble( mc_disass_t *dav )
 {
-   lineview_t config           = { 0 };
-   mc_disassemble_t mcd = { 0 };
+   lineview_t config     = { 0 };
+   mc_disassemble_t  mcd = { 0 };
 
    mcd.dav           = dav;
    mcd.lines         = screen_get_lines();

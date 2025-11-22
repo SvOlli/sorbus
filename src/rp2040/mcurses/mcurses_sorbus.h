@@ -18,20 +18,48 @@ bool screen_get_size( uint16_t *lines, uint16_t *columns );
 /* cached values determined by screen_get_size() */
 uint16_t screen_get_columns();
 uint16_t screen_get_lines();
+/* send escape sequence to save the current screen */
 void screen_save();
+/* send escape sequence to restore the previously saved screen */
 void screen_restore();
+/* send escape sequences for alternative buffer */
 void screen_alternative_buffer_enable();
 void screen_alternative_buffer_disable();
-#define SCREEN_TEXT_CENTER ((uint16_t)0xFFFF)
-void screen_border( bool dframe, uint16_t top, uint16_t left,
-                    uint16_t bottom, uint16_t right );
-void screen_textsize( uint16_t *lines, uint16_t *columns,
+
+/* generic functions for getting data on the display */
+
+/* draw a nice Sorbus logo */
+void mcurses_sorbus_logo( uint16_t line, uint16_t column );
+
+/* draw a nice border */
+void mcurses_border( bool dframe, uint16_t top, uint16_t left,
+                     uint16_t bottom, uint16_t right );
+
+/* within this border draw a nice horizontal line */
+void mcurses_line_horizontal( bool dframe, uint16_t top, uint16_t left,
+                              uint16_t right );
+
+/* within this border draw a nice vertical line */
+void mcurses_line_vertical( bool dframe, uint16_t top, uint16_t left,
+                            uint16_t bottom );
+
+/* determine the size of a text in lines and (largest) columns */
+void mcurses_textsize( uint16_t *lines, uint16_t *columns,
+                       const char *text );
+
+/* get a 4 digit hex number from keyboard */
+bool mcurses_get4hex( uint16_t *value );
+
+/* draw a box containing a title and some text */
+void mcurses_titlebox( bool dframe, uint16_t line, uint16_t column,
+                       const char *title, const char *text );
+
+/* draw a box containing some text */
+void mcurses_textbox( bool dframe, uint16_t line, uint16_t column,
                       const char *text );
-void screen_infobox( bool dframe, uint16_t line, uint16_t column,
-                     const char *header, const char *text );
-void screen_textbox( bool dframe, uint16_t line, uint16_t column,
-                     const char *text );
-bool screen_get4hex( uint16_t *value );
+
+/* mcurses_textbox and mcurses_infobox can also be centered */
+#define MCURSES_TEXT_CENTER ((uint16_t)0xFFFF)
 
 
 /* API for hex editor
@@ -46,9 +74,9 @@ typedef struct {
    uint8_t                 bank;
    uint16_t                address;
    uint16_t                topleft;
-} hexedit_t;
+} mc_hexedit_t;
 /* implemented in mcurses_hexedit.c */
-void hexedit( hexedit_t *config );
+void hexedit( mc_hexedit_t *config );
 
 
 /* keys not handled by lineview:
@@ -93,7 +121,7 @@ typedef struct {
    cputype_t               cpu;
    uint8_t                 bank;
    uint16_t                address;
-} daview_t;
-void mcurses_disassemble( daview_t *dav );
+} mc_disass_t;
+void mcurses_disassemble( mc_disass_t *dav );
 
 #endif

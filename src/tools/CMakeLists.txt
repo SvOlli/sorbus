@@ -27,7 +27,8 @@ add_library(sorbus_rte STATIC
    ../rp2040/mcurses/mcurses_sorbus.c
    ../rp2040/mcurses/mcurses_view.c
    )
-target_include_directories(sorbus_rte PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(sorbus_rte PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ../rp2040/common)
+target_include_directories(sorbus_rte INTERFACE ../rp2040/mcurses)
 
 # tool to convert binary data to header file for including in source code
 add_executable(bin2h

@@ -107,7 +107,7 @@ int main( int argc, char *argv[] )
    uint16_t x, y;
    uint8_t ch;
    bool rv;
-   hexedit_t config = { _hexedit_bank, _hexedit_peek, _hexedit_poke, 0x00, 0x0000, 0x0000 };
+   mc_hexedit_t config = { _hexedit_bank, _hexedit_peek, _hexedit_poke, 0x00, 0x0000, 0x0000 };
    lineview_t lvconfig = { lv_data, lv_move, NULL, NULL, 0, F_WHITE | B_BLUE };
 
    tcgetattr( STDIN_FILENO, &oldt );
@@ -124,7 +124,7 @@ int main( int argc, char *argv[] )
 #if 0
    lineview( &lvconfig );
 #else
-   screen_border( 0, 0, y-1, x-1 );
+   mcurses_border( 0, 0, y-1, x-1 );
 #if 0
    screen_table( 2, 2, speeds );
 #else

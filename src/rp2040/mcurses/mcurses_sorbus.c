@@ -213,7 +213,56 @@ void screen_disable_alternative_buffer()
 }
 
 
-void screen_border( bool dframe, uint16_t top, uint16_t left,
+void mcurses_sorbus_logo( uint16_t line, uint16_t column )
+{
+   int i;
+   uint16_t logo_data[192] = {
+   0x2591, 0x2591, 0x2591, 0x2588, 0x2580, 0x2580, 0x2591, 0x2588,
+   0x2580, 0x2588, 0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2588,
+   0x2580, 0x2584, 0x2591, 0x2588, 0x2591, 0x2588, 0x2591, 0x2588,
+   0x2580, 0x2580, 0x2591, 0x2591, 0x2591, 0x2588, 0x2580, 0x2580,
+   0x2591, 0x2588, 0x2580, 0x2588, 0x2591, 0x2588, 0x2584, 0x2588,
+   0x2591, 0x2588, 0x2580, 0x2588, 0x2591, 0x2588, 0x2591, 0x2588,
+   0x2591, 0x2580, 0x2588, 0x2580, 0x2591, 0x2588, 0x2580, 0x2580,
+   0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2591, 0x2591, 0x2591,
+
+   0x2591, 0x2591, 0x2591, 0x2580, 0x2580, 0x2588, 0x2591, 0x2588,
+   0x2591, 0x2588, 0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2588,
+   0x2580, 0x2584, 0x2591, 0x2588, 0x2591, 0x2588, 0x2591, 0x2580,
+   0x2580, 0x2588, 0x2591, 0x2591, 0x2591, 0x2588, 0x2591, 0x2591,
+   0x2591, 0x2588, 0x2591, 0x2588, 0x2591, 0x2588, 0x2591, 0x2588,
+   0x2591, 0x2588, 0x2580, 0x2580, 0x2591, 0x2588, 0x2591, 0x2588,
+   0x2591, 0x2591, 0x2588, 0x2591, 0x2591, 0x2588, 0x2580, 0x2580,
+   0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2591, 0x2591, 0x2591,
+
+   0x2591, 0x2591, 0x2591, 0x2580, 0x2580, 0x2580, 0x2591, 0x2580,
+   0x2580, 0x2580, 0x2591, 0x2580, 0x2591, 0x2580, 0x2591, 0x2580,
+   0x2580, 0x2591, 0x2591, 0x2580, 0x2580, 0x2580, 0x2591, 0x2580,
+   0x2580, 0x2580, 0x2591, 0x2591, 0x2591, 0x2580, 0x2580, 0x2580,
+   0x2591, 0x2580, 0x2580, 0x2580, 0x2591, 0x2580, 0x2591, 0x2580,
+   0x2591, 0x2580, 0x2591, 0x2591, 0x2591, 0x2580, 0x2580, 0x2580,
+   0x2591, 0x2591, 0x2580, 0x2591, 0x2591, 0x2580, 0x2580, 0x2580,
+   0x2591, 0x2580, 0x2591, 0x2580, 0x2591, 0x2591, 0x2591, 0x2591 };
+
+   move( line+0, column );
+   for( i = 0x00; i < 0x40; ++i )
+   {
+      addch( logo_data[i] );
+   }
+   move( line+1, column );
+   for( i = 0x40; i < 0x80; ++i )
+   {
+      addch( logo_data[i] );
+   }
+   move( line+2, column );
+   for( i = 0x80; i < 0xc0; ++i )
+   {
+      addch( logo_data[i] );
+   }
+}
+
+
+void mcurses_border( bool dframe, uint16_t top, uint16_t left,
                     uint16_t bottom, uint16_t right )
 {
    int i;
@@ -244,7 +293,38 @@ void screen_border( bool dframe, uint16_t top, uint16_t left,
 }
 
 
-void screen_textsize( uint16_t *lines, uint16_t *columns, const char *text )
+void mcurses_line_horizontal( bool dframe, uint16_t top, uint16_t left,
+                              uint16_t right )
+{
+   uint16_t i;
+   move( top, left );
+   addch( dframe ? 0x2560 : 0x251c );
+   for( i = left+1; i < right; ++i )
+   {
+      addch( dframe ? 0x2550 : 0x2500 );
+   }
+   addch( dframe ? 0x2563 : 0x2524 );
+}
+
+
+void mcurses_line_vertical( bool dframe, uint16_t top, uint16_t left,
+                            uint16_t bottom )
+{
+   uint16_t i;
+   move( top, left );
+   addch( dframe ? 0x2566 : 0x252c );
+   for( i = top+1; i < bottom; ++i )
+   {
+      move( i, left );
+      addch( dframe ? 0x2551 : 0x2502 );
+   }
+   move( bottom, left );
+   addch( dframe ? 0x2569 : 0x2534 );
+}
+
+
+
+void mcurses_textsize( uint16_t *lines, uint16_t *columns, const char *text )
 {
    uint16_t len   = 0;
    uint16_t width = 0;
@@ -304,18 +384,19 @@ static void screen_printtext( uint16_t line, uint16_t column,
       if( *c == '\n' )
       {
          ++line;
-         while( col < columns )
+         while( col++ < columns )
          {
             addch( ' ' );
-            ++col;
          }
          col = 0;
          move( line, column );
       }
       else
       {
-         ++col;
-         addch( *c );
+         if( col++ < columns )
+         {
+            addch( *c );
+         }
       }
    }
    if( *(c-1) == '\n' )
@@ -326,35 +407,29 @@ static void screen_printtext( uint16_t line, uint16_t column,
 }
 
 
-void screen_infobox( bool dframe, uint16_t line, uint16_t column,
-                     const char *header, const char *text )
+void mcurses_titlebox( bool dframe, uint16_t line, uint16_t column,
+                       const char *title, const char *text )
 {
    uint16_t rows, width, row = 3;
    const char *c;
    uint16_t i;
 
-   screen_textsize( &rows, &width, text );
+   mcurses_textsize( &rows, &width, text );
 
-   if( line == SCREEN_TEXT_CENTER )
+   if( line == MCURSES_TEXT_CENTER )
    {
-      line = (screen_get_lines() - rows) / 2 - 2;
+      line = ((screen_get_lines() - rows) >> 1) - 2;
    }
-   if( column == SCREEN_TEXT_CENTER )
+   if( column == MCURSES_TEXT_CENTER )
    {
-      column = (screen_get_columns() - width) / 2 - 1;
+      column = ((screen_get_columns() - width) >> 1) - 1;
    }
 
-   screen_border( dframe, line, column, line + rows + 3, column + width + 1 );
-   move( line+2, column );
-   addch( dframe ? 0x2560 : 0x251c );
-   for( i = 0; i < width; ++i )
-   {
-      addch( dframe ? 0x2550 : 0x2500 );
-   }
-   addch( dframe ? 0x2563 : 0x2524 );
+   mcurses_border( dframe, line, column, line + rows + 3, column + width + 1 );
+   mcurses_line_horizontal( dframe, line+2, column, column + width + 1 );
 
    move( line+1, column+1 );
-   c = header;
+   c = title;
    for( i = 0; i < width; ++i )
    {
       if( *c )
@@ -371,23 +446,23 @@ void screen_infobox( bool dframe, uint16_t line, uint16_t column,
 }
 
 
-void screen_textbox( bool dframe, uint16_t line, uint16_t column,
+void mcurses_textbox( bool dframe, uint16_t line, uint16_t column,
                      const char *text )
 {
    uint16_t rows, width, row = 1;
 
-   screen_textsize( &rows, &width, text );
+   mcurses_textsize( &rows, &width, text );
 
-   if( line == SCREEN_TEXT_CENTER )
+   if( line == MCURSES_TEXT_CENTER )
    {
-      line = (screen_get_lines() - rows) - 1;
+      line = ((screen_get_lines() - rows) >> 1) - 1;
    }
-   if( column == SCREEN_TEXT_CENTER )
+   if( column == MCURSES_TEXT_CENTER )
    {
-      column = (screen_get_columns() - width) - 1;
+      column = ((screen_get_columns() - width) >> 1) - 1;
    }
 
-   screen_border( dframe, line, column, line + rows + 1, column + width + 1 );
+   mcurses_border( dframe, line, column, line + rows + 1, column + width + 1 );
    screen_printtext( line + row, column + 1, width, text );
 }
 
@@ -409,7 +484,7 @@ static void hex1ascii( uint8_t val )
 }
 
 
-bool screen_get4hex( uint16_t *value )
+bool mcurses_get4hex( uint16_t *value )
 {
    uint16_t x, y;
    uint16_t v = *value;
