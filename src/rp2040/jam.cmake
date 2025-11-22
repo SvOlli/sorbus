@@ -40,6 +40,7 @@ add_executable(jam_alpha
    common/disassemble_historian.c
    common/generic_helper.c
    common/mf_checkheap.c
+   common/putcharset.c
    mcurses/mcurses.c
    mcurses/mcurses_hexedit.c
    mcurses/mcurses_historian.c

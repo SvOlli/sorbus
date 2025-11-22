@@ -30,6 +30,7 @@ CPUID  := $DF04     ; (R) CPU features:
                     ; $21 6502 Rev.A (no ROR)
 UARTCF := $DF0B     ; config: bit 0: turn on/off crlf conversion
                     ;         bit 1: turn on/off flow control
+                    ;         bit 2-3: select UTF-8 charset conversion
                     ;         bit 7: patch BIOS to use VGAterm(?)
 UARTRD := $DF0C     ; (R) read from serial input queue (read only)
 UARTRS := $DF0D     ; (R) get serial input queue size (read only, up to 127, >127: error)

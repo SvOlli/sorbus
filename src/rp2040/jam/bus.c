@@ -430,8 +430,7 @@ static inline void system_reset()
    }
 
    // setup serial console
-   console_set_crlf( true );
-   console_set_flowcontrol( false );
+   console_set_uart( 1 );
    // reflect changes from above in control register
    // this needs to be set here, as console_set_* cannot access RAM
    ram[MEM_ADDR_UART_CONTROL] = 0x01;
@@ -655,9 +654,8 @@ static inline void handle_io()
          case 0x03: // scratch-1k
             handle_scratch_mem( data );
             break;
-         case 0x0B: // UART read: enable crlf conversion
-            console_set_crlf( data & 1 );
-            console_set_flowcontrol( data & 2 );
+         case 0x0B: // UART set configuration
+            console_set_uart( data );
             handle_ramrom(); // make sure register is mirrored to RAM for read
             break;
          case 0x0E: // console UART write

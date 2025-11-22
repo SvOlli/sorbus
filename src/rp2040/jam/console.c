@@ -27,6 +27,7 @@
 extern void system_trap();
 
 console_type_t console_type;
+uint8_t console_charset = 0;
 bool console_crlf_enabled;
 bool console_flowcontrol_enabled;
 
@@ -77,16 +78,12 @@ void console_cpu_pause( bool stop )
 }
 
 
-void console_set_flowcontrol( bool enable )
+void console_set_uart( uint8_t data )
 {
-   console_flowcontrol_enabled = enable;
-}
-
-
-void console_set_crlf( bool enable )
-{
-   uart_set_translate_crlf( uart0, enable );
-   console_crlf_enabled = enable;
+   console_crlf_enabled = data & 1;
+   console_flowcontrol_enabled = data & 2;
+   console_charset = (data >> 2) & 0x03;
+   uart_set_translate_crlf( uart0, console_crlf_enabled );
 }
 
 
@@ -388,8 +385,7 @@ void console_65c02()
       }
       else
       {
-         //printf("%02x ",out );
-         putchar( out );
+         putcharset( out, console_charset );
       }
    }
 }

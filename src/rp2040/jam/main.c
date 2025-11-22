@@ -40,7 +40,6 @@ int main()
 {
    // setup UART
    stdio_init_all();
-   console_set_crlf( true );
 
 #if 0
    // give some time to connect to console
