@@ -15,15 +15,16 @@
  * all detectable CPU instruction sets
  * 6502 Rev.A should be last valid CPU, so it can be skipped in cycling
  * Changes here need to be adjusted in cputype_name as well
+ * Needs to be aligned with return values of cpu_detect 6502 code
  */
 typedef enum {
    CPU_ERROR=0,
    CPU_6502,
-   CPU_65SC02,
    CPU_65C02,
    CPU_65816,
    CPU_65CE02,
    CPU_6502RA,
+   CPU_65SC02,
    CPU_UNDEF
 } cputype_t;
 

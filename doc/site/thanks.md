@@ -117,6 +117,19 @@ License terms: GPL v2 or later
 * src/rp2040/common/mcurses_hexedit.c
 
 
+### XModem
+
+```txt
+Copyright 2006 Arastra, Inc.
+Copyright 2001, 2002 Georges Menie (www.menie.org)
+```
+License terms: LGPL v2 or later
+
+* src/rp2040/3rdparty/xmodem/xmodem.c
+* src/rp2040/3rdparty/xmodem/xmodem.h
+* src/rp2040/common/xmodem.c
+
+
 ### Mod Player
 
 ```txt

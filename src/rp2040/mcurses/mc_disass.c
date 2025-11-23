@@ -322,6 +322,10 @@ int32_t mcurses_disassemble_keypress( void *d, uint8_t *ch )
       case 'p':
          if( ++(dav->cpu) == CPU_6502RA )
          {
+            ++(dav->cpu);
+         }
+         if( dav->cpu >= CPU_UNDEF )
+         {
             // Rev.A is by definition last, so it can be skipped
             dav->cpu = CPU_ERROR + 1;
          }

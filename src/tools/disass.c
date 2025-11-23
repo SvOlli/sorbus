@@ -142,8 +142,8 @@ void mcurses( cputype_t cpu, uint16_t address )
    dav.cpu        = cpu;
    dav.bank       = 0;
    dav.address    = address;
-   dav.m816       = true;
-   dav.x816       = true;
+   dav.m816       = false;
+   dav.x816       = false;
 
    tcgetattr( STDIN_FILENO, &oldt );
    newt = oldt;

@@ -92,14 +92,6 @@ void lineview( lineview_t *config )
          }
       }
 
-#if 0
-      {
-         char hex[3] = { 0 };
-         move( LINES-1, COLS-3 );
-         snprintf( hex, 3, "%02x", ch );
-         addstr( hex );
-      }
-#endif
       step = 0;
       switch( ch )
       {
@@ -121,6 +113,10 @@ void lineview( lineview_t *config )
          case KEY_END:
             step = MC_LINEVIEW_LASTLINE;
             break;
+         case 'Q':
+         case 'q':
+            ch = 0x03;  // also allow 'Q' to quit
+            break;      // can be overriden by config->keypress
          default:
             break;
       }
