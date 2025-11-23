@@ -54,6 +54,8 @@ add_library(c_flod
    3rdparty/c-flod/neoart/flod/futurecomposer/FCVoice.c
 )
 add_definitions(-DFLOD_NO_SOUNDBLASTER)
+# fixing those warnings will be a job for later
+target_compile_options(c_flod PRIVATE "--no-warnings")
 
 bin2h(cream_of_the_earth.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/CreamOfTheEarth.mod mod_data)
 bin2h(rsi_rise_up.h ${CMAKE_CURRENT_SOURCE_DIR}/sound-mod/MOD.rsi-rise_up mod_data)
@@ -161,6 +163,8 @@ pico_generate_pio_header(sound_sid ${CMAKE_CURRENT_LIST_DIR}/3rdparty/i2s/i2s.pi
 target_include_directories(sound_sid PUBLIC
    ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/i2s
 )
+# fixing those warnings will be a job for later
+target_compile_options(sound_sid PRIVATE "--no-warnings")
 
 
 target_include_directories(sound_sid PRIVATE

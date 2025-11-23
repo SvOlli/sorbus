@@ -45,8 +45,10 @@ const char *cputype_name( cputype_t cputype );
 /*
  * hexdump some data
  */
-void print_hexdump_buffer( uint8_t bank, uint8_t *memory, uint32_t size, bool showbank );
-void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size, bool showbank );
+void print_hexdump_buffer( uint8_t bank, const uint8_t *memory, uint32_t size,
+                           bool showbank );
+void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size,
+                    bool showbank );
 
 /*
  * print trace data in format: aaaa r dd

@@ -6,9 +6,9 @@
 
 #include "bus.h"
 
-static uint8_t mx_flag_816 = 0;
-static disass_show_t show_flags = DISASS_SHOW_NOTHING;
-static cputype_t cputype;
+static disass_show_t show_flags  = DISASS_SHOW_NOTHING;
+static cputype_t cputype         = CPU_ERROR;
+static uint8_t mx_flag_816       = 0;
 
 void disass_mx816( bool m, bool x )
 {
@@ -329,6 +329,13 @@ uint8_t disass_bytes( uint8_t p0 )
       return 0;
    }
 
+   if( cputype == CPU_65816 )
+   {
+      if( PICK_MXE(disass_opcodes[p0]) & mx_flag_816 )
+      {
+         return PICK_BYTES(disass_opcodes[p0]) + 1;
+      }
+   }
    return PICK_BYTES(disass_opcodes[p0]);
 }
 
@@ -340,6 +347,13 @@ uint8_t disass_basecycles( uint8_t p0 )
       return 0;
    }
 
+   if( cputype == CPU_65816 )
+   {
+      if( PICK_MXE(disass_opcodes[p0]) & mx_flag_816 )
+      {
+         return PICK_CYCLES(disass_opcodes[p0]) + 1;
+      }
+   }
    return PICK_CYCLES(disass_opcodes[p0]);
 }
 
@@ -409,6 +423,19 @@ bool disass_bcdextracycles( uint8_t p0 )
    return false;
 }
 
+static int snprimm( char *b, size_t bsize, uint8_t p0, uint8_t p1, uint8_t p2 )
+{
+   uint8_t mxe = PICK_MXE(disass_opcodes[p0]);
+   if( cputype == CPU_65816 )
+   {
+      if( mxe & mx_flag_816 )
+      {
+         return snprintf( b, bsize, "#$%04X",  p1 | (p2 << 8) );
+      }
+   }
+   /* default: */
+   return snprintf( b, bsize, "#$%02X",        p1 );
+}
 
 static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3, bool brkoverride )
 {
@@ -520,7 +547,8 @@ static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, u
          }
          break;
       case IMM:   // OPC #$01
-         snprintf( b, bsize, "#$%02X",        p1 );
+         //snprintf( b, bsize, "#$%02X",        p1 );
+         snprimm( b, bsize,               p0, p1, p2 );
          break;
       case IMM2:  // OPC #$01,#$02
          snprintf( b, bsize, "#$%02X,#$%02X", p1, p2 );

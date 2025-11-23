@@ -69,7 +69,7 @@
     - bit 1: enable flow control
     - bit 2-3: select auto UTF-8 conversion
         - 00: off
-        - 01: standard Sorbus conversion
+        - 01: standard Sorbus conversion (not fully defined yet)
         - 10: reserved
         - 11: reserved
 - $DF0C: (R) UART in queue read

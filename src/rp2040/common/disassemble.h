@@ -226,6 +226,7 @@ typedef union
 {
    uint64_t       raw     : 64;
    struct {
+      /* lower 32bit are the same as trace from GPIOs */
       uint16_t    address : 16;
       uint8_t     data    :  8;
       bool        rw       : 1;
@@ -236,6 +237,7 @@ typedef union
       bool        reset    : 1;
       uint8_t     bits30_31: 2;
 
+      /* upper 32bit contain additional data for disassembly */
       uint8_t     data1    : 8;
       uint8_t     data2    : 8;
       uint8_t     data3    : 8;

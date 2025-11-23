@@ -81,12 +81,12 @@ void lineview( lineview_t *config )
       {
          int32_t keyaction = config->keypress( config->d, &ch );
          
-         if( keyaction == LINEVIEW_LASTLINE )
+         if( keyaction == LINEVIEW_REDRAWALL )
          {
             header_footer( config );
          }
 
-         if( keyaction )
+         if( keyaction != 0 )
          {
             printlines( config, COLS );
          }

@@ -60,24 +60,24 @@ int main( int argc, char *argv[] )
       }
    }
 
-   draw_bar_v( im, 32, 0, 31, 2 );
+   draw_bar_v( im, 32, 0, 31, red );
    for( x = 0; x < 31; ++x )
    {
-      draw_bar_v( im, 1+x, 0, 15, 2 );
-      draw_bar_v( im, 1+x, 16, 15, 2 );
+      draw_bar_v( im, 1+x, 0, 15, red );
+      draw_bar_v( im, 1+x, 16, 15, red );
    }
    for( x = 0; x < 31; x+=2 )
    {
-      draw_bar_h( im, 1+x,  0, 1, 2 );
-      draw_bar_h( im, 1+x, 31, 1, 2 );
+      draw_bar_h( im, 1+x,  0, 1, red );
+      draw_bar_h( im, 1+x, 31, 1, red );
    }
    for( x = 1; x < 31; x+=2 )
    {
-      draw_bar_h( im, 1+x, 15, 1, 2 );
-      draw_bar_h( im, 1+x, 16, 1, 2 );
+      draw_bar_h( im, 1+x, 15, 1, red );
+      draw_bar_h( im, 1+x, 16, 1, red );
    }
-   draw_bar_h( im, 0, 16, 1, 2 );
-   arrow_right( im, 0, 16, 2 );
+   draw_bar_h( im, 0, 16, 1, red );
+   arrow_right( im, 0, 16, red );
 
    gdSaveImgGif( im, "WS2812_order.gif" );
 

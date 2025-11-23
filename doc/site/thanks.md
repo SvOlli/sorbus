@@ -107,7 +107,7 @@ License terms: BSD-2-Clause
 
 ### mcurses lib
 
-```
+```txt
 Copyright (c) 2011-2015 Frank Meyer - frank(at)uclock.de
 ```
 License terms: GPL v2 or later

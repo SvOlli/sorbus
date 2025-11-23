@@ -2,6 +2,7 @@
 #include "generic_helper.h"
 
 #include <stdint.h>
+#include <stdio.h>
 
 /* gaps still need to be filled, expect things to move */
 uint16_t sorbus_codepage[0x80] = {
@@ -103,16 +104,12 @@ uint16_t sorbus_codepage[0x80] = {
    0x2195, // ↕ UP DOWN ARROW
    0x21B5, // ↵ DOWNWARDS ARROW WITH CORNER LEFTWARDS
    0xFFFF,
+
+// 0xD0-0xD3:
    0x2669, // ♩ Quarter note
    0x266a, // ♪ Eighth note
    0x266b, // ♫ Beamed eighth notes
    0x266c, // ♬ Beamed sixteenth notes
-
-// 0xD0-0xD3:
-   0xFFFF,
-   0xFFFF,
-   0xFFFF,
-   0xFFFF,
 // 0xD4-0xDF:
    0x2654, // ♔ WHITE CHESS KING
    0x2655, // ♕ WHITE CHESS QUEEN

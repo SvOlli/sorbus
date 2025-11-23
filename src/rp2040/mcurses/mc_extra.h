@@ -132,6 +132,8 @@ typedef struct {
    cputype_t               cpu;
    uint8_t                 bank;
    uint16_t                address;
+   bool                    m816;
+   bool                    x816;
 } mc_disass_t;
 void mcurses_disassemble( mc_disass_t *dav );
 

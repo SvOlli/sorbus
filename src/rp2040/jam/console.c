@@ -61,7 +61,9 @@ static mc_disass_t da_config = {
    debug_peek,
    CPU_65SC02,
    0x00,
-   0x0400
+   0x0400,
+   false,
+   false
 };
 
 

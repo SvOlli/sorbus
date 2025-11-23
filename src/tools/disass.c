@@ -142,6 +142,8 @@ void mcurses( cputype_t cpu, uint16_t address )
    dav.cpu        = cpu;
    dav.bank       = 0;
    dav.address    = address;
+   dav.m816       = true;
+   dav.x816       = true;
 
    tcgetattr( STDIN_FILENO, &oldt );
    newt = oldt;
@@ -165,7 +167,7 @@ int main( int argc, char *argv[] )
    cputype_t cpu = CPU_ERROR;
 
    const char *filename = 0;
-   uint16_t address;
+   uint16_t address = 0;
 
    int opt;
    bool fail = false;

@@ -54,8 +54,8 @@ reset:
    ; multi purpose routine
    ; - set Z=$00 on 65CE02 in soft reset
    ; - detect 6502 from CMOS variants
-   ; not bad for 7 bytes (7th byte is txs below cmos6502)
-   dec                  ; lda   #$00, but A=$01
+   ; not bad for 7 bytes (7th byte is txs below @cmos6502:)
+   lda   #$00           ; can't use dec here, because could be NMOS6502 here...
    .byte $4b            ; 65CE02: taz -> make sure, sta (zp),z works like sta (zp)
                         ; 65(S)C02: nop
                         ; 65816: phk (push program bank) -> like nop, but moves SP

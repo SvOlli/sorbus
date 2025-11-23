@@ -81,6 +81,8 @@ add_executable(disass
 target_link_libraries(disass PRIVATE sorbus_rte)
 target_include_directories(disass PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/common/disassemble.c)
+set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_disass.c)
+set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_view.c)
 
 # tool to test curses implementation
 #add_executable(mcurses
