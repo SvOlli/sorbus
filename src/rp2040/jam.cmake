@@ -41,6 +41,7 @@ add_executable(jam_alpha
    common/generic_helper.c
    common/mf_checkheap.c
    common/putcharset.c
+   common/xmodem.c
    mcurses/mcurses.c
    mcurses/mc_disass.c
    mcurses/mc_hexedit.c
@@ -48,6 +49,7 @@ add_executable(jam_alpha
    mcurses/mc_phyio_rp2040.c
    mcurses/mc_extra.c
    mcurses/mc_view.c
+   mcurses/mc_xmodem.c
    3rdparty/dhara/error.c
    3rdparty/dhara/journal.c
    3rdparty/dhara/map.c
@@ -56,7 +58,6 @@ add_executable(jam_alpha
    jam/bus.c
    jam/dhara_flash.c
    jam/event_queue.c
-   3rdparty/xmodem/xmodem.c
    )
 target_include_directories(jam_alpha PUBLIC
    ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/xmodem

@@ -328,6 +328,7 @@ void mcurses_textline( uint16_t line, uint16_t left, uint16_t right,
 {
    const uint8_t *c = (const uint8_t*)text;
    uint16_t i;
+   move( line, left );
    for( i = left; i <= right; ++i )
    {
       addch( *c ? *(c++) : ' ' );
@@ -427,11 +428,11 @@ void mcurses_titlebox( bool dframe, uint16_t line, uint16_t column,
 
    mcurses_textsize( &rows, &width, text );
 
-   if( line == MCURSES_TEXT_CENTER )
+   if( line == MC_TEXT_CENTER )
    {
       line = ((screen_get_lines() - rows) >> 1) - 2;
    }
-   if( column == MCURSES_TEXT_CENTER )
+   if( column == MC_TEXT_CENTER )
    {
       column = ((screen_get_columns() - width) >> 1) - 1;
    }
@@ -464,11 +465,11 @@ void mcurses_textbox( bool dframe, uint16_t line, uint16_t column,
 
    mcurses_textsize( &rows, &width, text );
 
-   if( line == MCURSES_TEXT_CENTER )
+   if( line == MC_TEXT_CENTER )
    {
       line = ((screen_get_lines() - rows) >> 1) - 1;
    }
-   if( column == MCURSES_TEXT_CENTER )
+   if( column == MC_TEXT_CENTER )
    {
       column = ((screen_get_columns() - width) >> 1) - 1;
    }
@@ -492,6 +493,21 @@ static void hex1ascii( uint8_t val )
       ch = val - 10 + 'A';
    }
    addch( ch );
+}
+
+
+void mcurses_hexout( uint64_t value, uint8_t digits )
+{
+   uint8_t outchar = '0' + (value & 0xF);
+   if( outchar > '9' )
+   {
+      outchar += 'A' - '9';
+   }
+   if( digits > 1 )
+   {
+      mcurses_hexout( value >> 4, digits - 1 );
+   }
+   addch( outchar );
 }
 
 

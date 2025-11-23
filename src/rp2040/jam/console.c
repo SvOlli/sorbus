@@ -35,15 +35,6 @@ bool console_wants_stop = false;
 bool bus_wants_stop     = false;
 int  invoke_type = 0;
 
-/* Xmodem can run two chunk sizes, either 1024 or 128 */
-#define XMODEM_BUFFER_SIZE 1024
-#define XMODEM_CHUNK_SIZE 128
-
-uint32_t mem_upload_p=0;
-uint32_t mem_start_p=0;
-
-uint8_t local_buf[XMODEM_BUFFER_SIZE];
-extern uint8_t ram[0x10000];
 
 static uint8_t hexedit_bank();
 
@@ -110,91 +101,6 @@ uint8_t hexedit_bank()
       he_config.bank = 0;
    }
    return he_config.bank;
-}
-
-
-/* For xmodem receive, we need to provide the HW specific functions*/
-int _inbyte(int msec)
-{
-   int c = getchar_timeout_us( msec*1000 );
-   if( c == PICO_ERROR_TIMEOUT )
-   {
-      return -1;
-   }
-   return c;
-}
-
-void _outbyte(unsigned char c)
-{
-    putchar(c);
-}
-
-
-int received_chunk(unsigned char * buf, int size)
-{
-   /* handles the download of a chunk to memory */
-   uint16_t offset = 0;
-
-   /* Copy it to ram */
-   if (mem_upload_p == 0 )
-   {
-      /* fetch loadadress */
-      mem_upload_p = buf[0]+(0x100*buf[1]);
-      offset = 2;
-      size -= 2;
-      mem_start_p = mem_upload_p;
-   }
-   if ((mem_upload_p+size) < 0x10000)
-   {
-      memcpy( &ram[mem_upload_p], &buf[offset], size );
-      mem_upload_p += size;
-   }
-   else
-   {
-      //TODO:  Overflow detected , check how we can stop upload
-   }
-
-}
-
-
-int32_t print_upload_menu()
-{
-   int32_t in_addr;
-
-   printf ("\n\nUploading file to address ? \n0: use load adress \n");
-   printf ("ctrl-c to cancel\n");
-   in_addr= get_16bit_address(0xe000);
-   if (in_addr<0){
-     printf("\nTransfer canceled\n");
-   }
-   return in_addr;
-}
-
-
-void run_upload(uint32_t upload_address)
-{
-   /* Xmodem-upload */
-   int32_t ret = -1;
-   int in_char;
-
-   mem_upload_p = upload_address;
-   mem_start_p  = mem_upload_p;
-   printf( "\nUploading to adress 0x%04X\n", mem_upload_p );
-   printf( "Start XModem Transfer now:\n" );
-   ret = xmodemReceive();
-   printf( "\n\n\npress a key \n\n" );
-   in_char = getchar_timeout_us(10000000);
-
-   if (ret<0)
-   {
-      printf( "\n\n\nFailure in reception %d\n\n", ret );
-   }
-   else
-   {
-      printf( "\n\n\nReception successful. 0x%04X - 0x%04X \n\n", mem_start_p, mem_start_p + ret );
-   }
-
-   return;
 }
 
 
@@ -265,14 +171,14 @@ void console_rp2040()
       switch( in )
       {
          case '!':
-            mcurses_titlebox( true, MCURSES_TEXT_CENTER, MCURSES_TEXT_CENTER,
+            mcurses_titlebox( true, MC_TEXT_CENTER, MC_TEXT_CENTER,
                               "Backtrace Dumper",
                               "Turn on logging now\n"
                               "Press any key\n"
                               "Save capture for later use\n"
                               "Turn off logging\n"
                               "Press any key to return to menu"
-                          );
+                              );
             move( lines - 1, 0 );
             if( getch() != 0x03 )
             {
@@ -290,17 +196,17 @@ void console_rp2040()
             break;
          case 'D':
             {
-               cputype_t cpu = debug_get_cpu();
+               da_config.cpu = debug_get_cpu();
                mcurses_disassemble( &da_config );
             }
             break;
          case 'E':
-            mcurses_titlebox( false, MCURSES_TEXT_CENTER, MCURSES_TEXT_CENTER,
+            mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
                               "Event Queue", debug_get_info( DEBUG_INFO_EVENTQUEUE ) );
             getch();
             break;
          case 'I':
-            mcurses_titlebox( false, MCURSES_TEXT_CENTER, MCURSES_TEXT_CENTER,
+            mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
                               "Internal Drive", debug_get_info( DEBUG_INFO_INTERNALDRIVE ) );
             getch();
             break;
@@ -309,23 +215,12 @@ void console_rp2040()
             break;
          case 'U':
             endwin();
-            leave = true;
-            {
-               int32_t upload_addr = print_upload_menu();
-               if (upload_addr>=0)
-               {
-                  run_upload(upload_addr);
-               }
-            }
-            getch();
-            initscr();
+            leave = mc_xmodem_upload( debug_poke );
             break;
          case 'C':
-            printf( "%c\n", in );
             leave = true;
             break;
          case 'R':
-            printf( "%c\n", in );
             leave = true;
             system_reboot();
             break;
@@ -387,8 +282,9 @@ void console_65c02()
       else if( out == 0x7f )
       {
          /* full delete sequence: backspace, space, backspace */
-         const char bs_seq[] = { 8, ' ', 8, 0 };
-         printf( bs_seq );
+         putchar( 8 );
+         putchar( ' ' );
+         putchar( 8 );
       }
       else
       {

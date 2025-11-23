@@ -23,11 +23,11 @@ static int32_t mcurses_historian_move( void *d, int32_t movelines )
 
    switch( movelines )
    {
-      case LINEVIEW_FIRSTLINE:
+      case MC_LINEVIEW_FIRSTLINE:
          retval = -(mch->current);
          mch->current = 0;
          break;
-      case LINEVIEW_LASTLINE:
+      case MC_LINEVIEW_LASTLINE:
          retval = (mch->entries - mch->datalines) - mch->current;
          mch->current = mch->entries - mch->datalines;
          break;
@@ -52,9 +52,9 @@ const char* mcurses_historian_data( void *d, int32_t offset )
 
    switch( offset )
    {
-      case LINEVIEW_FIRSTLINE:
+      case MC_LINEVIEW_FIRSTLINE:
          return "cycle:addr r da flg:C:disassembly";
-      case LINEVIEW_LASTLINE:
+      case MC_LINEVIEW_LASTLINE:
          return "  Backtrace Viewer  (Ctrl+C to leave)";
       default:
          break;
@@ -81,7 +81,7 @@ void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32
    config.d          = (void*)(&mch);
    config.attributes = MC_ATTRIBUTES_BACKTRACE;
 
-   mcurses_historian_move( config.d, LINEVIEW_LASTLINE );
+   mcurses_historian_move( config.d, MC_LINEVIEW_LASTLINE );
    disass_show( DISASS_SHOW_NOTHING );
    lineview( &config );
    disass_historian_done( mch.historian );

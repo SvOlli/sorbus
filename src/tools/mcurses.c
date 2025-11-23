@@ -89,9 +89,9 @@ const char *lv_data( void *d, int32_t line )
    static char buffer[256];
    switch( line )
    {
-      case LINEVIEW_FIRSTLINE:
+      case MC_LINEVIEW_FIRSTLINE:
          return "title";
-      case LINEVIEW_LASTLINE:
+      case MC_LINEVIEW_LASTLINE:
          return "footer";
       default:
          break;

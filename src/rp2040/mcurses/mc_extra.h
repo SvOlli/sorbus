@@ -15,7 +15,8 @@
 #define  MC_ATTRIBUTES_DISASS    (F_WHITE | B_GREEN)
 #define  MC_ATTRIBUTES_HEXEDIT   (F_WHITE | B_RED)
 #define  MC_ATTRIBUTES_BACKTRACE (F_BLACK | B_YELLOW)
-#define  MC_ATTRIBUTES_XMODEM    (F_BLACK | B_PURPLE)
+#define  MC_ATTRIBUTES_XMODEM    (F_BLACK | B_MAGENTA)
+#define  MC_ATTRIBUTES_DEFAULT   (F_DEFAULT | B_DEFAULT | A_NORMAL)
 
 
 /* basic screen/mcurses functions implemented in mcurses_sorbus.c */
@@ -59,6 +60,11 @@ void mcurses_textsize( uint16_t *lines, uint16_t *columns,
 /* get a 4 digit hex number from keyboard */
 bool mcurses_get4hex( uint16_t *value );
 
+/* output a hex number */
+void mcurses_hexout( uint64_t value, uint8_t digits );
+#define mcurses_hexout2(v) mcurses_hexout((v),2)
+#define mcurses_hexout4(v) mcurses_hexout((v),4)
+
 /* draw a box containing a title and some text */
 void mcurses_titlebox( bool dframe, uint16_t line, uint16_t column,
                        const char *title, const char *text );
@@ -68,7 +74,7 @@ void mcurses_textbox( bool dframe, uint16_t line, uint16_t column,
                       const char *text );
 
 /* mcurses_textbox and mcurses_infobox can also be centered */
-#define MCURSES_TEXT_CENTER ((uint16_t)0xFFFF)
+#define MC_TEXT_CENTER ((uint16_t)0xFFFF)
 
 
 /* API for hex editor
@@ -94,7 +100,7 @@ typedef int32_t(*lineview_handler_keypress_t)( void *d, uint8_t *ch );
 /* move current view */
 typedef int32_t(*lineview_handler_move_t)( void *d, int32_t step );
 /* get data for a specific offset from current view */
-/* offset is int32_t for LINEVIEW_FIRSTLINE/LINEVIEW_LASTLINE */
+/* offset is int32_t for MC_LINEVIEW_FIRSTLINE/MC_LINEVIEW_LASTLINE */
 typedef const char*(*lineview_handler_data_t)( void *d, int32_t offset );
 /* get cursor position type */
 typedef void(*lineview_handler_cpos_t)( void *d,
@@ -109,10 +115,10 @@ typedef struct {
    void     *d;
    uint16_t attributes;
 } lineview_t;
-#define LINEVIEW_FIRSTLINE    INT32_MIN
-#define LINEVIEW_LASTLINE     INT32_MAX
-#define LINEVIEW_REDRAWDATA   INT32_MIN
-#define LINEVIEW_REDRAWALL    INT32_MAX
+#define MC_LINEVIEW_FIRSTLINE    INT32_MIN
+#define MC_LINEVIEW_LASTLINE     INT32_MAX
+#define MC_LINEVIEW_REDRAWDATA   INT32_MIN
+#define MC_LINEVIEW_REDRAWALL    INT32_MAX
 /* implemented in mcurses_view.c */
 void lineview( lineview_t *config );
 
@@ -136,5 +142,8 @@ typedef struct {
    bool                    x816;
 } mc_disass_t;
 void mcurses_disassemble( mc_disass_t *dav );
+
+/* menu for uploading data via xmodem */
+bool mc_xmodem_upload( poke_t poke );
 
 #endif

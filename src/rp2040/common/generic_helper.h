@@ -74,4 +74,10 @@ uint32_t mf_checkheap();
  */
 int putcharset( uint8_t ch, uint8_t cs );
 
+
+/*
+ * library function to upload data to RAM via xmodem
+ */
+int xmodem_receive( poke_t poke, uint16_t addr );
+
 #endif

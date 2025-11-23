@@ -45,9 +45,9 @@ static void header_footer( const lineview_t *config )
 {
    attrset( config->attributes );
    move( 0, 0 );
-   printline( config->data( config->d, LINEVIEW_FIRSTLINE ), COLS );
+   printline( config->data( config->d, MC_LINEVIEW_FIRSTLINE ), COLS );
    move( LAST_LINE+1, 0 );
-   printline( config->data( config->d, LINEVIEW_LASTLINE  ), COLS );
+   printline( config->data( config->d, MC_LINEVIEW_LASTLINE  ), COLS );
    attrset( A_NORMAL | F_DEFAULT | B_DEFAULT );
 }
 
@@ -81,7 +81,7 @@ void lineview( lineview_t *config )
       {
          int32_t keyaction = config->keypress( config->d, &ch );
          
-         if( keyaction == LINEVIEW_REDRAWALL )
+         if( keyaction == MC_LINEVIEW_REDRAWALL )
          {
             header_footer( config );
          }
@@ -116,10 +116,10 @@ void lineview( lineview_t *config )
             step = +page;
             break;
          case KEY_HOME:
-            step = LINEVIEW_FIRSTLINE;
+            step = MC_LINEVIEW_FIRSTLINE;
             break;
          case KEY_END:
-            step = LINEVIEW_LASTLINE;
+            step = MC_LINEVIEW_LASTLINE;
             break;
          default:
             break;
