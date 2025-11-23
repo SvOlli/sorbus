@@ -109,8 +109,10 @@ typedef struct {
    void     *d;
    uint16_t attributes;
 } lineview_t;
-#define LINEVIEW_FIRSTLINE INT32_MIN
-#define LINEVIEW_LASTLINE  INT32_MAX
+#define LINEVIEW_FIRSTLINE    INT32_MIN
+#define LINEVIEW_LASTLINE     INT32_MAX
+#define LINEVIEW_REDRAWDATA   INT32_MIN
+#define LINEVIEW_REDRAWALL    INT32_MAX
 /* implemented in mcurses_view.c */
 void lineview( lineview_t *config );
 

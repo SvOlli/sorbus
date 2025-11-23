@@ -62,7 +62,7 @@ const bus_config_t bus_config = {
 
 #include "../rp2040/common/generic_helper.c"
 #include "../rp2040/common/disassemble.c"
-#include "../rp2040/mcurses/mcurses_disassemble.c"
+#include "../rp2040/mcurses/mc_disass.c"
 
 #include "../rp2040/mcurses/mcurses.h"
 

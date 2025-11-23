@@ -21,11 +21,11 @@ bin2h(jam_kernel.h ${CMAKE_BINARY_DIR}/65c02/jam_kernel.bin jam_kernel sorbus_rt
 bin2h(jam_tools.h  ${CMAKE_BINARY_DIR}/65c02/jam_tools.bin  jam_tools  sorbus_rte_memory.c)
 bin2h(jam_basic.h  ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin  jam_basic  sorbus_rte_memory.c)
 add_library(sorbus_rte STATIC
-   mcurses_phyio.c
+   mc_phyio_linux.c
    sorbus_rte_memory.c
    ../rp2040/mcurses/mcurses.c
-   ../rp2040/mcurses/mcurses_sorbus.c
-   ../rp2040/mcurses/mcurses_view.c
+   ../rp2040/mcurses/mc_extra.c
+   ../rp2040/mcurses/mc_view.c
    )
 target_include_directories(sorbus_rte PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ../rp2040/common)
 target_include_directories(sorbus_rte INTERFACE ../rp2040/mcurses)
@@ -124,3 +124,15 @@ add_executable(img2sx4
 target_link_libraries(img2sx4 ${GD_LIBRARIES})
 target_include_directories(img2sx4 PUBLIC ${GD_INCLUDE_DIRS})
 target_compile_options(img2sx4 PUBLIC ${GD_CFLAGS_OTHER})
+
+#add_executable(peiselmon
+#   ../rp2040/3rdparty/peiselmon/6502.c
+#   ../rp2040/3rdparty/peiselmon/editscreen.c
+#   ../rp2040/3rdparty/peiselmon/output.c
+#   ../rp2040/3rdparty/peiselmon/parse.c
+#   ../rp2040/3rdparty/peiselmon/processor.c
+#   ../rp2040/3rdparty/peiselmon/target_memory.c
+#   ../rp2040/3rdparty/peiselmon/window.c
+#   peiselmon.c
+#   )
+#target_link_libraries(peiselmon PRIVATE sorbus_rte)

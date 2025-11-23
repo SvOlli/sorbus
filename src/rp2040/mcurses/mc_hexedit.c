@@ -30,7 +30,6 @@
  */
 
 #include "mcurses.h"
-#include "mcurses_sorbus.h"
 
 #define FIRST_LINE      1
 #define LAST_LINE       (LINES - 1)

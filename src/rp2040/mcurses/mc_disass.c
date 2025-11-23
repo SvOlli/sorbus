@@ -7,7 +7,9 @@
 #include "mcurses.h"
 #include "../common/disassemble.h"
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PRECACHE (16)
 
@@ -98,6 +100,7 @@ static void mcurses_disassemble_populate( void *d )
    uint16_t address = dav->address - PRECACHE;
    linecache_t *linecache = mcd->linecache;
 
+   disass_set_cpu( dav->cpu );
    for( l = 0; l < mcd->lines; ++l )
    {
       switch( mcd->mode )
@@ -185,49 +188,6 @@ static int32_t mcurses_disassemble_move( void *d, int32_t movelines )
 }
 
 
-int32_t mcurses_disassemble_keypress( void *d, uint8_t *ch )
-{
-   mc_disassemble_t *mcd = (mc_disassemble_t*)d;
-   mc_disass_t *dav = mcd->dav;
-   switch( *ch )
-   {
-      case 0x02: // Ctrl+B
-         if( ++(dav->bank) > dav->banks() )
-         {
-            dav->bank = 0;
-         }
-         mcurses_disassemble_populate( d );
-         return LINEVIEW_FIRSTLINE;    // force full redraw
-         break;
-      case 0x07: // Ctrl+G
-         move( 1, 1 );
-         if( mcurses_get4hex( &(dav->address) ) )
-         {
-            mcurses_disassemble_populate( d );
-            return LINEVIEW_FIRSTLINE; // force full redraw
-         }
-      case 0x10: // Ctrl+P (processor)
-         if( ++(dav->cpu) == CPU_UNDEF )
-         {
-            dav->cpu = CPU_ERROR + 1;
-         }
-         mcurses_disassemble_populate( d );
-         return LINEVIEW_FIRSTLINE; // force full redraw
-         break;
-      case 0x01: // Ctrl+A (alternative display: singleline <-> multiline)
-         mcd->mode = (mcd->mode == MCD_MODE_FULLOPCODE) ? 
-                        MCD_MODE_SINGLEBYTE : MCD_MODE_FULLOPCODE;
-         mcurses_disassemble_populate( d );
-         return LINEVIEW_FIRSTLINE; // force full redraw
-         break;
-      default:
-         break;
-   }
-
-   return 0; // nothing changed
-}
-
-
 const char* mcurses_disassemble_data( void *d, int32_t offset )
 {
    static char output[80];
@@ -235,11 +195,17 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
    mc_disass_t *dav = mcd->dav;
    uint16_t address;
+   int next = 0;
 
    switch( offset )
    {
       case LINEVIEW_FIRSTLINE:
-         return "(debug)";
+         next += snprintf( &output[0], sizeof(output)-1,
+                           "CPU: %-9s Bank: %x (unstable)"
+                           , cputype_name( dav->cpu )
+                           , dav->bank
+                           );
+         return &output[0];
       case LINEVIEW_LASTLINE:
          return "  Disassembly Viewer  (Ctrl+C to leave)";
       default:
@@ -301,6 +267,62 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
          break;
    }
    return "";
+}
+
+
+int32_t mcurses_disassemble_keypress( void *d, uint8_t *ch )
+{
+   mc_disassemble_t *mcd = (mc_disassemble_t*)d;
+   mc_disass_t *dav = mcd->dav;
+   int32_t retval = 0;
+
+   switch( *ch )
+   {
+      case 0x02: // Ctrl+B
+         if( ++(dav->bank) > dav->banks() )
+         {
+            dav->bank = 0;
+         }
+         mcurses_disassemble_populate( d );
+         retval = LINEVIEW_FIRSTLINE;    // force full redraw
+         break;
+      case 0x07: // Ctrl+G
+         move( 1, 1 );
+         if( mcurses_get4hex( &(dav->address) ) )
+         {
+            mcurses_disassemble_populate( d );
+            retval = LINEVIEW_FIRSTLINE; // force full redraw
+         }
+      case 0x0c: // Ctrl+L
+         mcurses_disassemble_populate( d );
+         break;
+      case 0x10: // Ctrl+P (processor)
+         if( ++(dav->cpu) == CPU_6502RA )
+         {
+            dav->cpu = CPU_ERROR + 1;
+         }
+         mcurses_disassemble_populate( d );
+         retval = LINEVIEW_FIRSTLINE; // force full redraw
+         break;
+      case 0x01: // Ctrl+A (alternative display: singleline <-> multiline)
+         mcd->mode = (mcd->mode == MCD_MODE_FULLOPCODE) ? 
+                        MCD_MODE_SINGLEBYTE : MCD_MODE_FULLOPCODE;
+         mcurses_disassemble_populate( d );
+         retval = LINEVIEW_FIRSTLINE; // force full redraw
+         break;
+      default:
+         break;
+   }
+   
+   if( retval == LINEVIEW_FIRSTLINE )
+   {
+         move( 0, 0 );
+         attrset( MC_ATTRIBUTES_DISASS );
+         addstr( mcurses_disassemble_data( d, LINEVIEW_FIRSTLINE ) );
+         attrset( A_NORMAL | F_DEFAULT | B_DEFAULT );
+   }
+
+   return retval; // nothing changed
 }
 
 

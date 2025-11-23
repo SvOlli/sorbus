@@ -25,7 +25,7 @@ void mcurses_phyio_done()
 }
 
 
-void mcurses_phyio_putc (uint8_t ch)
+void mcurses_phyio_putc( uint8_t ch )
 {
    putchar( ch );
 }

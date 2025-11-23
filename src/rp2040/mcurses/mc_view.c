@@ -41,6 +41,17 @@ static void printlines( const lineview_t *config, int len )
 }
 
 
+static void header_footer( const lineview_t *config )
+{
+   attrset( config->attributes );
+   move( 0, 0 );
+   printline( config->data( config->d, LINEVIEW_FIRSTLINE ), COLS );
+   move( LAST_LINE+1, 0 );
+   printline( config->data( config->d, LINEVIEW_LASTLINE  ), COLS );
+   attrset( A_NORMAL | F_DEFAULT | B_DEFAULT );
+}
+
+
 void lineview( lineview_t *config )
 {
    uint16_t       line, column;
@@ -51,12 +62,7 @@ void lineview( lineview_t *config )
    clear();
    setscrreg( FIRST_LINE, LAST_LINE-1 );
 
-   attrset( config->attributes );
-   move( 0, 0 );
-   printline( config->data( config->d, LINEVIEW_FIRSTLINE ), COLS );
-   move( LAST_LINE+1, 0 );
-   printline( config->data( config->d, LINEVIEW_LASTLINE  ), COLS );
-   attrset( A_NORMAL | F_DEFAULT | B_DEFAULT );
+   header_footer( config );
 
    printlines( config, COLS );
 
@@ -73,9 +79,16 @@ void lineview( lineview_t *config )
 
       if( config->keypress )
       {
-         if( config->keypress( config->d, &ch ) )
+         int32_t keyaction = config->keypress( config->d, &ch );
+         
+         if( keyaction == LINEVIEW_LASTLINE )
          {
-            printlines( config, COLS-1 );
+            header_footer( config );
+         }
+
+         if( keyaction )
+         {
+            printlines( config, COLS );
          }
       }
 

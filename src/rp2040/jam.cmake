@@ -42,12 +42,12 @@ add_executable(jam_alpha
    common/mf_checkheap.c
    common/putcharset.c
    mcurses/mcurses.c
-   mcurses/mcurses_disassemble.c
-   mcurses/mcurses_hexedit.c
-   mcurses/mcurses_historian.c
-   mcurses/mcurses_phyio.c
-   mcurses/mcurses_sorbus.c
-   mcurses/mcurses_view.c
+   mcurses/mc_disass.c
+   mcurses/mc_hexedit.c
+   mcurses/mc_historian.c
+   mcurses/mc_phyio_rp2040.c
+   mcurses/mc_extra.c
+   mcurses/mc_view.c
    3rdparty/dhara/error.c
    3rdparty/dhara/journal.c
    3rdparty/dhara/map.c
