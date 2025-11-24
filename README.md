@@ -104,4 +104,4 @@ There are also some build scripts available for special cases:
 It is also possible to build C programs using cc65 for this computer. This
 is rather a proof of concept that a full featured implementation, but it
 does work rather stable. More details are in it's own
-[README](src/65c02/cc65/README.md).
+[README](cc65-sdk/README.md).

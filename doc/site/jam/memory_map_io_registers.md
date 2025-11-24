@@ -13,7 +13,7 @@
     - $0008-$000F: zeropage RAM used by WozMon
     - $00E3-$00FF: zeropage RAM used by TIM
     - $00F6-$00FF: zeropage RAM used by System Monitor
-- $0100-$01FF: stack
+- $0100-$01FF: processor stack
 - $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs, VT100)
 - $0400-$CFFF: RAM for generic use
 - $D000-$DEFF: I/O provided by external boards

@@ -121,7 +121,7 @@ bool screen_get_size( uint16_t *lines, uint16_t *columns )
    }
 
    /* set cursor to maximal bottom right */
-   screen_set_cursor_pos( 0xFFFF, 0xFFFF );
+   screen_set_cursor_pos( 0xFFFE, 0xFFFE );
    if( !screen_get_cursor_pos( &x, &y ) )
    {
       return false;

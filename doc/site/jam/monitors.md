@@ -37,11 +37,13 @@ The following descriptions lacks description of the paper tape and other I/O
 routines, besides mentioning them.
 
 Output: upon start you are typically greeted with
+
 ```txt
     ADDR P  A  X  Y  S
  *  E619 33 28 00 00 FF
 .
 ```
+
 The first line is an addition by the Sorbus version of TIM to help
 understanding the output below:
 
@@ -168,9 +170,11 @@ switched the input to the papertape. For the machine it was like someone
 was typing in the data really fast.
 
 Format of papertape data is:
+
 ```txt
 ;CCAAAADD[DD..]SSSS
 ```
+
 Every character (except for the semicolon) stands for a hex digit.
 
 | Byte | Function                                                                          |

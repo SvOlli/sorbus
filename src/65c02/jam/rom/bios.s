@@ -5,6 +5,8 @@
 ;-------------------------------------------------------------------------
 ; BIOS calls $FF00-$FFFF
 ;-------------------------------------------------------------------------
+; CHRIN, CHROUT and PRINT should work on an NMOS 6502
+; IRQ handler code does not need to, because code in kernel is for CMOS
 
 .segment "BIOS"
 BIOS:

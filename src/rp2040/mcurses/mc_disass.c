@@ -73,7 +73,8 @@ static uint16_t mcurses_disassemble_prevaddress( void *d )
    switch( mcd->mode )
    {
       case MCD_MODE_SINGLEBYTE:
-         return dav->address - 1;
+         // default works: current address minus one
+         //return dav->address - 1;
          break;
       case MCD_MODE_FULLOPCODE:
          for( l = 1; l < mcd->lines; ++l )
@@ -87,7 +88,7 @@ static uint16_t mcurses_disassemble_prevaddress( void *d )
       default:
          break;
    }
-   return 0;
+   return dav->address - 1;
 }
 
 

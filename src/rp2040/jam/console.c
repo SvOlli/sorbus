@@ -131,10 +131,17 @@ void console_rp2040()
    initscr();
    while( (lines < 20) || (cols < 77) )
    {
+      char buffer[256] = { 0 };
       uint8_t ch;
       move( 0, 0 );
       addstr( "Meta-Mode requires at least 77x20." );
       move( 1, 0 );
+      snprintf( &buffer[0], sizeof(buffer)-1,
+                "Yours is reporting as %dx%d."
+                , cols
+                , lines
+                );
+      addstr( &buffer[0] );
       addstr( "Press 'Q' to quit or other key to retry." );
       ch = getch();
       if( (ch | 0x20) == 'q' ) // make lowercase

@@ -3,6 +3,7 @@
 
 The panels built so far use this order of LEDs.
 
+
 ## Hardware Setup
 
 The LED hardware is a single string of 1024 WS2812 LEDs created by
@@ -16,6 +17,7 @@ Note the first LED is roughly at the middle on the left side. If the order
 of the LEDs is different in your setup, you need to create a new translation
 matrix. An example on how to create one is available as part of the source
 code: `src/tools/translation_matrix.c`.
+
 
 ## I/O Registers
 

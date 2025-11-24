@@ -61,7 +61,8 @@ reset:
                         ; 65816: phk (push program bank) -> like nop, but moves SP
                         ; 6502: ALR #im
    dec                  ; 65C02 opcode that is an argument ($3a) of $4b/ALR# on 6502
-   bne   cmos6502       ; no NMOS 6502, continue
+   txs                  ; fix for 65816's phk, doesn't change flags
+   bne   cmos6502       ; no NMOS 6502, continue with initialization
 
    ; set NMI and IRQ to something more useful for NMOS 6502
    lda   #<nmosirq
@@ -93,7 +94,6 @@ nmosirq:
 ; NMOS 6502 compatible code end
 
 cmos6502:
-   txs                  ; fix for 65816's phk
    ; reset fb32x32
    lda   #$00
    ldx   #$CC
@@ -275,6 +275,7 @@ copybiossetram:
    stz   BRK_SB
 copybios:
    ; copy the BIOS page to RAM
+   ; from here to "rts" code should work with NMOS 6502
    ldx   #$00
 :
    lda   BIOS,x

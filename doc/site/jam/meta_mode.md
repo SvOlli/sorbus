@@ -6,7 +6,7 @@ stops. Then a debug menu is shown which provides some developer
 information. A few entries there also relate to "monitor commands".
 
 
-## Backtrace 
+## Backtrace
 
 Pressing `B` will print out the last 512 accesses to the bus (aka
 CPU cycles). This option will also provide some disassembly. However,

@@ -29,7 +29,7 @@ As a faster alternative, `timcat` has been added as well in the `tools`
 directory. Usage is:
 
 ```
-timcat >/dev/ttySorbus 0x400 program.sx4
+timcat /dev/ttySorbus 0x400 program.sx4
 ```
 
 Parameters are the same as above.
