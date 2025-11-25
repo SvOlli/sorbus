@@ -168,7 +168,11 @@ static int32_t mcurses_disassemble_move( void *d, int32_t movelines )
          case MCD_MODE_FULLOPCODE:
             if( movelines < 0 )
             {
-               dav->address = mcurses_disassemble_prevaddress( d );
+               for( l = movelines; l; ++l )
+               {
+                  dav->address = mcurses_disassemble_prevaddress( d );
+                  mcurses_disassemble_populate( d );
+               }
             }
             else for( l = 0; l < movelines; ++l )
             {
@@ -251,7 +255,7 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
          if( address )
          {
             address = dav->address + offset;
-            strncat( &output[0], 
+            strncat( &output[0],
                       disass( address,
                               dav->peek( dav->bank, address + 0 ),
                               dav->peek( dav->bank, address + 1 ),
@@ -336,7 +340,7 @@ int32_t mcurses_disassemble_keypress( void *d, uint8_t *ch )
       case 0x01: // Ctrl+A (alternative display: singleline <-> multiline)
       case 'V':
       case 'v':
-         mcd->mode = (mcd->mode == MCD_MODE_FULLOPCODE) ? 
+         mcd->mode = (mcd->mode == MCD_MODE_FULLOPCODE) ?
                         MCD_MODE_SINGLEBYTE : MCD_MODE_FULLOPCODE;
          mcurses_disassemble_populate( d );
          retval = MC_LINEVIEW_REDRAWALL; // force full redraw

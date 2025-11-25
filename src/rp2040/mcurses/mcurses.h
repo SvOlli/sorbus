@@ -21,7 +21,7 @@
 
 #ifndef __MCURSES_H__
 #define __MCURSES_H__ __MCURSES_H__
-    
+
 #include "mc_extra.h"
 
 

@@ -44,9 +44,11 @@ nav:
       - 'BOM': 'boards/bom.md'
    - 'Main Core: Sorbus JAM':
       - 'General Information': 'jam/index.md'
+      - 'Terminal Software': 'jam/terminal.md'
       - 'System Monitor': 'jam/sysmon.md'
       - 'Other Monitors': 'jam/monitors.md'
       - 'Meta-Mode': 'jam/meta_mode.md'
+      - 'CC65-SDK': 'jam/cc65-sdk.md'
       - 'Microsoft BASIC 1.0': 'jam/ms_basic.md'
       - 'CP/M 65': 'jam/cpm65.md'
       - 'Filebrowser': 'jam/filebrowser.md'
@@ -68,3 +70,4 @@ nav:
    - 'Appendix':
       - 'Thanks': 'thanks.md'
       - 'Datasheets': 'datasheets.md'
+      - 'Links': 'links.md'

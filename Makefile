@@ -15,7 +15,7 @@ LS           = ls -l
 GIT_CHECKOUT = git clone --depth 1 --recurse-submodules --shallow-submodules
 
 CC65_SDK_INCLUDES = jam.inc jam_bios.inc fb32x32.inc
-CC65_SDK_TOOLS    = wozcat.c timcat.c
+CC65_SDK_TOOLS    = timcat.c
 
 $(info # This Makefile is not required and for convenience only)
 
@@ -118,10 +118,10 @@ paths:
 # these packages are required to create the release package
 setup-apt:
 	sudo apt update
-	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 microcom p7zip-full cpmtools build-essential pkg-config libgd-dev mkdocs
+	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 p7zip-full cpmtools build-essential pkg-config libgd-dev mkdocs
 
 # this is additionally required on a development host
-setup-dev: setup-apt
+setup-apt-dev: setup-apt
 	sudo apt install pkgconf libusb-1.0-0-dev microcom
 	sudo gpasswd -a $(USER) dialout
 	sudo gpasswd -a $(USER) plugdev
@@ -129,8 +129,8 @@ setup-dev: setup-apt
 setup-external:
 	sudo apt install 64tass libreadline-dev libfmt-dev moreutils fp-compiler ninja-build zip unzip
 
-$(RELEASE_ARCHIVE): all
-	make -C $(CC65_SDK_DIR) dist
+$(RELEASE_ARCHIVE): all cc65-sdk
+	make -C $(CC65_SDK_DIR) clean dist
 	for i in $$(ls -1 $(BUILD_DIR)/rp2040/*.uf2|grep -v _test.uf2$$); do cp -v $${i} sorbus-computer-$$(basename $${i});done
 	cp doc/README_release.txt README.txt
 	$(RM) $@

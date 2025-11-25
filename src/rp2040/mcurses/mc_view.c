@@ -80,7 +80,7 @@ void lineview( lineview_t *config )
       if( config->keypress )
       {
          int32_t keyaction = config->keypress( config->d, &ch );
-         
+
          if( keyaction == MC_LINEVIEW_REDRAWALL )
          {
             header_footer( config );

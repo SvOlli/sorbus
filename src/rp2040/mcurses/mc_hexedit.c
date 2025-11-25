@@ -184,7 +184,7 @@ static uint16_t fix_topleft( uint16_t topleft, uint16_t address )
    {
       /* address is on bottom */
       return address - (LAST_LINE - FIRST_LINE - 1) * BYTES_PER_ROW;
-   }      
+   }
 }
 
 
@@ -466,7 +466,7 @@ void hexedit( mc_hexedit_t *config )
             cmove = MOVE_UP;
          }
       }
-   
+
       if( cmove == MOVE_UP )
       {
          if (line == FIRST_LINE)
