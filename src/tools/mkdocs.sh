@@ -18,11 +18,18 @@ opcode_cvs2md()
 - Reserved: is it a resevered / undocumented (aka illegal) opcode
 - Bytes: bytes used for command (8 bit mode for 65816)
 - Cycles: cycles taken (without extra for e.g. page crossing)
-- ExtraCycles: extra cycles taken when crossing a page(1) and/or taking a branch(2)
+- ExtraCycles: extra cycles taken when crossing a page(a) and/or taking a branch(b)
 
 EOH
    local header=1
    while read opcode name mode reserved bytes cycles extracycles jump mxe; do
+      case "${reserved}" in
+      1) reserved=x;;
+      esac
+      case "${extracycles}" in
+      1) extracycles=a;;
+      2) extracycles=b;;
+      esac
       echo "| ${opcode} | ${name} | ${mode} | ${reserved} | ${bytes} | ${cycles} | ${extracycles} |"
       if [ ${header} -eq 1 ]; then
          echo "| :---- | :---- | :---- | ----: | ----: | ----: | ----: |"
