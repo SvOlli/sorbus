@@ -21,14 +21,21 @@ static int32_t mcurses_historian_move( void *d, int32_t movelines )
    int32_t retval = 0;
    struct mc_historian *mch = (struct mc_historian *)d;
 
-   if( (movelines == MC_LINEVIEW_FIRSTLINE) ||
-       ((int32_t)(mch->current + movelines) < 0) )
+   if( movelines == MC_LINEVIEW_FIRSTLINE )
+   {
+      movelines = -(mch->entries);
+   }
+   else if( movelines == MC_LINEVIEW_LASTLINE )
+   {
+      movelines = mch->entries;
+   }
+
+   if( (int32_t)(mch->current + movelines) < 0 )
    {
       retval = -(mch->current);
       mch->current = 0;
    }
-   else if( (movelines == MC_LINEVIEW_LASTLINE) ||
-            ((mch->current + movelines) > (mch->entries - mch->datalines)) )
+   else if( (mch->current + movelines) > (mch->entries - mch->datalines) )
    {
       retval = (mch->entries - mch->datalines) - mch->current;
       mch->current = mch->entries - mch->datalines;
