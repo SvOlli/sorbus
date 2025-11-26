@@ -557,10 +557,10 @@ static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, u
          snprintf( b, bsize, "#$%04X",        p1 | (p2 << 8) );
          break;
       case REL:   // OPC LABEL
-         snprintf( b, bsize, "$%04X",         ((addr+2) + (int8_t)p1) & 0xFFFF );
+         snprintf( b, bsize, "$%04X",         (((addr+2) + (int8_t)p1)) & 0xFFFF );
          break;
       case RELL:  // OPC LABEL
-         snprintf( b, bsize, "$%04X",         ((addr+3) + (int16_t)(p1 | (p2 << 8))) & 0xFFFF );
+         snprintf( b, bsize, "$%04X",         (((addr+3) + (int16_t)(p1 | (p2 << 8)))) & 0xFFFF );
          break;
       case RELSY:   // OPC #$01
          snprintf( b, bsize, "(#$%02X,S),Y",  p1 );
@@ -591,7 +591,7 @@ static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, u
          snprintf( b, bsize, "($%02X,S),Y",   p1 );
          break;
       case ZPNR:  // OPC# $12,LABEL
-         snprintf( b, bsize, "$%02X,$%04X",   p1, (addr+3) + (int8_t)p2 );
+         snprintf( b, bsize, "$%02X,$%04X",   p1, ((addr+3) + (int8_t)p2) & 0xFFFF );
          break;
       case ZPS:   // OPC $12,S
          snprintf( b, bsize, "$%02X,S",       p1 );

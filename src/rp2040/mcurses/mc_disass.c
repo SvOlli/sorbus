@@ -126,7 +126,7 @@ static void mcurses_disassemble_populate( void *d )
             ++address;
             break;
          case MCD_MODE_FULLOPCODE:
-            if( address <= dav->address )
+            if( ((int16_t)address - ((int16_t)dav->address) <= 0) )
             {
                mcd->firstline = l;
             }
@@ -200,7 +200,7 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
 
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
    mc_disass_t *dav = mcd->dav;
-   uint16_t address;
+   uint16_t address, address0, address1, address2, address3, address_1;
    int next = 0;
 
    switch( offset )
@@ -247,44 +247,53 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
    switch( mcd->mode )
    {
       case MCD_MODE_SINGLEBYTE:
+         address0 = dav->address + offset;
          disass_show( DISASS_SHOW_NOTHING );
          snprintf( &output[0], sizeof(output)-1,
                    "$%04X: %02X          ",
-                   dav->address + offset,
-                   dav->peek( dav->bank, dav->address + offset ) );
+                   address0,
+                   dav->peek( dav->bank, address0 ) );
          if( address )
          {
-            address = dav->address + offset;
+            address1 = address0+1;
+            address2 = address1+1;
+            address3 = address2+1;
+
             strncat( &output[0],
-                      disass( address,
-                              dav->peek( dav->bank, address + 0 ),
-                              dav->peek( dav->bank, address + 1 ),
-                              dav->peek( dav->bank, address + 2 ),
-                              dav->peek( dav->bank, address + 3 )
+                      disass( address0,
+                              dav->peek( dav->bank, address0 ),
+                              dav->peek( dav->bank, address1 ),
+                              dav->peek( dav->bank, address2 ),
+                              dav->peek( dav->bank, address3 )
                             ),
                       sizeof(output)-1 );
          }
          return output;
       case MCD_MODE_FULLOPCODE:
+         address0 = address;
+         address_1 = address0-1;
+         address1 = address0+1;
+         address2 = address1+1;
+         address3 = address2+1;
          disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
-         if( (dav->peek( dav->bank, address + 0 ) == 0) &&
-             (dav->peek( dav->bank, address - 1 ) == 0) &&
+         if( (dav->peek( dav->bank, address0 ) == 0) &&
+             (dav->peek( dav->bank, address_1 ) == 0) &&
              (address != dav->address) )
          {
             return disass_brk1( address,
-                           dav->peek( dav->bank, address + 0 ),
-                           dav->peek( dav->bank, address + 1 ),
-                           dav->peek( dav->bank, address + 2 ),
-                           dav->peek( dav->bank, address + 3 )
+                           dav->peek( dav->bank, address0 ),
+                           dav->peek( dav->bank, address1 ),
+                           dav->peek( dav->bank, address2 ),
+                           dav->peek( dav->bank, address3 )
                          );
          }
          else
          {
             return disass( address,
-                           dav->peek( dav->bank, address + 0 ),
-                           dav->peek( dav->bank, address + 1 ),
-                           dav->peek( dav->bank, address + 2 ),
-                           dav->peek( dav->bank, address + 3 )
+                           dav->peek( dav->bank, address0 ),
+                           dav->peek( dav->bank, address1 ),
+                           dav->peek( dav->bank, address2 ),
+                           dav->peek( dav->bank, address3 )
                          );
          }
       default:

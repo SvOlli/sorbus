@@ -21,6 +21,7 @@ opcode_cvs2md()
 - ExtraCycles: extra cycles taken when crossing a page(a) and/or taking a branch(b)
 
 EOH
+
    local header=1
    while read opcode name mode reserved bytes cycles extracycles jump mxe; do
       case "${reserved}" in
@@ -36,6 +37,13 @@ EOH
          header=0
       fi
    done
+
+if [ "${cpu}" == "65ce02" ]; then
+   echo
+   echo "Also note that the 65CE02 uses the term basepage (BP) instead of zeropage (ZP),"
+   echo "since it is moveable. However, for better comparision with other CPUs, the term"
+   echo "zeropage (ZP) was kept here."
+fi
 }
 
 for cpu in 6502 65sc02 65c02 65ce02 65816; do
@@ -45,7 +53,7 @@ done
 cd doc
 case "${1}" in
 upload) mkdocs build --clean &&
-        rsync -av --size-only --delete-before \
+        rsync -av --modify-window=5 --delete-before \
            ../build/site/ \
            sorbus.xayax.net:/srv/www/root/sorbus.xayax.net/
 ;;
