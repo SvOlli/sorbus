@@ -430,11 +430,11 @@ static int snprimm( char *b, size_t bsize, uint8_t p0, uint8_t p1, uint8_t p2 )
    {
       if( mxe & mx_flag_816 )
       {
-         return snprintf( b, bsize, "#$%04X",  p1 | (p2 << 8) );
+         return snprintf( b, bsize, "#$%02X%02X", p2, p1 );
       }
    }
    /* default: */
-   return snprintf( b, bsize, "#$%02X",        p1 );
+   return snprintf( b, bsize, "#$%02X", p1 );
 }
 
 static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3, bool brkoverride )
@@ -452,7 +452,7 @@ static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, u
 
    if( show_flags & DISASS_SHOW_ADDRESS )
    {
-      int p = snprintf( b, bsize, "$%04X: ", addr );
+      int p = snprintf( b, bsize, "$%04lX: ", addr );
       b += p;
       bsize -= p;
    }
@@ -506,37 +506,37 @@ static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, u
    switch( addrmode )
    {
       case ABS:   // OPC $1234
-         snprintf( b, bsize, "$%04X",         p1 | (p2 << 8) );
+         snprintf( b, bsize, "$%02X%02X",       p2, p1 );
          break;
       case ABSIL: // OPC [$1234]
-         snprintf( b, bsize, "[$%04X]",       p1 | (p2 << 8) );
+         snprintf( b, bsize, "[$%02X%02X]",     p2, p1 );
          break;
       case ABSL:  // OPC $123456
-         snprintf( b, bsize, "$%06X",         p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "$%02X%02X%02X",   p3, p2, p1 );
          break;
       case ABSLX: // OPC $123456,X
-         snprintf( b, bsize, "$%06X,X",       p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "$%02X%02X%02X,X", p3, p2, p1 );
          break;
       case ABSLY: // OPC $123456,Y
-         snprintf( b, bsize, "$%06X,Y",       p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "$%02X%02X%02X,Y", p3, p2, p1 );
          break;
       case ABSX:  // OPC $1234,X
-         snprintf( b, bsize, "$%04X,X",       p1 | (p2 << 8) );
+         snprintf( b, bsize, "$%02X%02X,X",     p2, p1 );
          break;
       case ABSY:  // OPC $1234,Y
-         snprintf( b, bsize, "$%04X,Y",       p1 | (p2 << 8) );
+         snprintf( b, bsize, "$%02X%02X,Y",     p2, p1 );
          break;
       case ABSZ:  // OPC $1234,Z
-         snprintf( b, bsize, "$%04X,Z",       p1 | (p2 << 8) );
+         snprintf( b, bsize, "$%02X%02X,Z",     p2, p1 );
          break;
       case AI:    // OPC ($1234)
-         snprintf( b, bsize, "($%04X)",       p1 | (p2 << 8) );
+         snprintf( b, bsize, "($%02X%02X)",     p2, p1 );
          break;
       case AIL:   // OPC ($123456)
-         snprintf( b, bsize, "($%06X)",       p1 | (p2 << 8) | (p3 << 16) );
+         snprintf( b, bsize, "($%02X%02X%02X)", p3, p2, p1 );
          break;
       case AIX:   // OPC ($1234,X)
-         snprintf( b, bsize, "($%04X,X)",     p1 | (p2 << 8) );
+         snprintf( b, bsize, "($%02X%02X,X)",   p2, p1 );
          break;
       case IMP:   // OPC
          // strip off trainling spaces here
@@ -554,13 +554,13 @@ static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, u
          snprintf( b, bsize, "#$%02X,#$%02X", p1, p2 );
          break;
       case IMML:  // OPC #$1234
-         snprintf( b, bsize, "#$%04X",        p1 | (p2 << 8) );
+         snprintf( b, bsize, "#$%02X%02X",    p2, p1 );
          break;
       case REL:   // OPC LABEL
-         snprintf( b, bsize, "$%04X",         (((addr+2) + (int8_t)p1)) & 0xFFFF );
+         snprintf( b, bsize, "$%04lX",        (((addr+2) + (int8_t)p1)) & 0xFFFF );
          break;
       case RELL:  // OPC LABEL
-         snprintf( b, bsize, "$%04X",         (((addr+3) + (int16_t)(p1 | (p2 << 8)))) & 0xFFFF );
+         snprintf( b, bsize, "$%04lX",        (((addr+3) + (int16_t)(p1 | (p2 << 8)))) & 0xFFFF );
          break;
       case RELSY:   // OPC #$01
          snprintf( b, bsize, "(#$%02X,S),Y",  p1 );
@@ -591,7 +591,7 @@ static const char *_disass( uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, u
          snprintf( b, bsize, "($%02X,S),Y",   p1 );
          break;
       case ZPNR:  // OPC# $12,LABEL
-         snprintf( b, bsize, "$%02X,$%04X",   p1, ((addr+3) + (int8_t)p2) & 0xFFFF );
+         snprintf( b, bsize, "$%02X,$%04lX",  p1, ((addr+3) + (int8_t)p2) & 0xFFFF );
          break;
       case ZPS:   // OPC $12,S
          snprintf( b, bsize, "$%02X,S",       p1 );

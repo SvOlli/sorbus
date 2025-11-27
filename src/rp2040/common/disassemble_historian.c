@@ -707,14 +707,14 @@ const char *disass_historian_entry( disass_historian_t d, uint32_t entry )
 
 #if 1
       snprintf( &buffer[0], sizeof(buffer)-1,
-                "%5d:%s:%d:%s",
+                "%5ld:%s:%d:%s",
                 entry,
                 decode_trace( (uint32_t)fullinfo.raw, false, 0 ),
                 fullinfo.eval,
                 fullinfo.eval < 3 ? "" : disass_trace( fullinfo ) );
 #else
       snprintf( &buffer[0], sizeof(buffer)-1,
-                "%5d:%s:%016llx:%d:%s",
+                "%5ld:%s:%016llx:%d:%s",
                 entry,
                 decode_trace( (uint32_t)fullinfo.raw, false, 0 ),
                 fullinfo.raw,

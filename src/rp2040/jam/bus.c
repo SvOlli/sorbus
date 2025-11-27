@@ -36,6 +36,7 @@
 #include "cpu_detect.h"
 #include "disassemble.h"
 
+#define MALLOC_RAM (1)
 // this is where the write protected area starts
 #define ROM_START (0xE000)
 // this is where the kernel is in raw flash
@@ -47,7 +48,11 @@ bi_decl(bi_program_feature(FLASH_DRIVE_INFO))
 #define FLASH_KERNEL_INFO "kernel   at " __XSTRING(FLASH_KERNEL_START_TXT)
 bi_decl(bi_program_feature(FLASH_KERNEL_INFO))
 
+#if MALLOC_RAM
+uint8_t *ram = 0;
+#else
 uint8_t ram[0x10000] = { 0 }; // 64k of RAM and I/O
+#endif
 uint8_t rom[FLASH_DRIVE_START_TXT-FLASH_KERNEL_START_TXT]; // buffer for roms
 const uint8_t *romvec;        // pointer into current ROM/RAM bank at $E000
 uint32_t state;
@@ -741,7 +746,7 @@ static void debug_info_eventqueue( char *buffer, size_t size )
    for( i = 0; i < count_of(timer_names); ++i )
    {
       printed = snprintf( buffer, size,
-                          "timer%d (%s):    id=%d us=%lld d=%u\n"
+                          "timer%d (%s):    id=%ld us=%lld d=%lu\n"
                           , i, timer_names[i]
                           , timer_ms[i].alarm_id, timer_ms[i].delay_us
                           , (uint32_t)timer_ms[i].user_data
@@ -768,7 +773,7 @@ static void debug_info_eventqueue( char *buffer, size_t size )
    for( i = 0, event = _queue_next_event; event; event = event->next )
    {
       printed = snprintf( buffer, size,
-                          "%02x|%016llx|%-24s|%08x"
+                          "%02x|%016llx|%-24s|%8p"
                           , i++
                           , event->timestamp
                           , debug_handler_name( event->handler )
@@ -794,9 +799,9 @@ static void debug_info_clocks( char *buffer, size_t size )
    check_cpu_is_halted();
 
    snprintf( buffer, size,
-             "  CLK_SYS: %3d.%03d   MHz\n"
+             "  CLK_SYS: %3u.%03d   MHz\n"
              " CLK_PERI: %3d.%03d   MHz\n"
-             "%9s: %3d.%06dMHz"
+             "%9s: %3ld.%06ldMHz"
              , f_clk_sys / 1000, (f_clk_sys % 1000)
              , f_clk_peri / 1000, (f_clk_peri % 1000)
              , cputype_name( cputype ), time_hz / 1000000, time_hz % 1000000 );
@@ -811,14 +816,14 @@ static void debug_info_heap( char *buffer, size_t size )
    uint32_t free_heap = total_heap - m.uordblks;
 
    snprintf( buffer, size,
-             "heap total: %6d\n"
-             "      free: %6d\n"
-             "   minimum: %6d"
+             "heap total: %6lu\n"
+             "      free: %6lu\n"
+             "   minimum: %6lu"
              , total_heap, free_heap, mf_checkheap() );
 }
 
 
-const void debug_info_sysvectors( char *buffer, size_t size )
+static void debug_info_sysvectors( char *buffer, size_t size )
 {
    snprintf( buffer, size,
              "UVBRK:%04X UVNBI:%04X\n"
@@ -846,27 +851,27 @@ static void debug_info_internaldrive( char *buffer, size_t size )
    uint64_t lba_size = dhara_info.sectors * dhara_info.sector_size;
 
    snprintf( buffer, size,
-      /*01*/ "hw sector size:  %08x (%d)\n"
-      /*02*/ "hw num sectors:  %08x (%d)\n"
+      /*01*/ "hw sector size:  %08lx (%lu)\n"
+      /*02*/ "hw num sectors:  %08lx (%lu)\n"
       /*03*/ "hw size:         %6.2fMB\n"
-      /*04*/ "page size:       %08x (%d)\n"
-      /*05*/ "pages:           %08x (%d)\n"
-      /*06*/ "lba sector size: %08x (%d)\n"
-      /*07*/ "lba num sectors: %08x (%d)\n"
+      /*04*/ "page size:       %08lx (%lu)\n"
+      /*05*/ "pages:           %08lx (%lu)\n"
+      /*06*/ "lba sector size: %08lx (%lu)\n"
+      /*07*/ "lba num sectors: %08lx (%lu)\n"
       /*08*/ "lba size:        %6.2fMB\n"
-      /*09*/ "gc ratio         %08x (%d)\n"
-      /*10*/ "read status:     %d\n"
+      /*09*/ "gc ratio         %08lx (%lu)\n"
+      /*10*/ "read status:     %lu\n"
       /*11*/ "read error:      %s\n"
       /*12*/ "ID_LBA ($DF70):  %04x (sector used for next transfer)\n"
       /*13*/ "ID_MEM ($DF72):  %04x (memory used for next transfer)\n"
       /*01*/ , dhara_info.erase_size, dhara_info.erase_size
       /*02*/ , dhara_info.erase_cells, dhara_info.erase_cells
-      /*03*/ , (float)hw_size / (1024*1024)
+      /*03*/ , (float)hw_size / (0x100000)   // convert to megabytes
       /*04*/ , dhara_info.page_size, dhara_info.page_size
       /*05*/ , dhara_info.pages, dhara_info.pages
       /*06*/ , dhara_info.sector_size, dhara_info.sector_size
       /*07*/ , dhara_info.sectors, dhara_info.sectors
-      /*08*/ , (float)lba_size / (1024*1024)
+      /*08*/ , (float)lba_size / (0x100000)  // convert to megabytes
       /*09*/ , dhara_info.gc_ratio, dhara_info.gc_ratio
       /*10*/ , dhara_info.read_status
       /*11*/ , dhara_strerror( dhara_info.read_errcode )
@@ -902,6 +907,12 @@ retry:
 
 void bus_run()
 {
+#if MALLOC_RAM
+   if( !ram )
+   {
+      ram = (uint8_t*)calloc( 0x10000, sizeof(uint8_t) );
+   }
+#endif
    bus_init();
    system_cpu_detect();
    system_init();
@@ -1096,7 +1107,7 @@ void debug_raw_backtrace()
    printf( "\nTRACE_START %s\n", cputype_name( cputype ) );
    for( int i = buslog_index; i < (buslog_index + BUSLOG_SIZE); ++i )
    {
-      printf( "%08x\n", buslog_states[i & (BUSLOG_SIZE-1)] );
+      printf( "%08lx\n", buslog_states[i & (BUSLOG_SIZE-1)] );
    }
    printf( "TRACE_END\n" );
 }

@@ -79,7 +79,7 @@
 
 // also verified by scanning through flash area
 #ifndef PICO_FLASH_SIZE_BYTES
-#define PICO_FLASH_SIZE_BYTES (16 * 1024 * 1024)
+#define PICO_FLASH_SIZE_BYTES (0x1000000) // 16MB
 #endif
 
 // boards seen so far use B2, so ruling out B0 should be safe

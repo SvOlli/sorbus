@@ -73,7 +73,7 @@ uint16_t dhara_flash_init()
 void dhara_flash_info( dhara_flash_info_t *info )
 {
    dhara_error_t err = DHARA_E_NONE;
-   char sector[SECTOR_SIZE];
+   uint8_t sector[SECTOR_SIZE];
    int retval = 0;
    if( !info )
    {
