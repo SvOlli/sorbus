@@ -104,6 +104,7 @@ void lineview( lineview_t *config )
          case KEY_PPAGE:
             step = -page;
             break;
+         case ' ':
          case KEY_NPAGE:
             step = +page;
             break;

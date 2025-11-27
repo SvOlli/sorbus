@@ -216,6 +216,7 @@ void screen_disable_alternative_buffer()
 void mcurses_sorbus_logo( uint16_t line, uint16_t column )
 {
    int i;
+   bool background = false;
    uint16_t logo_data[192] = {
    0x2591, 0x2591, 0x2591, 0x2588, 0x2580, 0x2580, 0x2591, 0x2588,
    0x2580, 0x2588, 0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2588,
@@ -244,21 +245,34 @@ void mcurses_sorbus_logo( uint16_t line, uint16_t column )
    0x2591, 0x2591, 0x2580, 0x2591, 0x2591, 0x2580, 0x2580, 0x2580,
    0x2591, 0x2580, 0x2591, 0x2580, 0x2591, 0x2591, 0x2591, 0x2591 };
 
-   move( line+0, column );
-   for( i = 0x00; i < 0x40; ++i )
+   move( line, column + 3 );
+   attrset( LOGO_FOREGROUND );
+   addstr( "The" );
+   for( i = 0x00; i < 0xc0; ++i )
    {
+      if( !(i & 0x3F) )
+      {
+         move( line + 1 + (i >> 6), column );
+      }
+      if( logo_data[i] == 0x2591 )
+      {
+         if( !background )
+         {
+            background = true;
+            attrset( LOGO_BACKGROUND );
+         }
+      }
+      else
+      {
+         if( background )
+         {
+            background = false;
+            attrset( LOGO_FOREGROUND );
+         }
+      }
       addch( logo_data[i] );
    }
-   move( line+1, column );
-   for( i = 0x40; i < 0x80; ++i )
-   {
-      addch( logo_data[i] );
-   }
-   move( line+2, column );
-   for( i = 0x80; i < 0xc0; ++i )
-   {
-      addch( logo_data[i] );
-   }
+   attrset( F_DEFAULT );
 }
 
 

@@ -18,7 +18,6 @@
 #include "jam.h"
 
 #include "bus.h"
-#include "xmodem.h"
 #include "generic_helper.h"
 
 #include "event_queue.h"
@@ -160,9 +159,7 @@ void console_rp2040()
       mcurses_textbox( false, lines-6, ((screen_get_columns()+1)>>1) - 9, debug_get_info( DEBUG_INFO_SYSVECTORS ) );
       mcurses_textbox( false, lines-6, cols-21, debug_get_info( DEBUG_INFO_HEAP ) );
 
-      move( 1, 5 );
-      addstr( "The" );
-      mcurses_sorbus_logo( 2, 2 );
+      mcurses_sorbus_logo( 1, 2 );
       mcurses_line_horizontal( true, 6, 0, cols-1 );
       move( 7, 2 );
       addstr( "Meta Menu invoked via " );
@@ -170,7 +167,7 @@ void console_rp2040()
       addstr( ", CPU stopped on RDY" );
 
       move( 9, 2 );
-      addstr( "B)acktrace, D)isassemble, E)vent queue, I)nternal drive, M)emory, U)pload" );
+      addstr( "B)acktrace, M)emory, D)isassemble, U)pload, E)vent queue, I)nternal drive" );
       move( 10, 2 );
       addstr( "C)ontinue, R)eboot ? " );
 

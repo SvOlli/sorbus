@@ -59,9 +59,6 @@ add_executable(jam_alpha
    jam/dhara_flash.c
    jam/event_queue.c
    )
-target_include_directories(jam_alpha PUBLIC
-   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/xmodem
-)
 
 target_link_libraries(jam_alpha
    pico_stdlib

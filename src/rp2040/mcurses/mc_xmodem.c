@@ -16,8 +16,8 @@ bool mc_xmodem_upload( poke_t poke )
 
    clear();
    attrset( MC_ATTRIBUTES_XMODEM );
-   mcurses_textline(       0, 0, COLS-1, "?" );
-   mcurses_textline( LINES-1, 0, COLS-1, "  XModem Upload" );
+   mcurses_textline(       0, 0, COLS-1, "" );
+   mcurses_textline( LINES-1, 0, COLS-1, "  XModem Upload  (Ctrl+C to cancel)" );
    attrset( MC_ATTRIBUTES_DEFAULT );
 
    move( 2, 0 );

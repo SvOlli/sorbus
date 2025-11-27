@@ -17,6 +17,8 @@
 #define  MC_ATTRIBUTES_BACKTRACE (F_BLACK | B_YELLOW)
 #define  MC_ATTRIBUTES_XMODEM    (F_WHITE | B_MAGENTA)
 #define  MC_ATTRIBUTES_DEFAULT   (F_DEFAULT | B_DEFAULT | A_NORMAL)
+#define  LOGO_BACKGROUND         (F_BLUE)
+#define  LOGO_FOREGROUND         (F_YELLOW)
 
 
 /* basic screen/mcurses functions implemented in mcurses_sorbus.c */

@@ -738,15 +738,6 @@ static void debug_info_eventqueue( char *buffer, size_t size )
    int i = 0;
    const char *timer_names[2] = { "NMI", "IRQ" };
 
-   printed = snprintf( buffer, size,
-                       "cycle counter:   %016llx\n"
-                       "next timerstamp: %016llx\n"
-                       , _queue_cycle_counter
-                       , _queue_next_timestamp
-                     );
-   buffer += printed;
-   size   -= printed;
-
    for( i = 0; i < count_of(timer_names); ++i )
    {
       printed = snprintf( buffer, size,
@@ -764,14 +755,22 @@ static void debug_info_eventqueue( char *buffer, size_t size )
       }
    }
 
-   i = 0;
-   for( event = _queue_next_event; event; event = event->next )
+   printed = snprintf( buffer, size,
+                       "cycle counter:   %016llx\n"
+                       "next timerstamp: %016llx\n\n"
+                       "id|       timestamp|handler_function        |param\n"
+                       , _queue_cycle_counter
+                       , _queue_next_timestamp
+                     );
+   buffer += printed;
+   size   -= printed;
+
+   for( i = 0, event = _queue_next_event; event; event = event->next )
    {
       printed = snprintf( buffer, size,
-                          "event %02d: %016llx:%p:%-24s:%08x"
+                          "%02x|%016llx|%-24s|%08x"
                           , i++
                           , event->timestamp
-                          , event->handler
                           , debug_handler_name( event->handler )
                           , event->data
                         );
