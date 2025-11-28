@@ -39,6 +39,13 @@ void screen_alternative_buffer_disable();
 /* draw a nice Sorbus logo */
 void mcurses_sorbus_logo( uint16_t line, uint16_t column );
 
+/* print data byte */
+void mcurses_debug_byte( uint8_t byte, uint8_t cs );
+
+/* print a string with debug output like above
+ * a 0x7f escapes the following byte to be printed as debug, even 0x00 */
+void mcurses_debug_str( const char *s, uint8_t cs );
+
 /* draw a nice border */
 void mcurses_border( bool dframe, uint16_t top, uint16_t left,
                      uint16_t bottom, uint16_t right );
@@ -88,6 +95,7 @@ typedef struct {
    peek_t                  peek;
    poke_t                  poke;
    /* initial/return values */
+   uint8_t                 charset;
    uint8_t                 bank;
    uint16_t                address;
    uint16_t                topleft;
@@ -115,6 +123,7 @@ typedef struct {
    lineview_handler_keypress_t keypress;
    /* data structure handed back to move, bank and data */
    void     *d;
+   uint8_t  charset;
    uint16_t attributes;
 } lineview_t;
 #define MC_LINEVIEW_FIRSTLINE    INT32_MIN
@@ -137,6 +146,7 @@ typedef struct {
    daview_handler_bank_t   banks;
    peek_t                  peek;
    /* initial/return values */
+   uint8_t                 charset;
    cputype_t               cpu;
    uint8_t                 bank;
    uint16_t                address;

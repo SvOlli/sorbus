@@ -85,6 +85,7 @@ void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32
    config.keypress   = 0;
    config.d          = (void*)(&mch);
    config.attributes = MC_ATTRIBUTES_BACKTRACE;
+   config.charset    = 0;
 
    mcurses_historian_move( config.d, MC_LINEVIEW_LASTLINE );
    disass_show( DISASS_SHOW_NOTHING );

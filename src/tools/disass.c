@@ -139,6 +139,7 @@ void mcurses( cputype_t cpu, uint16_t address )
 
    dav.banks      = debug_banks;
    dav.peek       = debug_peek;
+   dav.charset    = 1;
    dav.cpu        = cpu;
    dav.bank       = 0;
    dav.address    = address;

@@ -39,29 +39,29 @@ uint16_t sorbus_codepage[0x80] = {
    0x2569, // ╩ BOX DRAWINGS DOUBLE UP AND HORIZONTAL
    0x256C, // ╬ BOX DRAWINGS DOUBLE VERTICAL AND HORIZONTAL
 // 0x9B-0x9F:
-   0xFFFF,
-   0xFFFF,
-   0xFFFF,
-   0xFFFF,
-   0xFFFF,
+   0xFFFD,
+   0xFFFD,
+   0xFFFD,
+   0xFFFD,
+   0xFFFD,
 
 // 0xA0-0xAF:
-   0xFFFF,
-   0xFFFF,
+   0xFFFD,
+   0xFFFD,
    0x00A2, // ¢ CENT SIGN
    0x00A3, // £ POUND SIGN
-   0xFFFF,
+   0xFFFD,
    0x00A5, // ¥ YEN SIGN
-   0xFFFF,
+   0xFFFD,
    0x00A7, // § SECTION SIGN
-   0xFFFF,
-   0xFFFF,
-   0xFFFF,
-   0xFFFF,
+   0xFFFD,
+   0xFFFD,
+   0xFFFD,
+   0xFFFD,
    0x20AC, // € Euro Sign
-   0xFFFF,
-   0xFFFF,
-   0xFFFF,
+   0xFFFD,
+   0xFFFD,
+   0xFFFD,
 
 // 0xB0-0xB5:
    0x00B0, // ° DEGREE SIGN
@@ -83,7 +83,7 @@ uint16_t sorbus_codepage[0x80] = {
    0x00BD, // ½ VULGAR FRACTION ONE HALF
    0x00BE, // ¾ VULGAR FRACTION THREE QUARTERS
 // 0xBF:
-   0xFFFF,
+   0xFFFD,
 
 // 0xC0-0xC7:
    0x25B2, // ▲ BLACK UP-POINTING TRIANGLE
@@ -103,7 +103,7 @@ uint16_t sorbus_codepage[0x80] = {
    0x2194, // ↔ LEFT RIGHT ARROW
    0x2195, // ↕ UP DOWN ARROW
    0x21B5, // ↵ DOWNWARDS ARROW WITH CORNER LEFTWARDS
-   0xFFFF,
+   0xFFFD,
 
 // 0xD0-0xD3:
    0x2669, // ♩ Quarter note
@@ -167,6 +167,77 @@ uint16_t sorbus_codepage[0x80] = {
 
 
 };
+
+
+uint16_t tocs16( uint8_t ch, uint8_t cs )
+{
+   uint16_t ch16;
+
+   if( (cs > 0) && (ch == 0x7f) )
+   {
+      ch16 = 0xFFFD;
+   }
+   else if( (ch < 0x80) || (cs == 0) )
+   {
+      ch16 = ch;
+   }
+   else
+   {
+      switch( cs )
+      {
+         default:
+            ch16 = sorbus_codepage[ch & 0x7F];
+            break;
+      }
+   }
+   return ch16;
+}
+
+
+const char *tocharset( uint8_t ch, uint8_t cs )
+{
+   static char output[5] = { 0 };
+   char *c = &output[0];
+
+   if( (ch < 0x80) || (cs == 0) )
+   {
+      /* input data can be passed through */
+      *(c++) = (char)(ch);
+   }
+   else
+   {
+      uint16_t ch16 = tocs16( ch, cs );
+
+      /* now, output multibyte sequence */
+      if( ch16 < 0x800 )
+      {
+         /* write UTF-8 2-byte sequence
+          * 110y yyxx 10xx xxxx
+          * ^^^---------------- 2-byte encoding
+          *           ^^------- followup data
+          *    ^ ^^^^   ^^ ^^^^ 11 bits of data
+          */
+         *(c++) = (char)(0xc0 | ((ch16 & 0x07c0) >> 6));
+         *(c++) = (char)(0x80 |  (ch16 & 0x003f));
+      }
+      else
+      {
+         /* write UTF-8 3-byte sequence
+          * 1110 yyyy 10yy yyxx 10xx xxxx
+          * ^^^-------------------------- 3-byte encoding
+          *           ^^----------------- followup data
+          *                     ^^------- followup data
+          *      ^^^^   ^^ ^^^^   ^^ ^^^^ 16 bits of data
+          */
+         *(c++) = (char)(0xe0 | ((ch16 & 0xf000) >> 12));
+         *(c++) = (char)(0x80 | ((ch16 & 0x0fc0) >> 6));
+         *(c++) = (char)(0x80 |  (ch16 & 0x003f));
+      }
+   }
+
+   *c = (char)(0);
+   return output;
+}
 
 
 int putcharset( uint8_t ch, uint8_t cs )

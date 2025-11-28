@@ -60,7 +60,7 @@ void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size,
       {
          printf( "%02x:", bank );
       }
-      printf( "%04lx:", address + i );
+      printf( "%04x:", address + i );
 
       for( uint8_t j = 0; j < 0x10; ++j )
       {
@@ -118,7 +118,7 @@ const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank )
 
    offset = strlen( buffer );
    snprintf( &buffer[offset], sizeof(buffer)-offset,
-             "%04lx %c %02lx %c%c%c",
+             "%04x %c %02x %c%c%c",
              (state & bus_config.mask_address) >> (bus_config.shift_address),
              (state & bus_config.mask_rw) ? 'r' : 'w',
              (state & bus_config.mask_data) >> (bus_config.shift_data),

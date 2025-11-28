@@ -12,18 +12,27 @@
 #define LAST_LINE       (LINES - 1)
 
 
-static void printline( const char *line, int len )
+static void printline( const char *line, uint8_t charset, int len )
 {
    int i;
+   uint8_t *l = (uint8_t*)line;
    for( i = 0; i < len; ++i )
    {
-      if( line && *line )
+      if( l && *l )
       {
-         addch(*(line++));
+         if( *l == 0x7f )
+         {
+            ++l;
+            mcurses_debug_byte( *(l++), charset );
+         }
+         else
+         {
+            putcharset( *(l++), charset );
+         }
       }
       else
       {
-         addch(' ');
+         addch( ' ' );
       }
    }
 }
@@ -36,7 +45,7 @@ static void printlines( const lineview_t *config, int len )
    for( l = 0; l < (LAST_LINE - FIRST_LINE); ++l )
    {
       move( l+FIRST_LINE, 0 );
-      printline( config->data( config->d, l ), len );
+      printline( config->data( config->d, l ), config->charset, len );
    }
 }
 
@@ -45,9 +54,9 @@ static void header_footer( const lineview_t *config )
 {
    attrset( config->attributes );
    move( 0, 0 );
-   printline( config->data( config->d, MC_LINEVIEW_FIRSTLINE ), COLS );
+   printline( config->data( config->d, MC_LINEVIEW_FIRSTLINE ), 0, COLS );
    move( LAST_LINE+1, 0 );
-   printline( config->data( config->d, MC_LINEVIEW_LASTLINE  ), COLS );
+   printline( config->data( config->d, MC_LINEVIEW_LASTLINE  ), 0, COLS );
    attrset( A_NORMAL | F_DEFAULT | B_DEFAULT );
 }
 
@@ -129,12 +138,12 @@ void lineview( lineview_t *config )
          case -1:
             move( FIRST_LINE, 0 );
             insertln();
-            printline( config->data( config->d, 0 ), COLS-1 );
+            printline( config->data( config->d, 0 ), config->charset, COLS-1 );
             break;
          case +1:
             move( LAST_LINE-1, 0 );
             scroll();
-            printline( config->data( config->d, LAST_LINE-FIRST_LINE-1 ), COLS-1 );
+            printline( config->data( config->d, LAST_LINE-FIRST_LINE-1 ), config->charset, COLS-1 );
             break;
          default:
             printlines( config, COLS-1 );

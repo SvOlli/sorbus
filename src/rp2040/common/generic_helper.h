@@ -66,6 +66,10 @@ int32_t get_16bit_address( uint16_t lastaddr );
 uint32_t mf_checkheap();
 
 
+/* convert a character from 8bit to 16bit UTF representation
+ * according to charset */
+uint16_t tocs16( uint8_t ch, uint8_t cs );
+
 /*
  * like putchar, print a character
  * unlike putchar, it can print an UTF-8 sequence of a predefined charset
@@ -75,6 +79,11 @@ uint32_t mf_checkheap();
  */
 int putcharset( uint8_t ch, uint8_t cs );
 
+/*
+ * same as putcharset, but returns instead of printing returns
+ * string that represents a single UTF-8 character
+ */
+const char *tocharset( uint8_t ch, uint8_t cs );
 
 /*
  * library function to upload data to RAM via xmodem

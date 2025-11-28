@@ -213,6 +213,43 @@ void screen_disable_alternative_buffer()
 }
 
 
+void mcurses_debug_byte( uint8_t byte, uint8_t cs )
+{
+   if( byte == 0x7F )
+   {
+      addch( 0xFFFD );
+   }
+   else if( byte < 0x20 )
+   {
+      attrset( A_REVERSE );
+      addch( byte | 0x40 );
+      attrset( A_NORMAL );
+   }
+   else
+   {
+      addch( tocs16( byte, cs ) );
+   }
+}
+
+
+void mcurses_debug_str( const char *s, uint8_t cs )
+{
+   const uint8_t *c = (const uint8_t*)s;
+   while( *c )
+   {
+      if( *c == 0x7f )
+      {
+         mcurses_debug_byte( *(++c), cs );
+      }
+      else
+      {
+         addch( tocs16( (*c), cs ) );
+      }
+      ++c;
+   }
+}
+
+
 void mcurses_sorbus_logo( uint16_t line, uint16_t column )
 {
    int i;
@@ -515,7 +552,7 @@ void mcurses_hexout( uint64_t value, uint8_t digits )
    uint8_t outchar = '0' + (value & 0xF);
    if( outchar > '9' )
    {
-      outchar += 'A' - '9';
+      outchar += '@' - '9';
    }
    if( digits > 1 )
    {

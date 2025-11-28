@@ -41,6 +41,7 @@ static mc_hexedit_t he_config = {
    hexedit_bank,
    debug_peek,
    debug_poke,
+   1,
    0x00,
    0x0400,
    0x0400
@@ -49,6 +50,7 @@ static mc_hexedit_t he_config = {
 static mc_disass_t da_config = {
    debug_banks,
    debug_peek,
+   1,
    CPU_65SC02,
    0x00,
    0x0400,
@@ -160,6 +162,8 @@ void console_rp2040()
       mcurses_textbox( false, lines-6, cols-21, debug_get_info( DEBUG_INFO_HEAP ) );
 
       mcurses_sorbus_logo( 1, 2 );
+      move( 5, 5 );
+      addstr( "https://sorbus.xayax.net/");
       mcurses_line_horizontal( true, 6, 0, cols-1 );
       move( 7, 2 );
       addstr( "Meta Menu invoked via " );

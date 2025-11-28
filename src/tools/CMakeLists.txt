@@ -23,6 +23,7 @@ bin2h(jam_basic.h  ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin  jam_basic  sorbus_rt
 add_library(sorbus_rte STATIC
    mc_phyio_linux.c
    sorbus_rte_memory.c
+   ../rp2040/common/putcharset.c
    ../rp2040/mcurses/mcurses.c
    ../rp2040/mcurses/mc_extra.c
    ../rp2040/mcurses/mc_view.c

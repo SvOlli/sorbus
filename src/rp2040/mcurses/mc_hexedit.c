@@ -65,7 +65,10 @@ void hexedit_poke( mc_hexedit_t *config, uint16_t address, uint8_t data )
    config->poke( config->bank, address, data );
 }
 
-
+#if 1
+#define itox(x) mcurses_hexout((x),1)
+#define itoxx(x) mcurses_hexout2((x))
+#else
 /*-----------------------------------------------------------------------------
  * itox: convert a decimal value 0-15 into hexadecimal digit
  *-----------------------------------------------------------------------------
@@ -97,6 +100,7 @@ void itoxx (unsigned char i)
    itox (i >> 4);
    itox (i & 0x0F);
 }
+#endif
 
 
 uint8_t xtoi (uint8_t ch)
@@ -124,35 +128,27 @@ void print_hex_line( mc_hexedit_t *config, uint8_t line, uint16_t off )
    uint8_t       col;
    uint8_t       ch;
 
-   move (line, 0);
-   itoxx (off >> 8);
-   itoxx (off & 0xFF);
+   move( line, 0 );
+   mcurses_hexout4( off );
    addstr("   ");
 
-   move (line, FIRST_HEX_COL);
+   move( line, FIRST_HEX_COL );
    for (col = 0; col < BYTES_PER_ROW; col++)
    {
-      itoxx (hexedit_peek( config,off));
-      addch (' ');
+      itoxx( hexedit_peek( config, off ) );
+      addch( ' ' );
       off++;
    }
 
    off -= BYTES_PER_ROW;
 
-   move (line, FIRST_ASCII_COL);
+   move( line, FIRST_ASCII_COL );
 
    for (col = 0; col < BYTES_PER_ROW; col++)
    {
-      ch = hexedit_peek( config,off);
+      ch = hexedit_peek( config, off );
 
-      if (IS_PRINT(ch))
-      {
-         addch( ch );
-      }
-      else
-      {
-         addch ('.');
-      }
+      mcurses_debug_byte( ch, config->charset );
       off++;
    }
 }
@@ -259,7 +255,7 @@ void hexedit( mc_hexedit_t *config )
       {
          addch( ' ' );
       }
-      itox (byte);
+      itox( byte );
       addch (' ');
       col += 3;
    }
@@ -416,15 +412,15 @@ void hexedit( mc_hexedit_t *config )
                      check = hexedit_peek( config, address );
                      if( check == value )
                      {
-                        move (line, FIRST_ASCII_COL + byte);
+                        move( line, FIRST_ASCII_COL + byte );
 
-                        if (IS_PRINT(value))
+                        if( value >= 0x20 )
                         {
-                           addch (value);
+                           addstr( tocharset( value, config->charset ) );
                         }
                         else
                         {
-                           addch ('.');
+                           addch( '.' );
                         }
                      }
                      cmove = MOVE_RIGHT;
@@ -436,14 +432,15 @@ void hexedit( mc_hexedit_t *config )
             }
             else // MODE_ASCII
             {
-               if (IS_PRINT(ch))
+               /* input is only possible in ASCII */
+               if( (ch >= 0x20) && (ch < 0x7F) )
                {
                   hexedit_poke( config, address, ch );
                   check = hexedit_peek( config, address++ );
                   if( check == ch )
                   {
                      addch( ch );
-                     move (line, FIRST_HEX_COL + 3 * byte);
+                     move( line, FIRST_HEX_COL + 3 * byte );
                      itoxx( ch );
                   }
                   cmove = MOVE_RIGHT;

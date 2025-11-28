@@ -36,7 +36,7 @@
 #include "cpu_detect.h"
 #include "disassemble.h"
 
-#define MALLOC_RAM (1)
+#define MALLOC_RAM (0)
 // this is where the write protected area starts
 #define ROM_START (0xE000)
 // this is where the kernel is in raw flash

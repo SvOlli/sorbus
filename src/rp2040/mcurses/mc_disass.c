@@ -201,15 +201,16 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
    mc_disass_t *dav = mcd->dav;
    uint16_t address, address0, address1, address2, address3, address_1;
+   uint8_t byte;
    int next = 0;
 
    switch( offset )
    {
       case MC_LINEVIEW_FIRSTLINE:
          next += snprintf( &output[0], sizeof(output)-1,
-                           "CPU: %-9s Bank: %x (unstable)"
-                           , cputype_name( dav->cpu )
+                           "Bank: %x CPU: %-9s"
                            , dav->bank
+                           , cputype_name( dav->cpu )
                            );
          if( dav->cpu == CPU_65816 )
          {
@@ -248,18 +249,20 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
    {
       case MCD_MODE_SINGLEBYTE:
          address0 = dav->address + offset;
+         byte = dav->peek( dav->bank, address0 );
          disass_show( DISASS_SHOW_NOTHING );
-         snprintf( &output[0], sizeof(output)-1,
-                   "$%04X: %02X          ",
-                   address0,
-                   dav->peek( dav->bank, address0 ) );
+         next += snprintf( &output[0], sizeof(output)-1,
+                           "$%04X: %02X ('%c%c')    ",
+                           address0,
+                           byte,
+                           0x7f, byte );
          if( address )
          {
             address1 = address0+1;
             address2 = address1+1;
             address3 = address2+1;
 
-            strncat( &output[0],
+            strncat( &output[next],
                       disass( address0,
                               dav->peek( dav->bank, address0 ),
                               dav->peek( dav->bank, address1 ),
@@ -312,6 +315,8 @@ int32_t mcurses_disassemble_keypress( void *d, uint8_t *ch )
    switch( *ch )
    {
       case 0x02: // Ctrl+B
+      case 'B':
+      case 'b':
          if( ++(dav->bank) > dav->banks() )
          {
             dav->bank = 0;
@@ -346,7 +351,7 @@ int32_t mcurses_disassemble_keypress( void *d, uint8_t *ch )
          mcurses_disassemble_populate( d );
          retval = MC_LINEVIEW_REDRAWALL; // force full redraw
          break;
-      case 0x01: // Ctrl+A (alternative display: singleline <-> multiline)
+      case 0x16: // Ctrl+V (alternative display: singleline <-> multiline)
       case 'V':
       case 'v':
          mcd->mode = (mcd->mode == MCD_MODE_FULLOPCODE) ?
@@ -356,15 +361,21 @@ int32_t mcurses_disassemble_keypress( void *d, uint8_t *ch )
          break;
       case 'M':
       case 'm':
-         dav->m816 = !dav->m816;
-         mcurses_disassemble_populate( d );
-         retval = MC_LINEVIEW_REDRAWALL; // force full redraw
+         if( dav->cpu == CPU_65816 )
+         {
+            dav->m816 = !dav->m816;
+            mcurses_disassemble_populate( d );
+            retval = MC_LINEVIEW_REDRAWALL; // force full redraw
+         }
          break;
       case 'X':
       case 'x':
-         dav->x816 = !dav->x816;
-         mcurses_disassemble_populate( d );
-         retval = MC_LINEVIEW_REDRAWALL; // force full redraw
+         if( dav->cpu == CPU_65816 )
+         {
+            dav->x816 = !dav->x816;
+            mcurses_disassemble_populate( d );
+            retval = MC_LINEVIEW_REDRAWALL; // force full redraw
+         }
          break;
       default:
          break;
@@ -395,6 +406,7 @@ void mcurses_disassemble( mc_disass_t *dav )
    config.data       = mcurses_disassemble_data;
    config.d          = (void*)(&mcd);
    config.attributes = MC_ATTRIBUTES_DISASS;
+   config.charset    = dav->charset;
 
    disass_set_cpu( dav->cpu );
    mcurses_disassemble_alloc( &mcd, mcd.lines );
@@ -406,4 +418,6 @@ void mcurses_disassemble( mc_disass_t *dav )
       (void)mf_checkheap();
       free( mcd.linecache );
    }
+
+   dav->charset = config.charset;
 }
