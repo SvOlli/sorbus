@@ -67,21 +67,3 @@ target_link_libraries(jam_alpha
    )
 setup_target(jam_alpha "jam")
 #pico_set_binary_type(jam_alpha copy_to_ram)
-
-find_program(CLANG_TIDY_EXECUTABLE clang-tidy)
-get_target_property(TARGET_SOURCES jam_alpha SOURCES)
-if (CLANG_TIDY_EXECUTABLE)
-   add_custom_target(
-      jam_sca
-      COMMAND ${CMAKE_SOURCE_DIR}/tools/clang-tidy-wrapper.sh ${CLANG_TIDY_EXECUTABLE}
-               -p=${CMAKE_BINARY_DIR} # Path to compile_commands.json
-               --extra-arg-before=-Wno-error
-               ${TARGET_SOURCES}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      COMMENT "Running clang-tidy static analysis..."
-      VERBATIM
-   )
-   message(STATUS "Static analysis target 'jam_sca' added.")
-else()
-   message(WARNING "clang-tidy not found. Cannot add static analysis target.")
-endif()

@@ -93,3 +93,26 @@ include(jam.cmake)
 include(fb32x32.cmake)
 include(sound.cmake)
 include(vga.cmake)
+
+
+find_program(CLANG_TIDY_EXECUTABLE clang-tidy)
+get_target_property(SOURCES_JAM jam_alpha SOURCES)
+get_target_property(SOURCES_FB32X32 fb32x32_ws2812 SOURCES)
+if (CLANG_TIDY_EXECUTABLE)
+   add_custom_target(
+      sca
+      COMMAND ${CMAKE_SOURCE_DIR}/tools/clang-tidy-wrapper.sh
+               CC=${CMAKE_C_COMPILER}
+               PICO_SDK_PATH=${PICO_SDK_PATH}
+               ${CLANG_TIDY_EXECUTABLE}
+               -p=${CMAKE_BINARY_DIR} # Path to compile_commands.json
+               #--extra-arg-before=-Wno-error
+               ${SOURCES_JAM} ${SOURCES_FB32X32}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      COMMENT "Running clang-tidy static analysis..."
+      VERBATIM
+   )
+   message(STATUS "Static analysis target 'sca' added.")
+else()
+   message(WARNING "clang-tidy not found. Cannot add static analysis target.")
+endif()

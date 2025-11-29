@@ -163,7 +163,7 @@ void console_rp2040()
 
       mcurses_sorbus_logo( 1, 2 );
       move( 5, 5 );
-      addstr( "https://sorbus.xayax.net/");
+      addstr( "JAM: Just Another Machine | https://sorbus.xayax.net/jam/" );
       mcurses_line_horizontal( true, 6, 0, cols-1 );
       move( 7, 2 );
       addstr( "Meta Menu invoked via " );
