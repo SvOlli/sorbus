@@ -4,7 +4,8 @@
 The Sorbus JAM (short for Just Another Machine) is an implementation of a
 complete system that does not resemble any already created computer. It
 is intended to grow into a well defined platform capable of running
-demos. (See https://en.wikipedia.org/wiki/Demoscene)
+demos. (See
+[Wikipedia's entry on the Demoscene](https://en.wikipedia.org/wiki/Demoscene).)
 
 The flash of the RP2040 contains the Kernel ROM and the flash filesystem
 image in RAW flash. Those can (and have to) be loaded independently from
@@ -16,6 +17,7 @@ the core in flash, using the following commands:
 (This is a subject to change, because it's now possible to create a UF2
 file with everything firmware, but this seems not to be fully supported.)
 
+---
 
 ## Available Boot Options
 
@@ -30,6 +32,12 @@ F)ilebrowser, B)ASIC, System M)onitor, T)IM, W)ozMon?
 ```
 
 
+### System Monitor
+
+This is a native implementation of a monitor as known from the Commodore
+machines. It has got its own documentation file [sysmon.md](sysmon.md).
+
+
 ### WozMon & TIM (MOS 6530-004)
 
 Those are ports of the original software which for example make use of
@@ -42,12 +50,6 @@ in [monitors.md](monitors.md).
 This is a port of the Microsoft BASIC 1.0 as used on the [Ohio Scientific Model
 600](https://www.oldcomputers.net/osi-600.html).
 It has been heavily modified. For details see also [ms_basic.md](ms_basic.md).
-
-
-### System Monitor
-
-This is a native implementation of a monitor as known from the Commodore
-machines. It has got its own documentation file [sysmon.md](sysmon.md).
 
 
 ### Filebrowser
@@ -81,16 +83,17 @@ This is a stripped down version of the System Monitor and will be loaded
 from bootblock 2. It is also loaded when an NMOS 6502 CPU is detected
 during startup (see below).
 
+---
 
 ## Using an NMOS 6502
 
 The firmware of this core does not support an NMOS 6502, and shows an
 appropriate message upon startup. Then the kernel attempts to load
 bootblock 2 (see above). If this fails it drops into WozMon. Both can be
-used for some rudimentary work. Using WozMon, it is also possible to run
-Instant Assembler using the host tool `wozcat`. However the NMOS 6502
-toolkit should be preferred, as it is more capable than Instant Assember.
+used for some rudimentary work. However, the NMOS 6502 Toolkit should be
+preferred, as it is way more capable than WozMon.
 
+---
 
 ## CP/M 65 Usage
 
@@ -98,8 +101,9 @@ Upon startup, ``CCP.SYS``, the command interpreter, is loaded. It knows
 the built-in commands ``DIR``, ``ERA``, ``REN``, ``TYPE``, ``USER`` and
 ``FREE``.
 
-`Repository of CP/M 65 <https://github.com/davidgiven/cpm65>`_
+[Repository of CP/M 65](https://github.com/davidgiven/cpm65)
 
+---
 
 ## OSI BASIC V1.0 REV 3.2 Usage
 
@@ -130,14 +134,13 @@ BASIC.
 - code for RND(0) has been changed, so sequence will not be the same,
   actually being random
 
-
+---
 
 ## Executeable Formats
 
 Executeable file formats can be loaded using the file browser and are
 only distinguished by their extension. The filebrowser does whatever is
 required to set up the system to run those files.
-
 
 ### SX4
 
@@ -146,7 +149,6 @@ loaded to $0400 at memory and started at the load address, after the
 bank has been switched to $00 (RAM at $E000) with the BIOS copied to RAM.
 This is done by the File Browser. When an SX4 is loaded otherwise, e.g.
 via UART the bank configuration will be left untouched.
-
 
 ### SX6
 
@@ -196,6 +198,7 @@ So, this is intended with the balance of rather easy porting existing
 6502asm.com software as well having some nice features to write new short
 demos for the Sorbus JAM.
 
+---
 
 ## Notes On Implementation in RP2040
 

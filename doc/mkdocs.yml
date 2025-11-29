@@ -17,11 +17,10 @@ markdown_extensions:
    - md_in_html
 
 theme:
-   #name: null
-   #custom_dir: themes/material
    name: readthedocs
+   color_mode: dark
    prev_next_buttons_location: both
-   highlightjs: True
+   highlightjs: False
    # hljs_languages:
    include_homepage_in_sidebar: True
    navigation_depth: 4

@@ -53,7 +53,7 @@ done
 cd doc
 case "${1}" in
 upload) mkdocs build --clean &&
-        rsync -av --modify-window=5 --delete-before \
+        rsync -avz --modify-window=5 --delete-before \
            ../build/site/ \
            sorbus.xayax.net:/srv/www/root/sorbus.xayax.net/
 ;;
