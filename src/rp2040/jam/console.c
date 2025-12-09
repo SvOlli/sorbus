@@ -35,9 +35,9 @@ SORBUS_VERSION
 #ifdef __OPTIMIZE__
   "\noptimized for "
 #ifdef __OPTIMIZE_SIZE__
-    "speed"
-#else
     "size"
+#else
+    "speed"
 #endif
 #else
   "\nnot optimized"
