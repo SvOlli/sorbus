@@ -23,6 +23,28 @@
 #include "event_queue.h"
 #include "mcurses.h"
 
+#ifndef SORBUS_VERSION
+#define SORBUS_VERSION "0.6"
+#endif
+
+const char *sorbus_version =
+"The Sorbus Computer: Version "
+SORBUS_VERSION
+"\nCompiled with\n"
+"arm-none-eabi-gcc " __VERSION__
+#ifdef __OPTIMIZE__
+  "\noptimized for "
+#ifdef __OPTIMIZE_SIZE__
+    "speed"
+#else
+    "size"
+#endif
+#else
+  "\nnot optimized"
+#endif
+;
+
+// TODO: required?
 extern void system_trap();
 
 console_type_t console_type;
@@ -149,7 +171,15 @@ void console_rp2040()
       {
          goto done;
       }
-      screen_get_size( &lines, &cols );
+      if( (ch | 0x20) == 'f' ) // force 80x23
+      {
+         lines = 23;
+         cols  = 80;
+      }
+      else
+      {
+         screen_get_size( &lines, &cols );
+      }
    }
 
    while( !leave )
@@ -224,6 +254,10 @@ void console_rp2040()
          case 'U':
             endwin();
             leave = mc_xmodem_upload( debug_poke );
+            break;
+         case 'V':
+            mcurses_textbox( false, MC_TEXT_CENTER, MC_TEXT_CENTER, sorbus_version );
+            getch();
             break;
          case 'C':
             leave = true;

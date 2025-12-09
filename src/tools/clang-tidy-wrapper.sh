@@ -33,8 +33,8 @@ esac;done
 [ -n "${BUILD_DIR}" ]
 
 sed \
-   -e "s,-mcpu=cortex-m0plus,-I/usr/include/newlib,g" \
-   -e "s,-mthumb,$(getincludes),g" \
+   -e "s,-mcpu=cortex-m0plus,$(getincludes),g" \
+   -e "s,-mthumb,-I/usr/include/newlib,g" \
    -e "s/-isystem /-I/g" \
    -i "${BUILD_DIR}/compile_commands.json"
 

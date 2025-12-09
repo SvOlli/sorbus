@@ -381,7 +381,7 @@ static void disass_historian_assumptions( disass_historian_t d )
           ((addr3 & 0xFF00) == 0x0100) &&
           /* then check fetching the vector */
           ( addr2           >= 0xFFFA) &&
-          ( addr1            = addr2+1 ) )
+          ( addr1           == addr2+1 ) )
       {
          /* a false positive could be a JMP ($FFFx) stored in stack page */
          for( n = 1; n <= 5; ++n )

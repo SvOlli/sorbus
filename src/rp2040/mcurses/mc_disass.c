@@ -11,16 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PRECACHE (16)
-
-
-typedef union {
-   uint16_t       address  : 16;
-   struct {
-      bool        disass8  :  1;
-      bool        disass16 :  1;
-   };
-} linecache_t;
+#define PRECHECK (16)
 
 
 typedef enum {
@@ -31,7 +22,7 @@ typedef enum {
 
 typedef struct {
    mc_disass_t    *dav;
-   linecache_t    *linecache;
+   uint16_t       *linecache;
    uint16_t       lines;
    uint16_t       firstline;
    mcd_mode_t     mode;
@@ -42,21 +33,18 @@ static void mcurses_disassemble_alloc( void *d, uint16_t lines )
 {
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
 
-   // add extra lines for scrollback
-   lines += PRECACHE;
-
    if( mcd->linecache )
    {
       if( lines > mcd->lines )
       {
          /* allocated memory so far is no enough */
-         mcd->linecache = realloc( mcd->linecache, lines * sizeof(linecache_t) );
+         mcd->linecache = realloc( mcd->linecache, lines * sizeof(uint16_t) );
       }
    }
    else
    {
       /* nothing allocated so far */
-      mcd->linecache = malloc( lines * sizeof(linecache_t) );
+      mcd->linecache = malloc( lines * sizeof(uint16_t) );
    }
    mcd->lines = lines;
    mf_checkheap();
@@ -67,8 +55,9 @@ static uint16_t mcurses_disassemble_prevaddress( void *d )
 {
    mc_disassemble_t  *mcd = (mc_disassemble_t*)d;
    mc_disass_t       *dav = mcd->dav;
-   uint16_t l;
-   linecache_t *linecache = mcd->linecache;
+   uint16_t i, l;
+   uint16_t *linecache = mcd->linecache;
+   uint16_t prevaddress, address = dav->address;
 
    switch( mcd->mode )
    {
@@ -77,11 +66,17 @@ static uint16_t mcurses_disassemble_prevaddress( void *d )
          //return dav->address - 1;
          break;
       case MCD_MODE_FULLOPCODE:
-         for( l = 1; l < mcd->lines; ++l )
+         for( i = 0; i < 4; ++i )
          {
-            if( linecache[l].address == dav->address )
+            address = dav->address - PRECHECK + i;
+            for( l = 0; l < PRECHECK; ++l )
             {
-               return linecache[l-1].address;
+               prevaddress = address;
+               address += disass_bytes( dav->peek( dav->bank, address ) );
+               if( address == dav->address )
+               {
+                  return prevaddress;
+               }
             }
          }
          break;
@@ -97,9 +92,9 @@ static void mcurses_disassemble_populate( void *d )
    mc_disassemble_t *mcd = (mc_disassemble_t*)d;
    mc_disass_t *dav = mcd->dav;
    uint16_t l;
-   uint16_t nextaddress = dav->address - PRECACHE;
-   uint16_t address = dav->address - PRECACHE;
-   linecache_t *linecache = mcd->linecache;
+   uint16_t nextaddress = dav->address;
+   uint16_t address = dav->address;
+   uint16_t *linecache = mcd->linecache;
 
    disass_set_cpu( dav->cpu );
    disass_mx816( dav->m816, dav->x816 );
@@ -114,14 +109,12 @@ static void mcurses_disassemble_populate( void *d )
             }
             if( address == nextaddress )
             {
-               linecache[l].disass8 = true;
-               linecache[l].address = 1;
+               linecache[l] = 1;
                nextaddress += disass_bytes( dav->peek( dav->bank, address ) );
             }
             else
             {
-               linecache[l].disass8 = false;
-               linecache[l].address = 0;
+               linecache[l] = 0;
             }
             ++address;
             break;
@@ -130,7 +123,7 @@ static void mcurses_disassemble_populate( void *d )
             {
                mcd->firstline = l;
             }
-            linecache[l].address = address;
+            linecache[l] = address;
             {
                uint16_t prevaddress = address - 1;
                if( (dav->peek( dav->bank, prevaddress ) == 0) &&
@@ -230,12 +223,12 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
    switch( mcd->mode )
    {
       case MCD_MODE_SINGLEBYTE:
-         address = mcd->linecache[offset+mcd->firstline].address;
+         address = mcd->linecache[offset+mcd->firstline];
          break;
       case MCD_MODE_FULLOPCODE:
       default:
          offset += mcd->firstline;
-         address = mcd->linecache[offset].address;
+         address = mcd->linecache[offset];
          break;
    }
 
@@ -269,7 +262,7 @@ const char* mcurses_disassemble_data( void *d, int32_t offset )
                               dav->peek( dav->bank, address2 ),
                               dav->peek( dav->bank, address3 )
                             ),
-                      sizeof(output)-1 );
+                      sizeof(output)-next-1 );
          }
          return output;
       case MCD_MODE_FULLOPCODE:
