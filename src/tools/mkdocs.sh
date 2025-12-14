@@ -9,6 +9,10 @@ readonly basedir="${PWD}"
 opcode_cvs2md()
 {
    local cpu="${1}"
+   local cpu65816=""
+   if [ "${cpu}" == "65816" ]; then
+      cpu65816=" (8 bit mode for 65816)"
+   fi
 
    cat <<EOH
 # ${cpu^^} Opcodes
@@ -16,7 +20,7 @@ opcode_cvs2md()
 - Name: name of instruction (e.g. "LDA")
 - Mode: addressing mode (e.g. "REL" for branch)
 - Reserved: is it a resevered / undocumented (aka illegal) opcode
-- Bytes: bytes used for command (8 bit mode for 65816)
+- Bytes: bytes used for command${cpu65816}
 - Cycles: cycles taken (without extra for e.g. page crossing)
 - ExtraCycles: extra cycles taken when crossing a page(a) and/or taking a branch(b)
 

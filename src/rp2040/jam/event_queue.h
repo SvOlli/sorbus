@@ -32,6 +32,25 @@ static inline void queue_event_drop( queue_event_t *event )
 
 
 // process event queue
+#if 0
+#define queue_event_process() \
+   if( _queue_next_timestamp == ++_queue_cycle_counter ) \
+   { \
+      queue_event_handler_t handler; \
+      void                  *data; \
+      queue_event_t         *current; \
+\
+      current               = _queue_next_event; \
+      _queue_next_event     = _queue_next_event->next; \
+      _queue_next_timestamp = _queue_next_event ? _queue_next_event->timestamp : 0; \
+\
+      handler = current->handler; \
+      data    = current->data; \
+\
+      queue_event_drop( current ); \
+      handler( data ); \
+   }
+#else
 static inline void queue_event_process()
 {
    if( _queue_next_timestamp == ++_queue_cycle_counter )
@@ -51,6 +70,7 @@ static inline void queue_event_process()
       handler( data );
    }
 }
+#endif
 
 // add an event to the loop, executed at now + when clock cycles
 // note: the handler is primary key
