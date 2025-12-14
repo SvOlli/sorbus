@@ -267,8 +267,23 @@ uint32_t disass_opcode( uint8_t oc );
 #define PICK_MXE(o)      ((o >> 25) & 0x07)
 
 
+struct disass_fulltrace_s
+{
+   cputype_t   cpu;
+   uint32_t    entries;
+   fullinfo_t  *fullinfo;
+};
+
+#define EVAL_MIN (0)
+#define EVAL_MAX (7)
+#define BOUNDSBUFFER (8)
+
+#define deceval(x) if(x > EVAL_MIN) { --x; }
+#define inceval(x) if(x < EVAL_MAX) { ++x; }
+
+
 /* state of historian "class" */
-typedef struct disass_historian_s *disass_historian_t;
+typedef struct disass_fulltrace_s *disass_fulltrace_t;
 
 /* vector pull is handled differently by 65CE02 and 65816 as
    compared to 65(S)(C)02 */
@@ -320,14 +335,27 @@ uint16_t trace_address( uint32_t trace );
 uint8_t trace_data( uint32_t trace );
 
 
-/*  */
-disass_historian_t disass_historian_init( cputype_t cputype,
+/* just run some qualified guesses on the trace */
+void disass_historian_assumptions( disass_fulltrace_t d );
+
+
+/* convert ringbuffer to fulltrace data
+ * cputype:
+ * trace:   raw ringbuffer
+ * entries: number of entries to be converted
+ * start:   start withing ringbuffer
+ *
+ * output contains aligned fullinfo_t with padding at start and end
+ */
+disass_fulltrace_t disass_fulltrace_init( cputype_t cputype,
    uint32_t *trace, uint32_t entries, uint32_t start );
 
-/*  */
-void disass_historian_done( disass_historian_t d );
+/* clean up data created by disass_historian_init */
+void disass_fulltrace_done( disass_fulltrace_t d );
 
-/*  */
-const char *disass_historian_entry( disass_historian_t d, uint32_t entry );
+/* convenience function to generate disassembly output for a specific entry
+ * recalling function invalidates/overwrite previously returned data
+ */
+const char *disass_fulltrace_entry( disass_fulltrace_t d, uint32_t entry );
 
 #endif

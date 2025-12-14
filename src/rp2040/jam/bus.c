@@ -942,7 +942,7 @@ void bus_run()
          // read from memory and write to bus
          gpio_set_dir_out_masked( bus_config.mask_data );
          // note to future self: check if there's a better way for
-         // external i/o then to set the GPIOs to write for a brief time
+         // external i/o than to set the GPIOs to write for a brief time
       }
       else
       {

@@ -252,7 +252,6 @@ void console_rp2040()
             hexedit( &he_config );
             break;
          case 'U':
-            endwin();
             leave = mc_xmodem_upload( debug_poke );
             break;
          case 'V':

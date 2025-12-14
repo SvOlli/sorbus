@@ -552,7 +552,11 @@ void mcurses_hexout( uint64_t value, uint8_t digits )
    uint8_t outchar = '0' + (value & 0xF);
    if( outchar > '9' )
    {
-      outchar += '@' - '9';
+      outchar += 'A' - ':';
+   }
+   if( digits > 16 )
+   {
+      digits = 16;
    }
    if( digits > 1 )
    {

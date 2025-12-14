@@ -8,7 +8,6 @@
 #include <unistd.h>
 
 #define PREFETCH 0
-#define BOUNDSBUFFER (8)
 
 #ifndef count_of
 #define count_of(a) (sizeof(a)/sizeof(a[0]))
@@ -19,25 +18,9 @@
 #define SHOW_CONFIDENCE 0
 #endif
 
-// to handle the ringbuffer input
-#define ring(x,s) ((x) % (s))
 
 
-struct disass_historian_s
-{
-   cputype_t   cpu;
-   uint32_t    entries;
-   fullinfo_t  *fullinfo;
-};
-
-#define EVAL_MIN (0)
-#define EVAL_MAX (7)
-
-#define deceval(x) if(x > EVAL_MIN) { --x; }
-#define inceval(x) if(x < EVAL_MAX) { ++x; }
-
-
-static uint16_t getcycles( disass_historian_t d, int index )
+static uint16_t getcycles( disass_fulltrace_t d, int index )
 {
    fullinfo_t *fullinfo = d->fullinfo;
    uint16_t address     = fullinfo[index].address;
@@ -147,67 +130,7 @@ static uint16_t getcycles( disass_historian_t d, int index )
 }
 
 
-static void disass_historian_fulldata( disass_historian_t d, const uint32_t *trace, uint32_t start )
-{
-   fullinfo_t *fullinfo = (fullinfo_t*)(d->fullinfo);
-   int index = start, offset, i, n;
-   uint16_t expectedaddress;
-   bool done;
-   const uint32_t entries = d->entries;
-
-   for( i = BOUNDSBUFFER; i < (entries+BOUNDSBUFFER); ++i )
-   {
-      // set up bits 31-0: flags, data, address
-      fullinfo[i].raw   = trace[index];
-      fullinfo[i].eval  = 3;
-
-      /* find arguments */
-      expectedaddress   = fullinfo[i].address+1;
-      done = false;
-      n = 1;
-      offset = 0;
-      while( !done )
-      {
-         uint32_t addr = trace_address( trace[ring(index+n,entries)] );
-         if( addr == expectedaddress )
-         {
-            switch( ++offset )
-            {
-               case 1:
-                  fullinfo[i].data1 = trace_data( trace[ring(index+n,entries)] );
-                  break;
-               case 2:
-                  fullinfo[i].data2 = trace_data( trace[ring(index+n,entries)] );
-                  break;
-               case 3:
-                  fullinfo[i].data3 = trace_data( trace[ring(index+n,entries)] );
-                  // found all parameters
-                  done = true;
-                  break;
-               default:
-                  break;
-            }
-            fullinfo[i].dataused = offset > 3 ? 3 : offset;
-            ++expectedaddress;
-         }
-
-         if( ++n > BOUNDSBUFFER ) // longest 65xx instuction takes 8 clock cycles
-         {
-            // could not find all parameters, well duh!
-            done = true;
-         }
-      }
-
-      if( ++index >= entries )
-      {
-         // clean wrap around
-         index = 0;
-      }
-   }
-}
-
-
-static void disass_historian_assumptions( disass_historian_t d )
+void disass_historian_assumptions( disass_fulltrace_t d )
 {
    cputype_t cpu = d->cpu;
    fullinfo_t *fullinfo = d->fullinfo;
@@ -664,63 +587,4 @@ static void disass_historian_assumptions( disass_historian_t d )
          }
       }
    }
-}
-
-
-disass_historian_t disass_historian_init( cputype_t cpu,
-   uint32_t *trace, uint32_t entries, uint32_t start )
-{
-   disass_historian_t d = (disass_historian_t)malloc( sizeof( struct disass_historian_s ) );
-
-   // TODO: find something better than assert (or somewhere else to check?)
-   assert( (entries & (entries-1)) == 0 );
-
-   d->cpu      = cpu;
-   d->entries  = entries;
-   d->fullinfo = (fullinfo_t*)calloc( entries+2*BOUNDSBUFFER, sizeof(fullinfo_t) );
-
-   disass_set_cpu( cpu );
-   disass_historian_fulldata( d, trace, start );
-   disass_historian_assumptions( d );
-
-   return d;
-}
-
-
-void disass_historian_done( disass_historian_t d )
-{
-   memset( d->fullinfo, 0, d->entries * sizeof(uint64_t) );
-   (void)mf_checkheap();
-   free( d->fullinfo );
-   free( d );
-}
-
-
-const char *disass_historian_entry( disass_historian_t d, uint32_t entry )
-{
-   static char buffer[80];
-   *buffer = 0;
-   
-   if( entry < d->entries )
-   {
-      fullinfo_t fullinfo = d->fullinfo[entry+BOUNDSBUFFER];
-
-#if 1
-      snprintf( &buffer[0], sizeof(buffer)-1,
-                "%5d:%s:%d:%s",
-                entry,
-                decode_trace( (uint32_t)fullinfo.raw, false, 0 ),
-                fullinfo.eval,
-                fullinfo.eval < 3 ? "" : disass_trace( fullinfo ) );
-#else
-      snprintf( &buffer[0], sizeof(buffer)-1,
-                "%5ld:%s:%016llx:%d:%s",
-                entry,
-                decode_trace( (uint32_t)fullinfo.raw, false, 0 ),
-                fullinfo.raw,
-                fullinfo.eval,
-                fullinfo.eval < 3 ? "" : disass_trace( fullinfo ) );
-#endif
-   }
-   return &buffer[0];
 }

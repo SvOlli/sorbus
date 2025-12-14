@@ -60,6 +60,7 @@ const bus_config_t bus_config = {
 
 #include "../rp2040/common/generic_helper.c"
 #include "../rp2040/common/disassemble.c"
+#include "../rp2040/common/disassemble_fulltrace.c"
 #include "../rp2040/common/disassemble_historian.c"
 #include "../rp2040/mcurses/mc_historian.c"
 #include "loadfile.c"
@@ -280,7 +281,7 @@ int main( int argc, char *argv[] )
 {
    const char *progname = argv[0];
    cputype_t cpu = CPU_ERROR;
-   disass_historian_t dah;
+   disass_fulltrace_t dah;
 
    const uint8_t *start, *end;
    uint32_t size;
@@ -365,7 +366,7 @@ int main( int argc, char *argv[] )
    }
    else
    {
-      dah = disass_historian_init( cpu, buffer, size, 0 );
+      dah = disass_fulltrace_init( cpu, buffer, size, 0 );
       for( count = 0; count < size; ++count )
       {
          if( ! *(buffer + count) )
@@ -374,12 +375,12 @@ int main( int argc, char *argv[] )
             break;
          }
          printf( "%5d:", count );
-         if( disass_historian_entry( dah, count ) )
+         if( disass_fulltrace_entry( dah, count ) )
          {
-            puts( disass_historian_entry( dah, count ) );
+            puts( disass_fulltrace_entry( dah, count ) );
          }
       }
-      disass_historian_done( dah );
+      disass_fulltrace_done( dah );
    }
    free( buffer );
 

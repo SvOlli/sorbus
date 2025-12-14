@@ -9,7 +9,7 @@
 
 
 struct mc_historian {
-   disass_historian_t historian;
+   disass_fulltrace_t historian;
    uint32_t entries;
    uint32_t current;
    uint16_t datalines;
@@ -53,7 +53,7 @@ static int32_t mcurses_historian_move( void *d, int32_t movelines )
 const char* mcurses_historian_data( void *d, int32_t offset )
 {
    struct mc_historian *mch = (struct mc_historian *)d;
-   disass_historian_t   dah = (disass_historian_t)(mch->historian);
+   disass_fulltrace_t   dah = (disass_fulltrace_t)(mch->historian);
 
    switch( offset )
    {
@@ -65,7 +65,7 @@ const char* mcurses_historian_data( void *d, int32_t offset )
          break;
    }
 
-   return disass_historian_entry( dah, mch->current + offset );
+   return disass_fulltrace_entry( dah, mch->current + offset );
 }
 
 
@@ -74,7 +74,7 @@ void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32
    lineview_t config       = { 0 };
    struct mc_historian mch = { 0 };
 
-   mch.historian     = disass_historian_init( cpu, trace, entries, start );
+   mch.historian     = disass_fulltrace_init( cpu, trace, entries, start );
    mch.entries       = entries;
    mch.current       = entries - (screen_get_lines() - 2);
    mch.datalines     = screen_get_lines()-2;
@@ -90,5 +90,5 @@ void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32
    mcurses_historian_move( config.d, MC_LINEVIEW_LASTLINE );
    disass_show( DISASS_SHOW_NOTHING );
    lineview( &config );
-   disass_historian_done( mch.historian );
+   disass_fulltrace_done( mch.historian );
 }

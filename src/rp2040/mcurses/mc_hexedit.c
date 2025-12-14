@@ -190,17 +190,17 @@ void hexedit( mc_hexedit_t *config )
    addstr( "  Hex Editor  (Ctrl+C to leave)" );
    //       01234567890123456789012345678901
    // col needs to start with number of chars in above
-   for( col = 31; col < (FIRST_ASCII_COL + BYTES_PER_ROW); ++col )
+   for( col = 31; col < COLS; ++col )
    {
       addch( ' ' );
    }
    move (0, 0);
-   for (col = 0; col < FIRST_HEX_COL; col++)
+   for( col = 0; col < FIRST_HEX_COL; col++ )
    {
       addch( ' ' );
    }
 
-   for (byte = 0; byte < BYTES_PER_ROW; byte++)
+   for( byte = 0; byte < BYTES_PER_ROW; byte++ )
    {
       if( byte >> 4 )
       {
@@ -215,14 +215,20 @@ void hexedit( mc_hexedit_t *config )
       col += 3;
    }
 
-   for ( ; col < FIRST_ASCII_COL; col++)
+   for( ; col < FIRST_ASCII_COL; col++ )
    {
       addch (' ');
    }
 
-   for (byte = 0; byte < BYTES_PER_ROW; byte++)
+   for( byte = 0; byte < BYTES_PER_ROW; byte++ )
    {
       mcurses_hexout( byte, 1 );
+      ++col;
+   }
+
+   for( ; col < COLS; col++ )
+   {
+      addch (' ');
    }
 
    attrset( B_DEFAULT | F_DEFAULT );
