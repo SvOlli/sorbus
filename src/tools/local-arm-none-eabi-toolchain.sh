@@ -28,7 +28,7 @@ fi
 
 cd "${STOW_DIR}"
 if [ -w "${STOW_DIR}/${PACKAGE}" -o -w "${STOW_DIR}" ]; then
-   tar -xf "${BUILD_DIR}/${ARCHIVE_NONE}"
+   tar -xf "${BUILD_DIR}/${ARCHIVE_NAME}"
    mkdir "${PACKAGE}/share/doc/${PACKAGE}"
    mv "${PACKAGE}"/*.txt "${PACKAGE}/share/doc/${PACKAGE}"
 else

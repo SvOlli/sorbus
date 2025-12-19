@@ -57,6 +57,33 @@
             //"preLaunchTask": "build", // Optional: define a task to build your utility before debugging
             "miDebuggerPath": "/usr/bin/gdb", // Adjust this path to your GDB location
             "miDebuggerArgs": ""
+        },
+        {
+            "name": "Debug tools/historian.exe",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tools/historian.exe", // Replace with your compiled utility path
+            "args": [
+                // Add any command-line arguments your utility requires
+                "-f", "${workspaceFolder}/../backtrace_65c02.log",
+                "-c", "65c02",
+                "-p"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true, // Change to true if you want a separate terminal
+            "MIMode": "gdb", // Use "lldb" if you're on macOS
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            //"preLaunchTask": "build", // Optional: define a task to build your utility before debugging
+            "miDebuggerPath": "/usr/bin/gdb", // Adjust this path to your GDB location
+            "miDebuggerArgs": ""
         }
     ]
 }

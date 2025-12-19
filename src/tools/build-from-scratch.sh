@@ -23,6 +23,12 @@ build()
    mybanner "Setup"
    make setup-apt setup-external
 
+   # workaround for getting faster ARM code
+   # compilers > 12.2.rel1 produce slower code
+   src/tools/local-stow.sh
+   src/tools/local-arm-none-eabi-toolchain.sh
+   sudo dpkg --purge gcc-arm-none-eabi
+
    # Version 1.58 is broken
    # http://deb.debian.org/debian/pool/main/6/64tass/64tass_1.59.3120-1_arm64.deb
    mybanner "Build llvm-mos-sdk"
