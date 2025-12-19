@@ -53,16 +53,18 @@ recorded trace. Still, this is not always 100% accurate.
 
 ### Backtrace Keys
 
-| Key       | Function                                      |
-| --------- | --------------------------------------------- |
-| UP        | move cursor one line up                       |
-| DOWN      | move cursor one line down                     |
-| PAGE UP   | move cursor one page up                       |
-| PAGE DOWN | move cursor one page down                     |
-| HOME      | go to start backtrace                         |
-| END       | go to end backtrace                           |
-| Ctrl+L    | redraw everything                             |
-| Ctrl+C    | leave disassembler                            |
+| Key       | Function                                       |
+| --------- | ---------------------------------------------- |
+| UP        | move cursor one line up                        |
+| DOWN      | move cursor one line down                      |
+| PAGE UP   | move cursor one page up                        |
+| PAGE DOWN | move cursor one page down                      |
+| HOME      | go to start backtrace                          |
+| END       | go to end backtrace                            |
+| S         | disassemble from top screen line to buffer end |
+| SHIFT+S   | disassemble single top screen line             |
+| Ctrl+L    | redraw everything                              |
+| Ctrl+C    | leave disassembler                             |
 
 ---
 

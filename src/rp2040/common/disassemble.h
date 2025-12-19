@@ -272,6 +272,7 @@ struct disass_fulltrace_s
    cputype_t   cpu;
    uint32_t    entries;
    fullinfo_t  *fullinfo;
+   uint32_t    *opcodes;
 };
 
 #define EVAL_MIN (0)
@@ -285,13 +286,23 @@ struct disass_fulltrace_s
 /* state of historian "class" */
 typedef struct disass_fulltrace_s *disass_fulltrace_t;
 
+
+uint8_t pick_mnemonic( disass_fulltrace_t d, int pos );
+uint8_t pick_addrmode( disass_fulltrace_t d, int pos );
+uint8_t pick_reserved( disass_fulltrace_t d, int pos );
+uint8_t pick_bytes( disass_fulltrace_t d, int pos );
+uint8_t pick_cycles( disass_fulltrace_t d, int pos );
+uint8_t pick_extra( disass_fulltrace_t d, int pos );
+uint8_t pick_jump( disass_fulltrace_t d, int pos );
+
+
 /* vector pull is handled differently by 65CE02 and 65816 as
    compared to 65(S)(C)02 */
 typedef bool (*disass_is_vector_pull_t)( uint32_t addr0,
    uint32_t addr1, uint32_t addr2, uint32_t addr3, uint32_t addr4 );
 
 /* set cpu instruction set to disassemble */
-void disass_set_cpu( cputype_t cpu );
+uint32_t *disass_set_cpu( cputype_t cpu );
 cputype_t disass_get_cpu();
 
 /* for 65816, set if accumulator or index register is running in 16 bit mode */
@@ -357,5 +368,8 @@ void disass_fulltrace_done( disass_fulltrace_t d );
  * recalling function invalidates/overwrite previously returned data
  */
 const char *disass_fulltrace_entry( disass_fulltrace_t d, uint32_t entry );
+
+uint8_t disassemble_beancounter_single( disass_fulltrace_t d, uint32_t pos );
+void disassemble_beancounter( disass_fulltrace_t d, uint32_t start );
 
 #endif

@@ -36,6 +36,7 @@ add_executable(jam_alpha
    common/bus_rp2040_purple.c
    common/cpu_detect.c
    common/disassemble.c
+   common/disassemble_beancounter.c
    common/disassemble_fulltrace.c
    common/disassemble_historian.c
    common/generic_helper.c

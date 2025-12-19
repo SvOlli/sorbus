@@ -56,7 +56,7 @@ static uint16_t mcurses_disassemble_prevaddress( void *d )
    mc_disassemble_t  *mcd = (mc_disassemble_t*)d;
    mc_disass_t       *dav = mcd->dav;
    uint16_t i, l;
-   uint16_t *linecache = mcd->linecache;
+   //uint16_t *linecache = mcd->linecache;
    uint16_t prevaddress, address = dav->address;
 
    switch( mcd->mode )

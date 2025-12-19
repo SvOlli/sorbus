@@ -12,6 +12,49 @@
 #define ring(x,s) ((x) % (s))
 
 
+
+uint8_t pick_mnemonic( disass_fulltrace_t d, int pos )
+{
+   return PICK_MNEMONIC( d->opcodes[d->fullinfo[pos].data] );
+}
+
+
+uint8_t pick_addrmode( disass_fulltrace_t d, int pos )
+{
+   return PICK_ADDRMODE( d->opcodes[d->fullinfo[pos].data] );
+}
+
+
+uint8_t pick_reserved( disass_fulltrace_t d, int pos )
+{
+   return PICK_RESERVED( d->opcodes[d->fullinfo[pos].data] );
+}
+
+
+uint8_t pick_bytes( disass_fulltrace_t d, int pos )
+{
+   return PICK_BYTES( d->opcodes[d->fullinfo[pos].data] );
+}
+
+
+uint8_t pick_cycles( disass_fulltrace_t d, int pos )
+{
+   return PICK_CYCLES( d->opcodes[d->fullinfo[pos].data] );
+}
+
+
+uint8_t pick_extra( disass_fulltrace_t d, int pos )
+{
+   return PICK_EXTRA( d->opcodes[d->fullinfo[pos].data] );
+}
+
+
+uint8_t pick_jump( disass_fulltrace_t d, int pos )
+{
+   return PICK_JUMP( d->opcodes[d->fullinfo[pos].data] );
+}
+
+
 static void disass_fulltrace_filldata( disass_fulltrace_t d, const uint32_t *trace,
                                        uint32_t start )
 {
@@ -84,10 +127,9 @@ disass_fulltrace_t disass_fulltrace_init( cputype_t cpu,
    d->cpu      = cpu;
    d->entries  = entries;
    d->fullinfo = (fullinfo_t*)calloc( entries+2*BOUNDSBUFFER, sizeof(fullinfo_t) );
-
-   disass_set_cpu( cpu );
+   d->opcodes  = disass_set_cpu( cpu );
    disass_fulltrace_filldata( d, trace, start );
-   disass_historian_assumptions( d );
+   //disass_historian_assumptions( d );
 
    return d;
 }

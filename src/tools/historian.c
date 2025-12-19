@@ -60,6 +60,7 @@ const bus_config_t bus_config = {
 
 #include "../rp2040/common/generic_helper.c"
 #include "../rp2040/common/disassemble.c"
+#include "../rp2040/common/disassemble_beancounter.c"
 #include "../rp2040/common/disassemble_fulltrace.c"
 #include "../rp2040/common/disassemble_historian.c"
 #include "../rp2040/mcurses/mc_historian.c"
@@ -367,6 +368,7 @@ int main( int argc, char *argv[] )
    else
    {
       dah = disass_fulltrace_init( cpu, buffer, size, 0 );
+      disass_historian_assumptions( dah );
       for( count = 0; count < size; ++count )
       {
          if( ! *(buffer + count) )

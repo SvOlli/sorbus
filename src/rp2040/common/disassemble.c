@@ -224,7 +224,7 @@ uint8_t trace_data( uint32_t trace )
 }
 
 
-void disass_set_cpu( cputype_t cpu )
+uint32_t *disass_set_cpu( cputype_t cpu )
 {
    cputype = cpu;
    switch( cpu )
@@ -248,6 +248,7 @@ void disass_set_cpu( cputype_t cpu )
       default:
          disass_opcodes = 0;
    }
+   return disass_opcodes;
 }
 
 

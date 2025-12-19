@@ -114,6 +114,7 @@ cputype_t cpu_detect( bool debug )
 #endif
       disass_fulltrace_t d = disass_fulltrace_init( cputype ? cputype : CPU_6502,
                                                     &trace[0], CYCLES_TOTAL, 0 );
+      disass_historian_assumptions( d );
       print_hexdump_buffer( 0, &cpudetect[0], sizeof(cpudetect), false );
       for( int i = 0; i < cycles_run; ++i )
       {

@@ -69,6 +69,29 @@ const char* mcurses_historian_data( void *d, int32_t offset )
 }
 
 
+int32_t mcurses_historian_keypress( void *d, uint8_t *ch )
+{
+   int32_t              retval = 0;
+   struct mc_historian *mch = (struct mc_historian *)d;
+   disass_fulltrace_t   dah = (disass_fulltrace_t)(mch->historian);
+
+   switch( (*ch) )
+   {
+      case 'S':
+         (void)disassemble_beancounter_single( dah, mch->current + BOUNDSBUFFER );
+         retval = MC_LINEVIEW_REDRAWALL;
+         break;
+      case 's':
+         disassemble_beancounter( dah, mch->current + BOUNDSBUFFER );
+         retval = MC_LINEVIEW_REDRAWALL;
+         break;
+      default:
+         break;
+   }
+   return retval;
+}
+
+
 void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
 {
    lineview_t config       = { 0 };
@@ -82,11 +105,12 @@ void mcurses_historian( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32
    config.data       = mcurses_historian_data;
    config.move       = mcurses_historian_move;
    config.cpos       = 0;
-   config.keypress   = 0;
+   config.keypress   = mcurses_historian_keypress;
    config.d          = (void*)(&mch);
    config.attributes = MC_ATTRIBUTES_BACKTRACE;
    config.charset    = 0;
 
+   disass_historian_assumptions( mch.historian );
    mcurses_historian_move( config.d, MC_LINEVIEW_LASTLINE );
    disass_show( DISASS_SHOW_NOTHING );
    lineview( &config );
