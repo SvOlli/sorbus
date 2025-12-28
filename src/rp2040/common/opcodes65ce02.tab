@@ -88,7 +88,7 @@
    /* $55 */ OPCODE( EOR, ZPX, 0, 2, 3, 0, 0, 0 ),
    /* $56 */ OPCODE( LSR, ZPX, 0, 2, 4, 0, 0, 0 ),
    /* $57 */ OPCODE( RMB, ZPN, 0, 2, 4, 0, 0, 0 ),
-   /* $58 */ OPCODE( CLI, IMP, 0, 1, 2, 0, 0, 0 ),
+   /* $58 */ OPCODE( CLI, IMP, 0, 1, 1, 0, 0, 0 ),
    /* $59 */ OPCODE( EOR, ABSY, 0, 3, 4, 0, 0, 0 ),
    /* $5A */ OPCODE( PHY, IMP, 0, 1, 3, 0, 0, 0 ),
    /* $5B */ OPCODE( TAB, IMP, 0, 1, 1, 0, 0, 0 ),

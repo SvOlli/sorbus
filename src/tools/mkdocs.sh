@@ -43,10 +43,13 @@ EOH
    done
 
 if [ "${cpu}" == "65ce02" ]; then
-   echo
-   echo "Also note that the 65CE02 uses the term basepage (BP) instead of zeropage (ZP),"
-   echo "since it is moveable. However, for better comparision with other CPUs, the term"
-   echo "zeropage (ZP) was kept here."
+cat <<EOF
+
+Also note that the 65CE02 uses the term basepage (BP) instead of zeropage (ZP),
+since it is moveable. However, for better comparision with other CPUs, the term
+zeropage (ZP) was kept here. Also, this processor does not require any extra
+cycles for branches or indexed addressing modes.
+EOF
 fi
 }
 

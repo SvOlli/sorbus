@@ -72,6 +72,7 @@
         - 01: standard Sorbus conversion (not fully defined yet)
         - 10: reserved
         - 11: reserved
+    - bit 7: enable CPU overclocking by 50% (likely to be moved)
 - $DF0C: (R) UART in queue read
 - $DF0D: (R) serial in queue size (up to 240, 255: error)
 - $DF0E: (W) serial out queue write

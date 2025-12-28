@@ -54,14 +54,14 @@ reset:
    ; multi purpose routine
    ; - set Z=$00 on 65CE02 in soft reset
    ; - detect 6502 from CMOS variants
-   ; not bad for 7 bytes (7th byte is txs below @cmos6502:)
+   ; not bad for 6 bytes
    lda   #$00           ; can't use dec here, because could be NMOS6502 here...
    .byte $4b            ; 65CE02: taz -> make sure, sta (zp),z works like sta (zp)
                         ; 65(S)C02: nop
                         ; 65816: phk (push program bank) -> like nop, but moves SP
                         ; 6502: ALR #im
    dec                  ; 65C02 opcode that is an argument ($3a) of $4b/ALR# on 6502
-   txs                  ; fix for 65816's phk, doesn't change flags
+   txs                  ; fix for 65816's phk, txs doesn't change flags
    bne   cmos6502       ; no NMOS 6502, continue with initialization
 
    ; set NMI and IRQ to something more useful for NMOS 6502

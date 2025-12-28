@@ -14,6 +14,7 @@
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
 #include <pico/util/queue.h>
+#include <hardware/clocks.h>
 
 #include "jam.h"
 
@@ -108,6 +109,7 @@ void console_set_uart( uint8_t data )
    console_flowcontrol_enabled = data & 2;
    console_charset = (data >> 2) & 0x03;
    uart_set_translate_crlf( uart0, console_crlf_enabled );
+   set_sys_clock_khz( data & 0x80 ? 200000 : 133000, false );
 }
 
 
