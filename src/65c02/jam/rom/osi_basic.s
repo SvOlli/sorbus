@@ -1570,9 +1570,19 @@ L25FD:
 .if CONFIG_LIST_LOWERCASE
    lda   TOKEN_NAME_TABLE,y
 .else
+   lda   TOKEN_NAME_TABLE,y
+   php
+   and   #$7f
+   cmp   #'A'
+   bcc   @skip
+   cmp   #'Z'+1
+   bcs   @skip
    lda   #$20 ; lowercase token
    and   TOKENCASE
    ora   TOKEN_NAME_TABLE,y
+   php
+@skip:
+   plp
 .endif
    bmi   L25CA
    jsr   OUTDO
