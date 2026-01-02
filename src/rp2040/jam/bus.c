@@ -773,7 +773,7 @@ static void debug_info_eventqueue( char *buffer, size_t size )
    for( i = 0, event = _queue_next_event; event; event = event->next )
    {
       printed = snprintf( buffer, size,
-                          "%02x|%016llx|%-24s|%8p"
+                          "%02x|%016llx|%-24s|%8p\n"
                           , i++
                           , event->timestamp
                           , debug_handler_name( event->handler )
@@ -922,7 +922,10 @@ void bus_run()
    for(;;)
    {
       // check if internal events need processing
-      queue_event_process();
+      if( state & bus_config.mask_rdy )
+      {
+         queue_event_process();
+      }
 
       // LOW ACTIVE
       if( !(state & bus_config.mask_reset) )

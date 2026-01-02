@@ -54,7 +54,7 @@ reset:
    ; multi purpose routine
    ; - set Z=$00 on 65CE02 in soft reset
    ; - detect 6502 from CMOS variants
-   ; not bad for 6 bytes
+   ; not bad for 7 bytes
    lda   #$00           ; can't use dec here, because could be NMOS6502 here...
    .byte $4b            ; 65CE02: taz -> make sure, sta (zp),z works like sta (zp)
                         ; 65(S)C02: nop
@@ -81,7 +81,8 @@ reset:
    inx
    bne   :-
    jsr   CHRIN
-   bcs   @no65c02loop
+   cmp   #'2'
+   bne   @no65c02loop
 
    lda   #$01
    jmp   boota
@@ -261,7 +262,15 @@ execrom:                ; has to be called with A=bank to switch to
 
 bootfailed:
    jsr   PRINT
-   .byte ": failed, dropping to WozMon",10,0
+   .byte ": failed",0
+   lda   ID_LBA+0
+   and   #$c0
+   cmp   #$40           ; trying to boot NMOS toolkit?
+   beq   :+
+   jmp   cmos6502       ; no, go to message
+:
+   jsr   PRINT
+   .byte ", dropping to WozMon",10,0
 
 woz:
    lda   #$0a           ; start WozMon port
