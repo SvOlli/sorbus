@@ -60,6 +60,7 @@ add_executable(jam_alpha
    jam/dhara_flash.c
    jam/event_queue.c
    )
+target_compile_options(jam_alpha PRIVATE "-Werror")
 set_property(SOURCE common/cpu_detect.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cpudetect.h)
 
 target_link_libraries(jam_alpha
