@@ -19,6 +19,53 @@ file with everything firmware, but this seems not to be fully supported.)
 
 ---
 
+## Supported CPU Variants
+
+While the hardware supports all pin compatible 6502 CPUs, the Sorbus JAM
+has some limitations. Here there are in detail:
+
+### 65C02 and 65SC02
+
+These CPUs are the focus when something is implemented for the Sorbus JAM.
+So everything should work as expected.
+
+### 65CE02
+
+This CPU, which was only available on the Amiga A2232 serial port card, is
+fully supported, as long as the extra Z register is not used, and left to
+the default value of $00.
+
+Code modifing the Z register needs to store this, and clear it before using
+the BRK interrupts to jump into the kernel. And of course restore it
+afterwards.
+
+This can be accompished using the `int` macro provided in
+`src/65c02/jam/jam_bios.inc`, when the CPU is set to "4510", which is
+a superset of the 65CE02. The only difference is that the 65CE02 lacks
+the `MAP` opcode.
+
+### 65816
+
+This CPU is supported by the Sorbus JAM only in legacy mode. In legacy
+mode the new vectors for ABORT and COP and the vectors for native mode
+are used by trampoline code.
+
+While this could be fixed by adding additional vectors and code in the
+BIOS page ($FF00-$FFFF), this is not done, as the Sorbus JAM is developed
+for the 65(S)C02.
+
+Support can never be fully implemented, as some important pins of the
+65816 are not connected to the RP2040.
+
+### NMOS 6502
+
+This CPU is not supported by the Sorbus JAM. However, if such a CPU is
+detected a message is printed out. After that, the only thing available
+will be the [NMOS 6502 Toolkit](#nmos-6502-toolkit). See chapter
+"[Using an NMOS 6502](#using-an-nmos-6502)" below.
+
+---
+
 ## Available Boot Options
 
 When you connect to the Sorbus Computer via USB UART, you typicall see
@@ -81,7 +128,7 @@ The second bootblock will be loaded when an NMOS 6502 is detected.
 
 This is a stripped down version of the System Monitor and will be loaded
 from bootblock 2. It is also loaded when an NMOS 6502 CPU is detected
-during startup (see below).
+during startup (see next section).
 
 ---
 
@@ -92,6 +139,10 @@ appropriate message upon startup. Then the kernel attempts to load
 bootblock 2 (see above). If this fails it drops into WozMon. Both can be
 used for some rudimentary work. However, the NMOS 6502 Toolkit should be
 preferred, as it is way more capable than WozMon.
+
+The NMOS 6502 toolkit is implemented without the `ROR` instruction, so it
+will also run on a Rev.A variant of the 6502, making this the most
+versatile system to use with an NMOS 6502 Rev.A.
 
 ---
 
