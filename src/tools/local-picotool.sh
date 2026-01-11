@@ -35,9 +35,9 @@ else
 fi
 
 cmake "${target_dir}"
-make
+make -j${jobs}
 
-version="$(./picotool version | cut -f1-2 -d\  | tr ' ' -)"
+version="$(./picotool version | cut -f1-2 -d\  | head -1 | tr ' ' -)"
 sed -e "s,\(CMAKE_INSTALL_PREFIX:PATH\)=/usr/local,\1=${STOW_DIR}/${version},g" \
     -i CMakeCache.txt
 
