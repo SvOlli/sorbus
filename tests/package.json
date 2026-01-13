@@ -1,0 +1,27 @@
+{
+  "name": "sorbus-test-framework",
+  "version": "1.0.0",
+  "description": "Testing framework for Sorbus RP2040 chipset",
+  "main": "cpu_card.js",
+  "type": "module",
+  "scripts": {
+    "test": "node test_runner.js",
+    "build-lib": "make"
+  },
+  "keywords": [
+    "sorbus",
+    "rp2040",
+    "testing"
+  ],
+  "author": "",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "koffi": "^2.15.0",
+    "uf2": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}
