@@ -227,6 +227,7 @@ target_include_directories(sound_sd PUBLIC
 )
 
 target_link_libraries(sound_sd
+   pico_multicore
    pico_fatfs
 )
 

@@ -60,8 +60,8 @@ function(uf2join output)
 endfunction()
 
 function(setup_target targetname incdir)
-   pico_enable_stdio_usb(${targetname} 1)
-   pico_enable_stdio_uart(${targetname} 0)
+   pico_enable_stdio_usb(${targetname} 0)
+   pico_enable_stdio_uart(${targetname} 1)
    pico_add_extra_outputs(${targetname})
    target_include_directories(${targetname} PRIVATE
       ${incdir}

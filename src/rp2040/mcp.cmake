@@ -21,5 +21,6 @@ add_executable(mcp
 target_link_libraries(mcp
    pico_stdlib
    pico_multicore
+   hardware_flash
    )
 setup_target(mcp "mcp")
