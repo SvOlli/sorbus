@@ -80,6 +80,7 @@ int main( int argc, char *argv[] )
    arrow_right( im, 0, 16, red );
 
    gdSaveImgGif( im, "WS2812_order.gif" );
+   gdImageDestroy( im );
 
    return 0;
 }
