@@ -10,12 +10,12 @@ add_executable(mcp
    payload_mcp.h
    common/bus_rp2040_purple.c
    common/cpu_detect.c
-   common/disassemble.c
-   common/disassemble_fulltrace.c
-   common/disassemble_historian.c
    common/generic_helper.c
    common/getaline.c
    common/mf_checkheap.c
+   disassemble/disassemble.c
+   disassemble/disassemble_fulltrace.c
+   disassemble/disassemble_historian.c
    mcp/main.c
    )
 target_link_libraries(mcp

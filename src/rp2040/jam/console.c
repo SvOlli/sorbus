@@ -25,7 +25,7 @@
 #include "mcurses.h"
 
 #ifndef SORBUS_VERSION
-#define SORBUS_VERSION "0.6"
+#define SORBUS_VERSION "0.7"
 #endif
 
 const char *sorbus_version =
@@ -80,12 +80,6 @@ static mc_disass_t da_config = {
    false,
    false
 };
-
-
-void console_reset()
-{
-   gpio_clr_mask( bus_config.mask_reset);
-}
 
 
 void console_cpu_pause( bool stop )
@@ -289,7 +283,7 @@ void console_65c02()
    if( in == PICO_ERROR_TIMEOUT )
    {
       in = getchar_timeout_us(10);
-      if( ((in == 0x1d) || (in == '^')) && (console_crlf_enabled) ) /* 0x1d = CTRL+] */
+      if( ((in == 0x1d) || (in == '`')) && (console_crlf_enabled) ) /* 0x1d = CTRL+] */
       {
          invoke_type = in;
          console_wants_stop = true;

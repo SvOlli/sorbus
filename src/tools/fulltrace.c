@@ -1,30 +1,19 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <stdio.h>
+#include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <termios.h>
-#include <unistd.h>
-
-#define SHOW_CONFIDENCE 1
 
 #include "../rp2040/disassemble/disassemble.c"
 #include "../rp2040/disassemble/disassemble_beancounter.c"
 #include "../rp2040/disassemble/disassemble_fulltrace.c"
 #include "../rp2040/disassemble/disassemble_historian.c"
-#include "../rp2040/mcurses/mc_historian.c"
-#include "loadfile.c"
 
-#include "../rp2040/mcurses/mcurses.h"
+uint8_t *loadfile( const char *filename, ssize_t *filesize );
 
-
-uint32_t mf_checkheap()
-{
-   return 0;
-}
-
+//#include "loadfile.c"
 
 cputype_t getcputype( const char *argi )
 {
@@ -85,40 +74,21 @@ void help( const char *progname, int retval )
      "%s: test tool for historian disassembler\n"
      "\t-c cpu:\tcputype (mandatory)\n"
      "\t-f file:\ttrace file (mandatory)\n"
-     "\t-a:\tshow addresses\n"
-     "\t-d:\tshow hexdump\n"
-     "\t-p:\tinteractive pager\n"
-     "\t-h:\tshow help\n"
      , progname );
    exit( retval );
 }
 
 
-void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
+uint32_t next_pow2( uint32_t in )
 {
-   struct termios oldt, newt;
-   uint32_t count;
-
-   tcgetattr( STDIN_FILENO, &oldt );
-   newt = oldt;
-   newt.c_lflag &= ~(ICANON | ECHO);
-   tcsetattr( STDIN_FILENO, TCSANOW, &newt );
-
-   screen_save();
-   initscr();
-   for( count = 0; count < entries; ++count )
+   for( uint32_t i = 1; i; i <<= 1 )
    {
-      if( ! *(trace + count) )
+      if( i >= in )
       {
-         /* empty entry -> end of input */
-         break;
+         return i;
       }
    }
-   mcurses_historian( cpu, trace, count, start );
-   endwin();
-   screen_restore();
-
-   tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
+   return 0;
 }
 
 
@@ -186,11 +156,11 @@ const uint8_t *get_end( const uint8_t *start, const uint8_t *end )
 }
 
 
-uint32_t *get_trace( const uint8_t *start, const uint8_t *end, uint32_t *size )
+uint64_t *get_fulltrace( const uint8_t *start, const uint8_t *end, uint32_t *size )
 {
    const uint8_t *c;
    uint32_t entries = 0;
-   uint32_t *sample = 0, *s;
+   uint64_t *sample = 0, *s;
 
    for( c = start; c < end; ++c )
    {
@@ -199,21 +169,21 @@ uint32_t *get_trace( const uint8_t *start, const uint8_t *end, uint32_t *size )
          ++entries;
       }
    }
-   if( !(*end == '\n') && !(*(end-1) == '\n') )
+   if( !(*(end-1) == '\n') && !(*(end-2) == '\n') )
    {
       ++entries;
    }
    /* entries needs to be power of 2 */
-   sample = (uint32_t*)calloc( entries, sizeof(uint32_t) );
+   sample = (uint64_t*)calloc( next_pow2(entries), sizeof(uint64_t) );
 
    s = sample;
    for( c = start; c < end; ++c )
    {
       errno = 0;
-      *(s++) = strtol( (const char*)c, 0, 16 );
+      *(s++) = strtoll( (const char*)c, 0, 16 );
       if( errno )
       {
-         perror( "strtol" );
+         perror( "strtoll" );
          exit(30);
       }
       while( *c != '\n' )
@@ -223,39 +193,67 @@ uint32_t *get_trace( const uint8_t *start, const uint8_t *end, uint32_t *size )
    }
    if( size )
    {
-      *size = entries;
+      *size = next_pow2(entries);
    }
    return sample;
 }
 
 
-int main( int argc, char *argv[] )
+uint32_t *fulltrace2trace( uint64_t *refbuffer, uint32_t size )
+{
+   int i;
+   uint32_t *buffer = (uint32_t*)malloc( sizeof(uint32_t) * size );
+   uint32_t *u32 = buffer;
+   uint64_t *u64 = refbuffer;
+
+   for( i = 0; i < size; ++i )
+   {
+      *(u32++) = (uint32_t)*(u64++);
+   }
+   return buffer;
+}
+
+
+void print_result( uint64_t *refbuffer, uint64_t *checkbuffer, uint32_t size )
+{
+   uint32_t i;
+   uint64_t *r = refbuffer;
+   uint64_t *c = checkbuffer;
+   fullinfo_t fi;
+   for( i = 0; i < size; ++i )
+   {
+      fi.raw = *c;
+      printf( "%016lx %016lx %c %s\n", *r, *c, *r != *c ? '!' : ' ',
+              disass_trace( fi ) );
+      ++r;
+      ++c;
+   }
+}
+
+
+int main( int argc, char* argv[] )
 {
    const char *progname = argv[0];
+
    cputype_t cpu = CPU_ERROR;
    disass_fulltrace_t dah;
 
-   const uint8_t *start, *end;
-   uint32_t size;
-   uint32_t *buffer = 0;
+   int opt;
+   bool fail = false;
 
-   int count = 0;
    const char *filename = 0;
    uint8_t *filedata = 0;
    ssize_t filesize;
 
-   int opt;
-   bool fail = false;
-   bool pager = false;
-   disass_show_t show_extra = DISASS_SHOW_NOTHING;
+   const uint8_t *start, *end;
+   uint32_t size;
+   uint64_t *refbuffer = 0;
+   uint32_t *buffer = 0;
 
    while ((opt = getopt(argc, argv, "ac:df:hp")) != -1)
    {
       switch( opt )
       {
-         case 'a':
-            show_extra |= DISASS_SHOW_ADDRESS;
-            break;
          case 'c':
             cpu = getcputype( optarg );
             if( cpu == CPU_ERROR )
@@ -265,14 +263,8 @@ int main( int argc, char *argv[] )
                fail = true;
             }
             break;
-         case 'd':
-            show_extra |= DISASS_SHOW_HEXDUMP;
-            break;
          case 'f':
             filename = optarg;
-            break;
-         case 'p':
-            pager = true;
             break;
          case 'h':
             help( progname, 0 );
@@ -290,52 +282,27 @@ int main( int argc, char *argv[] )
    }
    if( !fail )
    {
-      filedata = loadfile( filename, &filesize );
-      start    = get_start( filedata, filedata + filesize, &cpu );
-      end      = get_end( start, filedata + filesize );
-      buffer   = get_trace( start, end, &size );
+      filedata  = loadfile( filename, &filesize );
+      start     = get_start( filedata, filedata + filesize, &cpu );
+      end       = get_end( start, filedata + filesize );
+      refbuffer = get_fulltrace( start, end, &size );
       if( filedata )
       {
          free( filedata );
       }
    }
-
-   if( cpu == CPU_ERROR )
-   {
-      fprintf( stderr, "CPU type not set\n" );
-      fail = true;
-   }
-
    if( fail )
    {
-      help( progname, 1 );
+      return 1;
    }
+   buffer = fulltrace2trace( refbuffer, size );
+   dah = disass_fulltrace_init( cpu, buffer, size, 0 );
 
-   disass_show( show_extra );
-   if( pager )
-   {
-      mcurses( cpu, buffer, size, 0 );
-   }
-   else
-   {
-      dah = disass_fulltrace_init( cpu, buffer, size, 0 );
-      disass_historian_assumptions( dah );
-      for( count = 0; count < size; ++count )
-      {
-         if( ! *(buffer + count) )
-         {
-            /* empty entry -> end of input */
-            break;
-         }
-         printf( "%5d:", count );
-         if( disass_fulltrace_entry( dah, count ) )
-         {
-            puts( disass_fulltrace_entry( dah, count ) );
-         }
-      }
-      disass_fulltrace_done( dah );
-   }
+   print_result( refbuffer, (uint64_t*)(dah->fullinfo)+BOUNDSBUFFER, size );
+   
+   disass_fulltrace_done( dah );
    free( buffer );
+   free( refbuffer );
 
    return 0;
 }

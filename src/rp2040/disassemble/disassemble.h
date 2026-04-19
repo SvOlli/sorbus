@@ -2,12 +2,60 @@
 #ifndef DISASSEMBLE_H
 #define DISASSEMBLE_H DISASSEMBLE_H
 
+/* this header is intended to be independent from any PICO related code */
+
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "generic_helper.h" // for cputype_t
-
 #define DISASS_MAX_STR_LENGTH    (40)
+
+#if PICO_ON_DEVICE
+
+#include "bus.h"
+
+#define malloc(s)    mf_malloc(s)
+#define calloc(n,s)  mf_calloc(n,s)
+#define realloc(p,s) mf_realloc(p,s)
+#define free(p)      mf_free(p)
+
+#else
+
+/* alternative rp2040_purple notations for faster access (gains ~7%) */
+#define BUS_CONFIG_mask_address  (0x0000FFFF)
+#define BUS_CONFIG_mask_data     (0x00FF0000)
+#define BUS_CONFIG_mask_rw       (0x01000000)
+#define BUS_CONFIG_mask_clock    (0x02000000)
+#define BUS_CONFIG_mask_rdy      (0x04000000)
+#define BUS_CONFIG_mask_irq      (0x08000000)
+#define BUS_CONFIG_mask_nmi      (0x10000000)
+#define BUS_CONFIG_mask_reset    (0x20000000)
+#define BUS_CONFIG_mask_input    (0x01FFFFFF)
+#define BUS_CONFIG_mask_output   (0x3EFF0000)
+#define BUS_CONFIG_shift_data    (16)
+#define BUS_CONFIG_shift_address (0)
+
+#endif
+
+#ifndef count_of
+#define count_of(a) (sizeof(a)/sizeof(a[0]))
+#endif
+
+/*
+ * all detectable CPU instruction sets
+ * Changes here need to be adjusted in cputype_name as well
+ * Needs to be aligned with return values of cpu_detect 6502 code
+ */
+typedef enum {
+   CPU_ERROR=0,
+   CPU_6502,
+   CPU_65C02,
+   CPU_65816,
+   CPU_65CE02,
+   CPU_6502RA,
+   CPU_65SC02,
+   CPU_UNDEF
+} cputype_t;
+
 
 /* decide on what to display with disassembly */
 typedef enum {
@@ -214,21 +262,22 @@ typedef enum {
  * The value is layed out like this:
  * 0x7766554433221111
  * 1111: address
- * 22:   data
+ * 22:   data at address
  * 33:   control lines: r/w(0), clock(1), rdy(2), irq(3), nmi(4), reset(5)
- * 44:   data at adress + 1
- * 55:   data at adress + 2
- * 66:   data at adress + 3
+ * 44:   data at address + 1 (required for single step disassembly)
+ * 55:   data at address + 2 (required for single step disassembly)
+ * 66:   data at address + 3 (required for single step disassembly)
  * 77:   evaluation (details to be defined: two bits for number of extra data being valid)
+ *                  (details to be defined: two bits for MX of 65816 CPU)
  */
 
 typedef union
 {
-   uint64_t       raw     : 64;
+   uint64_t       raw      :64;
    struct {
       /* lower 32bit are the same as trace from GPIOs */
-      uint16_t    address : 16;
-      uint8_t     data    :  8;
+      uint16_t    address  :16;
+      uint8_t     data     : 8;
       bool        rw       : 1;
       bool        clock    : 1;
       bool        rdy      : 1;
@@ -242,8 +291,10 @@ typedef union
       uint8_t     data2    : 8;
       uint8_t     data3    : 8;
       uint8_t     dataused : 2;
-      uint8_t     bits58_60: 3;
+      bool        m816     : 1;
+      bool        x816     : 1;
       uint8_t     eval     : 3;
+      bool        bit63    : 1;
    };
 } fullinfo_t;
 
@@ -257,14 +308,14 @@ extern uint32_t opcodes65816[0x100];
 /* oc can also by a 32 bit sample taken from GPIO, will be truncated */
 uint32_t disass_opcode( uint8_t oc );
 
-#define PICK_MNEMONIC(o) ((o >>  0) & 0xFF)
-#define PICK_ADDRMODE(o) ((o >>  8) & 0x3F)
-#define PICK_RESERVED(o) ((o >> 14) & 0x01)
-#define PICK_BYTES(o)    ((o >> 15) & 0x07)
-#define PICK_CYCLES(o)   ((o >> 18) & 0x0F)
-#define PICK_EXTRA(o)    ((o >> 22) & 0x03)
-#define PICK_JUMP(o)     ((o >> 24) & 0x01)
-#define PICK_MXE(o)      ((o >> 25) & 0x07)
+#define PICK_MNEMONIC(o) (((o) >>  0) & 0xFF)
+#define PICK_ADDRMODE(o) (((o) >>  8) & 0x3F)
+#define PICK_RESERVED(o) (((o) >> 14) & 0x01)
+#define PICK_BYTES(o)    (((o) >> 15) & 0x07)
+#define PICK_CYCLES(o)   (((o) >> 18) & 0x0F)
+#define PICK_EXTRA(o)    (((o) >> 22) & 0x03)
+#define PICK_JUMP(o)     (((o) >> 24) & 0x01)
+#define PICK_MXE(o)      (((o) >> 25) & 0x07)
 
 
 struct disass_fulltrace_s
@@ -274,6 +325,7 @@ struct disass_fulltrace_s
    fullinfo_t  *fullinfo;
    uint32_t    *opcodes;
 };
+typedef struct disass_fulltrace_s *disass_fulltrace_t;
 
 #define EVAL_MIN (0)
 #define EVAL_MAX (7)
@@ -283,10 +335,6 @@ struct disass_fulltrace_s
 #define inceval(x) if(x < EVAL_MAX) { ++x; }
 
 
-/* state of historian "class" */
-typedef struct disass_fulltrace_s *disass_fulltrace_t;
-
-
 uint8_t pick_mnemonic( disass_fulltrace_t d, int pos );
 uint8_t pick_addrmode( disass_fulltrace_t d, int pos );
 uint8_t pick_reserved( disass_fulltrace_t d, int pos );
@@ -294,6 +342,17 @@ uint8_t pick_bytes( disass_fulltrace_t d, int pos );
 uint8_t pick_cycles( disass_fulltrace_t d, int pos );
 uint8_t pick_extra( disass_fulltrace_t d, int pos );
 uint8_t pick_jump( disass_fulltrace_t d, int pos );
+
+
+/*
+ * convert enum to a string for display purposes
+ */
+const char *cputype_name( cputype_t cputype );
+
+/*
+ * print trace data in format: aaaa r dd
+ */
+const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank );
 
 
 /* vector pull is handled differently by 65CE02 and 65816 as

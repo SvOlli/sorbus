@@ -231,10 +231,11 @@ void disass_historian_assumptions( disass_fulltrace_t d )
                 (addr4 == (addr3+1)) &&
                 (vector == addr) )
             {
-               for( n = 1; n <= 6; ++n )
+               for( n = 1; n <= 7; ++n )
                {
                   fullinfo[i-n].eval = EVAL_MIN;
                }
+               fullinfo[i].eval = EVAL_MAX; // executing first instruction
             }
          }
 

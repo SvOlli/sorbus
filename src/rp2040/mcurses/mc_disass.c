@@ -5,7 +5,7 @@
  */
 
 #include "mcurses.h"
-#include "../common/disassemble.h"
+#include "disassemble.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,16 +38,17 @@ static void mcurses_disassemble_alloc( void *d, uint16_t lines )
       if( lines > mcd->lines )
       {
          /* allocated memory so far is no enough */
+         /* using mf_realloc by macro in disassemble.h on rp2040 */
          mcd->linecache = realloc( mcd->linecache, lines * sizeof(uint16_t) );
       }
    }
    else
    {
       /* nothing allocated so far */
+      /* using mf_malloc by macro in disassemble.h on rp2040 */
       mcd->linecache = malloc( lines * sizeof(uint16_t) );
    }
    mcd->lines = lines;
-   mf_checkheap();
 }
 
 

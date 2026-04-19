@@ -35,14 +35,14 @@ uf2join(jam_alpha_picotool
 add_executable(jam_alpha
    common/bus_rp2040_purple.c
    common/cpu_detect.c
-   common/disassemble.c
-   common/disassemble_beancounter.c
-   common/disassemble_fulltrace.c
-   common/disassemble_historian.c
    common/generic_helper.c
    common/mf_checkheap.c
    common/putcharset.c
    common/xmodem.c
+   disassemble/disassemble.c
+   disassemble/disassemble_beancounter.c
+   disassemble/disassemble_fulltrace.c
+   disassemble/disassemble_historian.c
    mcurses/mcurses.c
    mcurses/mc_disass.c
    mcurses/mc_hexedit.c

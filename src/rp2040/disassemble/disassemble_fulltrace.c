@@ -138,7 +138,6 @@ disass_fulltrace_t disass_fulltrace_init( cputype_t cpu,
 void disass_fulltrace_done( disass_fulltrace_t d )
 {
    memset( d->fullinfo, 0, d->entries * sizeof(uint64_t) );
-   (void)mf_checkheap();
    free( d->fullinfo );
    free( d );
 }

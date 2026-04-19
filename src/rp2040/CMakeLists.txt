@@ -67,6 +67,7 @@ function(setup_target targetname incdir)
       ${incdir}
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${CMAKE_CURRENT_SOURCE_DIR}/common
+      ${CMAKE_CURRENT_SOURCE_DIR}/disassemble
       ${CMAKE_CURRENT_SOURCE_DIR}/mcurses
       ${CMAKE_CURRENT_BINARY_DIR}
    )

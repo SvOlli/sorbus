@@ -21,3 +21,33 @@ uint32_t mf_checkheap()
    return min_free;
 }
 
+
+void *mf_malloc(size_t size)
+{
+   void *retval = malloc( size );
+   mf_checkheap();
+   return retval;
+}
+
+
+void mf_free(void *ptr)
+{
+   mf_checkheap();
+   free( ptr );
+}
+
+
+void *mf_calloc(size_t nmemb, size_t size)
+{
+   void *retval = calloc( nmemb, size );
+   mf_checkheap();
+   return retval;
+}
+
+
+void *mf_realloc(void *ptr, size_t size)
+{
+   void *retval = realloc( ptr, size );
+   mf_checkheap();
+   return retval;
+}

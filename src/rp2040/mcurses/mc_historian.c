@@ -5,7 +5,7 @@
  */
 
 #include "mcurses.h"
-#include "../common/disassemble.h"
+#include "disassemble.h"
 
 
 struct mc_historian {

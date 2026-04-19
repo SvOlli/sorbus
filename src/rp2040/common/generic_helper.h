@@ -3,6 +3,7 @@
 #define TOOLS_H TOOLS_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <ctype.h>
 
@@ -11,22 +12,8 @@
 #define count_of(a) (sizeof(a)/sizeof(a[0]))
 #endif
 
-/*
- * all detectable CPU instruction sets
- * 6502 Rev.A should be last valid CPU, so it can be skipped in cycling
- * Changes here need to be adjusted in cputype_name as well
- * Needs to be aligned with return values of cpu_detect 6502 code
- */
-typedef enum {
-   CPU_ERROR=0,
-   CPU_6502,
-   CPU_65C02,
-   CPU_65816,
-   CPU_65CE02,
-   CPU_6502RA,
-   CPU_65SC02,
-   CPU_UNDEF
-} cputype_t;
+/* for cputype_t and debug_trace() */
+#include "../disassemble/disassemble.h"
 
 /*
  * callback function for hexdump to get/set memory data
@@ -37,11 +24,6 @@ typedef enum {
 typedef uint8_t (*peek_t)(uint8_t,uint16_t);
 typedef void (*poke_t)(uint8_t,uint16_t,uint8_t);
 
-/*
- * convert enum to a string for display purposes
- */
-const char *cputype_name( cputype_t cputype );
-
 
 /*
  * hexdump some data
@@ -51,11 +33,6 @@ void print_hexdump_buffer( uint8_t bank, const uint8_t *memory, uint32_t size,
 void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size,
                     bool showbank );
 
-/*
- * print trace data in format: aaaa r dd
- */
-const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank );
-
 /* Read a 4-digt address from console and check if it is below "lastaddr" */
 int32_t get_16bit_address( uint16_t lastaddr );
 
@@ -64,6 +41,12 @@ int32_t get_16bit_address( uint16_t lastaddr );
  * - return recorded minimum of free memory
  * on host should return 0 */
 uint32_t mf_checkheap();
+
+/* wrappers that use mf_checkheap */
+void *mf_malloc(size_t size);
+void mf_free(void *ptr);
+void *mf_calloc(size_t nmemb, size_t size);
+void *mf_realloc(void *ptr, size_t size);
 
 
 /* convert a character from 8bit to 16bit UTF representation

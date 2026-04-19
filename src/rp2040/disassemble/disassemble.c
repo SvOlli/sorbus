@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bus.h"
-
 static disass_show_t show_flags  = DISASS_SHOW_NOTHING;
 static cputype_t cputype         = CPU_ERROR;
 static uint8_t mx_flag_816       = 0;
@@ -208,19 +206,72 @@ static uint32_t *disass_opcodes = 0;
 
 bool trace_is_write( uint32_t trace )
 {
-   return (trace & bus_config.mask_rw) == 0;
+   return (trace & BUS_CONFIG_mask_rw) == 0;
 }
 
 
 uint16_t trace_address( uint32_t trace )
 {
-   return (trace >> bus_config.shift_address);
+   return (trace >> BUS_CONFIG_shift_address);
 }
 
 
 uint8_t trace_data( uint32_t trace )
 {
-   return (trace >> bus_config.shift_data);
+   return (trace >> BUS_CONFIG_shift_data);
+}
+
+
+/* these need to aligned with cputype_t and detection code */
+static char* cputype_names[] =
+{
+   "NONE",
+   "6502",
+   "65C02",
+   "65816",
+   "65CE02",
+   "6502 RevA",
+   "65SC02",
+   NULL
+};
+
+
+const char *cputype_name( cputype_t cputype )
+{
+   if( cputype >= count_of(cputype_names) )
+   {
+      cputype = CPU_ERROR;
+   }
+   return cputype_names[cputype];
+}
+
+
+const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank )
+{
+   static char buffer[32];
+   int offset = 0;
+
+   if( bank_enabled )
+   {
+      snprintf( &buffer[0], sizeof(buffer), "%02x:", bank );
+   }
+   else
+   {
+      buffer[0] = '\0';
+   }
+
+   offset = strlen( buffer );
+   snprintf( &buffer[offset], sizeof(buffer)-offset,
+             "%04x %c %02x %c%c%c",
+             (state & BUS_CONFIG_mask_address) >> (BUS_CONFIG_shift_address),
+             (state & BUS_CONFIG_mask_rw) ? 'r' : 'w',
+             (state & BUS_CONFIG_mask_data) >> (BUS_CONFIG_shift_data),
+             (state & BUS_CONFIG_mask_reset) ? ' ' : 'R',
+             (state & BUS_CONFIG_mask_nmi) ? ' ' : 'N',
+             (state & BUS_CONFIG_mask_irq) ? ' ' : 'I' );
+   buffer[sizeof(buffer)-1] = '\0';
+
+   return &buffer[0];
 }
 
 
