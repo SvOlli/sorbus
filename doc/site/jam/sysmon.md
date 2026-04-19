@@ -21,7 +21,7 @@ When the System Monitor is started it looks like this:
 ```txt
 Sorbus System Monitor via menu
    PC  BK AC XR YR SP NV-BDIZC
- ~FFF2 01 00 00 00 FF 00100110
+ ~FFD8 01 00 00 00 FF 00100110
 >_  <-- cursor
 ```
 

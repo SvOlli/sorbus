@@ -1,11 +1,13 @@
 
 # Meta-Mode
 
-Pressing `Ctrl+]` (or `^`) will get you in a "meta-mode" where the CPU
-stops. This mode can also be invoked by writing to address `$DF01` or
-programming the watchdog timer. In any case the same meta menu is shown
-which provides some information mostly intended for developers. A few
-entries there also relate to "monitor commands".
+Pressing `Ctrl+]` (or the backtick `` ` ``) will get you in a "meta-mode"
+where the CPU stops. This mode can also be invoked by writing to address
+`$DF01` or programming the watchdog timer (see
+[Memory Map & I/O Registers](memory_map_io_registers.md#watchdog-df20-df23)
+addresses `$DF20-$DF23`). In any case the same meta menu is shown which
+provides some information mostly intended for developers. A few entries
+there also relate to "monitor commands".
 
 Using terminal escape sequences, the current screen is requested to be
 stored and restored when leaving the meta-mode. However, this is relying

@@ -62,7 +62,7 @@ officially released by [Microsoft on GitHub](https://github.com/microsoft/BASIC-
 The porting required the addresses in the zero page to be moved. This table
 shows what has moved to where.
 
-| Label | Old (hex) | Old (dec) | New (hex) | New (dec) |
+| Label | Old (hex) | New (hex) | Old (dec) | New (dec) |
 | ----- | --------: | --------: | --------: | --------: |
 | GORESTART | $00 | (removed) | 0 | (removed) |
 | GOSTROUT | $03 | $10 | 3 | 16 |
@@ -142,6 +142,10 @@ unused, though.
 
 Also all ROM functions have been moved due to the porting. However, this
 is not a problem, as the `SYS` command was only added by this port, so
-no original OSI BASIC code could be using it. However this will be a
-problem with code that uses USR() to call subroutines in ROM. If you
-encounter such a problem, contact me, and I help you porting that code.
+no original OSI BASIC code could be using it to call inside the BASIC
+implementation. However this will be a problem with code that uses USR()
+to call subroutines in ROM. If you encounter such a problem, contact me,
+and I help you porting that code.
+
+You can use `SYS 65496` to soft reset the machine and leave BASIC for the
+reset menu.

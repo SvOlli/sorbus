@@ -46,16 +46,32 @@ the `MAP` opcode.
 
 ### 65816
 
-This CPU is supported by the Sorbus JAM only in legacy mode. In legacy
-mode the new vectors for ABORT and COP and the vectors for native mode
-are used by trampoline code.
+Starting with kernel 0.7, this CPU is supported by the Sorbus JAM in both
+legacy and native mode. Before kernel 0.7, only legacy mode was supported.
+However, all vectors that are not available on a 6502 are set to a stub
+implementation, just triggering [meta mode](meta_mode.md) before resetting.
+These can be overloaded when switching bank $00 (RAM). Copying BIOS to RAM
+before making these modification using interrupt $0B (COPYBIOS) is advised.
+This works as the bank is only reset to kernel when a hardware reset (e.g.
+from meta menu) is triggered. Note that for calling kernel routines via
+JSR, the M and X flags need to be set to 8-bit mode. However, calling
+kernel routines provided via BRK _should_ work, but has not been tested
+very much.
 
-While this could be fixed by adding additional vectors and code in the
-BIOS page ($FF00-$FFFF), this is not done, as the Sorbus JAM is developed
-for the 65(S)C02.
+Also keep in mind that the support only has been expanded for the kernel
+driving the 65C02/65816. The development the backtrace in meta mode only
+has started with 0.7 and is expected to mature during the incremential
+commits following.
 
 Support can never be fully implemented, as some important pins of the
-65816 are not connected to the RP2040.
+65816 are not connected to the RP2040 (e.g. VDA, VPA, VPB, E, MX and
+ABORTB). Also, the muxing of the D0-D7 pins used for A16-A23 during the
+"high" phase of the clockcycle are not intended to be implemented, so
+addressing will be always mapped to the base 64k space.
+
+Also the backtrace for 65816 is in a very early stage of development due
+to the lack of the MX signal from the chip, the heuristic needs to assume
+if an access of an immediate is in 8 or 16 bit mode.
 
 ### NMOS 6502
 
