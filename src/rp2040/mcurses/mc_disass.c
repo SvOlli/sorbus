@@ -39,14 +39,14 @@ static void mcurses_disassemble_alloc( void *d, uint16_t lines )
       {
          /* allocated memory so far is no enough */
          /* using mf_realloc by macro in disassemble.h on rp2040 */
-         mcd->linecache = realloc( mcd->linecache, lines * sizeof(uint16_t) );
+         mcd->linecache = mf_realloc( mcd->linecache, lines * sizeof(uint16_t) );
       }
    }
    else
    {
       /* nothing allocated so far */
       /* using mf_malloc by macro in disassemble.h on rp2040 */
-      mcd->linecache = malloc( lines * sizeof(uint16_t) );
+      mcd->linecache = mf_malloc( lines * sizeof(uint16_t) );
    }
    mcd->lines = lines;
 }
@@ -410,7 +410,7 @@ void mcurses_disassemble( mc_disass_t *dav )
    if( mcd.linecache )
    {
       (void)mf_checkheap();
-      free( mcd.linecache );
+      mf_free( mcd.linecache );
    }
 
    dav->charset = config.charset;

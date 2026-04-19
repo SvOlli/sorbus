@@ -119,14 +119,14 @@ static void disass_fulltrace_filldata( disass_fulltrace_t d, const uint32_t *tra
 disass_fulltrace_t disass_fulltrace_init( cputype_t cpu,
    uint32_t *trace, uint32_t entries, uint32_t start )
 {
-   disass_fulltrace_t d = (disass_fulltrace_t)malloc( sizeof( struct disass_fulltrace_s ) );
+   disass_fulltrace_t d = (disass_fulltrace_t)mf_malloc( sizeof( struct disass_fulltrace_s ) );
 
    // TODO: find something better than assert (or somewhere else to check?)
    assert( (entries & (entries-1)) == 0 );
 
    d->cpu      = cpu;
    d->entries  = entries;
-   d->fullinfo = (fullinfo_t*)calloc( entries+2*BOUNDSBUFFER, sizeof(fullinfo_t) );
+   d->fullinfo = (fullinfo_t*)mf_calloc( entries+2*BOUNDSBUFFER, sizeof(fullinfo_t) );
    d->opcodes  = disass_set_cpu( cpu );
    disass_fulltrace_filldata( d, trace, start );
    //disass_historian_assumptions( d );
@@ -138,8 +138,8 @@ disass_fulltrace_t disass_fulltrace_init( cputype_t cpu,
 void disass_fulltrace_done( disass_fulltrace_t d )
 {
    memset( d->fullinfo, 0, d->entries * sizeof(uint64_t) );
-   free( d->fullinfo );
-   free( d );
+   mf_free( d->fullinfo );
+   mf_free( d );
 }
 
 

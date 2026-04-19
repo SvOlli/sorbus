@@ -12,13 +12,14 @@
 #if PICO_ON_DEVICE
 
 #include "bus.h"
-
-#define malloc(s)    mf_malloc(s)
-#define calloc(n,s)  mf_calloc(n,s)
-#define realloc(p,s) mf_realloc(p,s)
-#define free(p)      mf_free(p)
+#include "generic_helper.h"
 
 #else
+
+#define mf_malloc(s)    malloc(s)
+#define mf_calloc(n,s)  calloc(n,s)
+#define mf_realloc(p,s) realloc(p,s)
+#define mf_free(p)      free(p)
 
 /* alternative rp2040_purple notations for faster access (gains ~7%) */
 #define BUS_CONFIG_mask_address  (0x0000FFFF)
