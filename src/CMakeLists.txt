@@ -16,6 +16,14 @@ include(pico_sdk_import.cmake)
 include(pico_extras_import.cmake)
 project(sorbus)
 
+# add ccache support, when ccache is installed
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+   set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CCACHE_PROGRAM}")
+   message(STATUS "ccache found: ${CCACHE_PROGRAM}")
+endif()
+
 # self-hosted tools to e.g. convert binary to text data
 add_subdirectory(tools)
 
