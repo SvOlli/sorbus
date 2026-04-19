@@ -20,43 +20,6 @@ typedef unsigned int uint;
 #include "../rp2040/mcurses/mcurses.h"
 
 
-cputype_t getcputype( const char *argi )
-{
-   cputype_t retval = CPU_ERROR;
-   char *arg = strdup( argi );
-   char *c;
-
-   for( c = arg; *c; ++c )
-   {
-      *c = toupper( *c );
-   }
-
-   if( !strncasecmp( arg, "6502", 4 ) )
-   {
-      retval = CPU_6502;
-   }
-   else if( !strncasecmp( arg, "65C02", 5 ) )
-   {
-      retval = CPU_65C02;
-   }
-   else if( !strncasecmp( arg, "65SC02", 6 ) )
-   {
-      retval = CPU_65SC02;
-   }
-   else if( !strncasecmp( arg, "65816", 5) )
-   {
-      retval = CPU_65816;
-   }
-   else if( !strncasecmp( arg, "65CE02", 6 ) )
-   {
-      retval = CPU_65CE02;
-   }
-
-   free( arg );
-   return retval;
-}
-
-
 void help( const char *progname, int retval )
 {
    FILE *f = stdout;

@@ -292,10 +292,10 @@ typedef union
       uint8_t     data2    : 8;
       uint8_t     data3    : 8;
       uint8_t     dataused : 2;
-      bool        m816     : 1;
-      bool        x816     : 1;
+      bool        m816     : 1; /* reverse meaning from CPU flag: 1=16 bit */
+      bool        x816     : 1; /* reverse meaning from CPU flag: 1=16 bit */
       uint8_t     eval     : 3;
-      bool        bit63    : 1;
+      bool        e816     : 1; /* reverse meaning from CPU flag: 1=native */
    };
 } fullinfo_t;
 
@@ -316,7 +316,7 @@ uint32_t disass_opcode( uint8_t oc );
 #define PICK_CYCLES(o)   (((o) >> 18) & 0x0F)
 #define PICK_EXTRA(o)    (((o) >> 22) & 0x03)
 #define PICK_JUMP(o)     (((o) >> 24) & 0x01)
-#define PICK_MXE(o)      (((o) >> 25) & 0x07)
+#define PICK_MX(o)       (((o) >> 25) & 0x03)
 
 
 struct disass_fulltrace_s
@@ -343,6 +343,8 @@ uint8_t pick_bytes( disass_fulltrace_t d, int pos );
 uint8_t pick_cycles( disass_fulltrace_t d, int pos );
 uint8_t pick_extra( disass_fulltrace_t d, int pos );
 uint8_t pick_jump( disass_fulltrace_t d, int pos );
+bool    pick_m( disass_fulltrace_t d, int pos );
+bool    pick_x( disass_fulltrace_t d, int pos );
 
 
 /*
@@ -351,15 +353,14 @@ uint8_t pick_jump( disass_fulltrace_t d, int pos );
 const char *cputype_name( cputype_t cputype );
 
 /*
+ * somehow doing the reverse as cputype_name
+ */
+cputype_t getcputype( const char *argi );
+
+/*
  * print trace data in format: aaaa r dd
  */
 const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank );
-
-
-/* vector pull is handled differently by 65CE02 and 65816 as
-   compared to 65(S)(C)02 */
-typedef bool (*disass_is_vector_pull_t)( uint32_t addr0,
-   uint32_t addr1, uint32_t addr2, uint32_t addr3, uint32_t addr4 );
 
 /* set cpu instruction set to disassemble */
 uint32_t *disass_set_cpu( cputype_t cpu );
@@ -431,5 +432,7 @@ const char *disass_fulltrace_entry( disass_fulltrace_t d, uint32_t entry );
 
 uint8_t disassemble_beancounter_single( disass_fulltrace_t d, uint32_t pos );
 void disassemble_beancounter( disass_fulltrace_t d, uint32_t start );
+
+uint8_t disass_fullinfo_isequal( uint32_t *opcodes, fullinfo_t fi1, fullinfo_t fi2 );
 
 #endif

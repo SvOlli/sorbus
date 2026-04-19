@@ -246,6 +246,52 @@ const char *cputype_name( cputype_t cputype )
 }
 
 
+/*
+ * This will only be used on the host machine
+ */
+cputype_t getcputype( const char *argi )
+{
+   cputype_t retval = CPU_ERROR;
+   char arg[8] = { 0 };
+   const char *c = argi;
+   int i;
+
+   /* strip off any leading spaces */
+   while( *c == ' ' )
+   {
+      ++c;
+   }
+
+   for( i = 0; *c && (i < 7); ++c, ++i )
+   {
+      arg[i] = toupper( *c );
+   }
+
+   if( !strncasecmp( arg, "6502", 4 ) )
+   {
+      retval = CPU_6502;
+   }
+   else if( !strncasecmp( arg, "65C02", 5 ) )
+   {
+      retval = CPU_65C02;
+   }
+   else if( !strncasecmp( arg, "65SC02", 6 ) )
+   {
+      retval = CPU_65SC02;
+   }
+   else if( !strncasecmp( arg, "65816", 5) )
+   {
+      retval = CPU_65816;
+   }
+   else if( !strncasecmp( arg, "65CE02", 6 ) )
+   {
+      retval = CPU_65CE02;
+   }
+
+   return retval;
+}
+
+
 const char* decode_trace( uint32_t state, bool bank_enabled, uint8_t bank )
 {
    static char buffer[32];
@@ -383,7 +429,8 @@ uint8_t disass_bytes( uint8_t p0 )
 
    if( cputype == CPU_65816 )
    {
-      if( PICK_MXE(disass_opcodes[p0]) & mx_flag_816 )
+      if( (PICK_MX(disass_opcodes[p0]) & mx_flag_816) &&
+          (PICK_ADDRMODE(disass_opcodes[p0]) == IMM) )
       {
          return PICK_BYTES(disass_opcodes[p0]) + 1;
       }
@@ -401,7 +448,7 @@ uint8_t disass_basecycles( uint8_t p0 )
 
    if( cputype == CPU_65816 )
    {
-      if( PICK_MXE(disass_opcodes[p0]) & mx_flag_816 )
+      if( PICK_MX(disass_opcodes[p0]) & mx_flag_816 )
       {
          return PICK_CYCLES(disass_opcodes[p0]) + 1;
       }
@@ -477,10 +524,10 @@ bool disass_bcdextracycles( uint8_t p0 )
 
 static int snprimm( char *b, size_t bsize, uint8_t p0, uint8_t p1, uint8_t p2 )
 {
-   uint8_t mxe = PICK_MXE(disass_opcodes[p0]);
+   uint8_t mx = PICK_MX(disass_opcodes[p0]);
    if( cputype == CPU_65816 )
    {
-      if( mxe & mx_flag_816 )
+      if( mx & mx_flag_816 )
       {
          return snprintf( b, bsize, "#$%02X%02X", p2, p1 );
       }

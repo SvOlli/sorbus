@@ -11,45 +11,8 @@
 #include "../rp2040/disassemble/disassemble_fulltrace.c"
 #include "../rp2040/disassemble/disassemble_historian.c"
 
+/* todo: find header */
 uint8_t *loadfile( const char *filename, ssize_t *filesize );
-
-//#include "loadfile.c"
-
-cputype_t getcputype( const char *argi )
-{
-   cputype_t retval = CPU_ERROR;
-   char *arg = strdup( argi );
-   char *c;
-
-   for( c = arg; *c; ++c )
-   {
-      *c = toupper( *c );
-   }
-
-   if( !strncasecmp( arg, "6502", 4 ) )
-   {
-      retval = CPU_6502;
-   }
-   else if( !strncasecmp( arg, "65C02", 5 ) )
-   {
-      retval = CPU_65C02;
-   }
-   else if( !strncasecmp( arg, "65SC02", 6 ) )
-   {
-      retval = CPU_65SC02;
-   }
-   else if( !strncasecmp( arg, "65816", 5) )
-   {
-      retval = CPU_65816;
-   }
-   else if( !strncasecmp( arg, "65CE02", 6 ) )
-   {
-      retval = CPU_65CE02;
-   }
-
-   free( arg );
-   return retval;
-}
 
 
 void help( const char *progname, int retval )
@@ -214,19 +177,27 @@ uint32_t *fulltrace2trace( uint64_t *refbuffer, uint32_t size )
 }
 
 
-void print_result( uint64_t *refbuffer, uint64_t *checkbuffer, uint32_t size )
+void print_result( uint32_t *opcodes, uint64_t *refbuffer,
+                   uint64_t *checkbuffer, uint32_t size )
 {
    uint32_t i;
    uint64_t *r = refbuffer;
    uint64_t *c = checkbuffer;
-   fullinfo_t fi;
+   fullinfo_t fi1, fi2;
    for( i = 0; i < size; ++i )
    {
-      fi.raw = *c;
-      printf( "%016lx %016lx %c %s\n", *r, *c, *r != *c ? '!' : ' ',
-              disass_trace( fi ) );
+      fi1.raw = *r;
+      fi2.raw = *c;
+      printf( "%016lx %016lx %c %s: %s\n", *r, *c,
+              disass_fullinfo_isequal( opcodes, fi1, fi2 ),
+              decode_trace( (uint32_t)fi1.raw, false, 0 ),
+              (fi2.eval > 3) ? disass_trace( fi2 ) : "" );
       ++r;
       ++c;
+      if( !*r || !*c )
+      {
+         break;
+      }
    }
 }
 
@@ -236,6 +207,7 @@ int main( int argc, char* argv[] )
    const char *progname = argv[0];
 
    cputype_t cpu = CPU_ERROR;
+   uint32_t *opcodes = 0;
    disass_fulltrace_t dah;
 
    int opt;
@@ -296,10 +268,15 @@ int main( int argc, char* argv[] )
       return 1;
    }
    buffer = fulltrace2trace( refbuffer, size );
+   opcodes = disass_set_cpu( cpu );
    dah = disass_fulltrace_init( cpu, buffer, size, 0 );
 
-   print_result( refbuffer, (uint64_t*)(dah->fullinfo)+BOUNDSBUFFER, size );
-   
+   disassemble_beancounter( dah, BOUNDSBUFFER );
+   print_result( opcodes,
+                 refbuffer,
+                 (uint64_t*)(dah->fullinfo)+BOUNDSBUFFER,
+                 size );
+
    disass_fulltrace_done( dah );
    free( buffer );
    free( refbuffer );

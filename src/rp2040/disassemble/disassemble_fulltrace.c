@@ -55,6 +55,18 @@ uint8_t pick_jump( disass_fulltrace_t d, int pos )
 }
 
 
+bool pick_m( disass_fulltrace_t d, int pos )
+{
+   return PICK_MX( d->opcodes[d->fullinfo[pos].data] ) & 0x01;
+}
+
+
+bool pick_x( disass_fulltrace_t d, int pos )
+{
+   return PICK_MX( d->opcodes[d->fullinfo[pos].data] ) & 0x02;
+}
+
+
 static void disass_fulltrace_filldata( disass_fulltrace_t d, const uint32_t *trace,
                                        uint32_t start )
 {
@@ -170,4 +182,77 @@ const char *disass_fulltrace_entry( disass_fulltrace_t d, uint32_t entry )
 #endif
    }
    return &buffer[0];
+}
+
+
+uint8_t disass_fullinfo_isequal( uint32_t *opcodes, fullinfo_t fi1, fullinfo_t fi2 )
+{
+   uint8_t bytes = 0;
+   uint32_t opcode = opcodes[fi1.data];
+   /* sample data must match, otherwise further testing makes no sense */
+   if( (fi1.raw & 0x3FFFFFFF) != (fi2.raw & 0x3FFFFFFF) )
+   {
+      return '!';
+   }
+
+   bytes = PICK_BYTES( opcode );
+   /* adjust number of bytes on 65816 CPU */
+
+   if( PICK_MX( opcode ) & 0x01 )
+   {
+      if( fi1.m816 != fi2.m816 )
+      {
+         return '!';
+      }
+      if( !fi1.m816 )
+      {
+         ++bytes;
+      }
+   }
+
+   if( PICK_MX( opcode ) & 0x02 )
+   {
+      if( fi1.x816 != fi2.x816 )
+      {
+         return '!';
+      }
+      if( !fi1.x816 )
+      {
+         ++bytes;
+      }
+   }
+
+   if( fi1.dataused < (bytes-1) )
+   {
+      return '?';
+   }
+
+   if( fi2.dataused < (bytes-1) )
+   {
+      return '?';
+   }
+
+   if( bytes > 1 )
+   {
+      if( fi1.data1 != fi2.data1 )
+      {
+         return '!';
+      }
+   }
+   if( bytes > 2 )
+   {
+      if( fi1.data2 != fi2.data2 )
+      {
+         return '!';
+      }
+   }
+   if( bytes > 3 )
+   {
+      if( fi1.data3 != fi2.data3 )
+      {
+         return '!';
+      }
+   }
+
+   return '=';
 }

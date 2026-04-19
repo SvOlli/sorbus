@@ -32,6 +32,14 @@ cpu65816_mx_t cpu65816_mx;
  */
 
 
+static bool bc_atend( disass_fulltrace_t d, uint32_t pos )
+{
+   fullinfo_t *fullinfo = d->fullinfo;
+   /* an entry all zero cannot be taked from bus
+    * but buffer is initialized with 0, so this is unused buffer */
+   return (fullinfo[pos].raw == 0);
+}
+
 static bool bc_pagecross( uint16_t p0, uint16_t p1 )
 {
    return (p0 >> 8) != (p1 >> 8);
@@ -414,9 +422,15 @@ uint8_t disassemble_cycles( disass_fulltrace_t d, uint32_t pos )
 {
    uint8_t is_interrupt;   /* and also reset */
 
+   if( bc_atend( d, pos ) )
+   {
+      return 0x80;
+   }
+
    is_interrupt = bc_interrupt( d, pos );
    if( is_interrupt > 0 )
    {
+      /* returns cycles used by irq or'ed with marker */
       return is_interrupt | 0xF0;
    }
 
@@ -433,7 +447,7 @@ uint8_t disassemble_cycles( disass_fulltrace_t d, uint32_t pos )
       case CPU_65816:
          return bc_65816( d, pos );
       default:
-         return 0x80;
+         return 0x81;
    }
 }
 
