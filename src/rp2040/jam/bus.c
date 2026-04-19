@@ -127,7 +127,7 @@ void check_cpu_is_halted()
 {
    while(gpio_get_all() & bus_config.mask_rdy)
    {
-      printf( "\rinternal error: cpu should be stopped." );
+      printf( "\rinternal error: cpu should be stopped. %08x", gpio_get_all() );
    }
 }
 
@@ -328,7 +328,7 @@ void timer_cycle_ack()
       // check if all other interrupt source prevents release
       if( !timer_ms_triggered[offset] )
       {
-         gpio_set_mask( bus_config.mask_nmi );
+         gpio_set_mask( timer_mask[offset] );
       }
    }
 }
@@ -1391,7 +1391,7 @@ void bus_run()
 #if MALLOC_RAM
    if( !ram )
    {
-      ram = (uint8_t*)calloc( 0x10000, sizeof(uint8_t) );
+      ram = (uint8_t*)mf_calloc( 0x10000, sizeof(uint8_t) );
    }
 #endif
    bus_init();
@@ -1505,6 +1505,8 @@ uint8_t debug_banks()
 
 uint8_t debug_peek( uint8_t bank, uint16_t addr )
 {
+   check_cpu_is_halted();
+
    if( addr < 0xE000 )
    {
       return ram[addr];
@@ -1524,6 +1526,8 @@ uint8_t debug_peek( uint8_t bank, uint16_t addr )
 
 void debug_poke( uint8_t bank, uint16_t addr, uint8_t value )
 {
+   check_cpu_is_halted();
+
    if( (addr < 0xE000) || !bank )
    {
       ram[addr] = value;
@@ -1560,41 +1564,10 @@ const char *debug_get_info( debug_info_t page )
 }
 
 
-void debug_disassembler()
-{
-   static uint16_t lastaddr = 0x0400;
-   uint16_t addr = 0;
-   int count = 0;
-
-   check_cpu_is_halted();
-
-   for(;;)
-   {
-      printf( "%s disass ($%04X): ", cputype_name( cputype ), lastaddr );
-      int32_t getaddr = get_16bit_address( lastaddr );
-      printf( "\n" );
-      if( getaddr < 0 )
-      {
-         return;
-      }
-
-      addr = (uint16_t)(getaddr & 0xFFFF);
-      for( count = 0; count < 16; ++count )
-      {
-         disass_show( DISASS_SHOW_ADDRESS | DISASS_SHOW_HEXDUMP );
-         puts( disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ) );
-         //printf( "%s ; %d\n",
-         //   disass( addr, get_memory(addr), get_memory(addr+1), get_memory(addr+2), get_memory(addr+3) ),
-         //   disass_bytes( get_memory(addr) );
-         addr += disass_bytes( get_memory(addr) );
-      }
-      lastaddr = addr;
-   }
-}
-
-
 void debug_raw_backtrace()
 {
+   check_cpu_is_halted();
+
    printf( "\nTRACE_START %s\n", cputype_name( cputype ) );
    for( int i = buslog_index; i < (buslog_index + BUSLOG_SIZE); ++i )
    {
@@ -1606,6 +1579,8 @@ void debug_raw_backtrace()
 
 void debug_get_backtrace( cputype_t *cpu, uint32_t **trace, uint32_t *entries, uint32_t *start )
 {
+   check_cpu_is_halted();
+
    *cpu     = cputype ? cputype : CPU_65SC02;
    *trace   = &buslog_states[0];
    *entries = BUSLOG_SIZE;
