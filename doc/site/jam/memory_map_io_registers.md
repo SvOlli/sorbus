@@ -104,12 +104,12 @@ IMPORTANT: this might change, if 16-bit counters are not sufficiant
 
 - counter is 24 bit
 - base address: $DF20
-- base address + 0: turn off
-- base address + 1: set low counter, write resets watchdog when running
-- base address + 2: set mid counter, write resets watchdog when running
-- base address + 3: set high counter, stars watchdog, reset when running
-- read on any address shows watchdog active
-- triggered watchdog handled similar to trap ($DF01)
+- write to base address + 0: turn off
+- write to base address + 1: set low counter, write resets watchdog when running
+- write to base address + 2: set mid counter, write resets watchdog when running
+- write to base address + 3: set high counter, starts watchdog, reset when running
+- read on any address shows watchdog active (bit7: watchdog running)
+- triggered watchdog is handled similar to trap ($DF01)
 - todo(?): can be triggered by number of nmis or irqs
 
 

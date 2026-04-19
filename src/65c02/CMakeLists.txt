@@ -177,6 +177,7 @@ add_executable(jam_tools
    jam/rom/browser.s
    jam/rom/gensine.s
    jam/rom/run6502asm.s
+   jam/rom/unhandled65816.s
    jam/rom/bios.s
    jam/rom/bios_stub.s
    )
@@ -302,6 +303,10 @@ add_executable(animatrn
 )
 target_type(animatrn sx4 "1.")
 
+add_executable(brk65816
+   jam/sx4/brk65816.s
+)
+target_type(brk65816 sx4 "1.")
 
 gencpmfs(jam_cpmfs.img)
 

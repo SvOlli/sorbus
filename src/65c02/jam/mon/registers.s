@@ -173,7 +173,7 @@ mon_restart:
 
 .segment "DATA"
 defregs:
-   .word $fff2          ; R_PC
+   .word $ffd8          ; R_PC
    .byte $01            ; R_BK
    .byte $00            ; R_A
    .byte $00            ; R_X

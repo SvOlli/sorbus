@@ -98,30 +98,60 @@ _biosend:
 
 .segment "FIXEND"
 _fixstart:
+
+_unhandled:
+   .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
+   ldx   #UNH65816_IDX
+   ldy   #UNH65816_BANK
+   bne   bankgoto
 NMI:
    jmp   (UVNMI)        ; user vector for NMI ($DF7A)
 IRQ:
    jmp   (UVIRQ)        ; user vector for BRK/IRQ ($DF7E) -> irqcheck (default)
 _reset:
-   ; reset routine that also has to work when copied to RAM
-   lda   #$01
-   sta   BANK           ; set banking to first ROM bank (kernel)
-   jmp   reset          ; jump to reset routine
+   .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
+   ldx   #RESET_IDX
+   ldy   #KERNEL_BANK
+bankgoto:
+   sty   BANK           ; select bank from Y
+   jmp   ($E001)        ; placeholdes, as 6502 doesn't have JMP ($E001,x)
 _fixend:
 
 .segment "VECTORS"
 _vectors:
-   .word NMI
-   .word RESET
-   .word IRQ
+; $FFE0
+.if 0
+   .word $FFFF          ; reserved
+   .word $FFFF          ; reserved
+.endif
+; $FFE4: (real) start of 65816 vectors
+; per datasheet, vectors start at $FFE0, but first two are reserved
+   .word _unhandled     ; 65816 native COP
+   .word _unhandled     ; 65816 native BRK
+   .word _unhandled     ; 65816 native ABORT (cannot be triggered)
+   .word _unhandled     ; 65816 native NMI
+   .word $FFFF          ; reserved
+   .word _unhandled     ; 65816 native IRQ
+; $FFF0
+   .word $FFFF          ; reserved
+   .word $FFFF          ; reserved
+   .word _unhandled     ; 65816 COP
+   .word $FFFF          ; reserved
+   .word _unhandled     ; 65816 ABORT (cannot be triggered)
 
-_biossize = (_biosend-BIOS) + (_fixend-_fixstart)
-.out "   ============================="
-.out .sprintf( "   BIOS size: $%04x ($%04x free)", _biossize, $FA - (_biossize) )
-.out "   ============================="
+   .word NMI            ; 65C02 NMI
+   .word RESET          ; 65C02 RESET
+   .word IRQ            ; 65C02 IRQ
 
-.assert  CHRIN   = _chrin,   error, "CHRIN at wrong address"
-.assert  CHROUT  = _chrout,  error, "CHROUT at wrong address"
-.assert  PRINT   = _print,   error, "PRINT at wrong address"
-.assert  RESET   = _reset,   error, "RESET at wrong address"
-.assert  _fixend = _vectors, error, "FIXEND segment not at end of memory"
+_biossize = (_biosend-BIOS)
+_fixsize = (_fixend-_fixstart)
+.out "   =============================="
+.out .sprintf( "   BIOS size:  $%04x ($%04x free)", _biossize, $CA - (_biossize) )
+.out .sprintf( "   FIXED size: $%04x", _fixsize )
+.out "   =============================="
+
+.assert  CHRIN   = _chrin,   error, "CHRIN at wrong address in NMOS"
+.assert  CHROUT  = _chrout,  error, "CHROUT at wrong address in NMOS"
+.assert  PRINT   = _print,   error, "PRINT at wrong address in NMOS"
+.assert  RESET   = _reset,   error, "RESET at wrong address in NMOS"
+.assert  _fixend = _vectors, error, "FIXEND segment not at end of memory in NMOS"

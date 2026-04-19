@@ -5,8 +5,15 @@
 ;-------------------------------------------------------------------------
 ; BIOS calls $FF00-$FFFF
 ;-------------------------------------------------------------------------
-; CHRIN, CHROUT and PRINT should work on an NMOS 6502
-; IRQ handler code does not need to, because code in kernel is for CMOS
+; CHRIN, CHROUT and PRINT should work on all 6502 variants
+; notable exceptions are:
+; NMOS 6502:
+; - IRQ handler code does not work, because code in kernel is for CMOS
+; 65CE02:
+; - Z register must be $00 when BRK is triggered
+;   (there is a wrapper in jam_bios.inc)
+; 65816:
+; - using extra vectors is only possible when running from bank $00 (RAM)
 
 .segment "BIOS"
 BIOS:
@@ -35,7 +42,7 @@ _print:
    inc   TMP16+1
 :
    lda   (TMP16),y      ; this could be "lda (tmp16)", but does not work with
-                        ; NMOS 6502 or 65CE02
+                        ; NMOS 6502 or 65CE02 with Z != $00
    beq   @out           ; $00 bytes indicates end of text
    jsr   chrout         ; output the character
    bpl   @loop          ; always true
@@ -83,10 +90,10 @@ IRQCHECK:
    pla                  ; get processor status from stack
    pha                  ; and put it back
    and   #$10           ; check for BRK bit
-   bne   @isbrk
+   bne   _isbrk
    lda   BRK_SA         ; restore saved accumulator
    jmp   (UVNBI)        ; user vector for non-BRK IRQ ($DF7C)
-@isbrk:
+_isbrk:
    lda   BANK           ; get current bank
    sta   BRK_SB         ; save it
    stx   BRK_SX
@@ -123,32 +130,67 @@ bankrti:
    rti                  ; return to calling code
 _biosend:
 
+BRK_65816N:
+   .byte $E2,$30        ; SEP #$30
+   sta   BRK_SA
+                        ; TODO: prepare correctly
+   bra   _isbrk         ; set to correct implementation
+
 .segment "FIXEND"
 _fixstart:
+_unhandled:
+   .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
+   ldx   #UNH65816_IDX
+   ldy   #UNH65816_BANK
+   bra   bankgoto
 NMI:
    jmp   (UVNMI)        ; user vector for NMI ($DF7A)
 IRQ:
    jmp   (UVIRQ)        ; user vector for BRK/IRQ ($DF7E) -> irqcheck (default)
 _reset:
-   ; reset routine that also has to work when copied to RAM
-   lda   #$01
-   sta   BANK           ; set banking to first ROM bank (kernel)
-   jmp   reset          ; jump to reset routine
+   .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
+   ldx   #RESET_IDX
+   ldy   #KERNEL_BANK
+bankgoto:
+   sty   BANK           ; select bank from Y
+   jmp   ($E001,x)      ; jump to table index, table will be used top down
 _fixend:
 
 .segment "VECTORS"
 _vectors:
-   .word NMI
-   .word RESET
-   .word IRQ
+; $FFE0
+.if 0
+   .word $FFFF          ; reserved
+   .word $FFFF          ; reserved
+.endif
+; $FFE4: (real) start of 65816 vectors
+; per datasheet, vectors start at $FFE0, but first two are reserved
+   .word _unhandled     ; 65816 native COP
+   .word BRK_65816N     ; 65816 native BRK
+   .word _unhandled     ; 65816 native ABORT (cannot be triggered)
+   .word _unhandled     ; 65816 native NMI
+   .word $FFFF          ; reserved           (cannot be triggered)
+   .word _unhandled     ; 65816 native IRQ
+; $FFF0
+   .word $FFFF          ; reserved    (cannot be triggered)
+   .word $FFFF          ; reserved    (cannot be triggered)
+   .word _unhandled     ; 65816 COP
+   .word $FFFF          ; reserved    (cannot be triggered)
+   .word _unhandled     ; 65816 ABORT (cannot be triggered)
 
-_biossize = (_biosend-BIOS) + (_fixend-_fixstart)
-.out "   ============================="
-.out .sprintf( "   BIOS size: $%04x ($%04x free)", _biossize, $FA - (_biossize) )
-.out "   ============================="
+   .word NMI            ; 65C02 NMI
+   .word RESET          ; 65C02 RESET
+   .word IRQ            ; 65C02 IRQ
 
-.assert  CHRIN   = _chrin,   error, "CHRIN at wrong address"
-.assert  CHROUT  = _chrout,  error, "CHROUT at wrong address"
-.assert  PRINT   = _print,   error, "PRINT at wrong address"
-.assert  RESET   = _reset,   error, "RESET at wrong address"
-.assert  _fixend = _vectors, error, "FIXEND segment not at end of memory"
+_biossize = (_biosend-BIOS)
+_fixsize = (_fixend-_fixstart)
+.out "   =============================="
+.out .sprintf( "   BIOS size:  $%04x ($%04x free)", _biossize, $CA - (_biossize) )
+.out .sprintf( "   FIXED size: $%04x", _fixsize )
+.out "   =============================="
+
+.assert  CHRIN      = _chrin,     error, "CHRIN at wrong address"
+.assert  CHROUT     = _chrout,    error, "CHROUT at wrong address"
+.assert  PRINT      = _print,     error, "PRINT at wrong address"
+.assert  RESET      = _reset,     error, "RESET at wrong address"
+.assert  _fixend    = _vectors,   error, "FIXEND segment not at end of memory"

@@ -3,7 +3,7 @@
 ;
 ; This ROM for the native mode is in very early development.
 
-.define VERSION "0.6"
+.define VERSION "0.7"
 .segment "CODE"
 
 ; zeropage addresses used by this part of ROM
@@ -36,11 +36,16 @@ TRAMPOLINE    := $0100
 
 ; NMOS 6502 compatible code start
 
+   jmp   reset
+
 reset:
    cld                  ; only required for "soft reset"
    sei                  ; no IRQs used in kernel
 
-   ldx   #$07           ; move to BIOS code?
+   .byte $e2,$30        ; an 65816 will set MX to 8 bit (SEP #$30)
+                        ; everything else does NOP #$30
+                        ; (well 65CE02 will do an LDA ($30,S),Y)
+   ldx   #$07
 :
    lda   vectab,x
    sta   UVBRK,x        ; setup user vectors
@@ -95,11 +100,16 @@ nmosirq:
 ; NMOS 6502 compatible code end
 
 cmos6502:
-   ; reset fb32x32
+   sec
+   .byte $fb            ; XCE on 65816 -> set emulated mode
+
+   ; TODO: reset fb32x32 without destroying memory
    lda   #$00
    ldx   #$CC
    tay
    jsr   fb32x32        ; set framebuffer to $CC00-$CFFF
+
+   ; TODO: reset audio
 
 @iloop:
    jsr   PRINT          ;       2         3         4         5         6         7         8
@@ -226,15 +236,17 @@ boota:
    .byte "Go",10,0
    beq   execram        ; will be run using NMOS 6502
 
+; TODO: check if b2gensine, filebrowser and basic can be done better
+; using jmp bankgoto
 b2gensine:
-   ldx   #$02           ; tools bank starts with jmp ($e003,x)
+   ldx   #GENSINE_IDX   ; tools bank starts with jmp ($e001,x)
    .byte $2c
 filebrowser:
-   ldx   #$00           ; tools bank starts with jmp ($e003,x)
-   lda   #$02           ; select tools bank
+   ldx   #BROWSER_IDX   ; tools bank starts with jmp ($e001,x)
+   lda   #TOOLS_BANK    ; select tools bank
    .byte $2c
 basic:
-   lda   #$03           ; select BASIC bank
+   lda   #BASIC_BANK    ; select BASIC bank
    .byte $2c
 execram:
    ; execute loaded boot block in RAM at $E000

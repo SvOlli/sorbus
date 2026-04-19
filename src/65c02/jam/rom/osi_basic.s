@@ -315,6 +315,11 @@ INPUTBUFFERX = INPUTBUFFER & $FF00
 
 .segment "CODE"
 BASTART:
+   ; bank jumptable index $00
+   jmp   COLD_START
+   ; bank jumptable index $01
+   .word RESTART ; intended to be used after loading a BASIC file
+
 COLD_START:
    ldx   #$FF
    stx   CURLIN+1

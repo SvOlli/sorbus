@@ -27,11 +27,11 @@ PRINT    := $FF06
 ; PRIMM is a common used synonym for PRINT here
 PRIMM    := PRINT
 
-; $FFF2: reset routine
+; $FFD8: reset routine
 ; switches to the correct bank
-; and executes reset code (65522 dec)
+; and executes reset code (65496 dec)
 ; like $FCE2 on C64
-RESET    := $FFF2
+RESET    := $FFD8
 
 ; non-API addresses required for BIOS <-> kernel calls
 .global  BIOS
@@ -227,3 +227,22 @@ RESET    := $FFF2
 ; out:
 ; -
 .define PRDEC16   $11
+
+.define KERNEL_BANK     $01
+.define TOOLS_BANK      $02
+.define BASIC_BANK      $03
+
+.define RESET_BANK      KERNEL_BANK
+.define RESET_IDX       $00
+
+.define UNH65816_BANK   TOOLS_BANK
+.define UNH65816_IDX    $00
+.define BROWSER_BANK    TOOLS_BANK
+.define BROWSER_IDX     $02
+.define GENSINE_BANK    TOOLS_BANK
+.define GENSINE_IDX     $04
+.define RUN6502ASM_BANK TOOLS_BANK
+.define RUN6502ASM_IDX  $06
+
+.define BASIC_IDX       $00
+
