@@ -33,7 +33,7 @@ bool is_imm16( const fullinfo_t fullinfo )
 
 void disass_mx816( bool m, bool x )
 {
-   mx_flag_816 = (m ? 1 : 0) | (x ? 2 : 0);
+   mx_flag_816 = (m ? 2 : 0) | (x ? 1 : 0);
 }
 
 
