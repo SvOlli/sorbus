@@ -503,9 +503,11 @@ static void handle_flash_dma( uint8_t value )
       // DMA would run into I/O which is not possible, only RAM works
       ram[address] |= 0xF1;
    }
-   if( *lba >= 0x8000 ) // could also be if( *lba >= dhara_flash_size )
+   if( *lba >= 0x9000 ) // could also be if( *lba >= dhara_flash_size )
    {
-      // only 32768 sectors are available
+      // only 36864 sectors are available
+      // sectors up to 32767 are used with CP/M-fs
+      // sectors 32768 to 36863 are only accessable via raw sector read write
       ram[address] |= 0xF2;
    }
    if( ram[address] )
@@ -652,8 +654,8 @@ const static io_read_handler_t io_read_handlers[0x100] =
    /* read $DF00 */ handle_read_ramrom,
    /* read $DF01 */ handle_read_sorbus_id,
    /* read $DF02 */ handle_read_random,
-   /* read $DF03 */ handle_read_cpufeatures,
-   /* read $DF04 */ handle_read_ramrom,
+   /* read $DF03 */ handle_read_ramrom,
+   /* read $DF04 */ handle_read_cpufeatures,
    /* read $DF05 */ handle_read_ramrom,
    /* read $DF06 */ handle_read_ramrom,
    /* read $DF07 */ handle_read_ramrom,
