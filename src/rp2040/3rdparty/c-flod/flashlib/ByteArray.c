@@ -135,6 +135,7 @@ static void read_error_short() {
 }
 
 int ByteArray_open_file(struct ByteArray* self, const char* filename) {
+#if 0
 	struct stat st;
 	self->type = BAT_FILESTREAM;
 	self->pos = 0;
@@ -143,6 +144,16 @@ int ByteArray_open_file(struct ByteArray* self, const char* filename) {
 	self->size = st.st_size;
 	self->fd = open(filename, O_RDONLY);
 	return (self->fd != -1);
+#else
+	struct stat st;
+	self->type = BAT_FILESTREAM;
+	self->pos = 0;
+	self->size = 0;
+	self->fd = open(filename, O_RDONLY);
+	if (self->fd == -1) return 0;
+	self->size = (size_t)lseek( self->fd, 0, SEEK_END );
+	return ((lseek( self->fd, 0, SEEK_SET ) != -1) && (self->size != -1));
+#endif
 }
 
 void ByteArray_close_file(struct ByteArray *self) {
