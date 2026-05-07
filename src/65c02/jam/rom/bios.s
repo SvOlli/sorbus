@@ -5,7 +5,7 @@
 ;-------------------------------------------------------------------------
 ; BIOS calls $FF00-$FFFF
 ;-------------------------------------------------------------------------
-; CHRIN, CHROUT and PRINT should work on all 6502 variants
+; CHRIN, CHROUT, PRINT and BRK should work on all 6502 variants
 ; notable exceptions are:
 ; NMOS 6502:
 ; - IRQ handler code does not work, because code in kernel is for CMOS
@@ -75,14 +75,17 @@ chrin:
    clc
    rts
 
-ramio:                  ; internal-only routine to access RAM under ROM
+
+.if 0
+; unused so far
+ramread:                ; internal-only routine to access RAM under ROM
    ldx   BANK           ; save current ROM bank
    stz   BANK           ; switch to RAM
-ramio_cmd:
-   lda   ($00),y        ; intended to be switched to sta ($00),y
+   lda   (TMP16),y
    stx   BANK           ; restore current ROM bank
    rts                  ; return
 ; optional idea: push X to stack and expand ramio_cmd to 3 bytes for JSR
+.endif
 
 
 IRQCHECK:
@@ -136,21 +139,32 @@ BRK_65816N:
                         ; TODO: prepare correctly
    bra   _isbrk         ; set to correct implementation
 
+.if 0
+banksub:
+   sta   ASAVE
+   lda   BANK
+   pha
+   lda   ASAVE
+   sta   BANK
+   jsr   bankgoto
+   sta   ASAVE
+   pla
+   sta   BANK
+   lda   ASAVE
+   rts
+.endif
+
 .segment "FIXEND"
 _fixstart:
 _unhandled:
    .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
-   ldx   #UNH65816_IDX
    ldy   #UNH65816_BANK
-   bra   bankgoto
-NMI:
-   jmp   (UVNMI)        ; user vector for NMI ($DF7A)
-IRQ:
-   jmp   (UVIRQ)        ; user vector for BRK/IRQ ($DF7E) -> irqcheck (default)
+   bra   bankgoto0
 _reset:
    .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
-   ldx   #RESET_IDX
-   ldy   #KERNEL_BANK
+   ldy   #KERNEL_BANK   ; reset routine is per definition in kernel
+bankgoto0:
+   ldx   #RESET_IDX     ; index $00 is always considered "special"
 bankgoto:
    sty   BANK           ; select bank from Y
    jmp   ($E001,x)      ; jump to table index, table will be used top down
@@ -159,25 +173,38 @@ _fixend:
 .segment "VECTORS"
 _vectors:
 ; $FFE0
-.if 0
-   .word $FFFF          ; reserved
-   .word $FFFF          ; reserved
-.endif
+   ; as the following vectors are be used, memory is reused for code
+   ;.word $FFFF          ; reserved
+   ;.word $FFFF          ; reserved
 ; $FFE4: (real) start of 65816 vectors
 ; per datasheet, vectors start at $FFE0, but first two are reserved
    .word _unhandled     ; 65816 native COP
    .word BRK_65816N     ; 65816 native BRK
-   .word _unhandled     ; 65816 native ABORT (cannot be triggered)
+   .word $FFFF          ; 65816 native ABORT (cannot be triggered)
    .word _unhandled     ; 65816 native NMI
    .word $FFFF          ; reserved           (cannot be triggered)
    .word _unhandled     ; 65816 native IRQ
-; $FFF0
-   .word $FFFF          ; reserved    (cannot be triggered)
-   .word $FFFF          ; reserved    (cannot be triggered)
-   .word _unhandled     ; 65816 COP
-   .word $FFFF          ; reserved    (cannot be triggered)
-   .word _unhandled     ; 65816 ABORT (cannot be triggered)
 
+; $FFF0
+   ; as the following vectors are be used, memory is reused for code
+   ;.word $FFFF          ; reserved    (cannot be triggered)
+   ;.word $FFFF          ; reserved    (cannot be triggered)
+   nop                  ; better than just a placeholder
+NMI:
+   jmp   (UVNMI)
+
+; $FFF4
+   .word _unhandled     ; 65816 COP
+
+; $FFF6
+   ; as the following vectors are be used, memory is reused for code
+   ;.word $FFFF          ; reserved    (cannot be triggered)
+   ;.word $FFFF          ; 65816 ABORT (cannot be triggered)
+   nop                  ; better than just a placeholder
+IRQ:
+   jmp   (UVIRQ)
+
+; $FFFA
    .word NMI            ; 65C02 NMI
    .word RESET          ; 65C02 RESET
    .word IRQ            ; 65C02 IRQ
@@ -185,12 +212,14 @@ _vectors:
 _biossize = (_biosend-BIOS)
 _fixsize = (_fixend-_fixstart)
 .out "   =============================="
-.out .sprintf( "   BIOS size:  $%04x ($%04x free)", _biossize, $CA - (_biossize) )
+.out .sprintf( "   BIOS  size: $%04x ($%04x free)", _biossize, $CA - (_biossize) )
 .out .sprintf( "   FIXED size: $%04x", _fixsize )
 .out "   =============================="
 
-.assert  CHRIN      = _chrin,     error, "CHRIN at wrong address"
-.assert  CHROUT     = _chrout,    error, "CHROUT at wrong address"
-.assert  PRINT      = _print,     error, "PRINT at wrong address"
-.assert  RESET      = _reset,     error, "RESET at wrong address"
-.assert  _fixend    = _vectors,   error, "FIXEND segment not at end of memory"
+.assert  CHRIN     = _chrin,   error, "CHRIN at wrong address"
+.assert  CHROUT    = _chrout,  error, "CHROUT at wrong address"
+.assert  PRINT     = _print,   error, "PRINT at wrong address"
+.assert  RESET     = _reset,   error, "RESET at wrong address"
+.assert  _fixend   = _vectors, error, "FIXEND segment not at end of memory"
+
+.assert  RESET_IDX = UNH65816_IDX, error, "RESET_IDX != UNH65816_IDX"

@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef __MCURSES_SORBUS_H__
-#define __MCURSES_SORBUS_H__ __MCURSES_SORBUS_H__
+#ifndef __MCURSES_EXTRA_H__
+#define __MCURSES_EXTRA_H__ __MCURSES_EXTRA_H__
 
 #include <stdbool.h>
 #include <stdint.h>

@@ -74,18 +74,19 @@ add_executable(historian
 )
 target_link_libraries(historian PRIVATE sorbus_rte)
 set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble.c)
-set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble_fulltrace.c)
-set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble_historian.c)
+set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/fulltrace.c)
+set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/historian.c)
+set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_historian.c)
 
 # tool to test part of disassembler
 add_executable(fulltrace
    fulltrace.c
 )
 target_link_libraries(fulltrace PRIVATE sorbus_rte)
+set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/beancounter.c)
 set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble.c)
-set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble_beancounter.c)
-set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble_fulltrace.c)
-set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble_historian.c)
+set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/fulltrace.c)
+set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/historian.c)
 
 # tool to test memory disassembler
 add_executable(disass

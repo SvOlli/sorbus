@@ -10,6 +10,15 @@
 ; this BIOS is only for the NMOS 6502 toolkit
 ; NMOS CPU does not work with CMOS BIOS due to moved code
 ;-------------------------------------------------------------------------
+; CHRIN, CHROUT, PRINT and BRK should work on all 6502 variants
+; notable exceptions are:
+; NMOS 6502:
+; - IRQ handler code does not work, because code in kernel is for CMOS
+; 65CE02:
+; - Z register must be $00 when BRK is triggered
+;   (there is a wrapper in jam_bios.inc)
+; 65816:
+; - using extra vectors is only possible when running from bank $00 (RAM)
 
 .segment "BIOS"
 BIOS:
@@ -38,7 +47,7 @@ _print:
    inc   TMP16+1
 :
    lda   (TMP16),y      ; this could be "lda (tmp16)", but does not work with
-                        ; NMOS 6502 or 65CE02
+                        ; NMOS 6502 or 65CE02 with Z != $00
    beq   @out           ; $00 bytes indicates end of text
    jsr   chrout         ; output the character
    bpl   @loop          ; always true
@@ -76,10 +85,10 @@ IRQCHECK:
    pla                  ; get processor status from stack
    pha                  ; and put it back
    and   #$10           ; check for BRK bit
-   bne   @isbrk
+   bne   _isbrk
    lda   BRK_SA         ; restore saved accumulator
    jmp   (UVNBI)        ; user vector for non-BRK IRQ ($DF7C)
-@isbrk:
+_isbrk:
    jmp   (UVBRK)        ; user vector for BRK IRQ ($DF7E)
 
 bankrti:
@@ -98,20 +107,15 @@ _biosend:
 
 .segment "FIXEND"
 _fixstart:
-
 _unhandled:
    .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
-   ldx   #UNH65816_IDX
    ldy   #UNH65816_BANK
-   bne   bankgoto
-NMI:
-   jmp   (UVNMI)        ; user vector for NMI ($DF7A)
-IRQ:
-   jmp   (UVIRQ)        ; user vector for BRK/IRQ ($DF7E) -> irqcheck (default)
+   bne   bankgoto0      ; branching always, das bank will never be $00
 _reset:
    .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
-   ldx   #RESET_IDX
-   ldy   #KERNEL_BANK
+   ldy   #KERNEL_BANK   ; reset routine is per definition in kernel
+bankgoto0:
+   ldx   #RESET_IDX     ; index $00 is always considered "special"
 bankgoto:
    sty   BANK           ; select bank from Y
    jmp   ($E001)        ; placeholdes, as 6502 doesn't have JMP ($E001,x)
@@ -120,25 +124,38 @@ _fixend:
 .segment "VECTORS"
 _vectors:
 ; $FFE0
-.if 0
-   .word $FFFF          ; reserved
-   .word $FFFF          ; reserved
-.endif
+   ; as the following vectors are be used, memory is reused for code
+   ;.word $FFFF          ; reserved
+   ;.word $FFFF          ; reserved
 ; $FFE4: (real) start of 65816 vectors
 ; per datasheet, vectors start at $FFE0, but first two are reserved
    .word _unhandled     ; 65816 native COP
    .word _unhandled     ; 65816 native BRK
-   .word _unhandled     ; 65816 native ABORT (cannot be triggered)
+   .word $FFFF          ; 65816 native ABORT (cannot be triggered)
    .word _unhandled     ; 65816 native NMI
-   .word $FFFF          ; reserved
+   .word $FFFF          ; reserved           (cannot be triggered)
    .word _unhandled     ; 65816 native IRQ
-; $FFF0
-   .word $FFFF          ; reserved
-   .word $FFFF          ; reserved
-   .word _unhandled     ; 65816 COP
-   .word $FFFF          ; reserved
-   .word _unhandled     ; 65816 ABORT (cannot be triggered)
 
+; $FFF0
+   ; as the following vectors are be used, memory is reused for code
+   ;.word $FFFF          ; reserved    (cannot be triggered)
+   ;.word $FFFF          ; reserved    (cannot be triggered)
+   nop                  ; better than just a placeholder
+NMI:
+   jmp   (UVNMI)
+
+; $FFF4
+   .word _unhandled     ; 65816 COP
+
+; $FFF6
+   ; as the following vectors are be used, memory is reused for code
+   ;.word $FFFF          ; reserved    (cannot be triggered)
+   ;.word $FFFF          ; 65816 ABORT (cannot be triggered)
+   nop                  ; better than just a placeholder
+IRQ:
+   jmp   (UVIRQ)
+
+; $FFFA
    .word NMI            ; 65C02 NMI
    .word RESET          ; 65C02 RESET
    .word IRQ            ; 65C02 IRQ
@@ -146,12 +163,14 @@ _vectors:
 _biossize = (_biosend-BIOS)
 _fixsize = (_fixend-_fixstart)
 .out "   =============================="
-.out .sprintf( "   BIOS size:  $%04x ($%04x free)", _biossize, $CA - (_biossize) )
+.out .sprintf( "   BIOS  size: $%04x ($%04x free)", _biossize, $CA - (_biossize) )
 .out .sprintf( "   FIXED size: $%04x", _fixsize )
 .out "   =============================="
 
-.assert  CHRIN   = _chrin,   error, "CHRIN at wrong address in NMOS"
-.assert  CHROUT  = _chrout,  error, "CHROUT at wrong address in NMOS"
-.assert  PRINT   = _print,   error, "PRINT at wrong address in NMOS"
-.assert  RESET   = _reset,   error, "RESET at wrong address in NMOS"
-.assert  _fixend = _vectors, error, "FIXEND segment not at end of memory in NMOS"
+.assert  CHRIN     = _chrin,   error, "CHRIN at wrong address in NMOS"
+.assert  CHROUT    = _chrout,  error, "CHROUT at wrong address in NMOS"
+.assert  PRINT     = _print,   error, "PRINT at wrong address in NMOS"
+.assert  RESET     = _reset,   error, "RESET at wrong address in NMOS"
+.assert  _fixend   = _vectors, error, "FIXEND segment not at end of memory in NMOS"
+
+.assert  RESET_IDX = UNH65816_IDX, error, "RESET_IDX != UNH65816_IDX in NMOS"

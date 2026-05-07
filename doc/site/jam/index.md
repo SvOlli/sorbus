@@ -56,7 +56,7 @@ This works as the bank is only reset to kernel when a hardware reset (e.g.
 from meta menu) is triggered. Note that for calling kernel routines via
 JSR, the M and X flags need to be set to 8-bit mode. However, calling
 kernel routines provided via BRK _should_ work, but has not been tested
-very much.
+very much. It will not work, if stack pointer is not pointing to page $01.
 
 Also keep in mind that the support only has been expanded for the kernel
 driving the 65C02/65816. The development the backtrace in meta mode only

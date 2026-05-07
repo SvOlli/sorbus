@@ -8,81 +8,29 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifndef count_of
-#define count_of(a) (sizeof(a)/sizeof(a[0]))
-#endif
 
-typedef enum {
-   CPU65816_M16_X16 = 0x00,
-   CPU65816_M16_X8  = 0x10,
-   CPU65816_M8_X16  = 0x20,
-   CPU65816_M8_X8   = 0x30,
-} cpu65816_mx_t;
+bool bc_atend( disass_fulltrace_t d, uint32_t pos )
+{
+   fullinfo_t fullinfo = d->fullinfo[pos];
+   /* an entry all zero cannot be taked from bus
+    * but buffer is initialized with 0, so this is unused buffer
+    * however, an eval value could already be set */
+   fullinfo.eval = 0;
+   return (fullinfo.raw == 0);
+}
 
-/* variables shared between all functions */
-#define SAMPLESIZE (10)
-uint32_t sample[SAMPLESIZE];
-cpu65816_mx_t cpu65816_mx;
+
+bool bc_pagecross( uint16_t addr0, uint16_t addr1 )
+{
+   return (addr0 >> 8) != (addr1 >> 8);
+}
+
 
 /*
- * 16 bit in 65816 is hard to detect from trace
- * in emulation mode SEP/REP have no effect on M/X flags
- * best chance: determine 16bit mode from access pattern
- * and save it for next time
+ * typically, this is done by just sampling pin 1 (DIP)
+ * however, this pin is not sampled, so this needs to be done in software
  */
-
-
-static bool bc_atend( disass_fulltrace_t d, uint32_t pos )
-{
-   fullinfo_t *fullinfo = d->fullinfo;
-   /* an entry all zero cannot be taked from bus
-    * but buffer is initialized with 0, so this is unused buffer */
-   return (fullinfo[pos].raw == 0);
-}
-
-static bool bc_pagecross( uint16_t p0, uint16_t p1 )
-{
-   return (p0 >> 8) != (p1 >> 8);
-}
-
-
-static uint8_t bc_jump_rel8( disass_fulltrace_t d, uint32_t pos )
-{
-   fullinfo_t *fullinfo = d->fullinfo;
-
-   /* sanity checks */
-   uint16_t dest = fullinfo[pos].address + 2; // origin of relative branch
-
-   /* first check if access pattern matches */
-   if( ((fullinfo[pos+0].address + 1) != fullinfo[pos+1].address) ||
-       ((fullinfo[pos+1].address + 1) != fullinfo[pos+2].address) )
-   {
-      return 0x80;   /* error */
-   }
-
-   dest += (int8_t)fullinfo[pos+1].data;
-   //dest += (int8_t)fullinfo[pos].data1;
-   if( fullinfo[pos+3].address == dest )
-   {
-      return 3;      /* branch taken */
-   }
-   if( (fullinfo[pos+4].address == dest) &&
-       bc_pagecross( fullinfo[pos].address+2, dest ) )
-   {
-      return 4;      /* branch taken with page crossing */
-   }
-   return 2;         /* no branch */
-}
-
-
-/* returns 0, if no interrupt/reset, else clockcycles required */
-static uint8_t bc_interrupt_65816( disass_fulltrace_t d, uint32_t pos )
-{
-   return 0; /* not implemented for now */
-}
-
-
-static uint8_t bc_vectorpull( disass_fulltrace_t d, uint32_t pos, uint16_t addr, bool rw )
+uint8_t bc_vectorpull( disass_fulltrace_t d, uint32_t pos, uint16_t addr, bool rw )
 {
    fullinfo_t *fullinfo = d->fullinfo;
    uint16_t vector = 0;
@@ -123,7 +71,7 @@ static uint8_t bc_vectorpull( disass_fulltrace_t d, uint32_t pos, uint16_t addr,
 
 
 /* returns 0, if no interrupt/reset, else clockcycles required */
-static uint8_t bc_interrupt( disass_fulltrace_t d, uint32_t pos )
+uint8_t bc_interrupt( disass_fulltrace_t d, uint32_t pos )
 {
    //fullinfo_t *fullinfo = d->fullinfo;
    //uint16_t address0 = fullinfo[pos+0].address;
@@ -134,7 +82,7 @@ static uint8_t bc_interrupt( disass_fulltrace_t d, uint32_t pos )
    /* for simplicity moved to own function */
    if( d->cpu == CPU_65816 )
    {
-      cycles = bc_interrupt_65816( d, pos );
+      return bc_interrupt_65816( d, pos );
    }
 
    if( !cycles )
@@ -160,7 +108,39 @@ static uint8_t bc_interrupt( disass_fulltrace_t d, uint32_t pos )
 }
 
 
-static uint8_t bc_jump( disass_fulltrace_t d, uint32_t pos )
+uint8_t bc_jump_rel8( disass_fulltrace_t d, uint32_t pos )
+{
+   fullinfo_t *fullinfo = d->fullinfo;
+
+   /* sanity checks */
+   uint16_t dest = fullinfo[pos].address + 2; // origin of relative branch
+
+   /* first check if access pattern matches */
+   if( ((fullinfo[pos+0].address + 1) != fullinfo[pos+1].address) ||
+       ((fullinfo[pos+1].address + 1) != fullinfo[pos+2].address) )
+   {
+      fprintf( stderr, "internal error @ %s(%d): $%02X\n",
+               __FILE__, __LINE__, fullinfo[pos].data );
+      return 0x80;   /* error */
+   }
+
+   dest += (int8_t)fullinfo[pos+1].data;
+   //dest += (int8_t)fullinfo[pos].data1;
+   if( fullinfo[pos+3].address == dest )
+   {
+      /* either no page cross or 65816 native */
+      return 3;      /* branch taken, no extra cycle */
+   }
+   if( (fullinfo[pos+4].address == dest) &&
+       bc_pagecross( fullinfo[pos].address+2, dest ) )
+   {
+      return 4;      /* branch taken with page crossing */
+   }
+   return 2;         /* no branch */
+}
+
+
+uint8_t bc_jump( disass_fulltrace_t d, uint32_t pos )
 {
    fullinfo_t  *fullinfo      = d->fullinfo;
 
@@ -189,11 +169,66 @@ static uint8_t bc_jump( disass_fulltrace_t d, uint32_t pos )
          {
             return pick_cycles( d, pos )+1;
          }
+         break;
       default:
          break;
    }
    return pick_cycles( d, pos );
 }
+
+
+#if 0
+/*
+ * 16 bit in 65816 is hard to detect from trace
+ * in emulation mode SEP/REP have no effect on M/X flags
+ * best chance: determine 16bit mode from access pattern
+ * and save it for next time
+ */
+
+static uint8_t find_16bit_rmw_end( disass_fulltrace_t d, uint32_t pos )
+{
+/*
+   0:040a r ee    :INC  $0380
+   1:040b r 80    :
+   2:040c r 03    :
+   3:0380 r 01    :
+   4:0381 r 00    :
+   5:0381 r 00    :
+   6:0381 w 00    :
+   7:0380 w 02    :
+
+   0:040d r 0e    :ASL  $0382
+   1:040e r 81    :
+   2:040f r 03    :
+   3:0382 r 00    :
+   4:0383 r 00    :
+   5:0383 r 00    :
+   6:0383 w 00    :
+   7:0382 w 00    :
+*/
+   fullinfo_t *fullinfo = d->fullinfo;
+   uint8_t i;
+
+   for( i = 2; i < 5; ++i )
+   {
+      uint16_t base_addr = fullinfo[pos+i].address;
+      if( (fullinfo[pos+i+1].address == base_addr+1) &&
+          (fullinfo[pos+i+2].address == base_addr+1) &&
+          (fullinfo[pos+i+3].address == base_addr+1) &&
+          (fullinfo[pos+i+4].address == base_addr+0) &&
+          (fullinfo[pos+i+0].rw) &&
+          (fullinfo[pos+i+1].rw) &&
+          (fullinfo[pos+i+2].rw) &&
+          (!fullinfo[pos+i+3].rw) &&
+          (!fullinfo[pos+i+4].rw) )
+      {
+          /* access pattern found: return next expected opcode offset */
+          return i+5;
+      }
+   }
+   return 0;
+}
+#endif
 
 
 static uint8_t bc_6502( disass_fulltrace_t d, uint32_t pos )
@@ -334,100 +369,23 @@ static uint8_t bc_65ce02( disass_fulltrace_t d, uint32_t pos )
 }
 
 
-static uint8_t bc_65816( disass_fulltrace_t d, uint32_t pos )
-{
-   /* a lot of to do here, but this is better than nothing */
-   return pick_cycles( d, pos );
-}
-
-
-#if 0
-uint32_t disassemble_beancounter_findreset( cputype_t cputype, 
-   uint32_t *trace, uint32_t entries, uint32_t current )
-{
-
-/* typical reset (6502, 65C02)
-   0:8aff r 00    :
-   1:0089 r d0    :
-   2:d0ff r 00    :
-   3:d0ff r 00    :
-   4:0100 r 18    :
-   5:01ff r 00    :
-   6:01fe r a2    :
-   7:fffc r 1e    :
-   8:fffd r 00    :
-   9:001e r a2    :LDX  #$00
-*/
-
-/* reset 65SC02
-  0:0001 r 5c    :
-  1:0001 r 5c    :
-  2:0001 r 5c    :
-  3:0100 w 00    :
-  4:01ff w 01    :
-  5:01fe w 62    :
-  6:fffc r 1e    :
-  7:fffd r 00    :
-  8:001e r a2    :LDX  #$00
-*/
-
-/* reset 65CE02
-  TODO: check with 16 bit SP and SP != $01xx
-  0:01f8 r 86    :
-  1:01f8 r 86    :
-  2:01f8 r 86    :
-  3:01f7 r e8    :
-  4:01f6 r e8    :
-  5:fffc r 1e    :
-  6:fffd r 00    :
-  7:001e r a2    :LDX  #$00
-*/
-
-/* reset 65816: same as 65SC02, but reads instead of writes
-  0:001b r 4c    :
-  1:001b r 4c    :
-  2:001b r 4c    :
-  3:01ee r 90    :
-  4:01ed r 05    :
-  5:01ec r b0    :
-  6:fffc r 1e    :
-  7:fffd r 00    :
-  8:001e r a2    :LDX  #$00
-*/
-   uint32_t i;
-   bool found = false;
-
-   for( i = 0; i < entries; ++i )
-   {
-      uint32_t addr5 = trace_address( trace[re(current-5)] );
-      uint32_t addr4 = trace_address( trace[re(current-4)] );
-      uint32_t addr3 = trace_address( trace[re(current-3)] );
-      uint32_t addr2 = trace_address( trace[re(current-2)] );
-      uint32_t addr1 = trace_address( trace[re(current-1)] );
-      uint16_t addr0 = trace_address( trace[re(current-0)] );
-      uint16_t data_addr = trace_address( trace[re(data-2)] ) | (trace_address( trace[re(data-1)] << 8) );
-      
-      if( (addr1 == 0xFFFD) && (addr2 == 0xFFFC) &&
-          (addr0 == data_addr) )
-      {
-      }
-   }
-
-   return 0xFFFFFFFF;
-}
-#endif
-
-
 uint8_t disassemble_cycles( disass_fulltrace_t d, uint32_t pos )
 {
-   uint8_t is_interrupt;   /* and also reset */
+   uint8_t is_interrupt = 0;   /* and also reset */
 
    if( bc_atend( d, pos ) )
    {
       return 0x80;
    }
 
-   is_interrupt = bc_interrupt( d, pos );
+   if( d->cpu == CPU_65816 )
+   {
+      is_interrupt = bc_interrupt_65816( d, pos );
+   }
+   else
+   {
+      is_interrupt = bc_interrupt( d, pos );
+   }
    if( is_interrupt > 0 )
    {
       /* returns cycles used by irq or'ed with marker */
@@ -447,6 +405,8 @@ uint8_t disassemble_cycles( disass_fulltrace_t d, uint32_t pos )
       case CPU_65816:
          return bc_65816( d, pos );
       default:
+         fprintf( stderr, "internal error @ %s(%d): 0x%02x\n",
+                  __FILE__, __LINE__, d->cpu );
          return 0x81;
    }
 }

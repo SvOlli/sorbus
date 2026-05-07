@@ -137,6 +137,16 @@ disass_fulltrace_t disass_fulltrace_init( cputype_t cpu,
    assert( (entries & (entries-1)) == 0 );
 
    d->cpu      = cpu;
+   d->flag_n   = FLAG_UNKNOWN;
+   d->flag_v   = FLAG_UNKNOWN;
+   d->flag_b   = FLAG_UNKNOWN;
+   d->flag_i   = FLAG_UNKNOWN;
+   d->flag_d   = FLAG_UNKNOWN;
+   d->flag_z   = FLAG_UNKNOWN;
+   d->flag_c   = FLAG_UNKNOWN;
+   d->flag_e   = cpu == 65816 ? FLAG_UNKNOWN : FLAG_MISSING;
+   d->flag_m   = cpu == 65816 ? FLAG_UNKNOWN : FLAG_MISSING;
+   d->flag_x   = cpu == 65816 ? FLAG_UNKNOWN : FLAG_MISSING;
    d->entries  = entries;
    d->fullinfo = (fullinfo_t*)mf_calloc( entries+2*BOUNDSBUFFER, sizeof(fullinfo_t) );
    d->opcodes  = disass_set_cpu( cpu );

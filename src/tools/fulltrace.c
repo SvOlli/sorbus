@@ -6,10 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../rp2040/disassemble/beancounter.c"
+#include "../rp2040/disassemble/beancounter16.c"
 #include "../rp2040/disassemble/disassemble.c"
-#include "../rp2040/disassemble/disassemble_beancounter.c"
-#include "../rp2040/disassemble/disassemble_fulltrace.c"
-#include "../rp2040/disassemble/disassemble_historian.c"
+#include "../rp2040/disassemble/fulltrace.c"
+#include "../rp2040/disassemble/historian.c"
 
 /* todo: find header */
 uint8_t *loadfile( const char *filename, ssize_t *filesize );
@@ -176,22 +177,111 @@ uint32_t *fulltrace2trace( uint64_t *refbuffer, uint32_t size )
    return buffer;
 }
 
+#if 0
+typedef union
+{
+   uint64_t       raw      :64;
+   struct {
+      /* lower 32bit are the same as trace from GPIOs */
+      uint16_t    address  :16;
+      uint8_t     data     : 8;
+      bool        rw       : 1;
+      bool        clock    : 1;
+      bool        rdy      : 1;
+      bool        irq      : 1;
+      bool        nmi      : 1;
+      bool        reset    : 1;
+      uint8_t     bits30_31: 2;
+
+      /* upper 32bit contain additional data for disassembly */
+      uint8_t     data1    : 8;
+      uint8_t     data2    : 8;
+      uint8_t     data3    : 8;
+      uint8_t     dataused : 2;
+      bool        m816     : 1; /* reverse meaning from CPU flag: 1=16 bit */
+      bool        x816     : 1; /* reverse meaning from CPU flag: 1=16 bit */
+      uint8_t     eval     : 3;
+      bool        n816     : 1; /* reverse meaning from CPU flag: 1=native */
+   };
+} fullinfo_t;
+#endif
+
+const char *fullinfo_base( fullinfo_t fi )
+{
+   static char text[32] = { 0 };
+   // the following data is not printed
+   // clock: as sampling is always done at the low phase
+   // ADDR r D0 RNIR <- 14 chars Reset NMI IRQ RDY
+   snprintf( text, sizeof(text)-1,
+             "[%04X %c %02X %c%c%c%c]",
+             fi.address,
+             fi.rw ? 'r' : 'w',
+             fi.data,
+             fi.reset ? ' ' : 'R',
+             fi.nmi   ? ' ' : 'N',
+             fi.irq   ? ' ' : 'I',
+             fi.rdy   ? ' ' : '_'
+             );
+   return &text[0];
+}
+
+const char *fullinfo_extra( fullinfo_t fi )
+{
+   const int chunk = 32;
+   static char text[2*32] = { 0 };
+   static int pos = 2*chunk;
+   pos += chunk;
+   if( pos >= sizeof(text) )
+   {
+      pos = 0;
+   }
+   // E U D1 D2 D3 EMX <- 16 chars
+   snprintf( &text[pos], chunk-1,
+             "[%d %d %02X %02X %02X %02X %c%c%c]",
+             fi.eval,
+             fi.dataused + 1,
+             fi.data,
+             fi.data1,
+             fi.data2,
+             fi.data3,
+             fi.n816 ? 'N' : 'E',
+             fi.m816 ? 'M' : ' ',
+             fi.x816 ? 'X' : ' '
+            );
+   //printf( "%16lx -> %s\n", fi.raw, &text[0] );
+   return &text[pos];
+}
+
 
 void print_result( uint32_t *opcodes, uint64_t *refbuffer,
-                   uint64_t *checkbuffer, uint32_t size )
+                   disass_fulltrace_t dah, uint32_t size )
 {
    uint32_t i;
    uint64_t *r = refbuffer;
-   uint64_t *c = checkbuffer;
+   uint64_t *c = (uint64_t*)(dah->fullinfo)+BOUNDSBUFFER;
    fullinfo_t fi1, fi2;
+   char fie1[32], fie2[32];
    for( i = 0; i < size; ++i )
    {
       fi1.raw = *r;
       fi2.raw = *c;
+      strcpy( &fie1[0], fullinfo_extra( fi1 ) );
+      strcpy( &fie2[0], fullinfo_extra( fi2 ) );
+#if 1
+      printf( "%s %s %s %c %x %x %s\n",
+              fullinfo_base( fi1 ),
+              fullinfo_extra( fi1 ),
+              fullinfo_extra( fi2 ),
+              disass_fullinfo_isequal( opcodes, fi1, fi2 ),
+              pick_bytes( dah, i+BOUNDSBUFFER ),
+              pick_cycles( dah, i+BOUNDSBUFFER ),
+              (fi2.eval > 3) ? disass_fullinfo_inbounds( dah, i ) : "" );
+#else
       printf( "%016lx %016lx %c %s: %s\n", *r, *c,
               disass_fullinfo_isequal( opcodes, fi1, fi2 ),
               decode_trace( (uint32_t)fi1.raw, false, 0 ),
-              (fi2.eval > 3) ? disass_trace( fi2 ) : "" );
+              (fi2.eval > 3) ? disass_fullinfo_inbounds( dah, i ) : "" );
+#endif
       ++r;
       ++c;
       if( !*r || !*c )
@@ -274,7 +364,7 @@ int main( int argc, char* argv[] )
    disassemble_beancounter( dah, BOUNDSBUFFER );
    print_result( opcodes,
                  refbuffer,
-                 (uint64_t*)(dah->fullinfo)+BOUNDSBUFFER,
+                 dah,
                  size );
 
    disass_fulltrace_done( dah );

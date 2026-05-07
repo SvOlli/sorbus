@@ -39,10 +39,11 @@ add_executable(jam_alpha
    common/mf_checkheap.c
    common/putcharset.c
    common/xmodem.c
+   disassemble/beancounter.c
+   disassemble/beancounter16.c
    disassemble/disassemble.c
-   disassemble/disassemble_beancounter.c
-   disassemble/disassemble_fulltrace.c
-   disassemble/disassemble_historian.c
+   disassemble/fulltrace.c
+   disassemble/historian.c
    mcurses/mcurses.c
    mcurses/mc_disass.c
    mcurses/mc_hexedit.c

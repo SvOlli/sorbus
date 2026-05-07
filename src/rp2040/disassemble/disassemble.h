@@ -12,9 +12,12 @@
 #if PICO_ON_DEVICE
 
 #include "bus.h"
+
+/* also includes base_types.h */
 #include "generic_helper.h"
 
 #else
+#include "base_types.h"
 
 #define mf_malloc(s)    malloc(s)
 #define mf_calloc(n,s)  calloc(n,s)
@@ -36,26 +39,6 @@
 #define BUS_CONFIG_shift_address (0)
 
 #endif
-
-#ifndef count_of
-#define count_of(a) (sizeof(a)/sizeof(a[0]))
-#endif
-
-/*
- * all detectable CPU instruction sets
- * Changes here need to be adjusted in cputype_name as well
- * Needs to be aligned with return values of cpu_detect 6502 code
- */
-typedef enum {
-   CPU_ERROR=0,
-   CPU_6502,
-   CPU_65C02,
-   CPU_65816,
-   CPU_65CE02,
-   CPU_6502RA,
-   CPU_65SC02,
-   CPU_UNDEF
-} cputype_t;
 
 
 /* decide on what to display with disassembly */
@@ -264,12 +247,15 @@ typedef enum {
  * 0x7766554433221111
  * 1111: address
  * 22:   data at address
- * 33:   control lines: r/w(0), clock(1), rdy(2), irq(3), nmi(4), reset(5)
+ * 33:   control lines: r/w(0), clock(1), rdy(2), irq(3), nmi(4), reset(5) (two bits spare)
  * 44:   data at address + 1 (required for single step disassembly)
  * 55:   data at address + 2 (required for single step disassembly)
  * 66:   data at address + 3 (required for single step disassembly)
  * 77:   evaluation (details to be defined: two bits for number of extra data being valid)
- *                  (details to be defined: two bits for MX of 65816 CPU)
+ *                  (details to be defined: three bits for MXE of 65816 CPU)
+ *                  (details to be defined: three bits evaluation/certainty)
+ *
+ * NOT supported is keeping track of 65816 bank address (d0-d7 in low clock state)
  */
 
 typedef union
@@ -292,10 +278,10 @@ typedef union
       uint8_t     data2    : 8;
       uint8_t     data3    : 8;
       uint8_t     dataused : 2;
-      bool        m816     : 1; /* reverse meaning from CPU flag: 1=16 bit */
-      bool        x816     : 1; /* reverse meaning from CPU flag: 1=16 bit */
+      bool        m816     : 1; /* reverse meaning from CPU 'M' flag: 1=16 bit */
+      bool        x816     : 1; /* reverse meaning from CPU 'X' flag: 1=16 bit */
       uint8_t     eval     : 3;
-      bool        e816     : 1; /* reverse meaning from CPU flag: 1=native */
+      bool        n816     : 1; /* reverse meaning from CPU 'E' flag: 1=native */
    };
 } fullinfo_t;
 
@@ -318,6 +304,15 @@ uint32_t disass_opcode( uint8_t oc );
 #define PICK_JUMP(o)     (((o) >> 24) & 0x01)
 #define PICK_MX(o)       (((o) >> 25) & 0x03)
 
+typedef enum
+{
+   FLAG_UNKNOWN = 0,
+   FLAG_UNSET   = 1,
+   FLAG_SET     = 2,
+   FLAG_0       = FLAG_UNSET,
+   FLAG_1       = FLAG_SET,
+   FLAG_MISSING = 3
+} cpu_flag_t;
 
 struct disass_fulltrace_s
 {
@@ -325,12 +320,24 @@ struct disass_fulltrace_s
    uint32_t    entries;
    fullinfo_t  *fullinfo;
    uint32_t    *opcodes;
+   cpu_flag_t  flag_n; // $80 negaitve
+   cpu_flag_t  flag_v; // $40 overflow
+                       // $20 -
+   cpu_flag_t  flag_i; // $10 brk
+   cpu_flag_t  flag_d; // $08 enable bcd mode
+   cpu_flag_t  flag_b; // $04 irq disable
+   cpu_flag_t  flag_z; // $02 zero
+   cpu_flag_t  flag_c; // $01 carry
+   // 65816 only below
+   cpu_flag_t  flag_e; // $01 set/read with XCE
+   cpu_flag_t  flag_m; // $20 native: shared with unused flag
+   cpu_flag_t  flag_x; // $10 native: shared with brk
 };
 typedef struct disass_fulltrace_s *disass_fulltrace_t;
 
 #define EVAL_MIN (0)
 #define EVAL_MAX (7)
-#define BOUNDSBUFFER (8)
+#define BOUNDSBUFFER (16) // 65816 can take up to 9 cycles (16bit rmw)
 
 #define deceval(x) if(x > EVAL_MIN) { --x; }
 #define inceval(x) if(x < EVAL_MAX) { ++x; }
@@ -411,6 +418,30 @@ uint8_t trace_data( uint32_t trace );
 void disass_historian_assumptions( disass_fulltrace_t d );
 
 
+/* subroutines defined for beancounter */
+/* return true if code pos is at end of buffer */
+bool bc_atend( disass_fulltrace_t d, uint32_t pos );
+/* compare two addresses and returns true if they are on different pages */
+bool bc_pagecross( uint16_t addr0, uint16_t addr1 );
+/* return number of cycles required by a vector pull or 0 if no vectorpull */
+uint8_t bc_vectorpull( disass_fulltrace_t d, uint32_t pos, uint16_t addr, bool rw );
+/* return number of cycles required by an interrupt or 0 if no interrupt occurred */
+uint8_t bc_interrupt( disass_fulltrace_t d, uint32_t pos );
+/* return number of cycles used by a branch */
+uint8_t bc_jump_rel8( disass_fulltrace_t d, uint32_t pos );
+/* return number of cycles used by a "jumping" instruction (includes branch) */
+uint8_t bc_jump( disass_fulltrace_t d, uint32_t pos );
+
+
+/* subroutines shared between beancounter16.c and beancounter.c */
+uint8_t bc_interrupt_65816( disass_fulltrace_t d, uint32_t pos );
+uint8_t bc_65816( disass_fulltrace_t d, uint32_t pos );
+bool is_imm16( const fullinfo_t fullinfo );
+
+uint8_t disassemble_cycles( disass_fulltrace_t d, uint32_t pos );
+const char *disass_fullinfo_inbounds( disass_fulltrace_t d, uint32_t pos );
+
+
 /* convert ringbuffer to fulltrace data
  * cputype:
  * trace:   raw ringbuffer
@@ -432,6 +463,9 @@ const char *disass_fulltrace_entry( disass_fulltrace_t d, uint32_t entry );
 
 uint8_t disassemble_beancounter_single( disass_fulltrace_t d, uint32_t pos );
 void disassemble_beancounter( disass_fulltrace_t d, uint32_t start );
+
+/* moved to own file */
+uint8_t disassemble_beancounter_single_65816( disass_fulltrace_t d, uint32_t pos );
 
 uint8_t disass_fullinfo_isequal( uint32_t *opcodes, fullinfo_t fi1, fullinfo_t fi2 );
 

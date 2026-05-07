@@ -95,5 +95,5 @@ if [ "${md5_65c02}" != "${md5_65sc02}" ]; then
 fi
 
 for i in 6502 65c02 65816 65ce02 65sc02;do
-   mkheader "${i}" "doc/opcodes${i}.csv" "src/rp2040/common/opcodes${i}.tab"
+   mkheader "${i}" "doc/opcodes${i}.csv" "src/rp2040/disassemble/opcodes${i}.tab"
 done

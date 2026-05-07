@@ -327,10 +327,24 @@ brkjump:
    jmp   (UVBRK)
 
 @jumptable:
-   .word @user, chrinuc, chrcfg, prhex8, prhex16         ; $00-$04
-   .word cpmname, cpmload, cpmsave, cpmerase, cpmdir     ; $05-$09
-   .word vt100, copybiossetram, xinputline, b2gensine    ; $0a-$0d
-   .word mon_brk, fb32x32, prdec8, prdec16               ; $0e-$11
+   .word @user          ; BRK #$00
+   .word chrinuc        ; BRK #$01
+   .word chrcfg         ; BRK #$02
+   .word prhex8         ; BRK #$03
+   .word prhex16        ; BRK #$04
+   .word cpmname        ; BRK #$05
+   .word cpmload        ; BRK #$06
+   .word cpmsave        ; BRK #$07
+   .word cpmerase       ; BRK #$08
+   .word cpmdir         ; BRK #$09
+   .word vt100          ; BRK #$0a
+   .word copybiossetram ; BRK #$0b
+   .word xinputline     ; BRK #$0c
+   .word b2gensine      ; BRK #$0d
+   .word mon_brk        ; BRK #$0e
+   .word fb32x32        ; BRK #$0f
+   .word prdec8         ; BRK #$10
+   .word prdec16        ; BRK #$11
 @jumptableend:
 
 chrinuc:

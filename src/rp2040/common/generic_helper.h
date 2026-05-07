@@ -8,21 +8,8 @@
 #include <ctype.h>
 
 
-#ifndef count_of
-#define count_of(a) (sizeof(a)/sizeof(a[0]))
-#endif
-
-/* for cputype_t and debug_trace() */
-#include "../disassemble/disassemble.h"
-
-/*
- * callback function for hexdump to get/set memory data
- * bank is either bank of 65816 or custom banking
- * address is typically uint16_t
- * note: functions MUST NOT trigger any events
- */
-typedef uint8_t (*peek_t)(uint8_t,uint16_t);
-typedef void (*poke_t)(uint8_t,uint16_t,uint8_t);
+/* for cputype_t, peek_t, poke_t and count_of */
+#include "../disassemble/base_types.h"
 
 
 /*

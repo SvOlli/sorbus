@@ -102,12 +102,16 @@ IMPORTANT: this might change, if 16-bit counters are not sufficiant
 
 ### Watchdog ($DF20-$DF23)
 
+Watchdog will be triggered after the specified number of cycles.
+However, there is no easy way to reset the watchdog counter. It needs
+to be set again to full value for next "loop".
+
 - counter is 24 bit
 - base address: $DF20
 - write to base address + 0: turn off
-- write to base address + 1: set low counter, write resets watchdog when running
-- write to base address + 2: set mid counter, write resets watchdog when running
-- write to base address + 3: set high counter, starts watchdog, reset when running
+- write to base address + 1: set low counter, stops watchdog when running
+- write to base address + 2: set mid counter, stops watchdog when running
+- write to base address + 3: set high counter, starts watchdog
 - read on any address shows watchdog active (bit7: watchdog running)
 - triggered watchdog is handled similar to trap ($DF01)
 - todo(?): can be triggered by number of nmis or irqs
@@ -150,11 +154,13 @@ the area used by conventional programs.
 
 ### Internal Drive ($DF70-$DF77)
 
-System provides 32768 blocks of 128 bytes = 4MB Data stored in flash @
+System provides 36864 blocks of 128 bytes = 4.5MB Data stored in flash @
 0x10400000 (12MB, ~<6MB payload with wear leveling)
-LBA: block index, allowed $0000-$7FFF
-     (4MB for OS, additional blocks not used by OS)
-DMA memory: allowed $0004-$CF80, $DF80-$FF80 for start address
+
+- LBA: block index, allowed $0000-$8FFF
+  (4MB for OS, additional blocks (512kB) not used by OS)
+- DMA memory: allowed $0004-$CF80, $DF80-$FF80 for start address
+  (will be increased for next sector automatically)
 
 - base address: $DF70
 - base address + $0: LBA low

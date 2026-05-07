@@ -4,19 +4,44 @@
 #include <stdio.h>
 #include <string.h>
 
+
 static disass_show_t show_flags  = DISASS_SHOW_NOTHING;
 static cputype_t cputype         = CPU_ERROR;
 static uint8_t mx_flag_816       = 0;
+
+
+bool is_imm16( const fullinfo_t fullinfo )
+{
+   if( !fullinfo.n816 )
+   {
+      /* emulation mode */
+      return false;
+   }
+   if( PICK_MX(opcodes65816[fullinfo.data]) & 0x2 )
+   {
+      /* opcode is affected by M flag */
+      return fullinfo.m816;
+   }
+   if( PICK_MX(opcodes65816[fullinfo.data]) & 0x1 )
+   {
+      /* opcode is affected by X flag */
+      return fullinfo.x816;
+   }
+   return false;
+}
+
 
 void disass_mx816( bool m, bool x )
 {
    mx_flag_816 = (m ? 1 : 0) | (x ? 2 : 0);
 }
 
+
 void disass_show( disass_show_t show )
 {
    show_flags = show;
 }
+
 
 /* at bit:
  *  |  bits used:                             expected values
@@ -726,3 +751,277 @@ const char *disass_trace( fullinfo_t fullinfo )
 {
    return disass( fullinfo.address, fullinfo.data, fullinfo.data1, fullinfo.data2, fullinfo.data3 );
 }
+
+
+static int _snprimm( char *b, size_t bsize, const fullinfo_t fullinfo )
+{
+fprintf( stderr, "<%c%c%c ",
+           fullinfo.n816 ? 'N' : 'E',
+           fullinfo.m816 ? 'M' : ' ',
+           fullinfo.x816 ? 'X' : ' '
+          );
+   if( fullinfo.n816 )
+   {
+      if( is_imm16( fullinfo ) )
+      {
+fprintf( stderr, ">" );
+fflush( stderr );
+         return snprintf( b, bsize, "#$%02X%02X", fullinfo.data2, fullinfo.data1 );
+      }
+   }
+fprintf( stderr, ">" );
+fflush( stderr );
+   return snprintf( b, bsize, "#$%02X", fullinfo.data1 );
+}
+
+
+static const char *_disass_fulltrace_entry( disass_fulltrace_t d, uint32_t pos, bool brkoverride )
+{
+   static char buffer[64] = { 0 };
+   char *b = buffer;
+   size_t bsize = sizeof(buffer)-1;
+   fullinfo_t *fullinfo = d->fullinfo;
+   uint16_t addr = fullinfo[pos].address;
+   uint8_t  d0   = fullinfo[pos].data;
+   uint8_t  d1   = fullinfo[pos].data1;
+   uint8_t  d2   = fullinfo[pos].data2;
+   uint8_t  d3   = fullinfo[pos].data3;
+   addrmode_t addrmode = PICK_ADDRMODE(d->opcodes[d0]);
+
+   if( show_flags & DISASS_SHOW_ADDRESS )
+   {
+      int p = snprintf( b, bsize, "$%04X: ", fullinfo[pos].address );
+      b += p;
+      bsize -= p;
+   }
+   if( show_flags & DISASS_SHOW_HEXDUMP )
+   {
+      uint8_t bytes[] = { d0, d1, d2, d3 };
+      int i, s = PICK_BYTES( d->opcodes[d0] ); // disass_bytes( d0 );
+
+      if( d->cpu == CPU_65816 )
+      {
+         if( (addrmode == IMM) && is_imm16( fullinfo[pos] ) )
+         {
+            ++s;
+         }
+      }
+
+      if( brkoverride && (d0 == 0x00) )
+      {
+         s = 1;
+      }
+      //for( i = 0; i < (sizeof(bytes)/sizeof(bytes[0])); ++i )
+      for( i = 0; i < count_of(bytes); ++i )
+      {
+         if( i < s )
+         {
+            snprintf( b, bsize, "%02X ", bytes[i] );
+         }
+         else
+         {
+            snprintf( b, bsize, "   " );
+         }
+         b += 3;
+         bsize -= 3;
+      }
+   }
+
+   if( (addrmode == ZPN) || (addrmode == ZPNR) )
+   {
+      snprintf( b, bsize, "%s%d ", disass_mnemonic_string(d0), (d0 >> 4) & 7 );
+   }
+   else
+   {
+      bool reserved = PICK_RESERVED(d->opcodes[d0]);
+      if( (cputype == CPU_6502RA) &&
+          (PICK_MNEMONIC(d->opcodes[d0]) == ROR ) )
+      {
+         // we are running a Rev.A, so ROR is an undefined opcode
+         reserved = true;
+      }
+      snprintf( b, bsize, "%s%c ", disass_mnemonic_string(d0), reserved ? '.' : ' ' );
+   }
+   b += 5;
+   bsize -= 5;
+
+   if( brkoverride && (d0 == 0x00) )
+   {
+      addrmode = IMP;
+   }
+   switch( addrmode )
+   {
+      case ABS:   // OPC $1234
+         snprintf( b, bsize, "$%02X%02X",       d2, d1 );
+         break;
+      case ABSIL: // OPC [$1234]
+         snprintf( b, bsize, "[$%02X%02X]",     d2, d1 );
+         break;
+      case ABSL:  // OPC $123456
+         snprintf( b, bsize, "$%02X%02X%02X",   d3, d2, d1 );
+         break;
+      case ABSLX: // OPC $123456,X
+         snprintf( b, bsize, "$%02X%02X%02X,X", d3, d2, d1 );
+         break;
+      case ABSLY: // OPC $123456,Y
+         snprintf( b, bsize, "$%02X%02X%02X,Y", d3, d2, d1 );
+         break;
+      case ABSX:  // OPC $1234,X
+         snprintf( b, bsize, "$%02X%02X,X",     d2, d1 );
+         break;
+      case ABSY:  // OPC $1234,Y
+         snprintf( b, bsize, "$%02X%02X,Y",     d2, d1 );
+         break;
+      case ABSZ:  // OPC $1234,Z
+         snprintf( b, bsize, "$%02X%02X,Z",     d2, d1 );
+         break;
+      case AI:    // OPC ($1234)
+         snprintf( b, bsize, "($%02X%02X)",     d2, d1 );
+         break;
+      case AIL:   // OPC ($123456)
+         snprintf( b, bsize, "($%02X%02X%02X)", d3, d2, d1 );
+         break;
+      case AIX:   // OPC ($1234,X)
+         snprintf( b, bsize, "($%02X%02X,X)",   d2, d1 );
+         break;
+      case IMP:   // OPC
+         // strip off trainling spaces here
+         *(b-1) = '\0';
+         if( *(b-2) == ' ' )
+         {
+            *(b-2) = '\0';
+         }
+         break;
+      case IMM:   // OPC #$01
+         _snprimm( b, bsize, fullinfo[pos] );
+         break;
+      case IMM2:  // OPC #$01,#$02
+         snprintf( b, bsize, "#$%02X,#$%02X", d1, d2 );
+         break;
+      case IMML:  // OPC #$1234
+         snprintf( b, bsize, "#$%02X%02X",    d2, d1 );
+         break;
+      case REL:   // OPC LABEL
+         snprintf( b, bsize, "$%04X",         (((addr+2) + (int8_t)d1)) & 0xFFFF );
+         break;
+      case RELL:  // OPC LABEL
+         snprintf( b, bsize, "$%04X",         (((addr+3) + (int16_t)(d1 | (d2 << 8)))) & 0xFFFF );
+         break;
+      case RELSY:   // OPC #$01
+         snprintf( b, bsize, "(#$%02X,S),Y",  d1 );
+         break;
+      case ZP:    // OPC $12
+      case ZPN:   // OPC# $12
+         snprintf( b, bsize, "$%02X",         d1 );
+         break;
+      case ZPI:   // OPC ($12)
+         snprintf( b, bsize, "($%02X)",       d1 );
+         break;
+      case ZPIX:  // OPC ($12,X)
+         snprintf( b, bsize, "($%02X,X)",     d1 );
+         break;
+      case ZPIY:  // OPC ($12),Y
+         snprintf( b, bsize, "($%02X),Y",     d1 );
+         break;
+      case ZPIZ:  // OPC ($12),Z
+         snprintf( b, bsize, "($%02X),Z",     d1 );
+         break;
+      case ZPIL:  // OPC [$12]
+         snprintf( b, bsize, "[$%02X]",       d1 );
+         break;
+      case ZPILY: // OPC [$12],Y
+         snprintf( b, bsize, "[$%02X],Y",     d1 );
+         break;
+      case ZPISY: // OPC ($12,S),Y
+         snprintf( b, bsize, "($%02X,S),Y",   d1 );
+         break;
+      case ZPNR:  // OPC# $12,LABEL
+         snprintf( b, bsize, "$%02X,$%04X",   d1, ((addr+3) + (int8_t)d2) & 0xFFFF );
+         break;
+      case ZPS:   // OPC $12,S
+         snprintf( b, bsize, "$%02X,S",       d1 );
+         break;
+      case ZPX:   // OPC $12,X
+         snprintf( b, bsize, "$%02X,X",       d1 );
+         break;
+      case ZPY:   // OPC $12,Y
+         snprintf( b, bsize, "$%02X,Y",       d1 );
+         break;
+      default:
+         strncpy( b-5, "internal error", bsize+5 ); // overwrite opcode
+         break;
+   }
+
+   return buffer;
+}
+
+
+const char *disass_fullinfo( cputype_t cpu, const fullinfo_t fullinfo_entry, bool brkoverride )
+{
+   struct disass_fulltrace_s trace;
+   fullinfo_t fullinfo[BOUNDSBUFFER*2+1] = { 0 };
+   fullinfo[BOUNDSBUFFER] = fullinfo_entry;
+
+   trace.cpu        = cpu;
+   trace.opcodes    = disass_set_cpu( cpu );
+   trace.entries    = 1;
+   trace.fullinfo   = &fullinfo[0];
+
+   return _disass_fulltrace_entry( &trace, BOUNDSBUFFER, brkoverride );
+}
+
+
+const char *disass_fullinfo_inbounds( disass_fulltrace_t d, uint32_t pos )
+{
+   if( pos >= d->entries )
+   {
+      return "";
+   }
+   return _disass_fulltrace_entry( d, pos+BOUNDSBUFFER, false );
+}
+
+
+#if 0
+const char *disass_dump( cputype_t cpu, uint32_t addr, uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3, uint8_t flags )
+{
+   /* disassemble memory by creating a trace with a single entry */
+   struct disass_fulltrace_s ft;
+   fullinfo_t fullinfo[BOUNDSBUFFER*2+1] = { 0 };
+   fullinfo_t *fi   = &fullinfo[BOUNDSBUFFER];
+   bool brkoverride = (flags & DAFLAG_BRK_OVERRIDE) ? true : false;
+
+/*
+ * The value is layed out like this:
+ * 0x7766554433221111
+ * 1111: address
+ * 22:   data at address
+ * 33:   control lines: r/w(0), clock(1), rdy(2), irq(3), nmi(4), reset(5) (two bits spare)
+ * 44:   data at address + 1 (required for single step disassembly)
+ * 55:   data at address + 2 (required for single step disassembly)
+ * 66:   data at address + 3 (required for single step disassembly)
+ * 77:   evaluation (details to be defined: two bits for number of extra data being valid)
+ *                  (details to be defined: three bits for MXE of 65816 CPU)
+ *                  (details to be defined: three bits evaluation/certainty)
+ */
+                    /*  ccddaaaa */
+   fi->raw          = 0x3F000000; /* sane defaults for r/w, interrupts, etc. */
+   fi->address      = addr & 0xFFFF;
+   fi->data         = p0;
+   fi->data1        = p1;
+   fi->data2        = p2;
+   fi->data3        = p3;
+   fi->dataused     = 3;   /* data1-data3 are always valid by definition */
+   fi->eval         = 7;   /* by definition */
+
+   ft.fullinfo      = &fullinfo[0];
+   ft.cpu           = cpu;
+   ft.flag_e        = FLAG_UNSET;
+   ft.flag_m        = (flags & DAFLAGS_M16) ? FLAG_UNSET : FLAG_SET;
+   ft.flag_x        = (flags & DAFLAGS_X16) ? FLAG_UNSET : FLAG_SET;
+   ft.opcodes       = disass_set_cpu( cpu );
+   ft.entries       = 1;
+
+   return _disass_fulltrace_entry( &ft, BOUNDSBUFFER, brkoverride );
+}
+#endif
+

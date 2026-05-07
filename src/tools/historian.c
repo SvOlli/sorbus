@@ -10,14 +10,15 @@
 
 #define SHOW_CONFIDENCE 1
 
+#include "../rp2040/disassemble/beancounter.c"
+#include "../rp2040/disassemble/beancounter16.c"
 #include "../rp2040/disassemble/disassemble.c"
-#include "../rp2040/disassemble/disassemble_beancounter.c"
-#include "../rp2040/disassemble/disassemble_fulltrace.c"
-#include "../rp2040/disassemble/disassemble_historian.c"
-#include "../rp2040/mcurses/mc_historian.c"
+#include "../rp2040/disassemble/fulltrace.c"
+#include "../rp2040/disassemble/historian.c"
 #include "loadfile.c"
 
 #include "../rp2040/mcurses/mcurses.h"
+#include "../rp2040/mcurses/mc_historian.c"
 
 
 uint32_t mf_checkheap()

@@ -21,8 +21,7 @@
 .global  gensine
 .global  printtmp16
 .global  inputline
-.global  ramio
-.global  ramio_cmd
+.global  ramread
 
 ; entry points for the monitor
 .global  mon_init       ; called from reset menu / clean init
