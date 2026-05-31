@@ -28,9 +28,21 @@ add_library(sorbus_rte STATIC
    ../rp2040/mcurses/mc_extra.c
    ../rp2040/mcurses/mc_view.c
    )
-target_include_directories(sorbus_rte PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ../rp2040/common)
-target_include_directories(sorbus_rte PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ../rp2040/disassemble)
-target_include_directories(sorbus_rte INTERFACE ../rp2040/mcurses)
+target_include_directories(sorbus_rte PUBLIC
+   ${CMAKE_CURRENT_BINARY_DIR}
+   ../rp2040/common
+   ../rp2040/disassemble
+   ../rp2040/mcurses
+   )
+
+add_library(sorbus_da STATIC
+   ../rp2040/disassemble/da_base.c
+   ../rp2040/disassemble/da_cyclecount.c
+   ../rp2040/disassemble/da_generated.c
+   ../rp2040/disassemble/da_memory.c
+   ../rp2040/disassemble/da_trace.c
+   )
+target_include_directories(sorbus_da PUBLIC ../rp2040/disassemble)
 
 # tool to convert binary data to header file for including in source code
 add_executable(bin2h
@@ -87,6 +99,12 @@ set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}
 set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble.c)
 set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/fulltrace.c)
 set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/historian.c)
+
+# tool to test rework of disassembler
+add_executable(newtrace
+   newtrace.c
+)
+target_link_libraries(newtrace PRIVATE sorbus_rte sorbus_da)
 
 # tool to test memory disassembler
 add_executable(disass

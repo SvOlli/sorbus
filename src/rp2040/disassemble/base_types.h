@@ -8,6 +8,14 @@
 #define count_of(a) (sizeof(a)/sizeof(a[0]))
 #endif
 
+#ifndef min
+#define min(a,b) (a < b ? a : b)
+#endif
+
+#ifndef max
+#define max(a,b) (a > b ? a : b)
+#endif
+
 #ifndef forever
 #define forever() for(;;)
 #endif
@@ -18,13 +26,13 @@
  * Needs to be aligned with return values of cpu_detect 6502 code
  */
 typedef enum {
-   CPU_ERROR=0,
-   CPU_6502,
-   CPU_65C02,
-   CPU_65816,
-   CPU_65CE02,
-   CPU_6502RA,
-   CPU_65SC02,
+   CPU_ERROR  = 0,
+   CPU_6502   = 1,
+   CPU_65C02  = 2,
+   CPU_65816  = 3,
+   CPU_65CE02 = 4,
+   CPU_6502RA = 5,
+   CPU_65SC02 = 6,
    CPU_UNDEF
 } cputype_t;
 

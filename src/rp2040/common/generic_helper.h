@@ -23,17 +23,25 @@ void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size,
 /* Read a 4-digt address from console and check if it is below "lastaddr" */
 int32_t get_16bit_address( uint16_t lastaddr );
 
+#if 1
 /* on RP2040 does two things:
  * - check if current free memory is below recoded minimum
  * - return recorded minimum of free memory
  * on host should return 0 */
 uint32_t mf_checkheap();
+void *mf_malloc( size_t size );
+void mf_free( void *ptr );
+void *mf_calloc( size_t nmemb, size_t size );
+void *mf_realloc( void *ptr, size_t size );
+#endif
 
-/* wrappers that use mf_checkheap */
-void *mf_malloc(size_t size);
-void mf_free(void *ptr);
-void *mf_calloc(size_t nmemb, size_t size);
-void *mf_realloc(void *ptr, size_t size);
+/* wrappers that use heaptrack */
+void *ht_malloc( size_t size );
+void ht_free( void *ptr );
+void *ht_calloc( size_t nmemb, size_t size );
+void *ht_realloc( void *ptr, size_t size );
+uint32_t ht_freemem();
+uint32_t ht_freemin();
 
 
 /* convert a character from 8bit to 16bit UTF representation

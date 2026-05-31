@@ -409,7 +409,6 @@ void mcurses_disassemble( mc_disass_t *dav )
 
    if( mcd.linecache )
    {
-      (void)mf_checkheap();
       mf_free( mcd.linecache );
    }
 

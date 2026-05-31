@@ -2,7 +2,11 @@
 
 set -e
 
+readonly variants="6502 65c02 65816 65ce02 65sc02"
+readonly scriptname="$(basename "${0}")"
+
 cd "$(dirname "${0}")/../.."
+
 
 mklines()
 {
@@ -12,10 +16,12 @@ mklines()
    IFS=';'
    while read byte name mode reserved bytes cycles extra mx jump rest; do
       bitsuffix="0"
+
       case "${name}" in
       *[0-7]) name="${name%?}"; bitsuffix="1";;
       "") name="___";
       esac
+
       case "${mode}" in
       "ABS")      emode="ABS";;
       "[ABS]")    emode="ABSIL";;
@@ -26,7 +32,6 @@ mklines()
       "ABS,Y")    emode="ABSY";;
       "ABS,Z")    emode="ABSZ";;
       "(ABS)")    emode="AI";;
-      "[ABS]")    emode="AIL";;
       "(ABS,X)")  emode="AIX";;
       "")         emode="IMP";;
       "#IM")      emode="IMM";;
@@ -53,6 +58,7 @@ mklines()
       "ZP,Y")     emode="ZPY";;
       *) echo >&2 "unknown mode: '${mode}'"; false;;
       esac
+
       reserved=$((reserved+0)) # make sure that it's a number
       bytes=$((bytes+0))
       cycles=$((cycles+0))
@@ -60,6 +66,7 @@ mklines()
       mx=$((mx+0))
       jump=$((jump+0))
       echo -n "   /* ${byte} */ OPCODE( ${name}, ${emode}, ${reserved}, ${bytes}, ${cycles}, ${extra}, ${mx}, ${jump} )"
+
       if [ "${line}" -lt 255 ]; then
          echo ","
       else
@@ -70,16 +77,125 @@ mklines()
    IFS="${ifs}"
 }
 
-mkheader()
-{
-   local cpu="${1}"
-   local infile="${2}"
-   local outfile="${3}"
 
-   rm -f "${outfile}"
-   echo "   /* automatically generated using $(basename "${0}") on ${infile} */" > "${outfile}"
-   grep '^\$' "${infile}" | sort | mklines >> "${outfile}"
+mkgenerated_h()
+{
+   {
+      cat <<__END_OF_TEXT__
+#ifndef DA_GENERATED_H
+#define DA_GENERATED_H DA_GENERATED_H
+
+#include <stdint.h>
+
+extern const uint32_t da_opcodes6502[0x100];
+extern const uint32_t da_opcodes65c02[0x100];
+extern const uint32_t da_opcodes65sc02[0x100];
+extern const uint32_t da_opcodes65ce02[0x100];
+extern const uint32_t da_opcodes65816[0x100];
+
+extern const char *da_mnemonics[];
+
+typedef enum {
+   DA_MNEMONIC_UNDEF = 0,
+__END_OF_TEXT__
+
+      for i in ${variants};do
+         cat "doc/opcodes${i}.csv"
+      done |
+         grep '^\$' |
+         cut -f2 -d\; |
+         sed -e 's/^\(...\)/\1, /' -e 's/\(...\)[0-7]/\1/' |
+         sort -u |
+         tr -d '\n' |
+         fold -s -w 70 |
+         sed -e 's/^/   /'
+
+      cat <<__END_OF_TEXT__
+DA_MNEMONIC_END
+} da_mnemonic_t;
+
+typedef enum {
+   ADDRMODE_UNDEF = 0,
+   ABS,   // OPC \$1234
+   ABSIL, // OPC [\$1234]
+   ABSL,  // OPC \$123456
+   ABSLX, // OPC \$123456,X
+   ABSLY, // OPC \$123456,Y
+   ABSX,  // OPC \$1234,X
+   ABSY,  // OPC \$1234,Y
+   ABSZ,  // OPC \$1234,Z
+   AI,    // OPC (\$1234)
+   AIX,   // OPC (\$1234,X)
+   IMP,   // OPC
+   IMM,   // OPC #\$01
+   IMM2,  // OPC #\$01,#\$02
+   IMML,  // OPC #\$1234
+   REL,   // OPC LABEL
+   RELL,  // OPC LABEL
+   RELSY, // OPC (LABEL,S),Y
+   ZP,    // OPC \$12
+   ZPI,   // OPC (\$12)
+   ZPIL,  // OPC [\$12]
+   ZPILY, // OPC [\$12],Y
+   ZPISY, // OPC (\$12,S),Y
+   ZPN,   // OPC# \$12
+   ZPNR,  // OPC# \$12,LABEL
+   ZPS,   // OPC \$12,S
+   ZPX,   // OPC \$12,X
+   ZPY,   // OPC \$12,Y
+   ZPIX,  // OPC (\$12,X)
+   ZPIY,  // OPC (\$12),Y
+   ZPIZ,  // OPC (\$12),Z
+   ADDRMODE_END
+} da_addrmode_t;
+
+#endif
+__END_OF_TEXT__
+   # TODO: can da_addrtype_t be generated?
+   } > "src/rp2040/disassemble/da_generated.h"
 }
+
+
+mkgenerated_c()
+{
+   {
+      cat <<__END_OF_TEXT__
+#include "da_generated.h"
+
+/* automatically generated using ${scriptname} */
+
+#define OPCODE(mn, am, reserved, bytes, cycles, extra, jump, mxe) \\
+   (uint32_t)mn | (uint16_t)am << 8 | reserved << 14 | bytes << 15 | cycles << 18 | extra << 22 | jump << 24 | mxe << 25
+
+/* needs to be aligned with mnemonic_t */
+const char *da_mnemonics[] = {
+__END_OF_TEXT__
+      for i in ${variants};do
+         cat "doc/opcodes${i}.csv"
+      done |
+         cut -f2 -d\; |
+         sed -e 's/Name/???/' -e 's/^\(...\)/"\1", /' -e 's/\(...\)[0-7]/\1/' |
+         sort -u |
+         tr -d '\n' |
+         fold -s -w 70 |
+         sed -e 's/^/   /'
+
+      cat <<__END_OF_TEXT__
+0
+};
+
+__END_OF_TEXT__
+
+      for i in ${variants};do
+         local infile="doc/opcodes${i}.csv"
+         echo "/* automatically generated using ${infile} */"
+         echo "const uint32_t da_opcodes${i}[0x100] = {"
+         grep '^\$' "${infile}" | sort | mklines
+         echo "};\n"
+      done
+   } > "src/rp2040/disassemble/da_generated.c"
+}
+
 
 # autoupdate 65SC02 from 65C02 data
 # check if there is a difference ignoring 65C02 "enhancements" over 65SC02
@@ -94,6 +210,5 @@ if [ "${md5_65c02}" != "${md5_65sc02}" ]; then
       <doc/opcodes65c02.csv >doc/opcodes65sc02.csv
 fi
 
-for i in 6502 65c02 65816 65ce02 65sc02;do
-   mkheader "${i}" "doc/opcodes${i}.csv" "src/rp2040/disassemble/opcodes${i}.tab"
-done
+mkgenerated_h
+mkgenerated_c
