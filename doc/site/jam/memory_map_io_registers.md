@@ -16,13 +16,11 @@
 - $0100-$01FF: processor stack
 - $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs, VT100)
 - $0400-$CFFF: RAM for generic use
-- $D000-$DEFF: I/O provided by external boards
 - $D000-$D3FF: scratch RAM that can by exchanged with $0000-$03FF
     by writing to $DF03 (not accessable directly from 65C02)
-- $D300-$D3FF: I/O area suggested to be used by 32x32 framebuffer
-    (write-only, as the FB32X32 hardware only handles writes on the bus)
+- $D000-$DDFF: I/O which can be provided by external boards
+- $DE00-$DEFF: I/O space reserved for future use provided by main RP2040 board
 - $DF00-$DFFF: I/O provided by main RP2040 board
-    (this can change to $DE00-$DFFF, when $DFxx area is not sufficiant)
 - $E000-$FFFF: bank 0 (RAM, used to load CP/M 65)
 - $E000-$FFFF: bank 1 (ROM, kernal, custom firmware)
 - $E000-$FFFF: bank 2 (ROM, tools e.g. filebrowser)
@@ -35,6 +33,19 @@
 
 
 ## I/O Registers
+
+
+### Overview
+
+- $0000-$0001: VGA
+- $0002-$0003: (reserved)
+- $D000-$D2FF: (undefined)
+- $D300-$D3FF: 32x32 LED Framebuffer (suggested)
+- $D400-$D4FF: Sound: SID clone(s), mod player (suggested)
+- $D500-$DDFF: (undefined)
+- $DE00-$DEFF: (reserved)
+- $DF00-$DF7F: (internal: see below)
+- $DF80-$DFFF: (scratch RAM for internal drive access)
 
 ### Miscellaneous ($DF00-$DF0F)
 
@@ -157,23 +168,29 @@ the area used by conventional programs.
 System provides 36864 blocks of 128 bytes = 4.5MB Data stored in flash @
 0x10400000 (12MB, ~<6MB payload with wear leveling)
 
-- LBA: block index, allowed $0000-$8FFF
-  (4MB for OS, additional blocks (512kB) not used by OS)
-- DMA memory: allowed $0004-$CF80, $DF80-$FF80 for start address
-  (will be increased for next sector automatically)
-
 - base address: $DF70
 - base address + $0: LBA low
 - base address + $1: LBA high
-- base address + $2: DMA memory low
-- base address + $3: DMA memory high
+- base address + $2: DMA memory address low
+- base address + $3: DMA memory address high
 - base address + $4: (S) read sector (strobe, adjusts DMA memory and LBA)
 - base address + $5: (S) write sector (strobe, also adjusts)
 - base address + $6: (unused, see variables used by kernel)
 - base address + $7: (S) flash discard
 
+Valid values are:
+
+- DMA memory start address:
+    - $0004-$CF80
+    - $DF80-$FF80 (will always use RAM under ROM)
+- LBA:
+    - $0000-$7FFF (used by CP/M-fs)
+    - $8000-$8FFF (reserved for future use)
+
 Each transfer stops CPU until transfer is completed. Reading from strobe
 registers return result of last access. (Bit 7 set indicates error.)
+Memory address will be increased by $0080, LBA by $0001 after successful
+read or write to prepare for next sector transfer.
 
 
 ### RAM Vectors ($DF78-$DF7F)
@@ -288,10 +305,3 @@ A and X registers.
 - $FD: combined functions: clear screen and go to top left
 - $FE: combined functions: go to start of current line
 - $FF: combined functions: get size of screen
-
-
-## Suggested External I/O Addresses
-
-- $0000-$0001: VGA
-- $D300-$D3FF: 32x32 LED Framebuffer
-- $D400-$D4FF: Sound: SID clone(s), mod player

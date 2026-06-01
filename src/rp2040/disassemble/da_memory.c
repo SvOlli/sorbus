@@ -26,6 +26,7 @@ $E053: 2A ('*')
 #include "da_memory.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "../common/generic_helper.h"
 
@@ -41,6 +42,7 @@ da_memory_t da_memory_init()
 
 void da_memory_done( da_memory_t d )
 {
+   memset( d, 0, sizeof(*d) );
    ht_free( d );
 }
 
