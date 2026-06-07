@@ -22,6 +22,20 @@ start:
    stz   BANK
 
    sei
+   sep   #$ff
+   php
+   rep   #$ff
+   php
+   rep   #$30
+   clc
+   xce
+   php
+   xce
+   sep   #$30
+   xce
+   php
+   xce
+
    clc
    xce
 

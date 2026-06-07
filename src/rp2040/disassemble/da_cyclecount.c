@@ -79,20 +79,6 @@ uint8_t da_cc_jump( da_trace_t d, uint32_t pos )
       case BVC:
       case BVS:
          return da_cc_jump_rel8( d, pos );
-      case JMP:
-         /* bugfix within 65(S)C02
-          * 0:0400 r 6c    :JMP  ($04FF)
-          * 1:0401 r ff    :
-          * 2:0402 r 04    :
-          * 3:0402 r 04    : !! extra cycle for adjusting pagecross !!
-          * 4:04ff r 03    :
-          * 5:0500 r 04    :
-          */
-         if( fullinfo[pos+2].address == fullinfo[pos+3].address )
-         {
-            return da_pick_cycles( d->cpu, fullinfo[pos].data )+1;
-         }
-         break;
       default:
          break;
    }

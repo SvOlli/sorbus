@@ -145,7 +145,6 @@ int ByteArray_open_file(struct ByteArray* self, const char* filename) {
 	self->fd = open(filename, O_RDONLY);
 	return (self->fd != -1);
 #else
-	struct stat st;
 	self->type = BAT_FILESTREAM;
 	self->pos = 0;
 	self->size = 0;

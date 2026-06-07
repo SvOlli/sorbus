@@ -65,6 +65,7 @@ nav:
       - 'CMOS 65C02 Opcodes': 'opcodes/opcodes_65c02.md'
       - 'CMOS 65CE02 Opcodes': 'opcodes/opcodes_65ce02.md'
       - 'CMOS 65816 Opcodes': 'opcodes/opcodes_65816.md'
+      - 'Observed 65816 Behavior': 'opcodes/observed_65816_behavior.md'
       - 'CPU Detection': 'opcodes/cpu_detect.md'
    - 'Appendix':
       - 'Thanks': 'thanks.md'

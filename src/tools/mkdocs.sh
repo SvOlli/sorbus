@@ -31,13 +31,17 @@ EOH
       case "${reserved}" in
       1) reserved=x;;
       esac
+      case "${jump}" in
+      1) jump=x;;
+      esac
       case "${extracycles}" in
       1) extracycles="page";;
       2) extracycles="branch";;
+      3) extracycles="move";;
       esac
-      echo "| ${opcode} | ${name} | ${mode} | ${reserved} | ${bytes} | ${cycles} | ${extracycles} |"
+      echo "| ${opcode} | ${name} | ${mode} | ${reserved} | ${bytes} | ${cycles} | ${extracycles} | ${jump} |"
       if [ ${header} -eq 1 ]; then
-         echo "| :---- | :---- | :---- | ----: | ----: | ----: | ----: |"
+         echo "| :---- | :---- | :---- | ----: | ----: | ----: | ----: | ----: |"
          header=0
       fi
    done
