@@ -10,21 +10,13 @@
 
 #define SHOW_CONFIDENCE 1
 
-#include "../rp2040/disassemble/beancounter.c"
-#include "../rp2040/disassemble/beancounter16.c"
-#include "../rp2040/disassemble/disassemble.c"
-#include "../rp2040/disassemble/fulltrace.c"
-#include "../rp2040/disassemble/historian.c"
-#include "sorbus_rte_loadfile.c"
+#include "sorbus_rte.h"
 
-#include "../rp2040/mcurses/mcurses.h"
-#include "../rp2040/mcurses/mc_historian.c"
+#include "da_base.h"
+#include "da_trace.h"
 
-
-uint32_t mf_checkheap()
-{
-   return 0;
-}
+#include "mcurses.h"
+#include "mc_trace.c"
 
 
 void help( const char *progname, int retval )
@@ -49,40 +41,9 @@ void help( const char *progname, int retval )
      "%s: test tool for historian disassembler\n"
      "\t-c cpu:\tcputype (mandatory)\n"
      "\t-f file:\ttrace file (mandatory)\n"
-     "\t-a:\tshow addresses\n"
-     "\t-d:\tshow hexdump\n"
-     "\t-p:\tinteractive pager\n"
      "\t-h:\tshow help\n"
      , progname );
    exit( retval );
-}
-
-
-void mcurses( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t start )
-{
-   struct termios oldt, newt;
-   uint32_t count;
-
-   tcgetattr( STDIN_FILENO, &oldt );
-   newt = oldt;
-   newt.c_lflag &= ~(ICANON | ECHO);
-   tcsetattr( STDIN_FILENO, TCSANOW, &newt );
-
-   screen_save();
-   initscr();
-   for( count = 0; count < entries; ++count )
-   {
-      if( ! *(trace + count) )
-      {
-         /* empty entry -> end of input */
-         break;
-      }
-   }
-   mcurses_historian( cpu, trace, count, start );
-   endwin();
-   screen_restore();
-
-   tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
 }
 
 
@@ -163,7 +124,7 @@ uint32_t *get_trace( const uint8_t *start, const uint8_t *end, uint32_t *size )
          ++entries;
       }
    }
-   if( !(*end == '\n') && !(*(end-1) == '\n') )
+   if( !(*(end-1) == '\n') && !(*(end-2) == '\n') )
    {
       ++entries;
    }
@@ -197,7 +158,6 @@ int main( int argc, char *argv[] )
 {
    const char *progname = argv[0];
    cputype_t cpu = CPU_ERROR;
-   disass_fulltrace_t dah;
 
    const uint8_t *start, *end;
    uint32_t size;
@@ -208,18 +168,15 @@ int main( int argc, char *argv[] )
    uint8_t *filedata = 0;
    ssize_t filesize;
 
+   struct termios oldt, newt;
+
    int opt;
    bool fail = false;
-   bool pager = false;
-   disass_show_t show_extra = DISASS_SHOW_NOTHING;
 
-   while ((opt = getopt(argc, argv, "ac:df:hp")) != -1)
+   while ((opt = getopt(argc, argv, "c:f:h")) != -1)
    {
       switch( opt )
       {
-         case 'a':
-            show_extra |= DISASS_SHOW_ADDRESS;
-            break;
          case 'c':
             cpu = getcputype( optarg );
             if( cpu == CPU_ERROR )
@@ -229,14 +186,8 @@ int main( int argc, char *argv[] )
                fail = true;
             }
             break;
-         case 'd':
-            show_extra |= DISASS_SHOW_HEXDUMP;
-            break;
          case 'f':
             filename = optarg;
-            break;
-         case 'p':
-            pager = true;
             break;
          case 'h':
             help( progname, 0 );
@@ -275,30 +226,21 @@ int main( int argc, char *argv[] )
       help( progname, 1 );
    }
 
-   disass_show( show_extra );
-   if( pager )
-   {
-      mcurses( cpu, buffer, size, 0 );
-   }
-   else
-   {
-      dah = disass_fulltrace_init( cpu, buffer, size, 0 );
-      disass_historian_assumptions( dah );
-      for( count = 0; count < size; ++count )
-      {
-         if( ! *(buffer + count) )
-         {
-            /* empty entry -> end of input */
-            break;
-         }
-         printf( "%5d:", count );
-         if( disass_fulltrace_entry( dah, count ) )
-         {
-            puts( disass_fulltrace_entry( dah, count ) );
-         }
-      }
-      disass_fulltrace_done( dah );
-   }
+   tcgetattr( STDIN_FILENO, &oldt );
+   newt = oldt;
+   newt.c_lflag &= ~(ICANON | ECHO);
+   tcsetattr( STDIN_FILENO, TCSANOW, &newt );
+
+   screen_save();
+   initscr();
+
+   mcurses_trace( cpu, buffer, size, 0 );
+
+   endwin();
+   screen_restore();
+
+   tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
+
    free( buffer );
 
    return 0;

@@ -22,27 +22,27 @@ bin2h(jam_tools.h  ${CMAKE_BINARY_DIR}/65c02/jam_tools.bin  jam_tools  sorbus_rt
 bin2h(jam_basic.h  ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin  jam_basic  sorbus_rte_memory.c)
 add_library(sorbus_rte STATIC
    mc_phyio_linux.c
+   sorbus_rte_cputype.c
+   sorbus_rte_loadfile.c
    sorbus_rte_memory.c
-   ../rp2040/common/putcharset.c
-   ../rp2040/mcurses/mcurses.c
-   ../rp2040/mcurses/mc_extra.c
-   ../rp2040/mcurses/mc_view.c
+   ${CMAKE_SOURCE_DIR}/rp2040/common/heaptrack.c
+   ${CMAKE_SOURCE_DIR}/rp2040/common/putcharset.c
+   ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_base.c
+   ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_cyclecount.c
+   ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_generated.c
+   ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_memory.c
+   ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_trace.c
+   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses.c
+   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_extra.c
+   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_trace.c
+   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_view.c
    )
 target_include_directories(sorbus_rte PUBLIC
    ${CMAKE_CURRENT_BINARY_DIR}
-   ../rp2040/common
-   ../rp2040/disassemble
-   ../rp2040/mcurses
+   ${CMAKE_SOURCE_DIR}/rp2040/common
+   ${CMAKE_SOURCE_DIR}/rp2040/disassemble
+   ${CMAKE_SOURCE_DIR}/rp2040/mcurses
    )
-
-add_library(sorbus_da STATIC
-   ../rp2040/disassemble/da_base.c
-   ../rp2040/disassemble/da_cyclecount.c
-   ../rp2040/disassemble/da_generated.c
-   ../rp2040/disassemble/da_memory.c
-   ../rp2040/disassemble/da_trace.c
-   )
-target_include_directories(sorbus_da PUBLIC ../rp2040/disassemble)
 
 # tool to convert binary data to header file for including in source code
 add_executable(bin2h
@@ -62,9 +62,9 @@ add_executable(unicode
 # tool to convert to and from wear leveling format
 add_executable(dharatool
    dharatool.c
-   ../rp2040/3rdparty/dhara/error.c
-   ../rp2040/3rdparty/dhara/journal.c
-   ../rp2040/3rdparty/dhara/map.c
+   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/dhara/error.c
+   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/dhara/journal.c
+   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/dhara/map.c
    )
 
 # tool to convert binary data to UF2 files
@@ -104,26 +104,32 @@ set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}
 add_executable(newtrace
    newtrace.c
 )
-target_link_libraries(newtrace PRIVATE sorbus_rte sorbus_da)
+target_link_libraries(newtrace PRIVATE sorbus_rte)
+
+# tool to test part of disassembler
+add_executable(mc_trace_test
+   mc_trace_test.c
+)
+target_link_libraries(mc_trace_test PRIVATE sorbus_rte)
 
 # tool to test memory disassembler
-add_executable(disass
-   disass.c
-)
-target_link_libraries(disass PRIVATE sorbus_rte)
-target_include_directories(disass PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble.c)
-set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_disass.c)
-set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_view.c)
+#add_executable(disass
+#   disass.c
+#)
+#target_link_libraries(disass PRIVATE sorbus_rte)
+#target_include_directories(disass PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+#set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble.c)
+#set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_disass.c)
+#set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_view.c)
 
 # tool to test curses implementation
 #add_executable(mcurses
 #   mcurses.c
 #   mcurses_phyio.c
-#   ../rp2040/mcurses/mcurses.c
-#   ../rp2040/mcurses/mcurses_hexedit.c
-#   ../rp2040/mcurses/mcurses_sorbus.c
-#   ../rp2040/mcurses/mcurses_view.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses_hexedit.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses_sorbus.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses_view.c
 #   )
 
 # tool to convert binary data to TIM paper tape format
@@ -160,13 +166,13 @@ target_include_directories(img2sx4 PUBLIC ${GD_INCLUDE_DIRS})
 target_compile_options(img2sx4 PUBLIC ${GD_CFLAGS_OTHER})
 
 #add_executable(peiselmon
-#   ../rp2040/3rdparty/peiselmon/6502.c
-#   ../rp2040/3rdparty/peiselmon/editscreen.c
-#   ../rp2040/3rdparty/peiselmon/output.c
-#   ../rp2040/3rdparty/peiselmon/parse.c
-#   ../rp2040/3rdparty/peiselmon/processor.c
-#   ../rp2040/3rdparty/peiselmon/target_memory.c
-#   ../rp2040/3rdparty/peiselmon/window.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/peiselmon/6502.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/peiselmon/editscreen.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/peiselmon/output.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/peiselmon/parse.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/peiselmon/processor.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/peiselmon/target_memory.c
+#   ${CMAKE_SOURCE_DIR}/rp2040/3rdparty/peiselmon/window.c
 #   peiselmon.c
 #   )
 #target_link_libraries(peiselmon PRIVATE sorbus_rte)

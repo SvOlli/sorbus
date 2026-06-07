@@ -67,7 +67,7 @@ static inline void _da_trace_fill( da_trace_t d,
    /* pass 2: now, let's fill in additional data */
    for( i = 0; i < entries; ++i )
    {
-      fullinfo[i].eval  = 3;
+      //fullinfo[i].eval  = 3;
 
       /* find arguments */
       expectedaddress   = fullinfo[i].address+1;

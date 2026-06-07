@@ -5,14 +5,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "../rp2040/disassemble/da_base.c"
-#include "../rp2040/disassemble/da_cyclecount.c"
-#include "../rp2040/disassemble/da_generated.c"
-//#include "../rp2040/disassemble/da_memory.c"
-#include "../rp2040/disassemble/da_trace.c"
+#include "da_trace.h"
 
 /* todo: find header */
 uint8_t *loadfile( const char *filename, ssize_t *filesize );
@@ -294,7 +291,7 @@ const char *fullinfo_extra( da_fullinfo_t fi )
 void print_result( const uint32_t *opcodes, uint64_t *refbuffer,
                    da_trace_t dah, uint32_t size )
 {
-   static char buffer[80] = { 0 };
+   static char buffer[128] = { 0 };
    char *b = &buffer[0];
    size_t bsize = sizeof(buffer) - 1;
    size_t used  = 0;

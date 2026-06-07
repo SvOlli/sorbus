@@ -368,13 +368,13 @@ int da_snf_fullinfo( char *b, size_t bsize, cputype_t cpu,
    {
       if( *f == 'E' )
       {
-         if( fullinfo.eval < 3 )
+         if( fullinfo.eval > DA_EVAL_MIN )
          {
-            break;
+            continue;
          }
          else
          {
-            continue;
+            break;
          }
       }
       if( used >= bsize )

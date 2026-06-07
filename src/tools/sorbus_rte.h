@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include <da_base.h>
+
+cputype_t getcputype( const char *argi );
+
 uint8_t debug_banks();
 
 void debug_poke( uint8_t bank, uint16_t addr, uint8_t value );

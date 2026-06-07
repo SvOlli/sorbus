@@ -137,7 +137,8 @@ void lineview( lineview_t *config );
 /* backtrace viewer utilizing lineview */
 void mcurses_historian( cputype_t cpu, uint32_t *trace,
                         uint32_t entries, uint32_t start );
-
+void mcurses_trace( cputype_t cpu, uint32_t *trace,
+                    uint32_t entries, uint32_t start );
 
 /* disassembly viewer utilizing lineview */
 typedef uint8_t(*daview_handler_bank_t)();
