@@ -1,3 +1,4 @@
+TRACE_START 65c02
 3f0ae9ab
 3f26e9ac
 3f26e9ac
@@ -508,3 +509,4 @@
 3f010413
 3fdf0414
 3a00df01
+TRACE_END

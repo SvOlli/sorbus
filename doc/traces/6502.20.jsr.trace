@@ -1,3 +1,4 @@
+TRACE_START 6502
 3fcae9b9
 3fd0e9ba
 3fd0e9ba
@@ -506,3 +507,4 @@
 3f010404
 3fdf0405
 3a52df01
+TRACE_END

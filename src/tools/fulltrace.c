@@ -13,7 +13,7 @@
 #include "../rp2040/disassemble/historian.c"
 
 /* todo: find header */
-uint8_t *loadfile( const char *filename, ssize_t *filesize );
+uint8_t *loadfile( const char *filename, bool addnull, ssize_t *filesize );
 
 
 void help( const char *progname, int retval )
@@ -344,7 +344,7 @@ int main( int argc, char* argv[] )
    }
    if( !fail )
    {
-      filedata  = loadfile( filename, &filesize );
+      filedata  = loadfile( filename, true, &filesize );
       start     = get_start( filedata, filedata + filesize, &cpu );
       end       = get_end( start, filedata + filesize );
       refbuffer = get_fulltrace( start, end, &size );

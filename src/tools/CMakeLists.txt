@@ -22,9 +22,8 @@ bin2h(jam_tools.h  ${CMAKE_BINARY_DIR}/65c02/jam_tools.bin  jam_tools  sorbus_rt
 bin2h(jam_basic.h  ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin  jam_basic  sorbus_rte_memory.c)
 add_library(sorbus_rte STATIC
    mc_phyio_linux.c
-   sorbus_rte_cputype.c
-   sorbus_rte_loadfile.c
    sorbus_rte_memory.c
+   sorbus_rte_trace.c
    ${CMAKE_SOURCE_DIR}/rp2040/common/heaptrack.c
    ${CMAKE_SOURCE_DIR}/rp2040/common/putcharset.c
    ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_base.c
@@ -109,6 +108,7 @@ target_link_libraries(newtrace PRIVATE sorbus_rte)
 # tool to test part of disassembler
 add_executable(mc_trace_test
    mc_trace_test.c
+   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_trace.c
 )
 target_link_libraries(mc_trace_test PRIVATE sorbus_rte)
 

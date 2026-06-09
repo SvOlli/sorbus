@@ -15,16 +15,11 @@
 #include "../rp2040/disassemble/disassemble.c"
 #include "../rp2040/disassemble/fulltrace.c"
 #include "../rp2040/disassemble/historian.c"
-#include "sorbus_rte_loadfile.c"
 
 #include "../rp2040/mcurses/mcurses.h"
 #include "../rp2040/mcurses/mc_historian.c"
 
-
-uint32_t mf_checkheap()
-{
-   return 0;
-}
+uint8_t *loadfile( const char *filename, bool addnull, ssize_t *filesize );
 
 
 void help( const char *progname, int retval )
@@ -254,7 +249,7 @@ int main( int argc, char *argv[] )
    }
    if( !fail )
    {
-      filedata = loadfile( filename, &filesize );
+      filedata = loadfile( filename, true, &filesize );
       start    = get_start( filedata, filedata + filesize, &cpu );
       end      = get_end( start, filedata + filesize );
       buffer   = get_trace( start, end, &size );

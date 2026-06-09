@@ -1,3 +1,4 @@
+TRACE_START 65816
 3f60ff3c
 3fadff3d
 3fadff3d
@@ -507,3 +508,4 @@
 3f01e28a
 3fdfe28b
 3a8ddf01
+TRACE_END

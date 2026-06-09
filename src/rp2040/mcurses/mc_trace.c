@@ -38,10 +38,10 @@ static int32_t mcurses_trace_move( void *d, int32_t movelines )
       retval = -(mch->current);
       mch->current = 0;
    }
-   else if( (mch->current + movelines) >= (mch->entries - mch->datalines) )
+   else if( (mch->current + movelines) > (mch->entries - mch->datalines) )
    {
-      retval = (mch->entries - mch->datalines) - mch->current - 1;
-      mch->current = mch->entries - mch->datalines - 1;
+      retval = (mch->entries - mch->datalines) - mch->current;
+      mch->current = mch->entries - mch->datalines;
    }
    else
    {
@@ -58,7 +58,6 @@ const char* mcurses_trace_data( void *d, int32_t offset )
    // offset is typicall 0 - #lines-2
    struct mc_trace_s   *mch = (struct mc_trace_s *)d;
    da_trace_t           dah = mch->trace;
-   da_fullinfo_t        fullinfo = { 0 };
    uint32_t             entry = mch->current + offset;
    static char          text[128];
    int                  pos = 0;

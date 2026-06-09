@@ -1,3 +1,4 @@
+TRACE_START 65c02
 1fa201fe
 1fa201fe
 1fa201fe
@@ -43,4 +44,4 @@
 3f0000ff
 3f0000ff
 3e0200ff
-00000000
+TRACE_END

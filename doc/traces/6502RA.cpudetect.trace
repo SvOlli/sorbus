@@ -1,4 +1,6 @@
-TRACE_START 6502
+This trace is handcrafted on how the 6502 Rev.A is expected to behave.
+I'd like to replace this with a trace done using a real Rev.A
+TRACE_START 6502RA
 1f180000
 1f180000
 1f180100
@@ -39,11 +41,17 @@ TRACE_START 6502
 3fb0002c
 3f05002d
 3f90002e
-3f07002f
-3f970030
+3fe80033
+3fe80034
+3fe80034
+3fe80035
+3fe80035
+3fe80036
+3fe80036
+3fe80037
 3fe80037
 3f860038
 3f860038
 3fff0039
-3e0100ff
+3e0500ff
 TRACE_END

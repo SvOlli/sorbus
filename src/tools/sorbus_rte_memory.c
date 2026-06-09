@@ -104,13 +104,14 @@ uint8_t *loadfile( const char *filename, ssize_t *filesize )
       return 0;
    }
 
-   data = malloc( (size_t)datasize );
+   data = malloc( (size_t)datasize + 1 );
    if( !data )
    {
       perror( "malloc" );
       close( fd );
       return 0;
    }
+   data[datasize] = 0;
 
    for( d = data; d < (data + datasize); d += dataread )
    {
