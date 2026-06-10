@@ -16,7 +16,6 @@ struct da_trace_s {
    cputype_t      cpu;        // cpu traced
    uint32_t       entries;    // number of entries in list below
    da_fullinfo_t  *fullinfo;  // list of annotated trace
-   const uint32_t *opcodes;   // pointer to opcode table for cpu
 #if 0
    /* unused so far */
    da_cpu_flag_t  flag_n;     // $80 negaitve

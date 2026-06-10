@@ -95,7 +95,7 @@ static inline void _da_trace_fill( da_trace_t d,
             ++expectedaddress;
          }
       }
-      fullinfo[i].dataused = max( offset, 3 );
+      fullinfo[i].dataused = min( offset, 3 );
    }
 }
 
@@ -112,7 +112,6 @@ da_trace_t da_trace_init( cputype_t cpu,
    da_trace_t d = (da_trace_t)ht_calloc( 1, sizeof(*d) );
    d->cpu       = cpu;
    d->entries   = entries;
-   d->opcodes   = da_get_opcodes( cpu );
    d->fullinfo  = fullinfo + BOUNDSBUFFER;
    _da_trace_fill( d, ringbuffer, start );
    return d;

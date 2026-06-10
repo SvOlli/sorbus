@@ -122,16 +122,6 @@ target_link_libraries(mc_trace_test PRIVATE sorbus_rte)
 #set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_disass.c)
 #set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_view.c)
 
-# tool to test curses implementation
-#add_executable(mcurses
-#   mcurses.c
-#   mcurses_phyio.c
-#   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses.c
-#   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses_hexedit.c
-#   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses_sorbus.c
-#   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses_view.c
-#   )
-
 # tool to convert binary data to TIM paper tape format
 add_executable(timcat
    timcat.c

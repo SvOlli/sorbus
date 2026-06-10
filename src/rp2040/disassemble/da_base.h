@@ -47,7 +47,8 @@ typedef union
 {
    uint64_t       raw      :64;
    struct {
-      uint32_t    trace    :32;
+      uint32_t    trace    :30;
+      uint8_t     tracex   : 2; /* buffer used for alignment: same as bits30_31 */
       uint32_t    extra    :32;
    };
    struct {
@@ -60,7 +61,7 @@ typedef union
       bool        irq      : 1;
       bool        nmi      : 1;
       bool        reset    : 1;
-      uint8_t     bits30_31: 2;
+      uint8_t     bits30_31: 2; /* spare */
 
       /* upper 32bit contain additional data for disassembly */
       uint8_t     data1    : 8;
@@ -69,7 +70,7 @@ typedef union
       uint8_t     dataused : 2;
       bool        m816     : 1; /* reverse meaning from CPU 'M' flag: 1=16 bit */
       bool        x816     : 1; /* reverse meaning from CPU 'X' flag: 1=16 bit */
-      uint8_t     eval     : 3;
+      uint8_t     eval     : 3; /* most probably this can be reduced to ": 2" */
       bool        n816     : 1; /* reverse meaning from CPU 'E' flag: 1=native */
    };
 } da_fullinfo_t;
@@ -100,6 +101,7 @@ typedef enum {
 } da_flags_t;
 
 
+/* pick misc things from opcode table */
 da_mnemonic_t da_pick_mnemonic( cputype_t cpu, uint8_t opcode );
 da_addrmode_t da_pick_addrmode( cputype_t cpu, uint8_t opcode );
 bool da_pick_reserved( cputype_t cpu, uint8_t opcode );
@@ -109,7 +111,10 @@ uint8_t da_pick_extra( cputype_t cpu, uint8_t opcode );
 bool da_pick_jump( cputype_t cpu, uint8_t opcode );
 uint8_t da_pick_mx( cputype_t cpu, uint8_t opcode );
 
+/* different helper functions */
+/* can this opcode be a 16 bit immediate (#$xxxx)? */
 bool da_is_imm16( const da_fullinfo_t fullinfo );
+/* get table of opcode configuration */
 const uint32_t *da_get_opcodes( cputype_t cpu );
 
 /*

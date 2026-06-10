@@ -31,10 +31,10 @@ void help( const char *progname, int retval )
    }
 
    fprintf( f,
-     "%s: test tool for historian disassembler\n"
-     "\t-c cpu:\tcputype (mandatory, if not specified in file)\n"
+     "%s: test tool for tracing disassembler\n"
+     "\t-c cpu:\t\tcputype (mandatory, if not specified in file)\n"
      "\t-f file:\ttrace file (mandatory)\n"
-     "\t-h:\tshow help\n"
+     "\t-h:\t\tshow help\n"
      , progname );
    exit( retval );
 }

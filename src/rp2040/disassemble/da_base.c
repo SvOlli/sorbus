@@ -275,9 +275,9 @@ int da_sn_fullinfo( char *b, size_t bsize, cputype_t cpu,
             break;
          case 'n':
             used += snprintf( b+used, bsize-used, "%c%c%c",
-                              fullinfo.n816 ? 'N' : ' ',
-                              fullinfo.m816 ? 'M' : ' ',
-                              fullinfo.x816 ? 'X' : ' ' );
+                              fullinfo.n816 ? 'n' : ' ',
+                              fullinfo.m816 ? 'm' : ' ',
+                              fullinfo.x816 ? 'x' : ' ' );
             break;
          case 'o':
             showbytes = min( fullinfo.dataused+1, da_pick_bytes( cpu, fullinfo.data ) );

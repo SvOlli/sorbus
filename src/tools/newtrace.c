@@ -32,15 +32,16 @@ void help( const char *progname, int retval )
    }
 
    fprintf( f,
-     "%s: test tool for historian disassembler\n"
-     "\t-c cpu:\tcputype (mandatory, if not specified in file)\n"
+     "%s: regression test tool for tracing disassembler\n"
+     "\t-c cpu:\t\tcputype (mandatory, if not specified in file)\n"
      "\t-f file:\ttrace file (mandatory)\n"
+     "\t-h:\t\tshow help\n"
      , progname );
    exit( retval );
 }
 
 
-void print_result( const uint32_t *opcodes, da_fullinfo_t *refbuffer,
+void print_result( da_fullinfo_t *refbuffer,
                    da_trace_t dah, uint32_t size )
 {
    static char buffer[128] = { 0 };
@@ -83,7 +84,7 @@ int main( int argc, char* argv[] )
    uint8_t *filedata = 0;
    ssize_t filesize;
 
-   char *start;
+   const char *start;
    uint32_t size;
    da_fullinfo_t *refbuffer = 0;
    uint32_t *buffer = 0;
@@ -139,8 +140,7 @@ int main( int argc, char* argv[] )
 
    if( da_cc_start( dah, 0 ) )
    {
-      print_result( dah->opcodes,
-                    refbuffer,
+      print_result( refbuffer,
                     dah,
                     size );
    }
@@ -148,8 +148,7 @@ int main( int argc, char* argv[] )
    {
       printf( "da_cc_trace() failed\n" );
 
-      print_result( dah->opcodes,
-                    refbuffer,
+      print_result( refbuffer,
                     dah,
                     size );
    }
