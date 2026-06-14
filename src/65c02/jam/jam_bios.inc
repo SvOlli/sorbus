@@ -213,12 +213,17 @@ RESET    := $FFD8
 ; Y=$01 as $00, but also clear framebuffer with $00
 .define FB32X32   $0F
 
+; execute SWEET16 code following the BRK
+; registers are stored at $E0-$FF
+; no parameters modified
+.define SWEET16   $10
+
 ; print out an 8 bit decimal value with leading 0s
 ; in:
 ; A: value
 ; out:
 ; -
-.define PRDEC8    $10
+.define PRDEC8    $11
 
 ; print out a 16 bit decimal value with leading 0s
 ; in:
@@ -226,7 +231,8 @@ RESET    := $FFD8
 ; A: value lobyte
 ; out:
 ; -
-.define PRDEC16   $11
+.define PRDEC16   $12
+
 
 .define KERNEL_BANK     $01
 .define TOOLS_BANK      $02

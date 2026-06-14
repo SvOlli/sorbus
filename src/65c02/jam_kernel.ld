@@ -11,6 +11,7 @@ MEMORY {
 }
 SEGMENTS {
     ZEROPAGE: load = ZP,       type = zp,  optional = yes;
+    ROMSTART: load = ROM,      type = ro,  optional = yes;
     CODE:     load = ROM,      type = ro;
     DATA:     load = ROM,      type = ro,  optional = yes;
     BIOS:     load = BIOS,     type = ro;

@@ -36,7 +36,9 @@ TRAMPOLINE    := $0100
 
 ; NMOS 6502 compatible code start
 
+.segment "ROMSTART"
    jmp   reset
+.segment "CODE"
 
 reset:
    cld                  ; only required for "soft reset"
@@ -343,8 +345,9 @@ brkjump:
    .word b2gensine      ; BRK #$0d
    .word mon_brk        ; BRK #$0e
    .word fb32x32        ; BRK #$0f
-   .word prdec8         ; BRK #$10
-   .word prdec16        ; BRK #$11
+   .word sweet16        ; BRK #$10
+   .word prdec8         ; BRK #$11
+   .word prdec16        ; BRK #$12
 @jumptableend:
 
 chrinuc:
@@ -470,8 +473,6 @@ fb32x32:
    bne   :-
    stz   FB32X32_COPY   ; clear also target framebuffer
 @noclear:
-   rts
-
 @noinit:
    rts
 

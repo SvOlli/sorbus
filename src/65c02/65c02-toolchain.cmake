@@ -1,7 +1,8 @@
 # this needs improvements
 
 set( CC65_MACHINE_TYPE "none" )
-set( CC65_CPU "65c02" )
+# all opcodes of 65sc02 are supported by 65c02, 65ce02, 65816
+set( CC65_CPU "65sc02" )
 execute_process( COMMAND cl65 --print-target-path OUTPUT_VARIABLE CL65_TARGET_PATH OUTPUT_STRIP_TRAILING_WHITESPACE )
 string( REGEX REPLACE "/target$" "" CC65_BASE "${CL65_TARGET_PATH}" )
 

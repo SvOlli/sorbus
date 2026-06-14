@@ -2232,7 +2232,7 @@ CRDO:
 .if USE_SYS
 .else
 PRINTNULLS:
-.ifpc02
+.ifpsc02
    phx
 .else
    txa
@@ -2249,7 +2249,7 @@ L29D9:
 .if USE_LINEWRAP
    stz   POSX
 .endif
-.ifpc02
+.ifpsc02
    plx
 .else
    pla
@@ -2331,7 +2331,7 @@ L2A22:
    cmp   #$0A
    bne   L2A22
 .if USE_SYS
-.ifpc02
+.ifpsc02
    stz   POSX
    bra   L2A22
 .else
@@ -3669,7 +3669,7 @@ L3188:
 ; FLOAT THE SIGNED INTEGER IN A,Y
 ; ----------------------------------------------------------------------------
 GIVAYF:
-.ifpc02
+.ifpsc02
    stz   VALTYP
 .else
    ldx   #$00
@@ -4407,7 +4407,7 @@ GETSTR:
 ASC:
    jsr   GETSTR
    beq   GOIQ
-.ifpc02
+.ifpsc02
    lda   (INDEX)
 .else
    ldy   #$00
@@ -4523,7 +4523,7 @@ PEEK:
    pha
 .endif
    jsr   GETADR
-.ifpc02
+.ifpsc02
    lda   (LINNUM)
    tay
 .else
@@ -4545,7 +4545,7 @@ PEEK:
 POKE:
    jsr   GTNUM
    txa
-.ifpc02
+.ifpsc02
    sta   (LINNUM)
 .else
    ldy   #$00

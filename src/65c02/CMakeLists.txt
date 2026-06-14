@@ -153,6 +153,7 @@ add_executable(jam_kernel
    jam/rom/woz.s
    jam/rom/vt100.s
    jam/rom/lineinput.s
+   jam/rom/sweet16.s
 
    jam/mon/main.s
    jam/mon/asciihex.s

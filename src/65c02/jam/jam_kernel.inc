@@ -22,6 +22,8 @@
 .global  printtmp16
 .global  inputline
 .global  ramread
+.global  sweet16
+
 
 ; entry points for the monitor
 .global  mon_init       ; called from reset menu / clean init
