@@ -38,6 +38,7 @@ TRAMPOLINE    := $0100
 
 .segment "ROMSTART"
    jmp   reset
+
 .segment "CODE"
 
 reset:
@@ -142,10 +143,10 @@ cmos6502:
    .byte "01234BFIMTW"
 @jmps:
    .word execram        ; 0
-   .word boot           ; 1
-   .word boot           ; 2
-   .word boot           ; 3
-   .word boot           ; 4
+   .word boot           ; 1 -> boot block @ sector $0000 (offset $0000)
+   .word boot           ; 2 -> boot block @ sector $0040 (offset $2000)
+   .word boot           ; 3 -> boot block @ sector $0080 (offset $4000)
+   .word boot           ; 4 -> boot block @ sector $00c0 (offset $6000)
    .word basic          ; B
    .word filebrowser    ; F
    .word @info          ; I
@@ -476,6 +477,67 @@ fb32x32:
 @noinit:
    rts
 
+.if 0
+   nop
+
+   ; save what will be used
+   php   ; will be restored in BIOS portion
+   pha   ; will be restored in BIOS portion
+   phx   ; will be restored before jump to BIOS portion
+
+   ; to get the index from lobyte of called routine we need to find
+   ; said byte on the stack the layout on the stack is
+   ; stack pointer, followed by lobyte and hibyte of return address -1
+   ; also adjust the address to the lobyte (stack points to hibyte)
+   tsx
+   lda   $0102,x
+   sta   TMP16+1
+   lda   $0101,x
+   beq   :+
+   dec   TMP16+1
+:
+   dec
+   sta   TMP16+0
+
+   ; now we know where the call originated from
+   lda   (TMP16)
+   sec
+   sbc   #(<addrhi)-1   ; adjust for start of nopslide and JSR "offset"
+   tax                  ; and finally, we've got our index
+
+   ; prepare return to kernel bank
+   lda   #<(banksubret-1)
+   pha
+   lda   #>(banksubret-1)
+   pha
+
+bankjmp1:
+   ; now use rts to jump into address in target bank
+   ; using this entry point remember to have P,A,X pushed to the stack
+   ; or just use "bankjmp" below
+   lda   addrhi,x
+   pha
+   lda   addrlo,x
+   pha
+
+   lda   #TOOLS_BANK    ; or just #TOOLS_BANK for now?
+   cpx   #<(basicbankstart-toolsbankstart)
+   adc   #$00
+   cpx   #<(forthbankstart-toolsbankstart)
+   adc   #$00
+   plx                  ; restore X before banking
+   jmp   banksubgo
+
+bankjmp:
+   ; reusing above code to jump into other banks like this:
+   ; ldx #SUBROUTINE_ID
+   ; jmp bankjmp
+   php                  ; prepare unnessary stuff require by bankjsr
+   pha                  ; as this pulls X,A,P from the stack
+   phx
+   bra   bankjmp1
+.endif
+
 
 .segment "DATA"
 
@@ -487,6 +549,34 @@ powof10lo:
    .byte <1,<10,<100,<1000,<10000
 powof10hi:
    .byte >1,>10,>100,>1000,>10000
+
+.if 0
+   ; order is important here
+   ; 1) jsrs into tools bank (2)
+   ; 2) jmps into tools bank (2)
+   ; 3) jmps into basic bank (3)
+   ; 4) jmps into forth bank (4)
+toolslo:
+   .lobyte  browser-1
+   .lobyte  gensine-1
+   .lobyte  run6502asm-1
+basiclo:
+   .lobyte  msbasic-1
+   .lobyte  msbasicrun-1
+forthlo:
+   .lobyte  forth-1
+
+toolshi:
+   .hibyte  unhandled65816-1
+   .hibyte  browser-1
+   .hibyte  gensine-1
+   .hibyte  run6502asm-1
+
+   .hibyte  msbasic-1
+   .hibyte  msbasicrun-1
+
+   .hibyte  forth01
+.endif
 
 signature:
    .byte "SBC23"

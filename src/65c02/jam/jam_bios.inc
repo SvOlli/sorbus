@@ -1,5 +1,5 @@
 ;
-; Copyright 2023-2024 Sven Oliver ("SvOlli") Moll
+; Copyright 2023-2026 Sven Oliver ("SvOlli") Moll
 ; Distributed unter the terms: GPL-3.0-or-later
 ;
 
@@ -32,6 +32,29 @@ PRIMM    := PRINT
 ; and executes reset code (65496 dec)
 ; like $FCE2 on C64
 RESET    := $FFD8
+
+; bank handling
+
+.define KERNEL_BANK     $01
+.define TOOLS_BANK      $02
+.define BASIC_BANK      $03
+.define FORTH_BANK      $04
+
+.define RESET_BANK      KERNEL_BANK
+.define RESET_IDX       $00
+
+.define UNH65816_BANK   TOOLS_BANK
+.define UNH65816_IDX    $00
+.define BROWSER_BANK    TOOLS_BANK
+.define BROWSER_IDX     $02
+.define GENSINE_BANK    TOOLS_BANK
+.define GENSINE_IDX     $04
+.define RUN6502ASM_BANK TOOLS_BANK
+.define RUN6502ASM_IDX  $06
+
+.define BASIC_IDX       $00
+
+
 
 ; non-API addresses required for BIOS <-> kernel calls
 .global  BIOS
@@ -232,23 +255,3 @@ RESET    := $FFD8
 ; out:
 ; -
 .define PRDEC16   $12
-
-
-.define KERNEL_BANK     $01
-.define TOOLS_BANK      $02
-.define BASIC_BANK      $03
-
-.define RESET_BANK      KERNEL_BANK
-.define RESET_IDX       $00
-
-.define UNH65816_BANK   TOOLS_BANK
-.define UNH65816_IDX    $00
-.define BROWSER_BANK    TOOLS_BANK
-.define BROWSER_IDX     $02
-.define GENSINE_BANK    TOOLS_BANK
-.define GENSINE_IDX     $04
-.define RUN6502ASM_BANK TOOLS_BANK
-.define RUN6502ASM_IDX  $06
-
-.define BASIC_IDX       $00
-

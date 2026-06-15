@@ -44,6 +44,11 @@ This can be accompished using the `int` macro provided in
 a superset of the 65CE02. The only difference is that the 65CE02 lacks
 the `MAP` opcode.
 
+Also, the kernel is implemented under the assumption that the stack is
+located at $0100-$01ff. So, when moving the stack using TYS and/or using
+the CLE opcode for a 16-bit stack, make sure that the stack will be in
+the area of $0100-$01ff when calling the kernel.
+
 ### 65816
 
 Starting with kernel 0.7, this CPU is supported by the Sorbus JAM in both
@@ -69,9 +74,13 @@ ABORTB). Also, the muxing of the D0-D7 pins used for A16-A23 during the
 "high" phase of the clockcycle are not intended to be implemented, so
 addressing will be always mapped to the base 64k space.
 
-Also the backtrace for 65816 is in a very early stage of development due
-to the lack of the MX signal from the chip, the heuristic needs to assume
-if an access of an immediate is in 8 or 16 bit mode.
+Also, the kernel is implemented under the assumption that the stack is
+located at $0100-$01ff. So, when switching to native mode make sure that
+the stack will be in the area of $0100-$01ff when calling the kernel.
+
+Furthermore, the backtrace for 65816 cannot read the MX signals from the
+CPU. So, a heuristic has been implemented to trace the M, X, and E flags
+from the sampled data. This might not work all of the time.
 
 ### NMOS 6502
 

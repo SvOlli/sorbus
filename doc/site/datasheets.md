@@ -20,6 +20,7 @@ directory that can be used to download these documents (PDFs only).
 * [MOS 6502 User's Manual](https://archive.org/download/6502um/6502UsersManual.pdf)
 * [MOS 6500 Preliminary](http://www.6502.org/documents/datasheets/mos/mos_6500_mpu_preliminary_may_1976.pdf)
 * [MOS 65CE02 Preliminary](http://www.6502.org/documents/datasheets/mos/mos_65ce02_mpu.pdf)
+* [CFG 4510 of the C65 which uses a 65CE02 core](https://github.com/MEGA65/c65-specifications/blob/master/c65manualupdated.txt)
 * [CMD G65SC02](https://www.datasheetcafe.com/wp-content/uploads/pdf/G65SC02.pdf)
 
 
@@ -64,6 +65,7 @@ directory that can be used to download these documents (PDFs only).
 * [OSI 8K BASIC Manual](https://osiweb.org/manuals/OSI_8K_Basic_in_ROM.pdf)
 * [Book on OSI BASIC](https://osiweb.org/books/OSI_Basic_In_Rom.PDF)
 * [Apple Disassembler in Dr Dobb's Journal](http://6502.org/documents/publications/dr_dobbs_journal/selected_articles/6502_disassembler_from_apple.pdf)
+* [SWEET16: Byte Magazine Volume 02 Number 11 (1977)](https://archive.org/download/BYTE_Vol_02-11_1977-11_Sweet_16/BYTE_Vol_02-11_1977-11_Sweet_16.pdf)
 
 
 ## Host Based Hardware

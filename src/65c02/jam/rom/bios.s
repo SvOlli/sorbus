@@ -76,18 +76,6 @@ chrin:
    rts
 
 
-.if 0
-; unused so far
-ramread:                ; internal-only routine to access RAM under ROM
-   ldx   BANK           ; save current ROM bank
-   stz   BANK           ; switch to RAM
-   lda   (TMP16),y
-   stx   BANK           ; restore current ROM bank
-   rts                  ; return
-; optional idea: push X to stack and expand ramio_cmd to 3 bytes for JSR
-.endif
-
-
 IRQCHECK:
    sta   BRK_SA         ; let's figure out the source of the IRQ
    pla                  ; get processor status from stack
@@ -140,17 +128,18 @@ BRK_65816N:
    bra   _isbrk         ; set to correct implementation
 
 .if 0
-banksub:
-   sta   ASAVE
-   lda   BANK
+   ; return address added to the stack to make sure that return lands
+   ; in kernel bank
+banksubret:
+   php
    pha
-   lda   ASAVE
+   lda   #KERNEL_BANK
+   ; called by kernel switch to bank for subroutine call
+   ; php and pha are done there
+banksubgo:
    sta   BANK
-   jsr   bankgoto
-   sta   ASAVE
    pla
-   sta   BANK
-   lda   ASAVE
+   plp
    rts
 .endif
 

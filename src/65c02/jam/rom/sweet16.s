@@ -1,7 +1,7 @@
 
 ; This is a port of SWEET16 as describe by Steve Wozniak in
 ; "SWEET16: The 6502 Dream Machine"
-; BYTE magazine November 1977, pages 151-159
+; Byte Magazine Volume 02 Number 11 (1977), pages 151-159
 
 ; ***********************
 ; *                     *
@@ -54,9 +54,14 @@ stat:
    lda   r0l
 stat2:
    sta   (r0l,x)        ;store byte indirect
+.ifpsc02
+stat3:
+   stz   r14h           ;indicate r0 is result neg
+.else
    ldy   #$00
 stat3:
    sty   r14h           ;indicate r0 is result neg
+.endif
 inr:
    inc   r0l,x
    bne   :+             ;incr rx
@@ -67,13 +72,23 @@ inr:
 ldat:
    lda   (r0l,x)        ;load indirect (rx)
    sta   r0l            ;to r0
+.ifpsc02
+   stz   r0h            ;zero high order r0 byte
+   bra   stat3
+.else
    ldy   #$00
    sty   r0h            ;zero high order r0 byte
    beq   stat3          ;always taken
+.endif
+
 pop:
    ldy   #$00           ;high order byte = 0
+.ifpsc02
+   bra   pop2
+.else
    beq   pop2           ;always taken
-popd:
+.endif
+popd:                   ; always called with Y=$18 (r12)
    jsr   dcr            ;decr rx
    lda   (r0l,x)        ;pop high order byte @rx
    tay                  ;save in y reg
@@ -83,8 +98,12 @@ pop2:
    sta   r0l            ;to r0
    sty   r0h
 pop3:
+.ifpsc02
+   stz   r14h
+.else
    ldy   #$00           ;indicate r0 as last result reg
    sty   r14h
+.endif
    rts
 
 lddat:
@@ -243,7 +262,7 @@ set:
    bra   setz
 
 rtn:
-   ; here is $E0FD @ 65sc02 ($E100 is max allowed)
+   ; here is $E0F7 @ 65sc02 ($E100 is max allowed)
    ; rtn is called using jsr, but exits sweet16
    pla
    pla
@@ -274,30 +293,26 @@ setz:
 
 
 sweet16:
-   ; sweet16 is expected to be called using jsr, JAM uses brk
-   ; S=$FA; retaddr+0 = $01FE
+   ; typical situation: SP=$FA; retaddr+0 @ $01FE
    tsx
    lda   $0105,x
    sta   r15h
    lda   $0104,x
-   bne   :+
-   dec   r15h
-:
-   dec
    sta   r15l
 
+   jsr   runopcode1     ;first iteration does not need increment of r15
 mainloop:
    jsr   runopcode      ;interpret and execute
    bra   mainloop       ;one sweet16 instr.
 
 runopcode:
    inc   r15l
-   bne   :+             ;incr sweet16 pc for fetch
+   bne   runopcode1     ;incr sweet16 pc for fetch
    inc   r15h
-:
+runopcode1:
    lda   #>set          ;common high byte for all routines
    pha                  ;push on stack for rts
-   ldy   #$00
+   ldy   #$00           ; not obsolete with 65sc02!
 .ifpsc02
    lda   (r15l)         ;fetch instr
 .else
@@ -333,43 +348,6 @@ tobr:
    rts                  ;goto non-reg op routine
 
 .segment "DATA"
-
-.if 0
-optbl:
-   .byte <(set-1)         ;$1x
-brtbl:
-   .byte <(rtn-1)         ;$00
-   .byte <(ld-1)          ;$2x
-   .byte <(br-1)          ;$01
-   .byte <(st-1)          ;$3x
-   .byte <(bnc-1)         ;$02
-   .byte <(ldat-1)        ;$4x
-   .byte <(bc-1)          ;$03
-   .byte <(stat-1)        ;$5x
-   .byte <(bp-1)          ;$04
-   .byte <(lddat-1)       ;$6x
-   .byte <(bm-1)          ;$05
-   .byte <(stdat-1)       ;$7x
-   .byte <(bz-1)          ;$06
-   .byte <(pop-1)         ;$8x
-   .byte <(bnz-1)         ;$07
-   .byte <(stpat-1)       ;$9x
-   .byte <(bm1-1)         ;$08
-   .byte <(add-1)         ;$Ax
-   .byte <(bnm1-1)        ;$09
-   .byte <(sub-1)         ;$Bx
-   .byte <(bk-1)          ;$0A
-   .byte <(popd-1)        ;$Cx
-   .byte <(rs-1)          ;$0B
-   .byte <(cpr-1)         ;$Dx
-   .byte <(bs-1)          ;$0C
-   .byte <(inr-1)         ;$Ex
-   .byte <(nul-1)         ;$0D
-   .byte <(dcr-1)         ;$Fx
-   .byte <(nul-1)         ;$0E
-   .byte <(nul-1)         ;unused
-   .byte <(nul-1)         ;$0F
-.else
 brtbl:
    .byte <(rtn-1)         ;$00
 optbl:
@@ -403,26 +381,5 @@ optbl:
    .byte <(nul-1)         ;$0E
    .byte <(dcr-1)         ;$Fx
    .byte <(nul-1)         ;$0F
-.endif
-
-; * following code must be
-; * contained on a single page!
-
-.if 0
-runtest:
-   jsr   sweet16
-.setcpu "sweet16"
-   set   r1, $f000
-   set   r2, $0088
-   set   r3, $0040
-:
-   ld    @r1
-   st    @r2
-   dcr   r3 
-   bnz   :-
-   rtn
-.setcpu "6502x"
-   rts
-.endif
 
 .assert >ld = >rtn, error, "sweet16 opcodes must not cross page"
