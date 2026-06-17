@@ -53,6 +53,7 @@ nav:
       - 'Filebrowser': 'jam/filebrowser.md'
       - 'Useful Software': 'jam/software.md'
       - 'Memory Map & I/O Registers': 'jam/memory_map_io_registers.md'
+      - 'Bankswitching': 'jam/bankswitching.md'
       - '32x32 LEDs Display': 'jam/32x32display.md'
    - 'Classic Cores':
       - 'Apple 1': 'apple1.md'

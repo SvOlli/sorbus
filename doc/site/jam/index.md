@@ -55,6 +55,7 @@ Starting with kernel 0.7, this CPU is supported by the Sorbus JAM in both
 legacy and native mode. Before kernel 0.7, only legacy mode was supported.
 However, all vectors that are not available on a 6502 are set to a stub
 implementation, just triggering [meta mode](meta_mode.md) before resetting.
+
 These can be overloaded when switching bank $00 (RAM). Copying BIOS to RAM
 before making these modification using interrupt $0B (COPYBIOS) is advised.
 This works as the bank is only reset to kernel when a hardware reset (e.g.

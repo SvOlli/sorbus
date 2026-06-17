@@ -4,6 +4,8 @@
 
 .export     unhandled65816
 
+.segment "CODE"
+
 unhandled65816:
    stz   TRAP
    jsr   PRINT

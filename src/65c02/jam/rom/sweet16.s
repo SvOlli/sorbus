@@ -18,7 +18,8 @@
 
 .include "jam.inc"
 .include "jam_bios.inc"
-.include "jam_kernel.inc"
+
+.export  sweet16
 
 .segment "CODE"
 
@@ -33,6 +34,10 @@ r15h        := sweet16regs + $1f
 .else
 .warning "expected to be configured as 65sc02"
 .endif
+
+; this must be at beginning of page
+; after a jmp at the $E000 is also okay
+; bottom of file contains sanity check
 
 .segment "ROMSTART"
 
@@ -291,6 +296,8 @@ setz:
 :
    rts
 
+
+.segment "CODE"
 
 sweet16:
    ; typical situation: SP=$FA; retaddr+0 @ $01FE

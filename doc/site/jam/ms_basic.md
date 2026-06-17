@@ -147,5 +147,5 @@ implementation. However this will be a problem with code that uses USR()
 to call subroutines in ROM. If you encounter such a problem, contact me,
 and I help you porting that code.
 
-You can use `SYS 65496` to soft reset the machine and leave BASIC for the
+You can use `SYS 65500` to soft reset the machine and leave BASIC for the
 reset menu.

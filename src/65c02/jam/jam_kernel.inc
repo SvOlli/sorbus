@@ -5,6 +5,7 @@
 
 ; labels used between different parts of the kernel (bank 1)
 .global  ascii2bin
+.global  bankjmp
 .global  bin2ascii
 .global  chrinuc
 .global  copybios
@@ -20,20 +21,6 @@
 .global  uppercase
 .global  vt100
 .global  wozstart
-
-.if 0
-; labels used as destinations for bankjsrs/bankjmps into bank 2
-.global  b2browser
-.global  b2fb32x32
-.global  b2gensine
-.global  b2run6502asm
-
-; labels used as destinations for bankjmps into bank 3
-.global  b3basic
-
-; labels used as destinations for bankjmps into bank 4
-.global  f4forth
-.endif
 
 ; entry points for the monitor
 .global  mon_init       ; called from reset menu / clean init

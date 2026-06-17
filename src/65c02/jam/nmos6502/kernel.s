@@ -6,6 +6,7 @@
 
 .define INPUT_DEBUG 0
 
+.import     IRQCHECK    ; bios.s
 .import     clrenter
 .import     getkey
 .import     mon

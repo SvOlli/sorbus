@@ -15,6 +15,20 @@
 ; 65816:
 ; - using extra vectors is only possible when running from bank $00 (RAM)
 
+
+.export  BIOS
+.export  IRQCHECK
+.export  bankrti        ; used in kernel and mon only, to jump to another bank
+                        ; - target address needs to be on the stack
+                        ; - also dummy processor status, like BRK
+.export  bankstart      ; kernel only, does not matter in other banks
+.export  banksubgo      ; kernel only, does not matter in other banks
+.export  banksubret     ; kernel only, does not matter in other banks
+
+.import  brkjump        ; kernel.s
+.import  reset          ; kernel.s
+
+
 .segment "BIOS"
 BIOS:
 _chrin:
@@ -127,36 +141,30 @@ BRK_65816N:
                         ; TODO: prepare correctly
    bra   _isbrk         ; set to correct implementation
 
-.if 0
-   ; return address added to the stack to make sure that return lands
-   ; in kernel bank
 banksubret:
    php
-   pha
-   lda   #KERNEL_BANK
+   phx
+   ldx   #KERNEL_BANK
    ; called by kernel switch to bank for subroutine call
    ; php and pha are done there
 banksubgo:
-   sta   BANK
-   pla
+   stx   BANK
+   plx
    plp
    rts
-.endif
 
 .segment "FIXEND"
 _fixstart:
 _unhandled:
    .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
-   ldy   #UNH65816_BANK
-   bra   bankgoto0
+   ldx   #UNH65816_BANK
+   bra   bankstart
 _reset:
    .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
-   ldy   #KERNEL_BANK   ; reset routine is per definition in kernel
-bankgoto0:
-   ldx   #RESET_IDX     ; index $00 is always considered "special"
-bankgoto:
-   sty   BANK           ; select bank from Y
-   jmp   ($E001,x)      ; jump to table index, table will be used top down
+   ldx   #KERNEL_BANK   ; reset routine is per definition in kernel
+bankstart:
+   stx   BANK           ; select bank from Y
+   jmp   $E000          ; jump to table index, table will be used top down
 _fixend:
 
 .segment "VECTORS"
@@ -200,9 +208,11 @@ IRQ:
 
 _biossize = (_biosend-BIOS)
 _fixsize = (_fixend-_fixstart)
+; beware of hardcoded values below copy/pasted from linker script
 .out "   =============================="
-.out .sprintf( "   BIOS  size: $%04x ($%04x free)", _biossize, $CA - (_biossize) )
+.out .sprintf( "   BIOS  size: $%04x ($%04x free)", _biossize, $D4 - (_biossize) )
 .out .sprintf( "   FIXED size: $%04x", _fixsize )
+.out .sprintf( "   _reset at:  $%04x ($%04x=RESET)", RESET, $FFD4 + _reset - _fixstart )
 .out "   =============================="
 
 .assert  CHRIN     = _chrin,   error, "CHRIN at wrong address"

@@ -27,11 +27,12 @@ PRINT    := $FF06
 ; PRIMM is a common used synonym for PRINT here
 PRIMM    := PRINT
 
-; $FFD8: reset routine
+; $FFDA: reset routine
 ; switches to the correct bank
-; and executes reset code (65496 dec)
+; and executes reset code (65498 dec)
+; for basic also 65500 works
 ; like $FCE2 on C64
-RESET    := $FFD8
+RESET    := $FFDA
 
 ; bank handling
 
@@ -53,17 +54,6 @@ RESET    := $FFD8
 .define RUN6502ASM_IDX  $06
 
 .define BASIC_IDX       $00
-
-
-
-; non-API addresses required for BIOS <-> kernel calls
-.global  BIOS
-.global  IRQCHECK
-.global  bankrti        ; used in kernel and mon only, to jump to another bank
-                        ; - target address needs to be on the stack
-                        ; - also dummy processor status, like BRK
-.global  brkjump        ; kernel only, does not matter in other banks
-.global  reset          ; kernel only, does not matter in other banks
 
 .ifp02
  .macro int arg

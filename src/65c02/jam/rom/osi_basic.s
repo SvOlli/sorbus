@@ -83,6 +83,7 @@
 
 .include "jam.inc"
 .include "jam_bios.inc"
+.include "jumptable.inc"
 
 ; zero page
 ZP_START  = $10
@@ -313,12 +314,18 @@ CONFIG_NO_INPUTBUFFER_ZP := 1
 .endif
 INPUTBUFFERX = INPUTBUFFER & $FF00
 
-.segment "CODE"
+.segment "ROMSTART"
+
 BASTART:
+.assert * = B3BASIC, error, "B3BASIC does not match"
    ; bank jumptable index $00
    jmp   COLD_START
+.assert * = B3AUTORUNBAS, error, "B3AUTORUNBAS does not match"
    ; bank jumptable index $01
-   .word RESTART ; intended to be used after loading a BASIC file
+   jmp   RESTART ; intended to be used after loading a BASIC file
+JTSIZE = * - BASTART
+
+.segment "CODE"
 
 COLD_START:
    ldx   #$FF
@@ -6211,14 +6218,15 @@ GENERIC_CHRGET_END:
 
 
 .out "   ================="
-.out .sprintf( "   BASIC size: $%04x", * - BASTART )
+.out .sprintf( "   BASIC size: $%04x", * - COLD_START )
+.out .sprintf( "   free ROM   :$%04x", COLD_START + $1F00 - * - JTSIZE )
 .out .sprintf( "   CHRGET:     $%04x", CHRGET )
 .out .sprintf( "   ZP end:     $%04x", ZPEND + GENERIC_CHRGET_END - GENERIC_CHRGET )
 .out .sprintf( "   number tokens: %d", NUM_TOKENS )
 .out "   ================="
 
 .out "address relocation:"
-.out "| Label | Old (hex) | Old (dec) | New (hex) | New (dec) |"
+.out "| Label | Old (hex) | New (hex) | Old (dec) | New (dec) |"
 .out "| ----- | --------: | --------: | --------: | --------: |"
 .if .defined(GORESTART)
 .out .sprintf( "| GORESTART | $00 | $%02X | 0 | %d |", GORESTART, GORESTART )

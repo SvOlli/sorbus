@@ -1,4 +1,6 @@
 
+.include "jumptable.inc"
+
 .import     browser
 .import     gensine
 .import     run6502asm
@@ -7,12 +9,11 @@
 
 .segment "CODE"
 
-dispatch:
-   jmp   (@jmptab,x)
-.assert dispatch = $E000, error, "tools dispatch must be at start of bank"
-
-@jmptab:
-   .word unhandled65816
-   .word browser
-   .word gensine
-   .word run6502asm
+.assert * = B2UNH816, error, "B2UNH816 does not match"
+   jmp   unhandled65816
+.assert * = B2GENSINE, error, "B2GENSINE does not match"
+   jmp   gensine
+.assert * = B2BROWSER, error, "B2BROWSER does not match"
+   jmp   browser
+.assert * = B2RUN6502ASM, error, "B2RUN6502ASM does not match"
+   jmp   run6502asm

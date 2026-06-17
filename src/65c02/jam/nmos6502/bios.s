@@ -20,6 +20,18 @@
 ; 65816:
 ; - using extra vectors is only possible when running from bank $00 (RAM)
 
+
+.export  BIOS
+.export  IRQCHECK
+.export  bankrti        ; used in kernel and mon only, to jump to another bank
+                        ; - target address needs to be on the stack
+                        ; - also dummy processor status, like BRK
+.export  bankstart      ; kernel only, does not matter in other banks
+
+.import  brkjump        ; kernel.s
+.import  reset          ; kernel.s
+
+
 .segment "BIOS"
 BIOS:
 _chrin:
@@ -109,16 +121,14 @@ _biosend:
 _fixstart:
 _unhandled:
    .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
-   ldy   #UNH65816_BANK
-   bne   bankgoto0      ; branching always, das bank will never be $00
+   ldx   #UNH65816_BANK
+   bne   bankstart      ; branching always, das bank will never be $00
 _reset:
    .byte $e2,$30        ; SEP #$30 -> set MX to 8-bit mode, like 65C02
-   ldy   #KERNEL_BANK   ; reset routine is per definition in kernel
-bankgoto0:
-   ldx   #RESET_IDX     ; index $00 is always considered "special"
-bankgoto:
-   sty   BANK           ; select bank from Y
-   jmp   ($E001)        ; placeholdes, as 6502 doesn't have JMP ($E001,x)
+   ldx   #KERNEL_BANK   ; reset routine is per definition in kernel
+bankstart:
+   stx   BANK           ; select bank from Y
+   jmp   $E000          ; placeholdes, as 6502 doesn't have JMP ($E001,x)
 _fixend:
 
 .segment "VECTORS"
@@ -162,9 +172,11 @@ IRQ:
 
 _biossize = (_biosend-BIOS)
 _fixsize = (_fixend-_fixstart)
+; beware of hardcoded values below copy/pasted from linker script
 .out "   =============================="
-.out .sprintf( "   BIOS  size: $%04x ($%04x free)", _biossize, $CA - (_biossize) )
+.out .sprintf( "   BIOS  size: $%04x ($%04x free)", _biossize, $D4 - (_biossize) )
 .out .sprintf( "   FIXED size: $%04x", _fixsize )
+.out .sprintf( "   _reset at:  $%04x ($%04x=RESET)", RESET, $FFD4 + _reset - _fixstart )
 .out "   =============================="
 
 .assert  CHRIN     = _chrin,   error, "CHRIN at wrong address in NMOS"

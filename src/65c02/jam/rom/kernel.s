@@ -16,7 +16,19 @@ TRAMPOLINE    := $0100
 .include "jam_bios.inc"
 .include "jam_kernel.inc"
 .include "jam_cpmfs.inc"
+.include "jumptable.inc"
 .include "fb32x32_regs.inc"
+
+.import  BIOS           ; bios.s
+.import  IRQCHECK       ; bios.s
+.import  bankrti        ; bios.s
+.import  bankstart      ; bios.s
+.import  banksubgo      ; bios.s
+.import  banksubret     ; bios.s
+.import  sweet16        ; sweet16.s
+
+.export  brkjump
+.export  reset
 
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
@@ -37,6 +49,7 @@ TRAMPOLINE    := $0100
 ; NMOS 6502 compatible code start
 
 .segment "ROMSTART"
+ROMSTART:
    jmp   reset
 
 .segment "CODE"
@@ -239,39 +252,33 @@ boota:
    .byte "Go",10,0
    beq   execram        ; will be run using NMOS 6502
 
-; TODO: check if b2gensine, filebrowser and basic can be done better
-; using jmp bankgoto
-b2gensine:
-   ldx   #GENSINE_IDX   ; tools bank starts with jmp ($e001,x)
-   .byte $2c
 filebrowser:
-   ldx   #BROWSER_IDX   ; tools bank starts with jmp ($e001,x)
-   lda   #TOOLS_BANK    ; select tools bank
-   .byte $2c
+   ldx   #TOOLS_BANK
+   lda   #<B2BROWSER
+   jmp   bankjmp
+
 basic:
-   lda   #BASIC_BANK    ; select BASIC bank
-   .byte $2c
+   ldx   #BASIC_BANK    ; select BASIC bank
+   jmp   bankstart
+
 execram:
-   ; execute loaded boot block in RAM at $E000
-   lda   #$00
-execrom:                ; has to be called with A=bank to switch to
-   pha
+   ; execute previously loaded boot block in RAM at $E000
    ldy   #(@trampolineend-@trampoline-1)
 :
    lda   @trampoline,y  ; this requires bankswitching code written to RAM
    sta   TRAMPOLINE,y
    dey
    bpl   :-
-   pla
    jmp   TRAMPOLINE+@jmpbank0-@trampoline
 
 @trampoline:
    inc   BANK           ; this routine may only be called from bank 0 (RAM)
-   jsr   copybios       ; copy $FF00-$FFFF to RAM
+   int   COPYBIOS       ; copy $FF00-$FFFF to RAM
+   ;jsr   copybios       ; copy $FF00-$FFFF to RAM
    stz   BANK           ; set BANK back to $00 (RAM)
    rts
 @jmpbank0:
-   sta   BANK
+   stz   BANK
    jmp   $E000
 @trampolineend:
 
@@ -329,6 +336,8 @@ brkjump:
 @user:
    jmp   (UVBRK)
 
+.segment "DATA"
+
 @jumptable:
    .word @user          ; BRK #$00
    .word chrinuc        ; BRK #$01
@@ -343,13 +352,20 @@ brkjump:
    .word vt100          ; BRK #$0a
    .word copybiossetram ; BRK #$0b
    .word xinputline     ; BRK #$0c
-   .word b2gensine      ; BRK #$0d
+   .word j2gensine      ; BRK #$0d
    .word mon_brk        ; BRK #$0e
    .word fb32x32        ; BRK #$0f
    .word sweet16        ; BRK #$10
    .word prdec8         ; BRK #$11
    .word prdec16        ; BRK #$12
 @jumptableend:
+
+.segment "CODE"
+
+j2gensine:
+   jsr   gensine
+   ; must not be shortend to jmp, because gensine reads from stack
+   rts
 
 chrinuc:
    ; wait for character from UART and make it uppercase
@@ -477,23 +493,28 @@ fb32x32:
 @noinit:
    rts
 
-.if 0
+   ; these entry functions need to align with jumptable
+firstbankjsr:
+gensine:
    nop
-
-   ; save what will be used
-   php   ; will be restored in BIOS portion
-   pha   ; will be restored in BIOS portion
-   phx   ; will be restored before jump to BIOS portion
-
-   ; to get the index from lobyte of called routine we need to find
-   ; said byte on the stack the layout on the stack is
-   ; stack pointer, followed by lobyte and hibyte of return address -1
-   ; also adjust the address to the lobyte (stack points to hibyte)
+disass816:
+   nop
+ass816:
+   sta   ASAVE
+   php
+   pla
+   ; stack now contains: RETL RETH
+   sta   PSAVE
+   phx
+   ; stack now contains: X RETL RETH
+   ; we want to get these: ^^^^ ^^^^
+   ; RET points at "yy" the the byte sequence 20 xx yy
+   ; however, we want "xx", so decrement by 1
    tsx
-   lda   $0102,x
+   lda   $0103,x
    sta   TMP16+1
-   lda   $0101,x
-   beq   :+
+   lda   $0102,x
+   bne   :+
    dec   TMP16+1
 :
    dec
@@ -502,41 +523,76 @@ fb32x32:
    ; now we know where the call originated from
    lda   (TMP16)
    sec
-   sbc   #(<addrhi)-1   ; adjust for start of nopslide and JSR "offset"
-   tax                  ; and finally, we've got our index
+   sbc   #(<firstbankjsr)-1 ; adjust for start of nopslide and JSR "offset"
+.if 0
+   ; here some further evaluation could take place, if a jsr to a bank other
+   ; than TOOLS_BANK is required
+   cmp   #bank3_start
+   bcc   :+
+   sbc   #bank3_start
+   inx
+   ; even better: this can be done more than a single time
+:
+.endif
+   sta   TMP16+0
+   asl                  ; A needs to be < $FF/3 = $55, so no clc needed
+   adc   TMP16+0
+   dec
+   sta   TMP16+0        ; TMP16+0 now holds $ff,$02,...
+   plx
+   ; stack now contains: RETL RETH
 
-   ; prepare return to kernel bank
-   lda   #<(banksubret-1)
-   pha
    lda   #>(banksubret-1)
    pha
-
-bankjmp1:
-   ; now use rts to jump into address in target bank
-   ; using this entry point remember to have P,A,X pushed to the stack
-   ; or just use "bankjmp" below
-   lda   addrhi,x
+   lda   #<(banksubret-1)
    pha
-   lda   addrlo,x
+   ; stack now contains:  banksubretL banksubretH RETL RETH
+
+   lda   #>ROMSTART
+   pha
+   lda   TMP16+0
    pha
 
-   lda   #TOOLS_BANK    ; or just #TOOLS_BANK for now?
-   cpx   #<(basicbankstart-toolsbankstart)
-   adc   #$00
-   cpx   #<(forthbankstart-toolsbankstart)
-   adc   #$00
-   plx                  ; restore X before banking
+   ; stack now contains: banksubL banksubH banksubretL banksubretH RETL RETH
+   lda   PSAVE
+   pha
+   ; stack now contains: P banksubL banksubH banksubretL banksubretH RETL RETH
+
+   phx
+   ; stack now contains: X P banksubL banksubH banksubretL banksubretH RETL RETH
+
+   ldx   #TOOLS_BANK
+   lda   ASAVE
    jmp   banksubgo
 
 bankjmp:
-   ; reusing above code to jump into other banks like this:
-   ; ldx #SUBROUTINE_ID
-   ; jmp bankjmp
-   php                  ; prepare unnessary stuff require by bankjsr
-   pha                  ; as this pulls X,A,P from the stack
-   phx
-   bra   bankjmp1
-.endif
+   ; A=entrypoint: $E0xx : xx = A
+   ; X=bank
+   ; ASAVE=A on entry
+   ; PSAVE=X on entry
+   php
+   ; stack now contains: P
+   sta   TMP16+0        ; saving A=entrypoint-1
+   pla
+   ; stack now contains: (nothing)
+   sta   TMP16+1        ; saving P
+
+   lda   #>ROMSTART
+   pha
+   ; stack now contains: JMPH
+   lda   TMP16+0
+   dec                  ; adjusting for RTS
+   pha
+   ; stack now contains: JMPL JMPH
+   lda   TMP16+1        ; getting P
+   pha
+   ; stack now contains: P JMPL JMPH
+   lda   PSAVE          ; getting X for function call
+   pha
+   ; stack now contains: X P JMPL JMPH
+   lda   ASAVE          ; getting A for function call
+   jmp   banksubgo
+   ; banksubgo: stx BANK : plx : plp : rts
 
 
 .segment "DATA"

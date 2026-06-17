@@ -9,6 +9,7 @@
 .export     regsave
 .export     regupdown
 
+.import     bankrti     ; bios.s
 .import     prterr
 .import     prtsp
 .import     inbufhex8
