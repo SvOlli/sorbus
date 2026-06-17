@@ -46,7 +46,7 @@ uint32_t ht_freemin();
 
 /* convert a character from 8bit to 16bit UTF representation
  * according to charset */
-uint16_t tocs16( uint8_t ch, uint8_t cs );
+uint16_t cs_to_cs16( uint8_t ch, uint8_t cs );
 
 /*
  * like putchar, print a character
@@ -55,13 +55,35 @@ uint16_t tocs16( uint8_t ch, uint8_t cs );
  * 0: pass through; native UTF-8
  * 1: Sorbus handpicked configuration
  */
-int putcharset( uint8_t ch, uint8_t cs );
+int cs_put_utf8( uint8_t ch, uint8_t cs );
 
 /*
- * same as putcharset, but returns instead of printing returns
+ * same as cs_put_utf8, but returns instead of printing returns
  * string that represents a single UTF-8 character
  */
-const char *tocharset( uint8_t ch, uint8_t cs );
+const char *cs_to_utf8( uint8_t ch, uint8_t cs );
+
+/*
+ * same as above, but with an snprintf-like interface
+ */
+int cs_sn_utf8( char *b, size_t size, uint8_t ch, uint8_t cs );
+
+/*
+ * same as above, but with debug extensions:
+ * 0x7f is displayed as 0xFFFD ("error questionmark" symbol)
+ * 0x00-0x1f will be displayed as inverted 0x40-0x5f
+ * NOTE: an inverted character will need 10(!) bytes in string
+ */
+int cs_sn_utf8_debug( char *b, size_t bsize, uint8_t ch, uint8_t cs );
+
+/*
+ * counts text to be written, answering
+ * "if you cursor is a position 0, on what position will it be after
+ *  printing this string?"
+ * - UTF-8 sequences will be counted as "1"
+ * - ANSI/VT100 sequences will be counted as "0"
+ */
+int cs_textlen( const char *string );
 
 /*
  * library function to upload data to RAM via xmodem

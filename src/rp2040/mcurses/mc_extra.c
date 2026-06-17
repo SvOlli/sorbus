@@ -227,7 +227,7 @@ void mcurses_debug_byte( uint8_t byte, uint8_t cs )
    }
    else
    {
-      addch( tocs16( byte, cs ) );
+      addch( cs_to_cs16( byte, cs ) );
    }
 }
 
@@ -243,7 +243,7 @@ void mcurses_debug_str( const char *s, uint8_t cs )
       }
       else
       {
-         addch( tocs16( (*c), cs ) );
+         addch( cs_to_cs16( (*c), cs ) );
       }
       ++c;
    }

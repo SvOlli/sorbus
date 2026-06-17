@@ -27,7 +27,7 @@ static void printline( const char *line, uint8_t charset, int len )
          }
          else
          {
-            putcharset( *(l++), charset );
+            cs_put_utf8( *(l++), charset );
          }
       }
       else

@@ -325,7 +325,7 @@ void console_65c02()
       }
       else
       {
-         putcharset( out, console_charset );
+         cs_put_utf8( out, console_charset );
       }
    }
 }
