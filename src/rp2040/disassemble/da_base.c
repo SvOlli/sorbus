@@ -526,3 +526,25 @@ int da_sn_text( char *b, size_t bsize, cputype_t cpu,
 
    return used;
 }
+
+
+int da_sn_cpuname( char *b, size_t bsize, cputype_t cpu )
+{
+   /* this needs to be aligned with the enum in base_type.h */
+   const char *cpuname[] = {
+      "UNKNOWN",
+      "NMOS 6502",
+      "65C02",
+      "65C816",
+      "65CE02",
+      "6502 Rev.A",
+      "65SC02",
+      "SWEET16"
+   };
+
+   if( cpu >= CPU_UNDEF )
+   {
+      cpu = CPU_ERROR;
+   }
+   return snprintf( b, bsize, "%s", cpuname[cpu] );
+}

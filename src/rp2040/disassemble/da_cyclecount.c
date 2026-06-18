@@ -392,6 +392,9 @@ static uint8_t da_cc_65816( da_trace_t d, uint32_t pos )
          case SBC:
             d->flag_c = FLAG_UNKNOWN;
             break;
+         case PHP: // could be read from trace
+            d->flag_c = fullinfo[pos+2].data & 0x01 ? FLAG_SET : FLAG_UNSET;
+            return 3;
          case PLP: // could be read from trace
             d->flag_c = fullinfo[pos+3].data & 0x01 ? FLAG_SET : FLAG_UNSET;
             return 4;
@@ -501,6 +504,9 @@ uint8_t da_cc_vectorpull( da_trace_t d, uint32_t pos, uint16_t addr, bool sc02 )
    {
       fullinfo[pos+i].eval = DA_EVAL_MIN;
    }
+   /* additionally, we now know that we're in emulation mode */
+   d->flag_e = FLAG_CPU1;
+
    return 7;
 }
 
@@ -545,6 +551,9 @@ uint8_t da_cc_vectorpull_65816( da_trace_t d, uint32_t pos, uint16_t addr )
    {
       return 0;
    }
+   /* additionally, we now know that we're in native mode */
+   d->flag_e = FLAG_CPU0;
+
    return 8;
 }
 

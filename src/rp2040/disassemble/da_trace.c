@@ -67,8 +67,6 @@ static inline void _da_trace_fill( da_trace_t d,
    /* pass 2: now, let's fill in additional data */
    for( i = 0; i < entries; ++i )
    {
-      //fullinfo[i].eval  = 3;
-
       /* find arguments */
       expectedaddress   = fullinfo[i].address+1;
       offset = 0;
@@ -86,7 +84,7 @@ static inline void _da_trace_fill( da_trace_t d,
                   break;
                case 3:
                   fullinfo[i].data3 = fullinfo[i+n].data;
-                  // found all parameters, exit from for loop
+                  /* found all parameters, exit from for loop */
                   n = DA_CPU_MAXCYCLES;
                   break;
                default:

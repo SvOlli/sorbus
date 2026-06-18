@@ -88,8 +88,9 @@ typedef enum
    FLAG_UNKNOWN = 0,
    FLAG_UNSET   = 1,
    FLAG_SET     = 2,
-   FLAG_0       = FLAG_UNSET,
-   FLAG_1       = FLAG_SET,
+   /* flags in log are inverted compared to CPU */
+   FLAG_CPU1    = FLAG_UNSET,
+   FLAG_CPU0    = FLAG_SET,
    FLAG_MISSING = 3
 } da_cpu_flag_t;
 
@@ -137,6 +138,7 @@ uint8_t da_fullinfo_isequal( cputype_t cpu, da_fullinfo_t fi1, da_fullinfo_t fi2
  *               bytes with leading spaces, or spaces if data is not used
  * R  (1 char):  space or 'R', if reset low
  * S  (1 char):  space or 'S', if RDY low
+ * t  (1 char):  data as charset 1 like in hexedit
  * w  (1 char): 'r' or 'w' for read or write
  * x^ (9 chars): additional hex data as available in data, shows up to three
  *               bytes with leading spaces, or spaces if data is not used
@@ -146,8 +148,10 @@ uint8_t da_fullinfo_isequal( cputype_t cpu, da_fullinfo_t fi1, da_fullinfo_t fi2
  *
  * characters maked with ^ will produce hex numbers in upper case,
  * if upper case letter is used
- * other characters like braces, brackets, everthing <= '@' will be printed
+ * other characters like braces, brackets, everything <= '@' will be printed
  * as itself
+ * available:   B  EFGH JKLM  PQ  TUVW
+ * characters:  b   fghijklm  pqrstuv   z
  */
 int da_sn_fullinfo( char *b, size_t bsize, cputype_t cpu,
                     const char f, da_fullinfo_t fullinfo, da_flags_t flags );
@@ -168,5 +172,8 @@ int da_snf_fullinfo( char *b, size_t bsize, cputype_t cpu,
 /* like snprintf, but for disassembly */
 int da_sn_text( char *b, size_t bsize, cputype_t cpu,
                 da_fullinfo_t fullinfo, da_flags_t flags );
+
+/* like snprintf, but for cputype name */
+int da_sn_cpuname( char *b, size_t bsize, cputype_t cpu );
 
 #endif

@@ -499,7 +499,7 @@ setfn:
    ldy   #$0b           ; user id for BASIC is 11 (decimal)
    int   CPMNAME
 
-   dex   ;ldx   #$02
+   dex   ;ldx   #$02    ; CPM_FNAME is located in page 3
 :
    lda   @bas,x         ; replace extension with "BAS", always
    sta   CPM_FNAME+$09,x
