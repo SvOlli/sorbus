@@ -20,6 +20,7 @@ endfunction()
 bin2h(jam_kernel.h ${CMAKE_BINARY_DIR}/65c02/jam_kernel.bin jam_kernel sorbus_rte_memory.c)
 bin2h(jam_tools.h  ${CMAKE_BINARY_DIR}/65c02/jam_tools.bin  jam_tools  sorbus_rte_memory.c)
 bin2h(jam_basic.h  ${CMAKE_BINARY_DIR}/65c02/jam_basic.bin  jam_basic  sorbus_rte_memory.c)
+bin2h(jam_forth.h  ${CMAKE_BINARY_DIR}/65c02/jam_forth.bin  jam_forth  sorbus_rte_memory.c)
 add_library(sorbus_rte STATIC
    mc_phyio_linux.c
    sorbus_rte_memory.c

@@ -13,3 +13,4 @@ B3AUTORUNBAS   = $E003
 
 ; bank 4: FORTH (only jmps)
 B4FORTH        = $E000  ; must be first
+B4AUTORUN      = $E003

@@ -153,7 +153,7 @@ cmos6502:
    jmp   (@jmps,x)
 
 @keys:
-   .byte "01234BFIMTW"
+   .byte "01234BFIMTW_"
 @jmps:
    .word execram        ; 0
    .word boot           ; 1 -> boot block @ sector $0000 (offset $0000)
@@ -166,6 +166,7 @@ cmos6502:
    .word mon_init       ; M
    .word timstart       ; T
    .word woz            ; W
+   .word forth          ; _
 
 @info:
    lda   #$0a
@@ -257,6 +258,9 @@ filebrowser:
    lda   #<B2BROWSER
    jmp   bankjmp
 
+forth:
+   ldx   #FORTH_BANK    ; select FORTH bank
+   .byte $2c
 basic:
    ldx   #BASIC_BANK    ; select BASIC bank
    jmp   bankstart

@@ -197,6 +197,18 @@ target_compile_options(jam_basic
 )
 target_type(jam_basic jam_kernel)
 
+add_executable(jam_forth
+   jam/forth/main.s
+   jam/rom/bios.s
+   jam/rom/bios_stub.s
+   )
+target_compile_options(jam_forth
+   PUBLIC --cpu 65sc02
+)
+target_type(jam_forth jam_kernel)
+
+
+
 ##################
 # JAM bootblocks #
 ##################

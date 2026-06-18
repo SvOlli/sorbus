@@ -12,6 +12,7 @@
 #include "jam_kernel.h"
 #include "jam_tools.h"
 #include "jam_basic.h"
+#include "jam_forth.h"
 
 
 static uint8_t ram[0x10000];
@@ -46,6 +47,8 @@ uint8_t debug_peek( uint8_t bank, uint16_t addr )
          return jam_tools[addr & 0x1FFF];
       case 3:
          return jam_basic[addr & 0x1FFF];
+      case 4:
+         return jam_forth[addr & 0x1FFF];
       default:
          return ram[addr];
    }
