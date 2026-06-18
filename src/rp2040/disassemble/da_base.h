@@ -111,6 +111,8 @@ uint8_t da_pick_cycles( cputype_t cpu, uint8_t opcode );
 uint8_t da_pick_extra( cputype_t cpu, uint8_t opcode );
 bool da_pick_jump( cputype_t cpu, uint8_t opcode );
 uint8_t da_pick_mx( cputype_t cpu, uint8_t opcode );
+uint8_t da_pick_bytes816( cputype_t cpu, da_fullinfo_t fullinfo );
+bool da_is_imm16_mx( cputype_t cpu, uint8_t opcode, bool m, bool x );
 
 /* different helper functions */
 /* can this opcode be a 16 bit immediate (#$xxxx)? */
@@ -138,7 +140,8 @@ uint8_t da_fullinfo_isequal( cputype_t cpu, da_fullinfo_t fi1, da_fullinfo_t fi2
  *               bytes with leading spaces, or spaces if data is not used
  * R  (1 char):  space or 'R', if reset low
  * S  (1 char):  space or 'S', if RDY low
- * t  (1 char):  data as charset 1 like in hexedit
+ * t  (1 char):  data as raw char (<0x20 inversed)
+ * T  (3 chars): additional data (like o) as above
  * w  (1 char): 'r' or 'w' for read or write
  * x^ (9 chars): additional hex data as available in data, shows up to three
  *               bytes with leading spaces, or spaces if data is not used

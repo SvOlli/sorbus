@@ -11,41 +11,30 @@
 
 #include "da_base.h"
 
-
-typedef enum {
-   TYPE_UNCHECKED = 0,
-   TYPE_GUESSED_DATA,
-   TYPE_GUESSED_CODE,
-   TYPE_MANUAL_DATA,
-   TYPE_MANUAL_CODE
-} da_data_type_t;
-
-
 struct da_memory_s {
    cputype_t      cpu;
-   const uint32_t *opcodes;
    peek_t         peek;
    uint8_t        bank;
    uint16_t       address;
    bool           bytemode;
-   bool           m;
-   bool           x;
-   da_data_type_t type[0x10000];
+   bool           m816;
+   bool           x816;
+   uint16_t       lines;
+   uint16_t       *linecache;
 };
 typedef struct da_memory_s *da_memory_t;
 
 
 da_memory_t da_memory_init();
 void da_memory_done( da_memory_t d );
+void da_memory_linecache( da_memory_t d, uint16_t lines );
 
-void da_memory_set_cpu( da_memory_t d, cputype_t cpu );
-void da_memoty_set_bytemode( da_memory_t d, bool enable );
-void da_memory_set_mx816( da_memory_t d, bool m, bool x );
-void da_memory_set_address( da_memory_t d, uint8_t bank, uint16_t address );
-void da_memory_set_data( da_memory_t d, da_data_type_t t );
-uint16_t da_memory_next( da_memory_t d );
-uint16_t da_memory_prev( da_memory_t d );
-da_fullinfo_t da_memory_fullinfo( da_memory_t d, uint16_t address );
+da_fullinfo_t da_memory_fullinfo( da_memory_t d, int16_t offset );
+void da_memory_next( da_memory_t d, uint16_t steps );
+void da_memory_prev( da_memory_t d, uint16_t steps );
+uint16_t da_memory_findprev( da_memory_t d, uint16_t address );
+
+da_fullinfo_t da_memory_single( cputype_t cpu, peek_t peek,
+                     uint8_t bank, uint16_t address, bool m, bool x );
 
 #endif
-

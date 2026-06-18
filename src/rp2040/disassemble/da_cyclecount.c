@@ -88,10 +88,8 @@ uint8_t da_cc_jump( da_trace_t d, uint32_t pos )
 
 static uint8_t da_cc_6502( da_trace_t d, uint32_t pos )
 {
-   da_fullinfo_t  *fullinfo      = d->fullinfo;
-   //uint16_t    address        = fullinfo[pos].address;
-   //uint16_t    next_address   = da_pick_bytes( d->cpu, fullinfo[pos].data ) + address;
-   uint8_t     cycles         = da_pick_cycles( d->cpu, fullinfo[pos].data );
+   da_fullinfo_t  *fullinfo   = d->fullinfo;
+   uint8_t        cycles      = da_pick_cycles( d->cpu, fullinfo[pos].data );
 
    if( da_pick_extra( d->cpu, fullinfo[pos].data ) )
    {
@@ -125,10 +123,8 @@ static uint8_t da_cc_6502( da_trace_t d, uint32_t pos )
 
 static uint8_t da_cc_65c02( da_trace_t d, uint32_t pos )
 {
-   da_fullinfo_t  *fullinfo      = d->fullinfo;
-   //uint16_t    address        = fullinfo[pos].address;
-   //uint16_t    next_address   = da_pick_bytes( d->cpu, fullinfo[pos].data ) + address;
-   uint8_t     cycles         = da_pick_cycles( d->cpu, fullinfo[pos].data );
+   da_fullinfo_t  *fullinfo   = d->fullinfo;
+   uint8_t        cycles      = da_pick_cycles( d->cpu, fullinfo[pos].data );
 
    if( da_pick_jump( d->cpu, fullinfo[pos].data ) )
    {
@@ -231,7 +227,7 @@ static uint8_t da_cc_65816( da_trace_t d, uint32_t pos )
    uint8_t     i           = 0;
    uint8_t     opcode      = fullinfo[pos].data;
    uint8_t     cycles      = da_pick_cycles( d->cpu, opcode );
-   uint8_t     bytes       = da_pick_bytes( d->cpu, opcode );
+   uint8_t     bytes       = da_pick_bytes816( d->cpu, fullinfo[pos] );
    uint16_t    address     = 0;
 
    /* mark in the trace, if there is 16 bit access enabled

@@ -123,6 +123,26 @@ bool da_is_imm16( const da_fullinfo_t fullinfo )
 }
 
 
+uint8_t da_pick_bytes816( cputype_t cpu, da_fullinfo_t fullinfo )
+{
+   return da_pick_bytes( cpu, fullinfo.data ) + da_is_imm16( fullinfo );
+}
+
+
+bool da_is_imm16_mx( cputype_t cpu, uint8_t opcode, bool m, bool x )
+{
+   if( cpu == CPU_65816 )
+   {
+      uint8_t mx = da_pick_mx( cpu, opcode );
+      if( ((mx == 1) && x) || ((mx == 2) && m) )
+      {
+         return true;
+      }
+   }
+   return false;
+}
+
+
 const char *da_mnemonic_string( cputype_t cpu, uint8_t p0 )
 {
    return da_mnemonics[da_pick_mnemonic( cpu, p0 )];
@@ -201,13 +221,27 @@ uint8_t da_fullinfo_isequal( cputype_t cpu, da_fullinfo_t fi1, da_fullinfo_t fi2
 }
 
 
-static int _da_sn_extra_data( char *b, size_t bsize, uint8_t data, bool valid, bool capital )
+static inline int _da_sn_extra_data( char *b, size_t bsize, uint8_t data, bool valid, bool capital )
 {
    if( valid )
    {
       return snprintf( b, bsize, capital ? " %02X" : " %02x", data );
    }
    return snprintf( b, bsize, "   " );
+}
+
+
+static inline int  _da_sn_text( char *b, size_t bsize, uint8_t ch, bool valid )
+{
+   if( !valid )
+   {
+      ch = 0x20;
+   }
+   if( ch < 0x20 )
+   {
+      return snprintf( b, bsize, "%c[;7m%c%c[;m", 0x1b, ch | 0x40, 0x1b );
+   }
+   return snprintf( b, bsize, "%c", ch );
 }
 
 
@@ -291,6 +325,12 @@ int da_sn_fullinfo( char *b, size_t bsize, cputype_t cpu,
             *b = fullinfo.reset ? ' ' : 'R';
             ++used;
             break;
+         case 't': // byte as text
+            used += _da_sn_text( b+used, bsize-used, fullinfo.data, true );
+            break;
+         case 'T': // additions bytes as text
+            showbytes = 0x10 | min( fullinfo.dataused+1, da_pick_bytes( cpu, fullinfo.data ) );
+            break;
          case 'S': // stop = !RDY
             *b = fullinfo.rdy ? ' ' : 'S';
             ++used;
@@ -346,11 +386,26 @@ int da_sn_fullinfo( char *b, size_t bsize, cputype_t cpu,
 
    if( showbytes > 0 )
    {
-      --showbytes; // first byte displayed with 'd'
-      // optional TODO: add assert for 9 bytes available
-      used += _da_sn_extra_data( b+used, bsize-used, fullinfo.data1, showbytes >= 1, capital );
-      used += _da_sn_extra_data( b+used, bsize-used, fullinfo.data2, showbytes >= 2, capital );
-      used += _da_sn_extra_data( b+used, bsize-used, fullinfo.data3, showbytes >= 3, capital );
+      if( (cpu == CPU_65816) && da_is_imm16( fullinfo ) )
+      {
+         ++showbytes;
+      }
+
+      if( showbytes >= 0x10 )
+      {
+         showbytes -= 0x11;
+         used += _da_sn_text( b+used, bsize-used, fullinfo.data1, showbytes >= 1 );
+         used += _da_sn_text( b+used, bsize-used, fullinfo.data2, showbytes >= 2 );
+         used += _da_sn_text( b+used, bsize-used, fullinfo.data3, showbytes >= 3 );
+      }
+      else
+      {
+         --showbytes; // first byte displayed with 'd' or 'o'
+         // optional TODO: add assert for 9 bytes available
+         used += _da_sn_extra_data( b+used, bsize-used, fullinfo.data1, showbytes >= 1, capital );
+         used += _da_sn_extra_data( b+used, bsize-used, fullinfo.data2, showbytes >= 2, capital );
+         used += _da_sn_extra_data( b+used, bsize-used, fullinfo.data3, showbytes >= 3, capital );
+      }
    }
 
    b[used] = '\0';

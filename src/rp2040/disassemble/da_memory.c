@@ -35,124 +35,139 @@ da_memory_t da_memory_init()
 {
    /* make sure that da_trace_t is zeroed out on creation */
    da_memory_t d = (da_memory_t)ht_calloc( 1, sizeof(*d) );
-   
+
    return d;
 }
 
 
 void da_memory_done( da_memory_t d )
 {
+   if( d->linecache )
+   {
+      memset( d->linecache, 0, d->lines * sizeof(uint16_t) );
+      ht_free( d->linecache );
+   }
    memset( d, 0, sizeof(*d) );
    ht_free( d );
 }
 
 
-void da_memory_set_cpu( da_memory_t d, cputype_t cpu )
+void da_memory_linecache( da_memory_t d, uint16_t lines )
 {
-   d->cpu = cpu;
-   switch( cpu )
+   d->lines       = lines;
+   d->linecache   = (uint16_t*)ht_realloc( d->linecache, lines * sizeof(uint16_t) );
+   memset( d->linecache, 0, lines * sizeof(uint16_t) );
+}
+
+
+uint16_t da_memory_findprev( da_memory_t d, uint16_t address )
+{
+   uint16_t a = 0, preva = 0;
+   int i;
+
+   for( i = 7; i >= 0; --i )
    {
-      case CPU_6502RA:
-      case CPU_6502:
-         d->opcodes = &da_opcodes6502[0];
-         break;
-      case CPU_65SC02:
-         d->opcodes = &da_opcodes65sc02[0];
-         break;
-      case CPU_65C02:
-         d->opcodes = &da_opcodes65c02[0];
-         break;
-      case CPU_65816:
-         d->opcodes = &da_opcodes65816[0];
-         break;
-      case CPU_65CE02:
-         d->opcodes = &da_opcodes65ce02[0];
-         break;
-      default:
-         fprintf( stderr, __FILE__
-                  "(%d): internal error: 0x%02x\n",
-                  __LINE__, cpu );
-         d->opcodes = 0;
+      a = (address-0x20) + i;
+      while( a < address )
+      {
+         preva = a;
+         a += da_pick_bytes( d->cpu, d->peek( d->bank, a ) ) +
+              da_is_imm16_mx( d->cpu, d->peek( d->bank, d->address ),
+                              d->m816, d->x816 );
+
+         if( a == address )
+         {
+            return preva;
+         }
+      }
+   }
+   return address - (d->cpu == CPU_65816 ? 4 : 3);
+}
+
+
+void da_memory_next( da_memory_t d, uint16_t steps )
+{
+   uint16_t i;
+   for( i = 0; i < steps; ++i )
+   {
+      d->address += da_pick_bytes( d->cpu, d->peek( d->bank, d->address ) ) +
+                    da_is_imm16_mx( d->cpu, d->peek( d->bank, d->address ),
+                                    d->m816, d->x816 );
    }
 }
 
 
-void da_memory_set_mx816( da_memory_t d, bool m, bool x )
+void da_memory_prev( da_memory_t d, uint16_t steps )
 {
-   d->m = m;
-   d->x = x;
-}
-
-
-void da_memory_set_address( da_memory_t d, uint8_t bank, uint16_t address )
-{
-   d->bank    = bank;
-   d->address = address;
-}
-
-
-void da_memory_set_datatype( da_memory_t d, uint16_t addr, da_data_type_t t )
-{
-   d->type[addr] = t;
-}
-
-
-uint16_t da_memory_next( da_memory_t d )
-{
-   if( d->bytemode )
+   uint16_t i;
+   for( i = 0; i < steps; ++i )
    {
-      return d->address + 1;
+      d->address = da_memory_findprev( d, d->address );
    }
-   return d->address + da_pick_bytes( d->cpu, d->peek( d->bank, d->address ) );
 }
 
 
-uint16_t da_memory_prev( da_memory_t d )
+da_fullinfo_t da_memory_fullinfo( da_memory_t d, int16_t offset )
 {
-   if( d-> bytemode )
+   da_fullinfo_t fullinfo = { 0 };
+   uint16_t i, a;
+
+   if( !offset )
    {
-      return d->address - 1;
+      a = d->address;
+      /* first line calculate the address for all lines */
+      for( i = 0; i < d->lines; ++i )
+      {
+         d->linecache[i] = a;
+         a += da_pick_bytes( d->cpu, d->peek( d->bank, a ) ) +
+              da_is_imm16_mx( d->cpu, d->peek( d->bank, a ), d->m816, d->x816 );
+      }
    }
-   return d->address - 1;
+
+   if( (offset >= 0) && (offset < d->lines) )
+   {
+      a = d->linecache[offset];
+      fullinfo.raw = 0x3F000000; /* sane defaults: all flags high */
+
+      fullinfo.address  = a;
+      fullinfo.data     = d->peek( d->bank, a   );
+      fullinfo.data1    = d->peek( d->bank, a+1 );
+      fullinfo.data2    = d->peek( d->bank, a+2 );
+      fullinfo.data3    = d->peek( d->bank, a+3 );
+      fullinfo.dataused = 3;
+      fullinfo.eval     = DA_EVAL_MAX;
+
+      if( d->cpu == CPU_65816 )
+      {
+         fullinfo.n816  = true;
+         fullinfo.m816  = d->m816;
+         fullinfo.x816  = d->x816;
+      }
+   }
+
+   return fullinfo;
 }
 
 
-da_fullinfo_t da_memory_fullinfo( da_memory_t d, uint16_t address )
+da_fullinfo_t da_memory_single( cputype_t cpu, peek_t peek,
+                     uint8_t bank, uint16_t address, bool m, bool x )
 {
    da_fullinfo_t fullinfo;
    fullinfo.raw = 0x3F000000; /* sane defaults: all flags high */
 
-   fullinfo.address  = d->address;
-   fullinfo.data     = d->peek( d->bank, d->address   );
-   fullinfo.data1    = d->peek( d->bank, d->address+1 );
-   fullinfo.data2    = d->peek( d->bank, d->address+2 );
-   fullinfo.data3    = d->peek( d->bank, d->address+3 );
+   fullinfo.address  = address;
+   fullinfo.data     = peek( bank, address   );
+   fullinfo.data1    = peek( bank, address+1 );
+   fullinfo.data2    = peek( bank, address+2 );
+   fullinfo.data3    = peek( bank, address+3 );
    fullinfo.dataused = 3;
-   fullinfo.eval     = 7;
+   fullinfo.eval     = DA_EVAL_MAX;
 
-   if( d->cpu == CPU_65816 )
+   if( cpu == CPU_65816 )
    {
       fullinfo.n816  = true;
-      fullinfo.m816  = d->m;
-      fullinfo.x816  = d->x;
-   }
-
-   switch( d->type[address] )
-   {
-      case TYPE_UNCHECKED:
-         break;
-      case TYPE_GUESSED_DATA:
-      case TYPE_MANUAL_DATA:
-         fullinfo.eval     = DA_EVAL_MIN;
-         break;
-      case TYPE_GUESSED_CODE:
-      case TYPE_MANUAL_CODE:
-         fullinfo.eval     = DA_EVAL_MAX;
-         break;
-      default:
-         fprintf( stderr, __FILE__
-                  "(%d): internal error: $%04x 0x%02x\n",
-                  __LINE__, address, d->type[address] );
+      fullinfo.m816  = m;
+      fullinfo.x816  = x;
    }
    return fullinfo;
 }

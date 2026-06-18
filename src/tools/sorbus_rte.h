@@ -27,6 +27,8 @@ void memsim_poke( uint8_t bank, uint16_t addr, uint8_t value );
 uint8_t memsim_peek( uint8_t bank, uint16_t addr );
 /* load a file into memory */
 bool memsim_loadfile( uint16_t addr, const char *filename );
+/* get size of file */
+uint16_t memsim_filesize( const char *filename );
 
 
 /* reading an handling traces (load needs to be done by loadfile with addnull=true) */

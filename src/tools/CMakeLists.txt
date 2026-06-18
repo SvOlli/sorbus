@@ -33,6 +33,7 @@ add_library(sorbus_rte STATIC
    ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_memory.c
    ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_trace.c
    ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mcurses.c
+   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_damem.c
    ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_extra.c
    ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_trace.c
    ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_view.c
@@ -112,6 +113,19 @@ add_executable(mc_trace_test
    ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_trace.c
 )
 target_link_libraries(mc_trace_test PRIVATE sorbus_rte)
+
+# tool to test part of disassembler
+add_executable(mc_damem_test
+   mc_damem_test.c
+   ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_damem.c
+)
+target_link_libraries(mc_damem_test PRIVATE sorbus_rte)
+
+# tool to test part of disassembler
+add_executable(da_memory_test
+   da_memory_test.c
+)
+target_link_libraries(da_memory_test PRIVATE sorbus_rte)
 
 # tool to test memory disassembler
 #add_executable(disass

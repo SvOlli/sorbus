@@ -18,13 +18,13 @@
 static uint8_t ram[0x10000];
 
 
-uint8_t debug_banks()
+uint8_t memsim_banks()
 {
-   return 3;
+   return 4;
 }
 
 
-void debug_poke( uint8_t bank, uint16_t addr, uint8_t value )
+void memsim_poke( uint8_t bank, uint16_t addr, uint8_t value )
 {
    if( !bank )
    {
@@ -33,7 +33,7 @@ void debug_poke( uint8_t bank, uint16_t addr, uint8_t value )
 }
 
 
-uint8_t debug_peek( uint8_t bank, uint16_t addr )
+uint8_t memsim_peek( uint8_t bank, uint16_t addr )
 {
    if( addr < 0xE000 )
    {
@@ -55,7 +55,7 @@ uint8_t debug_peek( uint8_t bank, uint16_t addr )
 }
 
 
-bool debug_loadfile( uint16_t addr, const char *filename )
+bool memsim_loadfile( uint16_t addr, const char *filename )
 {
    ssize_t filesize;
    uint8_t *filedata;
@@ -72,6 +72,26 @@ bool debug_loadfile( uint16_t addr, const char *filename )
    memcpy( &ram[addr], filedata, filesize );
    free( filedata );
    return true;
+}
+
+
+uint16_t memsim_filesize( const char *filename )
+{
+   FILE *f;
+   int pos;
+   f = fopen( filename, "rb" );
+   if( !f )
+   {
+      return 0;
+   }
+   fseek( f, 0, SEEK_END );
+   pos = ftell( f );
+   if( (pos < 0) || (pos > 0xFFFF) )
+   {
+      pos = 0;
+   }
+   fclose( f );
+   return pos;
 }
 
 

@@ -21,6 +21,9 @@
 #define  LOGO_FOREGROUND         (F_YELLOW)
 
 
+/* taken from da_memory.h, so there's no need to include it here */
+typedef struct da_memory_s *da_memory_t;
+
 /* basic screen/mcurses functions implemented in mcurses_sorbus.c */
 bool screen_get_size( uint16_t *lines, uint16_t *columns );
 /* cached values determined by screen_get_size() */
@@ -155,6 +158,16 @@ typedef struct {
    bool                    x816;
 } mc_disass_t;
 void mcurses_disassemble( mc_disass_t *dav );
+
+typedef struct {
+   uint8_t     banks;
+   da_memory_t dam;
+   bool        show_hex;
+   bool        show_text;
+   bool        show_cycles;
+} mc_damem_t;
+
+void mcurses_damem( mc_damem_t *mcd );
 
 /* menu for uploading data via xmodem */
 bool mc_xmodem_upload( poke_t poke );
