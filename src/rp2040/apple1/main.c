@@ -21,7 +21,7 @@
 
 bi_decl(bi_program_name("Sorbus Computer Apple 1 Core"))
 bi_decl(bi_program_description("make the Sorbus Computer an Apple 1 clone"))
-bi_decl(bi_program_url("https://xayax.net/sorbus/"))
+bi_decl(bi_program_url("https://sorbus.xayax.net/"))
 
 #include "bus.h"
 #include "cpudetect_apple1.h"

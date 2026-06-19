@@ -81,31 +81,11 @@ add_executable(binjoin
    binjoin.c
    )
 
-# tool to test part of disassembler
-add_executable(historian
-   historian.c
-)
-target_link_libraries(historian PRIVATE sorbus_rte)
-set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble.c)
-set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/fulltrace.c)
-set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/historian.c)
-set_property(SOURCE historian APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_historian.c)
-
-# tool to test part of disassembler
+# tool to test rework of disassembler
 add_executable(fulltrace
    fulltrace.c
 )
 target_link_libraries(fulltrace PRIVATE sorbus_rte)
-set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/beancounter.c)
-set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble.c)
-set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/fulltrace.c)
-set_property(SOURCE fulltrace APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/historian.c)
-
-# tool to test rework of disassembler
-add_executable(newtrace
-   newtrace.c
-)
-target_link_libraries(newtrace PRIVATE sorbus_rte)
 
 # tool to test part of disassembler
 add_executable(mc_trace_test
@@ -126,16 +106,6 @@ add_executable(da_memory_test
    da_memory_test.c
 )
 target_link_libraries(da_memory_test PRIVATE sorbus_rte)
-
-# tool to test memory disassembler
-#add_executable(disass
-#   disass.c
-#)
-#target_link_libraries(disass PRIVATE sorbus_rte)
-#target_include_directories(disass PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-#set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/disassemble/disassemble.c)
-#set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_disass.c)
-#set_property(SOURCE disass.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/rp2040/mcurses/mc_view.c)
 
 # tool to convert binary data to TIM paper tape format
 add_executable(timcat

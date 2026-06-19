@@ -28,7 +28,7 @@
 
 bi_decl(bi_program_name("Sorbus Computer Native Core"))
 bi_decl(bi_program_description("implement an own home computer flavor"))
-bi_decl(bi_program_url("https://xayax.net/sorbus/"))
+bi_decl(bi_program_url("https://sorbus.xayax.net/"))
 
 #include "bus.h"
 

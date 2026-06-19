@@ -304,7 +304,11 @@ void hexedit( mc_hexedit_t *config )
          }
          case 0x02: /* Ctrl+B: select bank */
          {
-            bank = config->nextbank();
+            /* banks is number of ROM banks + 1 RAM bank */
+            if( ++bank > config->banks )
+            {
+               bank = 0;
+            }
             redraw = true;
             break;
          }

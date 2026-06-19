@@ -23,11 +23,11 @@
 
 bi_decl(bi_program_name("Sorbus Computer Monitor Command Prompt"))
 bi_decl(bi_program_description("make the Sorbus Computer a tool for learning about the 65C02/65816/6502 CPU"))
-bi_decl(bi_program_url("https://xayax.net/sorbus/"))
+bi_decl(bi_program_url("https://sorbus.xayax.net/"))
 
 #include "bus.h"
 #include "cpu_detect.h"
-#include "disassemble.h"
+#include "da_base.h"
 #include "payload_mcp.h"
 #include "getaline.h"
 
@@ -289,7 +289,7 @@ void cmd_sys( const char *input )
    uint f_clk_adc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
    uint f_clk_rtc  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
 
-   printf("CPU instruction set: %s\n", cputype_name( cputype ) );
+   printf("CPU instruction set: %s\n", da_cputype_name( cputype ) );
    printf("RP2040 flash size:   %dMB\n", flash_size_detect() / (1 << 20) );
 
    printf("PLL_SYS:             %3d.%03dMhz\n", f_pll_sys / 1000, f_pll_sys % 1000 );
@@ -438,9 +438,7 @@ void cmd_cold( const char *input )
    cputype = cpu_detect( debug );
 
    cycles_left_reset = 5;
-   disass_set_cpu( cputype );
-   disass_show( DISASS_SHOW_NOTHING );
-   printf( "CPU detected as %s\n", cputype_name( cputype ) );
+   printf( "CPU detected as %s\n", da_cputype_name( cputype ) );
 }
 
 
@@ -461,7 +459,7 @@ void cmd_bank( const char *input )
 {
    if( cputype != CPU_65816 )
    {
-      printf( "warning: bank is only for %s cpu\n", cputype_name( CPU_65816 ) );
+      printf( "warning: bank is only for %s cpu\n", da_cputype_name( CPU_65816 ) );
    }
    if( !strcasecmp( input, "on" ) )
    {
@@ -604,42 +602,26 @@ void run_bus()
       if( state & bus_config.mask_rdy )
       {
          char buffer[64] = { 0 };
-         char bankhex[3] = { 0 };
+         char *b = &buffer[0];
+         size_t bsize = sizeof(buffer) - 1;
+         size_t used  = 0;
+         da_fullinfo_t fullinfo = { 0 };
+         fullinfo.trace    = state;
+         fullinfo.extra    = 0;
+         fullinfo.data1    = memory[address+1];
+         fullinfo.data2    = memory[address+2];
+         fullinfo.data3    = memory[address+3];
+         fullinfo.dataused = 3;
+         fullinfo.eval     = DA_EVAL_MAX;
+         used += snprintf( b+used, bsize-used, "%3d:",
+                           cycles_left_run > 999 ? 999 : cycles_left_run );
          if( bank_enabled )
          {
-            snprintf( &bankhex[0], sizeof(bankhex), "%02x", bank & 0xFF, 3 );
-            bankhex[sizeof(bankhex)-1] = '\0';
+            used += snprintf( b+used, bsize-used, "%02x:", bank & 0xFF );
          }
-         if( disass_enabled )
-         {
-            address = ((state & bus_config.mask_address) >> bus_config.shift_address);
-            snprintf( &buffer[0], sizeof(buffer), "%3d:%s%04x %c %02x %c%c%c %-15s>",
-               cycles_left_run > 999 ? 999 : cycles_left_run,
-               bankhex,
-               (state & bus_config.mask_address) >> (bus_config.shift_address),
-               (state & bus_config.mask_rw) ? 'r' : 'w',
-               (state & bus_config.mask_data) >> (bus_config.shift_data),
-               (state & bus_config.mask_reset) ? ' ' : 'R',
-               (state & bus_config.mask_nmi) ? ' ' : 'N',
-               (state & bus_config.mask_irq) ? ' ' : 'I',
-               disass( address,
-                       memory[(address + 0) & 0xFFFF],
-                       memory[(address + 1) & 0xFFFF],
-                       memory[(address + 2) & 0xFFFF],
-                       memory[(address + 3) & 0xFFFF] ) );
-         }
-         else
-         {
-            snprintf( &buffer[0], sizeof(buffer), "%3d:%s%04x %c %02x %c%c%c>",
-               cycles_left_run > 999 ? 999 : cycles_left_run,
-               bankhex,
-               (state & bus_config.mask_address) >> (bus_config.shift_address),
-               (state & bus_config.mask_rw) ? 'r' : 'w',
-               (state & bus_config.mask_data) >> (bus_config.shift_data),
-               (state & bus_config.mask_reset) ? ' ' : 'R',
-               (state & bus_config.mask_nmi) ? ' ' : 'N',
-               (state & bus_config.mask_irq) ? ' ' : 'I' );
-         }
+         used += da_snf_fullinfo( b+used, bsize-used, cputype,
+                                  disass_enabled ? "a w d RNI y>" : "a w d RNI>",
+                                  fullinfo, DA_FLAG_NONE );
          buffer[sizeof(buffer)-1] = '\0';
          getaline_prompt( buffer );
       }

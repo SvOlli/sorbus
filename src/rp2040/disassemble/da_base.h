@@ -153,8 +153,8 @@ uint8_t da_fullinfo_isequal( cputype_t cpu, da_fullinfo_t fi1, da_fullinfo_t fi2
  * if upper case letter is used
  * other characters like braces, brackets, everything <= '@' will be printed
  * as itself
- * available:   B  EFGH JKLM  PQ  TUVW
- * characters:  b   fghijklm  pqrstuv   z
+ * available:   B  EFGH JKLM  PQ   UVW
+ * characters:  b   fghijklm  pqrs uv   z
  */
 int da_sn_fullinfo( char *b, size_t bsize, cputype_t cpu,
                     const char f, da_fullinfo_t fullinfo, da_flags_t flags );
@@ -175,6 +175,9 @@ int da_snf_fullinfo( char *b, size_t bsize, cputype_t cpu,
 /* like snprintf, but for disassembly */
 int da_sn_text( char *b, size_t bsize, cputype_t cpu,
                 da_fullinfo_t fullinfo, da_flags_t flags );
+
+/* returns text version of CPU variant */
+const char *da_cputype_name( cputype_t cpu );
 
 /* like snprintf, but for cputype name */
 int da_sn_cpuname( char *b, size_t bsize, cputype_t cpu );

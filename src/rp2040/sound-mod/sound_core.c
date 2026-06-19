@@ -287,7 +287,7 @@ static __attribute__((aligned(8))) pio_i2s i2s;
 
 bi_decl(bi_program_name("Sorbus Computer SoundSystem"))
 bi_decl(bi_program_description("Using Re-sid or ModPlayer"))
-bi_decl(bi_program_url("https://xayax.net/sorbus/"))
+bi_decl(bi_program_url("https://sorbus.xayax.net/"))
 
 
 

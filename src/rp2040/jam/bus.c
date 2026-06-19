@@ -34,7 +34,7 @@
 #include "3rdparty/dhara/error.h"
 
 #include "cpu_detect.h"
-#include "disassemble.h"
+#include "da_base.h"
 
 #define MALLOC_RAM (0)
 // this is where the write protected area starts
@@ -1286,7 +1286,7 @@ static void debug_info_clocks( char *buffer, size_t size )
              "%9s: %3ld.%06ldMHz"
              , f_clk_sys / 1000, (f_clk_sys % 1000)
              , f_clk_peri / 1000, (f_clk_peri % 1000)
-             , cputype_name( cputype ), time_hz / 1000000, time_hz % 1000000 );
+             , da_cputype_name( cputype ), time_hz / 1000000, time_hz % 1000000 );
 }
 
 
@@ -1301,7 +1301,7 @@ static void debug_info_heap( char *buffer, size_t size )
              "heap total: %6lu\n"
              "      free: %6lu\n"
              "   minimum: %6lu"
-             , total_heap, free_heap, mf_checkheap() );
+             , total_heap, free_heap, ht_freemin() );
 }
 
 
@@ -1393,7 +1393,7 @@ void bus_run()
 #if MALLOC_RAM
    if( !ram )
    {
-      ram = (uint8_t*)mf_calloc( 0x10000, sizeof(uint8_t) );
+      ram = (uint8_t*)ht_calloc( 0x10000, sizeof(uint8_t) );
    }
 #endif
    bus_init();
@@ -1482,7 +1482,6 @@ void system_init()
    memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof(rom) );
    srand( get_rand_32() );
    dhara_flash_size = dhara_flash_init();
-   disass_set_cpu( cputype );
 }
 
 
@@ -1570,7 +1569,7 @@ void debug_raw_backtrace()
 {
    check_cpu_is_halted();
 
-   printf( "\nTRACE_START %s\n", cputype_name( cputype ) );
+   printf( "\nTRACE_START %s\n", da_cputype_name( cputype ) );
    for( int i = buslog_index; i < (buslog_index + BUSLOG_SIZE); ++i )
    {
       printf( "%08lx\n", buslog_states[i & (BUSLOG_SIZE-1)] );

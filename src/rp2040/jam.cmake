@@ -37,20 +37,20 @@ add_executable(jam_alpha
    common/bus_rp2040_purple.c
    common/cpu_detect.c
    common/generic_helper.c
-   common/mf_checkheap.c
+   common/heaptrack.c
    common/putcharset.c
    common/xmodem.c
-   disassemble/beancounter.c
-   disassemble/beancounter16.c
-   disassemble/disassemble.c
-   disassemble/fulltrace.c
-   disassemble/historian.c
+   disassemble/da_base.c
+   disassemble/da_cyclecount.c
+   disassemble/da_generated.c
+   disassemble/da_memory.c
+   disassemble/da_trace.c
    mcurses/mcurses.c
-   mcurses/mc_disass.c
-   mcurses/mc_hexedit.c
-   mcurses/mc_historian.c
-   mcurses/mc_phyio_rp2040.c
+   mcurses/mc_damem.c
    mcurses/mc_extra.c
+   mcurses/mc_hexedit.c
+   mcurses/mc_phyio_rp2040.c
+   mcurses/mc_trace.c
    mcurses/mc_view.c
    mcurses/mc_xmodem.c
    3rdparty/dhara/error.c

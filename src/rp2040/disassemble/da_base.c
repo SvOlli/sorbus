@@ -583,7 +583,7 @@ int da_sn_text( char *b, size_t bsize, cputype_t cpu,
 }
 
 
-int da_sn_cpuname( char *b, size_t bsize, cputype_t cpu )
+const char *da_cputype_name( cputype_t cpu )
 {
    /* this needs to be aligned with the enum in base_type.h */
    const char *cpuname[] = {
@@ -601,5 +601,11 @@ int da_sn_cpuname( char *b, size_t bsize, cputype_t cpu )
    {
       cpu = CPU_ERROR;
    }
-   return snprintf( b, bsize, "%s", cpuname[cpu] );
+   return cpuname[cpu];
+}
+
+
+int da_sn_cpuname( char *b, size_t bsize, cputype_t cpu )
+{
+   return snprintf( b, bsize, "%s", da_cputype_name( cpu ) );
 }

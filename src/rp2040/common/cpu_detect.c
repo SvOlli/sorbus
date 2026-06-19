@@ -10,12 +10,9 @@
 #include <stdio.h>
 
 #include "cpudetect.h"
-#include "disassemble.h"
+#include "da_trace.h"
 
 #define CYCLES_TOTAL (256)
-#if (CYCLES_TOTAL & (CYCLES_TOTAL-1))
-#error CYCLES_TOTAL is not a power of 2
-#endif
 #define SHOW_RAW_DUMP_IN_DEBUG 0
 
 
@@ -29,6 +26,10 @@ cputype_t cpu_detect( bool debug )
    bool      reset_done = false;
    cputype_t cputype;
    uint8_t   memory[0x20] = { 0 };
+   char      text[128] = { 0 };
+   char      *b;
+   int       bsize;
+   int       used;
 
    memcpy( &memory[0], &cpudetect[0], sizeof(memory) );
    memset( &trace[0], 0, sizeof(trace) );
@@ -105,32 +106,34 @@ cputype_t cpu_detect( bool debug )
    {
       int lineno = 0;
 #if SHOW_RAW_DUMP_IN_DEBUG
-      printf( "TRACE_START %s\n", cputype_name( cputype ) );
+      printf( "TRACE_START %s\n", da_cputype_name( cputype ) );
       for( int i = 0; i < CYCLES_TOTAL; ++i )
       {
          printf( "%08x\n", i < cycles_run ? trace[i] : 0 );
       }
       printf( "TRACE_END\n" );
 #endif
-      disass_fulltrace_t d = disass_fulltrace_init( cputype ? cputype : CPU_6502,
-                                                    &trace[0], CYCLES_TOTAL, 0 );
-      disass_historian_assumptions( d );
+      da_trace_t d = da_trace_init( cputype ? cputype : CPU_6502,
+                                    &trace[0], CYCLES_TOTAL, 0 );
+      da_cc_start( d, 0 );
       print_hexdump_buffer( 0, &cpudetect[0], sizeof(cpudetect), false );
       for( int i = 0; i < cycles_run; ++i )
       {
-         if( !disass_fulltrace_entry( d, i ) )
+         if( !d->fullinfo[i].raw )
          {
             break;
          }
-         if( trace[i] & bus_config.mask_reset )
-         {
-            ++lineno;
-         }
-         printf( "%3d:%s:%s\n", lineno,
-                 decode_trace( trace[i], false, 0 ),
-                 disass_fulltrace_entry( d, i ) );
+         b     = &text[0];
+         bsize = sizeof(text)-1;
+         used  = 0;
+
+         used += snprintf( b+used, bsize-used, "%3d:", lineno );
+         used += da_snf_fullinfo( b+used, bsize-used, cputype,
+                                  "a w d R: y",
+                                  d->fullinfo[i], DA_FLAG_NONE );
+         printf( "%3d:%s:%s\n", text );
       }
-      disass_fulltrace_done( d );
+      da_trace_done( d );
       print_hexdump_buffer( 0, &memory[0], sizeof(memory), false );
    }
 

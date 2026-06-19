@@ -22,7 +22,6 @@ struct da_memory_s {
    uint16_t       lines;
    uint16_t       *linecache;
 };
-typedef struct da_memory_s *da_memory_t;
 
 
 da_memory_t da_memory_init();

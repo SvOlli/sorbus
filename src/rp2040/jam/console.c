@@ -23,6 +23,8 @@
 
 #include "event_queue.h"
 #include "mcurses.h"
+#include "da_memory.h"
+
 
 #ifndef SORBUS_VERSION
 #define SORBUS_VERSION "0.7"
@@ -60,26 +62,6 @@ int  invoke_type = 0;
 
 static uint8_t hexedit_bank();
 
-static mc_hexedit_t he_config = {
-   hexedit_bank,
-   debug_peek,
-   debug_poke,
-   1,
-   0x00,
-   0x0400,
-   0x0400
-};
-
-static mc_disass_t da_config = {
-   debug_banks,
-   debug_peek,
-   1,
-   CPU_65SC02,
-   0x00,
-   0x0400,
-   false,
-   false
-};
 
 
 void console_cpu_pause( bool stop )
@@ -113,21 +95,13 @@ void console_type_set( console_type_t type )
 }
 
 
-uint8_t hexedit_bank()
-{
-   if( ++(he_config.bank) > debug_banks() )
-   {
-      he_config.bank = 0;
-   }
-   return he_config.bank;
-}
-
-
 void console_rp2040()
 {
    int in;
    bool leave = false;
    uint16_t lines, cols;
+   static mc_damem_t   *mc_da = 0;
+   static mc_hexedit_t *mc_he = 0;
 
    const char *invoke = "magic key combo";
 
@@ -225,13 +199,24 @@ void console_rp2040()
                cputype_t cpu;
                uint32_t *trace, entries, start;
                debug_get_backtrace( &cpu, &trace, &entries, &start );
-               mcurses_historian( cpu, trace, entries, start );
+               mcurses_trace( cpu, trace, entries, start );
             }
             break;
          case 'D':
             {
-               da_config.cpu = debug_get_cpu();
-               mcurses_disassemble( &da_config );
+               if( !mc_da )
+               {
+                  /* initialize on first run */
+                  mc_da = (mc_damem_t*)ht_calloc( 1, sizeof( mc_damem_t ) );
+                  mc_da->banks         = debug_banks();
+                  mc_da->dam           = da_memory_init();
+                  mc_da->dam->address  = 0x400;
+                  mc_da->dam->bank     = 1;
+                  mc_da->dam->cpu      = debug_get_cpu();
+                  mc_da->dam->peek     = debug_peek;
+               }
+               da_memory_linecache( mc_da->dam, lines );
+               mcurses_damem( mc_da );
             }
             break;
          case 'E':
@@ -245,7 +230,18 @@ void console_rp2040()
             getch();
             break;
          case 'M':
-            hexedit( &he_config );
+            if( !mc_he )
+            {
+               mc_he = (mc_hexedit_t*)ht_calloc( 1, sizeof( mc_hexedit_t ) );
+               mc_he->address = 0x0400;
+               mc_he->bank    = 1;
+               mc_he->banks   = debug_banks();
+               mc_he->charset = 1;
+               mc_he->peek    = debug_peek;
+               mc_he->poke    = debug_poke;
+               mc_he->topleft = 0x0400;
+            }
+            hexedit( mc_he );
             break;
          case 'U':
             leave = mc_xmodem_upload( debug_poke );

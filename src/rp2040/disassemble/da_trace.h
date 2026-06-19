@@ -32,7 +32,6 @@ struct da_trace_s {
    da_cpu_flag_t  flag_m;     // $20 native: shared with unused flag
    da_cpu_flag_t  flag_x;     // $10 native: shared with brk
 };
-typedef struct da_trace_s *da_trace_t;
 
 /*
  * create trace object and setup from ringbuffer

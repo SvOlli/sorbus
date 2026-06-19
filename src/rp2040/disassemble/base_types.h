@@ -50,5 +50,11 @@ typedef uint8_t (*peek_t)(uint8_t,uint16_t);
 /* in: bank, address, data */
 typedef void (*poke_t)(uint8_t,uint16_t,uint8_t);
 
+/* a struct where the whole disassemble memory configuration is stored */
+typedef struct da_memory_s *da_memory_t;
+
+/* a struct where the whole disassemble trace configuration is stored */
+typedef struct da_trace_s *da_trace_t;
+
 #endif
 

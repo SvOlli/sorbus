@@ -12,10 +12,11 @@ add_executable(mcp
    common/cpu_detect.c
    common/generic_helper.c
    common/getaline.c
-   common/mf_checkheap.c
-   disassemble/disassemble.c
-   disassemble/fulltrace.c
-   disassemble/historian.c
+   common/heaptrack.c
+   disassemble/da_base.c
+   disassemble/da_cyclecount.c
+   disassemble/da_generated.c
+   disassemble/da_trace.c
    mcp/main.c
    )
 target_link_libraries(mcp

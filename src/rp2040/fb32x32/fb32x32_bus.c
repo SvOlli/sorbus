@@ -22,7 +22,7 @@
 #define OVERSAMPLING (8)      // deduction by trial: 7 is minimum
 #define BASE_ADDRESS (0xD300) // must be on page boundry
 
-bi_decl(bi_program_url("https://xayax.net/sorbus/"))
+bi_decl(bi_program_url("https://sorbus.xayax.net/"))
 
 bi_decl(bi_pin_mask_with_name(BUS_CONFIG_mask_address, "A0-A15"));
 bi_decl(bi_pin_mask_with_name(BUS_CONFIG_mask_data,    "D0-D7"));

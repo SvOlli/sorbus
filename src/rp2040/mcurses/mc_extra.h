@@ -94,12 +94,12 @@ void mcurses_textbox( bool dframe, uint16_t line, uint16_t column,
 typedef uint8_t(*hexedit_handler_bank_t)();
 typedef struct {
    /* callback functions */
-   hexedit_handler_bank_t  nextbank;
    peek_t                  peek;
    poke_t                  poke;
    /* initial/return values */
    uint8_t                 charset;
    uint8_t                 bank;
+   uint8_t                 banks;
    uint16_t                address;
    uint16_t                topleft;
 } mc_hexedit_t;
@@ -138,8 +138,6 @@ void lineview( lineview_t *config );
 
 
 /* backtrace viewer utilizing lineview */
-void mcurses_historian( cputype_t cpu, uint32_t *trace,
-                        uint32_t entries, uint32_t start );
 void mcurses_trace( cputype_t cpu, uint32_t *trace,
                     uint32_t entries, uint32_t start );
 
