@@ -21,6 +21,8 @@ struct da_memory_s {
    bool           x816;
    uint16_t       lines;
    uint16_t       *linecache;
+   uint16_t       stackpos;
+   uint16_t       *stackdata;
 };
 
 

@@ -86,7 +86,7 @@ const char* mcurses_damem_data( void *d, int32_t offset )
    if( fullinfo.raw )
    {
       used += da_snf_fullinfo( b+used, bsize-used, dam->cpu,
-                               "A: DO tT cC y", fullinfo, DA_FLAG_NONE );
+                               "$A: DO tT cC y", fullinfo, DA_FLAG_NONE );
       return &text[0];
    }
 

@@ -26,6 +26,8 @@
 sweet16regs := $e0
 r0l         := sweet16regs + $00
 r0h         := sweet16regs + $01
+r12l        := sweet16regs + $18
+r12h        := sweet16regs + $19
 r14h        := sweet16regs + $1d
 r15l        := sweet16regs + $1e
 r15h        := sweet16regs + $1f
@@ -40,6 +42,7 @@ r15h        := sweet16regs + $1f
 ; bottom of file contains sanity check
 
 .segment "ROMSTART"
+part1start:
 
 ld:
    lda   r0l,x
@@ -266,6 +269,7 @@ rs:
 set:
    bra   setz
 
+part1check:
 rtn:
    ; here is $E0F7 @ 65sc02 ($E100 is max allowed)
    ; rtn is called using jsr, but exits sweet16
@@ -296,8 +300,10 @@ setz:
 :
    rts
 
+part1end:
 
 .segment "CODE"
+part2start:
 
 sweet16:
    ; typical situation: SP=$FA; retaddr+0 @ $01FE
@@ -306,6 +312,13 @@ sweet16:
    sta   r15h
    lda   $0104,x
    sta   r15l
+
+   ; when the stack points to $0000 move it to $0100 to ensure operation
+   lda   r12l
+   ora   r12h
+   bne   :+
+   inc   r12h
+:
 
    jsr   runopcode1     ;first iteration does not need increment of r15
 mainloop:
@@ -317,7 +330,7 @@ runopcode:
    bne   runopcode1     ;incr sweet16 pc for fetch
    inc   r15h
 runopcode1:
-   lda   #>set          ;common high byte for all routines
+   lda   #>part1start   ;common high byte for all routines
    pha                  ;push on stack for rts
    ldy   #$00           ; not obsolete with 65sc02!
 .ifpsc02
@@ -354,7 +367,12 @@ tobr:
    lsr                  ;prepare carry for bc, bnc.
    rts                  ;goto non-reg op routine
 
+part2end:
+
 .segment "DATA"
+
+part3start:
+
 brtbl:
    .byte <(rtn-1)         ;$00
 optbl:
@@ -389,4 +407,12 @@ optbl:
    .byte <(dcr-1)         ;$Fx
    .byte <(nul-1)         ;$0F
 
-.assert >ld = >rtn, error, "sweet16 opcodes must not cross page"
+part3end:
+
+.assert >part1start = >(part1check-1), error, "sweet16 opcodes must not cross page"
+.out "   ========================="
+.out .sprintf( "   SWEET16 part1 size: $%04x", part1end-part1start )
+.out .sprintf( "   SWEET16 part2 size: $%04x", part2end-part2start )
+.out .sprintf( "   SWEET16 part3 size: $%04x", part3end-part3start )
+.out .sprintf( "   SWEET16 total size: $%04x", part1end-part1start + part2end-part2start + part3end-part3start )
+.out "   ========================="

@@ -7,29 +7,15 @@
  */
 
 
-/*
- * expected lines of output:
-
-$E032: 0D 4E 4D    ORA  $4D4E                                                   
-$E035: 4F 53 20 36 EOR  $362053                                                 
-$E039: 35 30       AND  $30,X                                                   
-
- * or:
-
-$E050: 38 ('8')    SEC
-$E051: 60 ('`')    RTS
-$E052: A5 ('<UTF8: Yen>')    LDA  $2A
-$E053: 2A ('*')
-
-*/
-
 #include "da_memory.h"
 
 #include <stdio.h>
 #include <string.h>
 
+/* required for heap allocation */
 #include "../common/generic_helper.h"
 
+#define DA_MEMORY_STACKSIZE (4096)
 
 da_memory_t da_memory_init()
 {
@@ -47,6 +33,11 @@ void da_memory_done( da_memory_t d )
       memset( d->linecache, 0, d->lines * sizeof(uint16_t) );
       ht_free( d->linecache );
    }
+   if( d->stackdata )
+   {
+      memset( d->stackdata, 0, DA_MEMORY_STACKSIZE * sizeof(uint16_t) );
+      ht_free( d->stackdata );
+   }
    memset( d, 0, sizeof(*d) );
    ht_free( d );
 }
@@ -54,14 +45,18 @@ void da_memory_done( da_memory_t d )
 
 void da_memory_linecache( da_memory_t d, uint16_t lines )
 {
-   d->lines       = lines;
-   d->linecache   = (uint16_t*)ht_realloc( d->linecache, lines * sizeof(uint16_t) );
-   memset( d->linecache, 0, lines * sizeof(uint16_t) );
+   if( d->lines != lines )
+   {
+      d->lines       = lines;
+      d->linecache   = (uint16_t*)ht_realloc( d->linecache, lines * sizeof(uint16_t) );
+      memset( d->linecache, 0, lines * sizeof(uint16_t) );
+   }
 }
 
 
 uint16_t da_memory_findprev( da_memory_t d, uint16_t address )
 {
+   /* todo: figure out minimum of bytes back found? */
    uint16_t a = 0, preva = 0;
    int i;
 
@@ -90,6 +85,26 @@ void da_memory_next( da_memory_t d, uint16_t steps )
    uint16_t i;
    for( i = 0; i < steps; ++i )
    {
+      if( !d->stackdata )
+      {
+         d->stackdata = (uint16_t*)ht_calloc( DA_MEMORY_STACKSIZE,
+                                              sizeof(uint16_t) );
+         d->stackpos  = 0;
+      }
+      if( d->stackpos >= DA_MEMORY_STACKSIZE )
+      {
+         int p;
+         for( p = 1; p < DA_MEMORY_STACKSIZE; ++p )
+         {
+            d->stackdata[p-1] = d->stackdata[p];
+         }
+         d->stackdata[DA_MEMORY_STACKSIZE-1] = d->address;
+      }
+      else
+      {
+         d->stackdata[(d->stackpos)++] = d->address;
+      }
+
       d->address += da_pick_bytes( d->cpu, d->peek( d->bank, d->address ) ) +
                     da_is_imm16_mx( d->cpu, d->peek( d->bank, d->address ),
                                     d->m816, d->x816 );
@@ -102,8 +117,19 @@ void da_memory_prev( da_memory_t d, uint16_t steps )
    uint16_t i;
    for( i = 0; i < steps; ++i )
    {
+      if( d->stackdata && (d->stackpos > 0) )
+      {
+         d->address = d->stackdata[--(d->stackpos)];
+      }
       d->address = da_memory_findprev( d, d->address );
    }
+}
+
+
+void da_memory_go( da_memory_t d, uint16_t address )
+{
+   d->address  = address;
+   d->stackpos = 0;
 }
 
 

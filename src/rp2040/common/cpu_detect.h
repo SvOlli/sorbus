@@ -13,7 +13,6 @@
 
 /*
  * run a CPU detection in a small confined extra environment
- * return value might be CPU_ERROR even though CPU is okay, retry suggested
  */
 cputype_t cpu_detect( bool debug );
 

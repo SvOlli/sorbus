@@ -56,7 +56,7 @@ if [ ${cpmtools_missing} -ne 0 ]; then
 fi
 
 rm -f "${OUTPUT}"
-echo mkfs.cpm -f "${FORMAT}" -b "${BOOTBLOCK}" "${OUTPUT}"
+#echo mkfs.cpm -f "${FORMAT}" -b "${BOOTBLOCK}" "${OUTPUT}"
 mkfs.cpm -f "${FORMAT}" -b "${BOOTBLOCK}" "${OUTPUT}"
 rm -f "${BOOTBLOCK}"
 ls -1d [0-9]*/* $@ | sort | while read i;do
@@ -80,7 +80,7 @@ ls -1d [0-9]*/* $@ | sort | while read i;do
       exit 20
    ;;
    esac
-   echo cpmcp -f "${FORMAT}" "${OUTPUT}" "${i}" "${user}:${outfile}"
+   #echo cpmcp -f "${FORMAT}" "${OUTPUT}" "${i}" "${user}:${outfile}"
    cpmcp -f "${FORMAT}" "${OUTPUT}" "${i}" "${user}:${outfile}"
 done
 cpmchattr -f "${FORMAT}" "${OUTPUT}" sr 0:ccp.sys
