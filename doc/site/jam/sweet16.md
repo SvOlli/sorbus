@@ -11,18 +11,7 @@ It was described in [Byte Magazine Volume 02 Number 11 (1977)
 Most of the opcode description was transscribed from there.
 
 The source code published there has been adapted to better fit the Sorbus
-Computer. 
-
-## Implementation differences
-
-There are a few things that are done differently in the Sorbus port of
-SWEET16 as compared to the original.
-
-- SWEET16 is invoked using BRK #$10 instead of JSR $xxxx
-- BK does not execute a 6502 BRK, but triggers the TRAP to meta-mode
-  (for details see [BK description below](#bk))
-- when R12 is zero (stack for [BS instruction](#bs)), it will be
-  initialized to $0100 upon startup of SWEET16
+Computer.
 
 ## Special Registers
 
@@ -37,6 +26,9 @@ by SWEET16 have a special function bound to them.
 | R13  | stores the result of all comparison operations for branch testing |
 | R14  | status register |
 | R15  | program counter |
+
+The R0 register as the accumulator will be used by most instructions
+implicitly. This also means that a SUB R0 will load the R0 with $0000.
 
 ## Register Ops
 
@@ -552,7 +544,7 @@ However, these could be used for further expansions.
 
 | Name | Opcode | Argument | Function |
 | ---- | ------ | -------- | -------- |
-| [RTN] | $00 | - | return to 6502 mode |
+| [RTN](#rtn) | $00 | - | return to 6502 mode |
 | [BR ea](#br) | $01 | $rl | branch always |
 | [BNC ea](#bnc) | $02 | $rl | branch if no carry |
 | [BC ea](#bc) | $03 | $rl | branch if carry set |
@@ -583,3 +575,16 @@ However, these could be used for further expansions.
 | [CPR Rn](#cpr-rn) | $Dn | - | Compare |
 | [INR Rn](#inr-rn) | $En | - | Increment |
 | [DCR Rn](#dcr-rn) | $Fn | - | Decrement |
+
+(clicking on name jumps to details description above)
+
+## Sorbus Implementation Differences
+
+There are a few things that are done differently in the Sorbus port of
+SWEET16 as compared to the original.
+
+- SWEET16 is invoked using BRK #$10 instead of JSR $xxxx
+- BK does not execute a 6502 BRK, but triggers the TRAP to meta-mode
+  (for details see [BK description below](#bk))
+- when R12 is zero (stack for [BS instruction](#bs)), it will be
+  initialized to $0100 upon startup of SWEET16
