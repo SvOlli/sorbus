@@ -501,7 +501,7 @@ uint8_t da_cc_vectorpull( da_trace_t d, uint32_t pos, uint16_t addr, bool sc02 )
       fullinfo[pos+i].eval = DA_EVAL_MIN;
    }
    /* additionally, we now know that we're in emulation mode */
-   d->flag_e = FLAG_CPU1;
+   d->flag_e = FLAG_SET;
 
    return 7;
 }
@@ -548,7 +548,7 @@ uint8_t da_cc_vectorpull_65816( da_trace_t d, uint32_t pos, uint16_t addr )
       return 0;
    }
    /* additionally, we now know that we're in native mode */
-   d->flag_e = FLAG_CPU0;
+   d->flag_e = FLAG_UNSET;
 
    return 8;
 }
