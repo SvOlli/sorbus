@@ -109,7 +109,7 @@ void mcurses_trace( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t s
    struct mc_trace_s mch   = { 0 };
 
    mch.trace         = da_trace_init( cpu, trace, entries, start );
-   mch.entries       = entries;
+   mch.entries       = mch.trace->entries;
    mch.current       = 0;
    mch.datalines     = screen_get_lines()-2;
    mch.center        = (mch.datalines-1) >> 1;
@@ -121,6 +121,15 @@ void mcurses_trace( cputype_t cpu, uint32_t *trace, uint32_t entries, uint32_t s
    config.d          = (void*)(&mch);
    config.attributes = MC_ATTRIBUTES_BACKTRACE;
    config.charset    = 0;
+
+   /* we're running a NULL-terminated list instead ringbuffer */
+   if( !entries )
+   {
+      /* remove the NULL from output */
+      --(mch.entries);
+      /* assume that it starts at a valid point */
+      da_cc_start( mch.trace, 0 );
+   }
 
    mcurses_trace_move( config.d, MC_LINEVIEW_FIRSTLINE );
    lineview( &config );

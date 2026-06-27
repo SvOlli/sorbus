@@ -103,9 +103,28 @@ da_trace_t da_trace_init( cputype_t cpu,
                           uint32_t entries,
                           uint32_t start )
 {
-   da_fullinfo_t *fullinfo =
-      (da_fullinfo_t*)ht_calloc( entries + 2 * BOUNDSBUFFER,
-                                 sizeof(da_fullinfo_t) );
+   da_fullinfo_t *fullinfo = 0;
+
+   if( !entries && !start )
+   {
+      /* when entries == 0, then ringbuffer is a NULL terminated list,
+       * so we need the entries ourselves */
+      const uint32_t *r = 0;
+      entries   = 1; /* include trailing NULL entry */
+      for( r = ringbuffer; *r; ++r )
+      {
+         ++entries;
+         if( entries > 0xFF )
+         {
+            fprintf( stderr, __FILE__ "(%d): internal error\n", __LINE__ );
+            entries = 1;
+            break;
+         }
+      }
+   }
+
+   fullinfo = (da_fullinfo_t*)ht_calloc( entries + 2 * BOUNDSBUFFER,
+                                         sizeof(da_fullinfo_t) );
    /* make sure that da_trace_t is zeroed out on creation */
    da_trace_t d = (da_trace_t)ht_calloc( 1, sizeof(*d) );
    d->cpu       = cpu;

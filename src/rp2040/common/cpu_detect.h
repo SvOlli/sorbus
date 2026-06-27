@@ -16,5 +16,11 @@
  */
 cputype_t cpu_detect( bool debug );
 
+/*
+ * return raw trace log of last cpu_detect run
+ * always terminated with an 0x00000000 entry
+ */
+uint32_t *cpu_detect_trace();
+
 #endif
 

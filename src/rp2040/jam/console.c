@@ -24,6 +24,7 @@
 #include "event_queue.h"
 #include "mcurses.h"
 #include "da_memory.h"
+#include "cpu_detect.h"
 
 
 #ifndef SORBUS_VERSION
@@ -201,6 +202,9 @@ void console_rp2040()
                debug_get_backtrace( &cpu, &trace, &entries, &start );
                mcurses_trace( cpu, trace, entries, start );
             }
+            break;
+         case '@':
+            mcurses_trace( debug_get_cpu(), cpu_detect_trace(), 0, 0 );
             break;
          case 'D':
             {

@@ -15,10 +15,16 @@
 #define CYCLES_TOTAL (256)
 #define SHOW_RAW_DUMP_IN_DEBUG 0
 
+static uint32_t *last_trace = 0;
+
+uint32_t *cpu_detect_trace()
+{
+   return last_trace;
+}
 
 cputype_t cpu_detect( bool debug )
 {
-   uint32_t  trace[CYCLES_TOTAL];
+   uint32_t  trace[CYCLES_TOTAL] = { 0 };
    uint32_t  state;
    uint32_t  address;
    uint32_t  cycles_left_reset = 8;
@@ -37,7 +43,7 @@ cputype_t cpu_detect( bool debug )
    // set lines to required state
    gpio_set_mask( bus_config.mask_rdy | bus_config.mask_irq | bus_config.mask_nmi );
    for( cycles_run = 0;
-        (0x00 == memory[sizeof(memory)-1]) && (cycles_run < CYCLES_TOTAL);
+        (0x00 == memory[sizeof(memory)-1]) && (cycles_run < (CYCLES_TOTAL-1));
         ++cycles_run )
    {
       if( cycles_left_reset )
@@ -100,6 +106,8 @@ cputype_t cpu_detect( bool debug )
       trace[cycles_run] = gpio_get_all();
       gpio_clr_mask( bus_config.mask_clock );
    }
+   // make sure we've got an end marker
+   trace[++cycles_run] = 0x00000000;
 
    cputype = (memory[sizeof(memory)-1] < CPU_UNDEF) ? memory[sizeof(memory)-1] : CPU_ERROR;
    if( debug )
@@ -136,6 +144,11 @@ cputype_t cpu_detect( bool debug )
       da_trace_done( d );
       print_hexdump_buffer( 0, &memory[0], sizeof(memory), false );
    }
+
+   // make sure heap memory used is minimum
+   last_trace = (uint32_t*)ht_realloc( last_trace, sizeof(uint32_t) * cycles_run );
+   // copy trace from stack to heap
+   memcpy( last_trace, &trace[0], sizeof(uint32_t) * cycles_run );
 
    // run complete, evaluate detected code
    return cputype;
