@@ -79,7 +79,7 @@ are available:
   - make picotool
     - checks out and builds picotool
     - however there this has been superseded by
-      src/tools/local-picotool.sh (and src/tools/local-stow.sh)
+      src/tools/local-picotool.sh (and src/tools/local-nstow.sh)
   - make setup-external
     - sets up tools required to build external code, like
       - [CP/M 65](https://github.com/davidgiven/cpm65) (requires

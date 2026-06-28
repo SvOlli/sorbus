@@ -25,7 +25,7 @@ build()
 
    # workaround for getting faster ARM code
    # compilers > 12.2.rel1 produce slower code
-   src/tools/local-stow.sh
+   src/tools/local-nstow.sh
    src/tools/local-arm-none-eabi-toolchain.sh
    sudo dpkg --purge gcc-arm-none-eabi
 
