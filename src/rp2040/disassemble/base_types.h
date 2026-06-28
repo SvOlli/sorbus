@@ -2,6 +2,7 @@
 #ifndef BASE_TYPES_H
 #define BASE_TYPES_H BASE_TYPES_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifndef count_of
@@ -49,6 +50,8 @@ typedef enum {
 typedef uint8_t (*peek_t)(uint8_t,uint16_t);
 /* in: bank, address, data */
 typedef void (*poke_t)(uint8_t,uint16_t,uint8_t);
+/* callback function for uploading papertape */
+typedef void (*ptp_callback_t)(bool,uint16_t);
 
 /* a struct where the whole disassemble memory configuration is stored */
 typedef struct da_memory_s *da_memory_t;

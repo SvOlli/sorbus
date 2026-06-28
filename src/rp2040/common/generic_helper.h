@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <ctype.h>
 
 
@@ -78,5 +79,12 @@ int cs_textlen( const char *string );
  * library function to upload data to RAM via xmodem
  */
 int xmodem_receive( poke_t poke, uint16_t addr );
+
+/*
+ * library function to upload/download data via papertape
+ */
+bool papertape_read( poke_t poke, uint8_t bank );
+void papertape_write( FILE *f, peek_t peek, ptp_callback_t cb, uint8_t bank,
+                      uint16_t start, uint16_t end, uint8_t step );
 
 #endif

@@ -1,6 +1,7 @@
 
 #include "sorbus_rte.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -23,6 +24,11 @@ uint8_t memsim_banks()
    return 4;
 }
 
+
+uint8_t *getram( uint16_t address )
+{
+   return &ram[address];
+}
 
 void memsim_poke( uint8_t bank, uint16_t addr, uint8_t value )
 {
@@ -55,7 +61,7 @@ uint8_t memsim_peek( uint8_t bank, uint16_t addr )
 }
 
 
-bool memsim_loadfile( uint16_t addr, const char *filename )
+uint16_t memsim_loadfile( uint16_t addr, const char *filename )
 {
    ssize_t filesize;
    uint8_t *filedata;
@@ -63,7 +69,7 @@ bool memsim_loadfile( uint16_t addr, const char *filename )
    filedata = loadfile( filename, &filesize );
    if( !filedata )
    {
-      return false;
+      return 0;
    }
    if( filesize > (sizeof(ram) - addr) )
    {
@@ -71,7 +77,7 @@ bool memsim_loadfile( uint16_t addr, const char *filename )
    }
    memcpy( &ram[addr], filedata, filesize );
    free( filedata );
-   return true;
+   return filesize;
 }
 
 
@@ -118,14 +124,18 @@ uint8_t *loadfile( const char *filename, ssize_t *filesize )
    }
 
    datasize = (ssize_t)lseek( fd, 0, SEEK_END );
-   (void)lseek( fd, 0, SEEK_SET );
-   if( datasize < 0 )
+   if( (datasize < 0) || (datasize > 0x10000) )
    {
       /* TODO: better error handling */
+      if( (!errno) && (datasize > 0x10000) )
+      {
+         errno = EFBIG;
+      }
       perror( "seek" );
       close( fd );
       return 0;
    }
+   (void)lseek( fd, 0, SEEK_SET );
 
    data = malloc( (size_t)datasize + 1 );
    if( !data )

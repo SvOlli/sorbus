@@ -33,7 +33,7 @@ void help( const char *progname, int retval )
    fprintf( f,
      "%s: test tool for testing disassembler\n"
      "\t-c cpu:\tcputype (mandatory)\n"
-     "\t-f file:\ttrace file (mandatory)\n"
+     "\t-f file:\tbinary file (mandatory)\n"
      "\t-a addr:\tstart addresses of file in memory\n"
      , progname );
    exit( retval );

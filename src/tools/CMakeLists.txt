@@ -26,6 +26,7 @@ add_library(sorbus_rte STATIC
    sorbus_rte_memory.c
    sorbus_rte_trace.c
    ${CMAKE_SOURCE_DIR}/rp2040/common/heaptrack.c
+   ${CMAKE_SOURCE_DIR}/rp2040/common/papertape.c
    ${CMAKE_SOURCE_DIR}/rp2040/common/putcharset.c
    ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_base.c
    ${CMAKE_SOURCE_DIR}/rp2040/disassemble/da_cyclecount.c
@@ -80,6 +81,12 @@ target_include_directories(bin2uf2 PRIVATE
 add_executable(binjoin
    binjoin.c
    )
+
+# tool to test rework of disassembler
+add_executable(ptp
+   ptp.c
+)
+target_link_libraries(ptp PRIVATE sorbus_rte)
 
 # tool to test rework of disassembler
 add_executable(fulltrace
