@@ -116,12 +116,12 @@ paths:
 	@echo 'PICOTOOL_FETCH_FROM_GIT_PATH="$(PICOTOOL_FETCH_FROM_GIT_PATH)"'
 
 # these packages are required to create the release package
-setup-apt:
+setup-apt-build-only:
 	sudo apt update
 	sudo apt install gdb-multiarch cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cc65 p7zip-full cpmtools build-essential pkg-config libgd-dev mkdocs
 
 # this is additionally required on a development host
-setup-apt-dev: setup-apt
+setup-apt-dev: setup-apt-build-only
 	sudo apt install pkgconf libusb-1.0-0-dev microcom
 	sudo gpasswd -a $(USER) dialout
 	sudo gpasswd -a $(USER) plugdev

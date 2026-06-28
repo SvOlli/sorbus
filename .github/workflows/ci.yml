@@ -14,7 +14,7 @@ jobs:
 
       - name: 'Install dependencies'
         run: |
-          sudo make setup-apt
+          sudo make setup-apt-build-only
           sudo src/tools/local-stow.sh
           sudo src/tools/local-arm-none-eabi-toolchain.sh
 

@@ -114,8 +114,8 @@ Example:
 ```
 15 34 A0       SET   R5,$A034 ; load pointers R5 and R6
 16 22 90       SET   R6,$9022 ; with $A034 and $9022
-45             LDD  @R5       ; move byte from location $A034
-56             STD  @R6       ; to location $9022
+45             LD   @R5       ; move byte from location $A034
+56             ST   @R6       ; to location $9022
                               ; both pointers are incremented
 ```
 

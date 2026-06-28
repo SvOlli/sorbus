@@ -69,14 +69,17 @@ are available:
     - runs a `make clean` on build directory
   - make distclean
     - removes build directory entirely to force restart from scratch
-  - make setup-apt
+  - make setup-apt-build-only
     - installs packages on Debian required to build the project
     - used by git actions to prepare building of a release
-  - make setup-dev
-    - runs "setup-apt", as well as doing modifications to make sure
-      that terminal and picotool work
+  - make setup-apt-dev
+    - runs "setup-apt-build-only", as well as doing modifications to
+      make sure that terminal and all host dev packages are installed,
+      so picotool is compiled with support for transferring software
   - make picotool
     - checks out and builds picotool
+    - however there this has been superseded by
+      src/tools/local-picotool.sh (and src/tools/local-stow.sh)
   - make setup-external
     - sets up tools required to build external code, like
       - [CP/M 65](https://github.com/davidgiven/cpm65) (requires
