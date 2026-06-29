@@ -24,6 +24,12 @@ static int32_t mcurses_trace_move( void *d, int32_t movelines )
    int32_t retval = 0;
    struct mc_trace_s *mch = (struct mc_trace_s *)d;
 
+   /* disable scrolling when there is not enough data to scroll */
+   if( mch->entries <= mch->datalines )
+   {
+      return 0;
+   }
+
    if( movelines == MC_LINEVIEW_FIRSTLINE )
    {
       movelines = -(mch->entries);
@@ -72,6 +78,11 @@ const char* mcurses_trace_data( void *d, int32_t offset )
          return "  Backtrace Viewer  (Ctrl+C to leave)";
       default:
          break;
+   }
+
+   if( offset >= mch->entries )
+   {
+      return "";
    }
    pos += snprintf( text+pos, sizeof(text)-1-pos,
                     "  %5d:", entry );

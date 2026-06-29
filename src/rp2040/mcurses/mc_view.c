@@ -22,7 +22,6 @@ static void printline( const char *line, uint8_t charset, int len )
       {
          if( *l == 0x7f )
          {
-            ++l;
             mcurses_debug_byte( *(l++), charset );
          }
          else

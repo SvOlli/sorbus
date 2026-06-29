@@ -155,6 +155,7 @@ void console_rp2040()
 
    while( !leave )
    {
+      screen_get_size( &lines, &cols );
       clear();
       mcurses_border( true, 0, 0, lines-1, cols-1 );
 
