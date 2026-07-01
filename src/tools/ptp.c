@@ -68,6 +68,7 @@ void help( const char *progname, int retval )
      "\t-p file:\tpapertape file\n"
      "\t-f file:\tbinary file (mandatory)\n"
      "\t-a addr:\tstart addresses of file in memory (default: $0400)\n"
+     "\t-b 1-32:\tbytes per line\n"
      "\t-v:\t\tverbose output\n"
      , progname );
    exit( retval );
@@ -85,18 +86,26 @@ int main( int argc, char *argv[] )
 
    uint16_t address = 0x0400;
    uint16_t bytesloaded = 0;
+   uint8_t  bytesperline = 32;
 
    int opt;
    bool fail = false;
    in  = stdin;
    out = stdout;
 
-   while ((opt = getopt(argc, argv, "a:f:p:vh")) != -1)
+   while ((opt = getopt(argc, argv, "a:b:f:p:vh")) != -1)
    {
       switch( opt )
       {
          case 'a':
             address = strtol( optarg, 0, 0 );
+            break;
+         case 'b':
+            bytesperline = (uint8_t)strtoul( optarg, 0, 0 );
+            if( (bytesperline < 1) || (bytesperline > 32) )
+            {
+               bytesperline = 32;
+            }
             break;
          case 'f':
             binname = optarg;
@@ -218,7 +227,7 @@ int main( int argc, char *argv[] )
          }
 
          papertape_write( out, memsim_peek, 0, 0,
-                          address, address+bytesloaded, 16 );
+                          address, address+bytesloaded, bytesperline );
 
          if( ptpname )
          {
