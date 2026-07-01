@@ -85,7 +85,7 @@ const char* mcurses_trace_data( void *d, int32_t offset )
       return "";
    }
    pos += snprintf( text+pos, sizeof(text)-1-pos,
-                    "  %5d:", entry );
+                    "  %5lu:", entry );
    da_snf_fullinfo( text+pos, sizeof(text)-1-pos, dah->cpu, "a w d RNISn:e:EcC y",
                     dah->fullinfo[entry], DA_FLAG_NONE );
    return &text[0];

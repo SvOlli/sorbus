@@ -37,7 +37,7 @@ void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size,
       {
          printf( "%02x:", bank );
       }
-      printf( "%04x:", address + i );
+      printf( "%04lx:", address + i );
 
       for( uint8_t j = 0; j < 0x10; ++j )
       {

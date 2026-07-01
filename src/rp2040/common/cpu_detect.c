@@ -139,7 +139,7 @@ cputype_t cpu_detect( bool debug )
          used += da_snf_fullinfo( b+used, bsize-used, cputype,
                                   "a w d R: y",
                                   d->fullinfo[i], DA_FLAG_NONE );
-         printf( "%3d:%s:%s\n", text );
+         puts( text );
       }
       da_trace_done( d );
       print_hexdump_buffer( 0, &memory[0], sizeof(memory), false );

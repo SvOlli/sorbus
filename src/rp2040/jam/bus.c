@@ -127,7 +127,7 @@ void check_cpu_is_halted()
 {
    while(gpio_get_all() & bus_config.mask_rdy)
    {
-      printf( "\rinternal error: cpu should be stopped. %08x", gpio_get_all() );
+      printf( "\rinternal error: cpu should be stopped. %08lx", gpio_get_all() );
    }
 }
 

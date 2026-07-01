@@ -374,7 +374,7 @@ int da_sn_fullinfo( char *b, size_t bsize, cputype_t cpu,
             break;
          case 'Z': // debug
             // TODO: assert bsize >= 16
-            used += snprintf( b+used, bsize-used, "%016lx", fullinfo.raw );
+            used += snprintf( b+used, bsize-used, "%016llx", fullinfo.raw );
             break;
          default: // sufficiant error reporting
             fprintf( stderr, __FILE__

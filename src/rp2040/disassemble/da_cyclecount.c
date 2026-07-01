@@ -585,7 +585,7 @@ uint8_t da_cc_interrupt_65816( da_trace_t d, uint32_t pos )
       cycles = da_cc_vectorpull( d, pos, 0xFFFC, false );
       if( cycles )
       {
-         printf( "reset detected at: %d\n", pos );
+         printf( "reset detected at: %lu\n", pos );
       }
    }
 

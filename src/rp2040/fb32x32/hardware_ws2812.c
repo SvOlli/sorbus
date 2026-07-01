@@ -41,7 +41,9 @@ void hardware_setcolor( uint8_t index, uint8_t r, uint8_t g, uint8_t b )
    g &= 0x0F;
    b &= 0x0F;
 
-   colortab[index] = ((r << 16) | (g << 24) | (b << 8)) << brightness;
+   colortab[index] = (((uint32_t)r << 16) |
+                      ((uint32_t)g << 24) |
+                      ((uint32_t)b <<  8)) << brightness;
 }
 
 

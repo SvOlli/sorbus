@@ -21,11 +21,11 @@
 #endif
 
 // taken from: https://stackoverflow.com/questions/27581671/how-to-compute-log-with-the-preprocessor
-#define LOG_1(n) (((n) >= 2) ? 1 : 0)
-#define LOG_2(n) (((n) >= 1<<2) ? (2 + LOG_1((n)>>2)) : LOG_1(n))
-#define LOG_4(n) (((n) >= 1<<4) ? (4 + LOG_2((n)>>4)) : LOG_2(n))
-#define LOG_8(n) (((n) >= 1<<8) ? (8 + LOG_4((n)>>8)) : LOG_4(n))
-#define LOG(n)   (((n) >= 1<<16) ? (16 + LOG_8((n)>>16)) : LOG_8(n))
+#define LOG_1(n) (((n) >= 0x00002) ?  0x01 : 0x00)
+#define LOG_2(n) (((n) >= 0x00004) ? (0x02 + LOG_1((uint32_t)(n)>>0x02)) : LOG_1(n))
+#define LOG_4(n) (((n) >= 0x00010) ? (0x04 + LOG_2((uint32_t)(n)>>0x04)) : LOG_2(n))
+#define LOG_8(n) (((n) >= 0x00100) ? (0x08 + LOG_4((uint32_t)(n)>>0x08)) : LOG_4(n))
+#define LOG(n)   (((n) >= 0x10000) ? (0x10 + LOG_8((uint32_t)(n)>>0x10)) : LOG_8(n))
 
 static uint8_t dhara_nand_page_buffer[PAGE_SIZE];
 static uint8_t cache[PAGE_SIZE];

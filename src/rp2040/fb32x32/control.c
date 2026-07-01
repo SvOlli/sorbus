@@ -316,7 +316,7 @@ static inline void setcustomcolor( uint8_t id, uint8_t rgb,
 
 void control_init()
 {
-   memset( &framebuffer[0], sizeof(framebuffer), 0x00 );
+   memset( &framebuffer[0], 0x00, sizeof(framebuffer) );
    setcolormap( 0 );
    hardware_flush();
 }

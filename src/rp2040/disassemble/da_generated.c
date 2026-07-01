@@ -3,7 +3,9 @@
 /* automatically generated using gen_opcode_tables.sh */
 
 #define OPCODE(mn, am, reserved, bytes, cycles, extra, jump, mxe) \
-   (uint32_t)mn | (uint16_t)am << 8 | reserved << 14 | bytes << 15 | cycles << 18 | extra << 22 | jump << 24 | mxe << 25
+   (uint32_t)mn | (uint32_t)am << 8 | (uint32_t)reserved << 14 | \
+   (uint32_t)bytes << 15 | (uint32_t)cycles << 18 | \
+   (uint32_t)extra << 22 | (uint32_t)jump << 24 | (uint32_t)mxe << 25
 
 /* needs to be aligned with mnemonic_t */
 const char *da_mnemonics[] = {
