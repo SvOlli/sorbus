@@ -25,5 +25,5 @@ ${sudo_package} mkdir "${STOW_DIR}/${PACKAGE}/share"
 ${sudo_package} mv "${STOW_DIR}/${PACKAGE}/man" "${STOW_DIR}/${PACKAGE}/share/man"
 
 cd "${STOW_DIR}"
-${sudo_links} ${PACKAGE}/bin/stow -D "${PACKAGE_BASE}"-*
-${sudo_links} ${PACKAGE}/bin/stow -v "${PACKAGE}"
+${sudo_links} ${PACKAGE}/bin/stow -D "${PACKAGE_BASE}"-* || ${on_stow_fail}
+${sudo_links} ${PACKAGE}/bin/stow -v "${PACKAGE}"        || ${on_stow_fail}

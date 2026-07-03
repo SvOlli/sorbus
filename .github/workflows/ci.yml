@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 'Check out code'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: 'Install dependencies'
         run: |
           make setup-apt-build-only
-          yes | src/tools/local-nstow.sh
-          yes | src/tools/local-arm-none-eabi-toolchain.sh
+          answer=yes src/tools/local-nstow.sh
+          answer=yes src/tools/local-arm-none-eabi-toolchain.sh
 
       - name: 'Build'
         run: |
