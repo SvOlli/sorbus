@@ -10,7 +10,6 @@ JOBS="$(nproc || echo 4)"
 if [ $(id -u) -eq 0 ]; then
    echo "Please don't run this as root."
    echo "Run it as a user that's allow to use 'sudo'."
-   exit 12
 fi
 
 if [ -w "${STOW_DIR}/${PACKAGE}" -o -w "${STOW_DIR}" ]; then
