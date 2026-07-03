@@ -21,7 +21,7 @@ mybanner()
 build()
 {
    mybanner "Setup"
-   make setup-apt setup-external
+   make setup-apt-dev setup-external
 
    # workaround for getting faster ARM code
    # compilers > 12.2.rel1 produce slower code

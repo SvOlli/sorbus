@@ -71,5 +71,6 @@ nav:
       - 'Observed 65816 Behavior': 'opcodes/observed_65816_behavior.md'
    - 'Appendix':
       - 'Thanks': 'thanks.md'
+      - 'Setting up build environment': 'buildenv.md'
       - 'Datasheets': 'datasheets.md'
       - 'Links': 'links.md'

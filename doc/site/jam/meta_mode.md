@@ -14,6 +14,9 @@ stored and restored when leaving the meta-mode. However, this is relying
 on a terminal feature, so if your terminal does not support it, the
 output will not be restored.
 
+(Also take note that the firmware is in active developement, so the
+screenshots used here might not outdated as compared to the code.)
+
 ![menu](../images/screenshots/menu.png)
 
 The bottom boxes show some information about the system:

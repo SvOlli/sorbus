@@ -1,58 +1,55 @@
-#!/bin/sh
+#!/bin/bash
 
-set -e
-cd "$(dirname "${0}")/../.."
+# this one is a little ugly, because of
+# - picotool repository needs to be fetched for version number
+# - picotool requires pico-sdk to be downloaded as well
+# - stuff typically static needs to be generated before including
+#   common code
 
-readonly BUILD_DIR="$(dirname "${PWD}")/../local"
-readonly STOW_DIR="/usr/local/stow"
-readonly PACKAGE="picotool"
 readonly URL="https://github.com/raspberrypi/picotool.git"
+readonly PACKAGE_BASE="picotool"
+
+set -eu
+# save directory for later
+pushd "$(dirname "${0}")/../.." >/dev/null
+TOPDIR="${PWD}"
 
 git_checkout="$(grep ^GIT_CHECKOUT Makefile | cut -f2 -d=)"
+readonly PICOTOOL_DIR="$(dirname "${PWD}")/picotool"
+
+# for getting the version, the source code needs to be already here
+if [ ! -d "${PICOTOOL_DIR}" ]; then
+   git clone "${URL}" "${PICOTOOL_DIR}"
+   cd "${PICOTOOL_DIR}"
+else
+   cd "${PICOTOOL_DIR}"
+   git pull
+fi
+readonly VERSION="$(grep 'set(PICOTOOL_VERSION' "CMakeLists.txt" | sed 's/set(PICOTOOL_VERSION  *\([^)]*\))/\1/')"
+readonly PACKAGE="picotool-${VERSION}"
 
 PICO_SDK_PATH="$(readlink -f ..)/pico-sdk"
 export PICO_SDK_PATH
 
-make "${PICO_SDK_PATH}/README.md"
+make -C "${TOPDIR}" "${PICO_SDK_PATH}/README.md"
 
-cd ..
+# restore current directory to start
+popd >/dev/null
+. "$(dirname "${0}")/local-common.sh"
 
-readonly target_dir="${PWD}/picotool"
 readonly build_dir="${BUILD_DIR}/picotool-build"
-jobs="$(nproc || echo 4)"
 
 rm -rf "${build_dir}"
 mkdir -p "${build_dir}"
 cd "${build_dir}"
-pwd
 
-if [ -d "${target_dir}" ]; then
-   cd "${target_dir}"
-   git pull
-   cd - 2>/dev/null
-else
-   ${git_checkout} "${URL}" "${target_dir}"
-fi
+cmake "${PICOTOOL_DIR}"
+make -j${JOBS}
 
-cmake "${target_dir}"
-make -j${jobs}
-
-version="$(./picotool version | cut -f1-2 -d\  | head -1 | tr ' ' -)"
-sed -e "s,\(CMAKE_INSTALL_PREFIX:PATH\)=/usr/local,\1=${STOW_DIR}/${version},g" \
+sed -e "s,\(CMAKE_INSTALL_PREFIX:PATH\)=/usr/local,\1=${STOW_DIR}/${PACKAGE},g" \
     -i CMakeCache.txt
 
-if [ -w "${STOW_DIR}/${version}" -o -w "${STOW_DIR}" -o -w "${STOW_DIR}/.." ]; then
-   make install PICO_SDK_PATH="${PICO_SDK_PATH}"
-else
-   sudo make install PICO_SDK_PATH="${PICO_SDK_PATH}"
-fi
+make PICO_SDK_PATH="${PICO_SDK_PATH}"
+${sudo_package} make install PICO_SDK_PATH="${PICO_SDK_PATH}"
 
-# stow it
-cd "${STOW_DIR}"
-if [ -w "../bin" ]; then
-   stow -Dv "${PACKAGE}-"*
-   stow -v "${version}"
-else
-   sudo stow -Dv "${PACKAGE}-"*
-   sudo stow -v "${version}"
-fi
+stow_package
