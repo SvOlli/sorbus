@@ -20,7 +20,7 @@ gpasswd -a $USER plugdev
 The $USER is added to the groups `dialout` and `plugdev`, so that it's
 possible to use the terminal without sudo.
 
-# An Elegant Way To Install Local Packages: Stow
+## Stow: An Elegant Way To Install Local Packages
 
 Some software might not work very well in current versions, or it's not
 available in apt based distros at all. For installing self-compile code
@@ -79,7 +79,7 @@ I've also seen a couple of tutorials on how to manage your ".dotfiles"
 within git or alike and then have them symlinked to the correct places.
 
 
-## src/tools/local-nstow.sh
+### src/tools/local-nstow.sh
 
 This script downloads `nstow` from
 [https://www.gnusto.com/](https://www.gnusto.com/), make small
@@ -92,7 +92,7 @@ there. Also, to bootstrap, you'd need to run
 `nstow-1.0/bin/stow nstow-1.0` since the executable is not in the $PATH.
 The scripts takes care of this for you.
 
-## src/tools/local-arm-none-eabi-toolchain.sh
+### src/tools/local-arm-none-eabi-toolchain.sh
 
 Some change has been made to the toolchain so that code compiled on
 Debian 13 (Trixie) runs significantly slower than the same code compiled
@@ -100,7 +100,7 @@ on Debian 12 (Bookworm). To compensate for that, the "best" precompiled
 version is downloaded from the [ARM website](https://developer.arm.com/)
 and installed.
 
-## src/tools/local-picotool.sh
+### src/tools/local-picotool.sh
 
 This gets a bit tough on the implementation. To figure out the version
 number for displaying where to install to, it requires to check out the
@@ -111,7 +111,7 @@ And to build the picotool, it will also download the pico-sdk, unless
 it's downloaded already. Also, for USB transfer, this requires the
 usb-dev package to be installed, which is done by `make setup-apt-dev`.
 
-## src/tools/local-exomizer.sh
+### src/tools/local-exomizer.sh
 
 exomizer is a tool for good 8-bit compression. The idea is to use the
 powerful host machine for compression so that it can be decompressed good
@@ -125,33 +125,33 @@ The script tries to adjust for that as good as possible. Also this tool
 is only needed if data needs to be compressed again due to changes. For
 building the compressed data is checked in.
 
-# Other Scripts Used For Development
+## Other Scripts Used For Development
 
 There are also some other scripts I hacked together for making some
 things a bit easier. Those I typically run from top level directory,
 but they can be run from anywhere.
 
-## src/tools/upload.sh
+### src/tools/upload.sh
 
 This it the script that I use to compile and upload. The default
 configuration is to upload new firmware and the kernel ROM. To also
 upload the internal drive image, you can use
 `src/tools/upload.sh build/rp2040/jam_alpha_picotool.uf2`
 
-## src/tools/mkdocs.sh
+### src/tools/mkdocs.sh
 
 This is a wrapper for the [mkdocs](https://www.mkdocs.org/) suite that
 is used to generate [this documentation](https://sorbus.xayax.net/). It
 mostly makes sure that generated parts are not outdated and provides an
 addition parameter for uploading.
 
-## src/tools/testbuild.sh
+### src/tools/testbuild.sh
 
 This script checks out the current code into `../testbuild` and compiles
 it there running `make all`, to make sure that what will be pushed is at
 least buildable.
 
-## src/tools/external-1kLEDsIsNoLimit.sh
+### src/tools/external-1kLEDsIsNoLimit.sh
 
 This is a script that downloads my demo
 [1k Is No Limit](https://xayax.net/1k_leds_is_no_limit/), assembles it,
@@ -159,18 +159,18 @@ and copies the binary file for deployment.
 
 The binary is also checked in, so running this is usually not necessary.
 
-## src/tools/external-cpm65.sh
+### src/tools/external-cpm65.sh
 
 This tries do download and compile the CP/M-65 operating system.
 
 The binaries are also checked in, so running this is usually not necessary.
 
-## src/tools/external-llvm-mos-sdk.sh
+### src/tools/external-llvm-mos-sdk.sh
 
 This tries to install the llvm-mos toolchain, required to build CP/M-65.
 As CP/M-65 is also checked in, running this is usually not necessary.
 
-## src/tools/external-taliforth2.sh
+### src/tools/external-taliforth2.sh
 
 This downloads the latest version of
 [TaliForth2](https://github.com/SamCoVT/TaliForth2). However this has
@@ -179,7 +179,7 @@ don't work on the Sorbus.
 
 The binary is also checked in, so running this is usually not necessary.
 
-# tl;dr
+## tl;dr
 
 For setting up development on a new system, I typically run these
 commands in the following order (no sudo required, as they run sudo
