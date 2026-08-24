@@ -40,8 +40,13 @@ start:
    .byte 10,"d) $0c: line input (enter)"
    .byte 10,"e) $0c: line input (edit)"
    .byte 10,"f) $0d: generate sine"
-   .byte 10,"g) $11: decimal print"
-   .byte 10,"h) $0e: system monitor"
+   ; $0e: system monitor (at end)
+   ; $0f: FB32X32INIT
+   ; $10: SWEET16
+   ; $11: PRDEC8
+   .byte 10,"g) $12: decimal print"
+   .byte 10,"h) $13: fill ascending"
+   .byte 10,"i) $0e: system monitor"
    .byte 10,"Ctrl+C) quit"
    .byte 10,0
 
@@ -68,14 +73,15 @@ done:
    jmp   start
 
 jmptab:
-   .word user
-   .word dir
-   .word vt100
-   .word lineinput0
-   .word lineinput
-   .word gensine
-   .word decimal
-   .word sysmon
+   .word user        ; a
+   .word dir         ; b
+   .word vt100       ; c
+   .word lineinput0  ; d
+   .word lineinput   ; e
+   .word gensine     ; f
+   .word decimal     ; g
+   .word ascending   ; h
+   .word sysmon      ; i
 jmpend:
 
 dec8:  ; print A as a decimal value
@@ -487,3 +493,11 @@ decimal:
    jsr   CHROUT
    pla
    rts
+
+ascending:
+   ldx   #$CE
+   int   ASCEND256
+   txa
+   jsr   hexdumppage
+   jmp   done
+

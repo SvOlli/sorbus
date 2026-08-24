@@ -245,3 +245,10 @@ RESET    := $FFDA
 ; out:
 ; -
 .define PRDEC16   $12
+
+; fill a page with an ascending number of 256 values
+; in:
+; X=page for table
+; out:
+; -
+.define ASCEND256 $13

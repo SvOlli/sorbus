@@ -362,6 +362,7 @@ brkjump:
    .word sweet16        ; BRK #$10
    .word prdec8         ; BRK #$11
    .word prdec16        ; BRK #$12
+   .word ascending      ; BRK #$13
 @jumptableend:
 
 .segment "CODE"
@@ -458,6 +459,17 @@ prdec16:
    jsr   CHROUT
    dey
    bpl   @loop1
+   rts
+
+ascending:
+   stz   TMP16+0
+   stx   TMP16+1
+   ldy   #$00
+:
+   tya
+   sta   (TMP16),y
+   iny
+   bne   :-
    rts
 
 xinputline:
