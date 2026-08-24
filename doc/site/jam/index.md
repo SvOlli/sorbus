@@ -17,6 +17,12 @@ the core in flash, using the following commands:
 (This is a subject to change, because it's now possible to create a UF2
 file with everything firmware, but this seems not to be fully supported.)
 
+NOTE: This documentation describes the current state of development, which
+currently takes place in development the branch `bios_65816_native`. It
+will be merged when it is capable to run
+[1k LEDs Is No Limit (2025)](https://xayax.net/1k_leds_is_no_limit/)
+without any graphic glitches.
+
 ---
 
 ## Supported CPU Variants

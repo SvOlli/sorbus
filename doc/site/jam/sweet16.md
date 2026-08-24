@@ -533,7 +533,7 @@ Example:
 | NP ea | $0E | $xx | no operation, reading dummy argument |
 | NP ea | $0F | $xx | no operation, reading dummy argument |
 
-These opcodes do nothing like the 6502 NOP instruction. Unlike that
+These opcodes do nothing similar to the 6502 NOP instruction. Unlike that
 instruction, it also reads the following byte, so they behave more like
 a branch never taken.
 
@@ -581,10 +581,10 @@ However, these could be used for further expansions.
 ## Sorbus Implementation Differences
 
 There are a few things that are done differently in the Sorbus port of
-SWEET16 as compared to the original.
+SWEET16 compared to the original.
 
 - SWEET16 is invoked using BRK #$10 instead of JSR $xxxx
 - BK does not execute a 6502 BRK, but triggers the TRAP to meta-mode
-  (for details see [BK description below](#bk))
+  (for details see [BK description above](#bk))
 - when R12 is zero (stack for [BS instruction](#bs)), it will be
   initialized to $0100 upon startup of SWEET16

@@ -258,11 +258,13 @@ of the `BRK` opcode for kernel interrupts. Possible arguments are:
 - $0A: VT100: several screen functions: Y=specify function (see below)
 - $0B: copy BIOS ($FF00-$FFFF) from ROM to RAM
 - $0C: input a text line from console (pointer in X/A, Y: size of input ($00-$7F), add $80 for only upper case)
-- $0D: fill a page of RAM with sine data (X: bits 7,6 offset, 5 fractions, 4-0 amplitude ($01-$10), A: page)
+- $0D: fill a page of RAM with sine data (A: bits 7,6 offset, 5 fractions, 4-0 amplitude ($01-$10), X: page)
 - $0E: jump to System Monitor
 - $0F: setup FB32x32 LED Matrix (framebuffer start: X/A. Y=$01 clear)
-- $10: prdec8: output accumulator as 3 digit decimal value with leading zeros
-- $11: prdec16: output X and accumulator as 5 digit decimal value with leading zeros
+- $10: enter SWEET16 interpreter
+- $11: prdec8: output accumulator as 3 digit decimal value with leading zeros
+- $12: prdec16: output X and accumulator as 5 digit decimal value with leading zeros
+- $13: fill page with an ascending order of bytes, so low byte matches data byte (X: page)
 
 For an own interrupt handler invoked via $DF78/9, it is recommended to
 use interrupt arguments starting with $80, as those won't be used by the

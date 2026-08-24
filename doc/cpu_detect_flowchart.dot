@@ -2,7 +2,7 @@
 
 cd "$(dirname "${0}")"
 
-dot -Tpng >"$(basename "${0}" .dot).png" <<EOF
+dot -Tpng >"site/images/$(basename "${0}" .dot).png" <<EOF
 
 digraph D {
 
@@ -19,9 +19,9 @@ digraph D {
    SEC       [shape=box label="SEC"]
    RUN5C     [shape=diamond label="run opcode \$5C"]
    CHECK5C   [shape=diamond label="check carry"]
-   RUN1A     [shape=diamond label="6502 / 65(S)C02\\nrun opcode \$1A\\nand check for zero"]
-   RUN97     [shape=diamond label="65(S)C02\\nrun opcode \$97"]
-   ROR       [shape=diamond label="6502\\nROR\\nand check carry"]
+   RUN1A     [shape=diamond label="6502 / 65(S)C02\\nset A=0, run opcode \$1A\\nand check for zero"]
+   RUN97     [shape=diamond label="non-zero: 65(S)C02\\nrun opcode \$97"]
+   ROR       [shape=diamond label="zero: 6502\\nROR\\nand check carry"]
    
    CLC -> RUN5C
    RUN5C -> RUNREST1
