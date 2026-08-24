@@ -1,5 +1,5 @@
 
-if [ -n "${RUNNER_NAME}" ]; then
+if [ -n "${RUNNER_NAME:-}" ]; then
    # workaround for github actions: allow stow to fail, hoping enough was done.
    on_stow_fail="true"
    # also preset the intended answer here
@@ -11,8 +11,6 @@ fi
 set -eu
 cd "$(dirname "${0}")/../.."
 
-trap "set" ERR
-
 readonly BUILD_DIR="$(dirname "${PWD}")/local"
 readonly LOCAL_DIR="/usr/local"
 readonly STOW_DIR="${LOCAL_DIR}/stow"
@@ -20,7 +18,7 @@ JOBS="$(nproc || echo 4)"
 
 if [ $(id -u) -eq 0 ]; then
    echo "Please don't run this as root."
-   echo "Run it as a user that's allow to use 'sudo'."
+   echo "Run it as a user that's allowed to use 'sudo'."
    exit 12
 fi
 
@@ -57,7 +55,7 @@ ${message_links}
 
 EOM
 
-if [ -z "${answer}" ]; then
+if [ -z "${answer:-}" ]; then
    read -p "Continue? " answer
 fi
 case "${answer}" in

@@ -174,7 +174,7 @@ mon_restart:
 
 .segment "DATA"
 defregs:
-   .word $ffd8          ; R_PC
+   .word $ffda          ; R_PC
    .byte $01            ; R_BK
    .byte $00            ; R_A
    .byte $00            ; R_X
@@ -188,10 +188,10 @@ regdump:
    jsr   PRINT
 .if REGSTART
    .byte 10,"   PC  AC XR YR SP NV-BDIZC"
-   ;          ~FFF2 53 56 4F FF 00100110
+   ;          ~FFDA 53 56 4F FF 00100110
 .else
    .byte 10,"   PC  BK AC XR YR SP NV-BDIZC"
-   ;          ~FFF2 00 53 56 4F FF 00100110
+   ;          ~FFDA 00 53 56 4F FF 00100110
 .endif
    .byte 10," ~",0
    lda   R_PC+1

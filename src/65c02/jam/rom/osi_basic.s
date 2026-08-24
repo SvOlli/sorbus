@@ -4532,13 +4532,11 @@ PEEK:
    jsr   GETADR
 .ifpsc02
    lda   (LINNUM)
-   tay
 .else
    ldy   #$00
-; disallow PEEK between $C000 and $DFFF
    lda   (LINNUM),y
-   tay
 .endif
+   tay
 .if CONFIG_PEEK_SAVE_LINENUM
    pla
    sta   LINNUM+0
