@@ -719,7 +719,7 @@ bool da_cc_start( da_trace_t d, uint32_t start )
    uint8_t     cycles      = 0;
    uint32_t    pos         = start;
    uint32_t    i;
-   
+
    forever()
    {
       if( (pos > d->entries) || da_cc_atend( d, pos ) )

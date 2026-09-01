@@ -9,21 +9,21 @@
 
 /* needs to be aligned with mnemonic_t */
 const char *da_mnemonics[] = {
-   "???", "ADC", "AHX", "ALR", "ANC", "AND", "ARR", "ASL", "ASR", "ASW", 
-   "AUG", "AXS", "BBR", "BBS", "BCC", "BCS", "BEQ", "BIT", "BMI", "BNE", 
-   "BPL", "BRA", "BRK", "BRL", "BSR", "BVC", "BVS", "CLC", "CLD", "CLE", 
-   "CLI", "CLV", "CMP", "COP", "CPX", "CPY", "CPZ", "DCP", "DEC", "DEW", 
-   "DEX", "DEY", "DEZ", "EOR", "INC", "INW", "INX", "INY", "INZ", "ISC", 
-   "JML", "JMP", "JSL", "JSR", "KIL", "LAS", "LAX", "LDA", "LDX", "LDY", 
-   "LDZ", "LSR", "LXA", "MVN", "MVP", "NEG", "NOP", "ORA", "PEA", "PEI", 
-   "PER", "PHA", "PHB", "PHD", "PHK", "PHP", "PHW", "PHX", "PHY", "PHZ", 
-   "PLA", "PLB", "PLD", "PLP", "PLX", "PLY", "PLZ", "RAA", "REP", "RLA", 
-   "RMB", "ROL", "ROR", "ROW", "RRA", "RTI", "RTL", "RTN", "RTS", "SAX", 
-   "SBC", "SEC", "SED", "SEE", "SEI", "SEP", "SHX", "SHY", "SLO", "SMB", 
-   "SRE", "STA", "STP", "STX", "STY", "STZ", "TAB", "TAS", "TAX", "TAY", 
-   "TAZ", "TBA", "TCD", "TCS", "TDC", "TRB", "TSB", "TSC", "TSX", "TSY", 
-   "TXA", "TXS", "TXY", "TYA", "TYS", "TYX", "TZA", "WAI", "WDM", "XAA", 
-   "XBA", "XCE", 0
+   "???", "ADC", "AHX", "ALR", "ANC", "AND", "ARR", "ASL", "ASR", "ASW",
+   "AUG", "AXS", "BBR", "BBS", "BCC", "BCS", "BEQ", "BIT", "BMI", "BNE",
+   "BPL", "BRA", "BRK", "BRL", "BSR", "BVC", "BVS", "CLC", "CLD", "CLE",
+   "CLI", "CLV", "CMP", "COP", "CPX", "CPY", "CPZ", "DCP", "DEC", "DEW",
+   "DEX", "DEY", "DEZ", "EOR", "INC", "INW", "INX", "INY", "INZ", "ISC",
+   "JML", "JMP", "JSL", "JSR", "KIL", "LAS", "LAX", "LDA", "LDX", "LDY",
+   "LDZ", "LSR", "LXA", "MVN", "MVP", "NEG", "NOP", "ORA", "PEA", "PEI",
+   "PER", "PHA", "PHB", "PHD", "PHK", "PHP", "PHW", "PHX", "PHY", "PHZ",
+   "PLA", "PLB", "PLD", "PLP", "PLX", "PLY", "PLZ", "RAA", "REP", "RLA",
+   "RMB", "ROL", "ROR", "ROW", "RRA", "RTI", "RTL", "RTN", "RTS", "SAX",
+   "SBC", "SEC", "SED", "SEE", "SEI", "SEP", "SHX", "SHY", "SLO", "SMB",
+   "SRE", "STA", "STP", "STX", "STY", "STZ", "TAB", "TAS", "TAX", "TAY",
+   "TAZ", "TBA", "TCD", "TCS", "TDC", "TRB", "TSB", "TSC", "TSX", "TSY",
+   "TXA", "TXS", "TXY", "TYA", "TYS", "TYX", "TZA", "WAI", "WDM", "XAA",
+   "XBA", "XCE",0
 };
 
 /* automatically generated using doc/opcodes6502.csv */

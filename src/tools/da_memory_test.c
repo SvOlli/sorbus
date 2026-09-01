@@ -43,7 +43,7 @@ void disassemble( cputype_t cpu, uint16_t address, uint16_t size )
    char buffer[256];
    uint16_t a = address;
    da_memory_t dam;
-   
+
    dam = da_memory_init( memsim_peek );
    dam->cpu = cpu;
 
@@ -74,7 +74,7 @@ void disassemble( cputype_t cpu, uint16_t address, uint16_t size )
       printf( "%s\n", &buffer[0] );
       a += da_pick_bytes( cpu, memsim_peek( 0, a ) );
    }
-   
+
    da_memory_done( dam );
 }
 

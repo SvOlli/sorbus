@@ -17,7 +17,7 @@
  * output mode full opcode:
  * $E000: 4C 03 E0    JMP  $E003
  * "$A: DO y"
- * 
+ *
  * output mode single byte:
  * $E000: 4C ('L')    JMP  $E003
  * $E001: 03 ('C')

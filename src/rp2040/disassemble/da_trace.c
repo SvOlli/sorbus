@@ -10,15 +10,15 @@
 /*
  * expected lines of output:
 
- 1014:e28b r b0    :7:BCS  $E288                                               
+ 1014:e28b r b0    :7:BCS  $E288
  1015:e28c r fb    :0:
  1016:e28d r 20    :0:
- 1017:e288 r 20    :7:JSR  $FF00                                               
+ 1017:e288 r 20    :7:JSR  $FF00
  1018:e289 r 00    :0:
- 1019:e28a r ff    :0:                                                         
+ 1019:e28a r ff    :0:
  1020:e28a r ff    :0:
- 1021:01fd w e2    :0:                                                         
- 1022:01fc w 8a    :0:                                                         
+ 1021:01fd w e2    :0:
+ 1022:01fc w 8a    :0:
 
  */
 

@@ -14,17 +14,17 @@ int16_t nib2bin( int16_t nib )
    {
       return nib & 0xF;
    }
-   
+
    if( (nib >= 'A') && (nib <= 'Z') )
    {
       return (nib - 'A') + 10;
    }
-   
+
    if( (nib >= 'a') && (nib <= 'z') )
    {
       return (nib - 'a') + 10;
    }
-   
+
    return -1;
 }
 
@@ -44,7 +44,7 @@ static int16_t getbyte()
    {
       return -1;
    }
-   
+
    return (highnib << 4) | lownib;
 }
 

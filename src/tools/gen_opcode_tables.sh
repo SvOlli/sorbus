@@ -108,7 +108,7 @@ __END_OF_TEXT__
          sort -u |
          tr -d '\n' |
          fold -s -w 70 |
-         sed -e 's/^/   /'
+         sed -e 's/^/   /' -e 's/  *$//g'
 
       cat <<__END_OF_TEXT__
 DA_MNEMONIC_END
@@ -180,7 +180,7 @@ __END_OF_TEXT__
          sort -u |
          tr -d '\n' |
          fold -s -w 70 |
-         sed -e 's/^/   /'
+         sed -e 's/^/   /' -e 's/  *$//g'
 
       cat <<__END_OF_TEXT__
 0
