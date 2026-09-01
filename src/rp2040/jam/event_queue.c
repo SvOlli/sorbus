@@ -22,7 +22,6 @@ static inline void queue_event_debug( const char *text )
 /*
    uint64_t               timestamp;
    queue_event_handler_t  handler;
-   void                   *data;
    struct queue_event_s   *next;
  */
    queue_event_t *event;
@@ -30,29 +29,13 @@ static inline void queue_event_debug( const char *text )
    printf( "%s: %016llx:%016llx\n", text, _queue_cycle_counter, _queue_next_timestamp );
    for( event = _queue_next_event; event; event = event->next )
    {
-      printf( "%02d:%016llx:%p:%p\n",
+      printf( "%02d:%016llx:%08lx\n",
               i++,
               event->timestamp,
-              event->handler,
-              event->data );
+              event->full_id );
    }
    printf( "done.\n" );
 }
-
-
-#if 0
-static inline uint32_t cycles_until( uint64_t start, uint64_t end )
-{
-   if( end >= start )
-   {
-      return (end - start); // truncate is okay since number are close by
-   }
-   else
-   {
-      return UINT32_MAX;
-   }
-}
-#endif
 
 
 // replacement for "new": get an empty event
@@ -88,7 +71,7 @@ void queue_event_init()
 }
 
 
-void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
+void queue_event_add( uint32_t when, uint32_t full_id )
 {
    uint64_t timestamp = _queue_cycle_counter + when;
 
@@ -101,8 +84,7 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
 
    // fill in data
    newevent->timestamp = timestamp;
-   newevent->handler   = handler;
-   newevent->data      = data;
+   newevent->full_id   = full_id;
    newevent->next      = 0;
    if( !_queue_next_event )
    {
@@ -150,21 +132,23 @@ void queue_event_add( uint32_t when, queue_event_handler_t handler, void *data )
 }
 
 
-void queue_event_cancel( queue_event_handler_t handler )
+void queue_event_cancel( uint32_t full_id )
 {
    queue_event_t *current  = 0;
    queue_event_t *previous = 0;
 
    for( current = _queue_next_event; current; current = current->next )
    {
-      if( current->handler == handler )
+      if( current->full_id == full_id )
       {
          if( previous )
          {
+            // not first entry
             previous->next = current->next;
          }
          else
          {
+            // first entry
             _queue_next_event = _queue_next_event->next;
          }
 
@@ -177,46 +161,69 @@ void queue_event_cancel( queue_event_handler_t handler )
 }
 
 
-void queue_event_cancel_data( queue_event_handler_t handler, void *data )
+// check if the event queue contains a specific event
+bool queue_event_contains( uint32_t full_id )
 {
    queue_event_t *current  = 0;
-   queue_event_t *previous = 0;
 
    for( current = _queue_next_event; current; current = current->next )
    {
-      if( (current->handler == handler) && (current->data == data) )
+      if( current->full_id == full_id )
       {
-         if( previous )
-         {
-            previous->next = current->next;
-         }
-         else
-         {
-            _queue_next_event = _queue_next_event->next;
-         }
-
-         queue_event_drop( current );
-
-         break;
+         return true;
       }
-      previous = current;
    }
+
+   return false;
 }
 
 
-bool queue_event_contains( queue_event_handler_t handler )
+int queue_event_info( char *b, size_t bsize )
 {
-   bool retval = false;
-   queue_event_t *current  = 0;
+   int used = 0;
+   int i;
+   queue_event_t *event;
 
-   for( current = _queue_next_event; current; current = current->next )
+   const char *class[0x10] = {
+   "undefined",         // 0x00xxxxxx
+   "reset",             // 0x01xxxxxx
+   "io_write",          // 0x02xxxxxx
+   "io_read",           // 0x03xxxxxx
+   "meta",              // 0x04xxxxxx
+   "cpufreq",           // 0x05xxxxxx
+   "timer_cycle",       // 0x06xxxxxx
+   "flash_sync",        // 0x07xxxxxx
+   "undefined",         // 0x08xxxxxx
+   "undefined",         // 0x09xxxxxx
+   "undefined",         // 0x0axxxxxx
+   "undefined",         // 0x0bxxxxxx
+   "undefined",         // 0x0cxxxxxx
+   "undefined",         // 0x0dxxxxxx
+   "undefined",         // 0x0exxxxxx
+   "undefined"          // 0x0fxxxxxx
+   };
+
+   used = snprintf( b+used, bsize-used,
+                    "cycle counter:   %016llx\n"
+                    "next timerstamp: %016llx\n\n"
+                    "id|       timestamp|   full_id|class\n"
+                    , _queue_cycle_counter
+                    , _queue_next_timestamp
+                   );
+
+   for( i = 0, event = _queue_next_event; event; event = event->next )
    {
-      if( current->handler == handler )
+      if( (used+1) >= bsize )
       {
-         retval = true;
-         break; // found one, no need to search further
+         break;
       }
+      used += snprintf( b+used, bsize-used,
+                          "%02x|%016llx|0x%08x|%s\n"
+                          , i++
+                          , event->timestamp
+                          , event->full_id
+                          , class[(event->full_id >> 24) & 0xF]
+                        );
    }
-
-   return retval;
+   return used;
 }

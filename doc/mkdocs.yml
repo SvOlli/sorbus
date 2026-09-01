@@ -43,6 +43,7 @@ nav:
       - 'BOM': 'boards/bom.md'
    - 'Main Core: Sorbus JAM':
       - 'General Information': 'jam/index.md'
+      - 'Internal Core Messaging': 'jam/core_messaging.md'
       - 'Terminal Software': 'jam/terminal.md'
       - 'System Monitor': 'jam/sysmon.md'
       - 'Other Monitors': 'jam/monitors.md'
@@ -53,6 +54,7 @@ nav:
       - 'Filebrowser': 'jam/filebrowser.md'
       - 'Useful Software': 'jam/software.md'
       - 'Memory Map & I/O Registers': 'jam/memory_map_io_registers.md'
+      - 'Kernel Routines': 'jam/kernel_routines.md'
       - 'Bankswitching': 'jam/bankswitching.md'
       - 'SWEET16': 'jam/sweet16.md'
       - '32x32 LEDs Display': 'jam/32x32display.md'

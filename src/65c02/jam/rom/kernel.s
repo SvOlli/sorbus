@@ -322,7 +322,8 @@ copybios:
 brkjump:
    cmp   #<((@jumptableend - @jumptable)/2)
    bcc   @okay          ; sanity check: if BRK operand out of scope
-   lda   #$00           ; reset, user BRK can lda (TMP16) to get BRK operand
+   ; user defined BRK can lda (TMP16) to get BRK operand
+   lda   #<((@jumptableend - @jumptable)/2)
 @okay:
    asl                  ; BRK >=$80 will always be =$00
    tax
@@ -343,7 +344,7 @@ brkjump:
 .segment "DATA"
 
 @jumptable:
-   .word @user          ; BRK #$00
+   .word mon_brk        ; BRK #$00
    .word chrinuc        ; BRK #$01
    .word chrcfg         ; BRK #$02
    .word prhex8         ; BRK #$03
@@ -357,13 +358,13 @@ brkjump:
    .word copybiossetram ; BRK #$0b
    .word xinputline     ; BRK #$0c
    .word j2gensine      ; BRK #$0d
-   .word mon_brk        ; BRK #$0e
+   .word ascending      ; BRK #$0e
    .word fb32x32        ; BRK #$0f
    .word sweet16        ; BRK #$10
    .word prdec8         ; BRK #$11
    .word prdec16        ; BRK #$12
-   .word ascending      ; BRK #$13
 @jumptableend:
+   .word @user          ; must be last
 
 .segment "CODE"
 

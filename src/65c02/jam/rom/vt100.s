@@ -47,7 +47,7 @@ vt100:
    ; slip through
 :
    pha
-   lda   #$44           ; save page $0200
+   lda   #$14           ; save page $0200
    sta   XRAMSW
    pla
    cpy   #VT100_CPOS_GET
@@ -180,7 +180,7 @@ vt100_getreply:
    sta   BRK_SX
    ; slip through
 vt100_done:
-   lda   #$84           ; restore page $0200
+   lda   #$24           ; restore page $0200
    sta   XRAMSW
    ldx   BRK_SX         ; since we can be also called via JSR
    lda   BRK_SA         ; restore registers here as well

@@ -16,13 +16,23 @@
 #define SHOW_RAW_DUMP_IN_DEBUG 0
 
 static uint32_t *last_trace = 0;
+cputype_t cputype = 0;
+
 
 uint32_t *cpu_detect_trace()
 {
    return last_trace;
 }
 
-cputype_t cpu_detect( bool debug )
+
+void cpu_detect_trace_free()
+{
+   ht_free( last_trace );
+   last_trace = 0;
+}
+
+
+void cpu_detect( bool debug )
 {
    uint32_t  trace[CYCLES_TOTAL] = { 0 };
    uint32_t  state;
@@ -30,7 +40,6 @@ cputype_t cpu_detect( bool debug )
    uint32_t  cycles_left_reset = 8;
    uint32_t  cycles_run = 0;
    bool      reset_done = false;
-   cputype_t cputype;
    uint8_t   memory[0x20] = { 0 };
    char      text[128] = { 0 };
    char      *b;
@@ -124,7 +133,7 @@ cputype_t cpu_detect( bool debug )
       da_trace_t d = da_trace_init( cputype ? cputype : CPU_6502,
                                     &trace[0], CYCLES_TOTAL, 0 );
       da_cc_start( d, 0 );
-      print_hexdump_buffer( 0, &cpudetect[0], sizeof(cpudetect), false );
+      print_hexdump_buffer( &cpudetect[0], sizeof(cpudetect), 0, false );
       for( int i = 0; i < cycles_run; ++i )
       {
          if( !d->fullinfo[i].raw )
@@ -142,14 +151,11 @@ cputype_t cpu_detect( bool debug )
          puts( text );
       }
       da_trace_done( d );
-      print_hexdump_buffer( 0, &memory[0], sizeof(memory), false );
+      print_hexdump_buffer( &memory[0], sizeof(memory), 0, false );
    }
 
    // make sure heap memory used is minimum
    last_trace = (uint32_t*)ht_realloc( last_trace, sizeof(uint32_t) * cycles_run );
    // copy trace from stack to heap
    memcpy( last_trace, &trace[0], sizeof(uint32_t) * cycles_run );
-
-   // run complete, evaluate detected code
-   return cputype;
 }

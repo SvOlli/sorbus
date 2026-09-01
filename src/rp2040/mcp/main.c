@@ -57,8 +57,6 @@ uint32_t add_us            = 100000;
 uint32_t state;
 uint32_t address;
 
-cputype_t cputype = CPU_UNDEF;
-
 typedef void (*cmdhandler_t)(const char *input);
 
 typedef struct {
@@ -435,7 +433,7 @@ void cmd_cold( const char *input )
          return;
       }
    }
-   cputype = cpu_detect( debug );
+   cpu_detect( debug );
 
    cycles_left_reset = 5;
    printf( "CPU detected as %s\n", da_cputype_name( cputype ) );

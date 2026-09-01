@@ -22,18 +22,65 @@
 
 #include "jam.h"
 #include "event_queue.h"
+#include "cpu_detect.h"
 
 #define SWITCH_CORES 0
 
+#ifndef SORBUS_VERSION
+#define SORBUS_VERSION "0.8"
+#endif
+
+
+#ifdef __OPTIMIZE__
+#ifdef __OPTIMIZE_SIZE__
+#define SORBUS_OPTIMIZED " optimized for size"
+#else
+#define SORBUS_OPTIMIZED " optimized for speed"
+#endif
+#else
+#define SORBUS_OPTIMIZED " not optimized"
+#endif
+
+#define SORBUS_LONG_VERSION \
+"JAM Version " SORBUS_VERSION ", compiled with: gcc " __VERSION__ SORBUS_OPTIMIZED
+
+const char *sorbus_version = SORBUS_LONG_VERSION;
 
 bi_decl(bi_program_name("Sorbus Computer Native Core"))
-bi_decl(bi_program_description("implement an own home computer flavor"))
+bi_decl(bi_program_description(SORBUS_LONG_VERSION))
 bi_decl(bi_program_url("https://sorbus.xayax.net/"))
 
 #include "bus.h"
 
-queue_t queue_uart_read;
-queue_t queue_uart_write;
+
+void system_cpu_detect()
+{
+   cpu_detect( false );
+retry:
+   if( cputype == CPU_ERROR )
+   {
+      bool success;
+      uint8_t data;
+      printf( "  cpu could not be detected, retrying (SPACE for debug)\r" );
+      //success = queue_try_remove( &queue_uart_read, &data );
+      if( success && (data == ' ') )
+      {
+         cpu_detect( true );
+         printf( "power jumper set?\n" );
+      }
+
+      goto retry;
+   }
+}
+
+
+void bus_start()
+{
+   bus_init();
+   system_cpu_detect();
+   system_init();
+   system_reboot();
+}
 
 
 int main()
@@ -49,27 +96,26 @@ int main()
    // for toying with overclocking
    set_sys_clock_khz( 133000, false );
 
-   // setup between UART core and bus core
-   queue_init( &queue_uart_read,  sizeof(int), 240 );
-   queue_init( &queue_uart_write, sizeof(int), 128 );
-
-   // setup mutex for event queue
-   queue_event_init();
-
-#if SWITCH_CORES
-   // run interactive console in core1
-   multicore_launch_core1( console_run );
-
-   // setup the bus and run the bus in core0
-   bus_run();
-#else
-   // setup the bus and run the bus core
-   multicore_launch_core1( bus_run );
-
-   // run interactive console -> should never return
-   console_run();
+#if 0
+   // setup cores
+   setup_bus();
+   setup_io();
 #endif
 
-   // keep the compiler happy
+#if SWITCH_CORES
+   // run console and handlers in core1
+   multicore_launch_core1( io_run );
+
+   // run the bus in core0
+   bus_run();
+#else
+   // run the bus in core1
+   multicore_launch_core1( bus_run );
+
+   // run console and handlers in core0
+   io_run();
+#endif
+
+   // keep the compiler happy, since we should never get here
    return 0;
 }

@@ -16,10 +16,17 @@
 /*
  * hexdump some data
  */
-void print_hexdump_buffer( uint8_t bank, const uint8_t *memory, uint32_t size,
-                           bool showbank );
-void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size,
+void print_hexdump_buffer( const uint8_t *memory, uint32_t size,
+                           uint8_t bank, bool showbank );
+void print_hexdump( peek_t peek,
+                    uint8_t bank, uint16_t address, uint32_t size,
                     bool showbank );
+int snprint_hexdump_buffer( char *b, size_t bsize,
+                            const uint8_t *memory, uint32_t size,
+                            uint8_t bank, bool showbank );
+int snprint_hexdump( char *b, size_t bsize, peek_t peek,
+                     uint8_t bank, uint16_t address, uint32_t size,
+                     bool showbank );
 
 /* Read a 4-digt address from console and check if it is below "lastaddr" */
 int32_t get_16bit_address( uint16_t lastaddr );
@@ -32,6 +39,7 @@ void *ht_calloc( size_t nmemb, size_t size );
 void *ht_realloc( void *ptr, size_t size );
 uint32_t ht_freemem();
 uint32_t ht_freemin();
+void ht_info( char *buffer, size_t size );
 
 
 /* convert a character from 8bit to 16bit UTF representation

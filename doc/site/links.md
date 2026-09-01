@@ -21,3 +21,11 @@
 ## Other People
 
 * [Hans Otten's Series Of Pages](http://retro.hansotten.nl/the-sorbus-computer/)
+
+
+## Helpful Sites
+
+* [Compiler Explorer](https://godbolt.org/), select ARM GCC 12.2.1
+  -mcpu=cortex-m0plus -mthumb -mfloat-abi=softfp -g -O3 -DNDEBUG
+  -Wunused-variable -ffunction-sections -fdata-sections
+

@@ -11,8 +11,8 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 /* disable pedantic as it warns about non ISO C usage of nested functions */
-void print_hexdump_buffer( uint8_t bank, const uint8_t *memory, uint32_t size,
-                           bool showbank )
+void print_hexdump_buffer( const uint8_t *memory, uint32_t size,
+                           uint8_t bank, bool showbank )
 {
    /* I think that's the first time in anything I coded,
     * where a function within a function actually makes totally sense.
@@ -25,10 +25,28 @@ void print_hexdump_buffer( uint8_t bank, const uint8_t *memory, uint32_t size,
 
    print_hexdump( peek, bank, 0, size, showbank );
 }
+
+
+int snprint_hexdump_buffer( char *b, size_t bsize,
+                            const uint8_t *memory, uint32_t size,
+                            uint8_t bank, bool showbank )
+{
+   /* I think that's the first time in anything I coded,
+    * where a function within a function actually makes totally sense.
+    * Today is a good day. */
+   /* Note: nested functions are not C standard, but a GCC extension */
+   uint8_t peek( uint8_t /*bank*/, uint16_t a )
+   {
+      return memory[a];
+   }
+
+   return snprint_hexdump( b, bsize, peek, bank, 0, size, showbank );
+}
 #pragma GCC diagnostic pop
 
 
-void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size,
+void print_hexdump( peek_t peek,
+                    uint8_t bank, uint16_t address, uint32_t size,
                     bool showbank )
 {
    for( uint32_t i = 0; i < size; i += 0x10 )
@@ -75,6 +93,59 @@ void print_hexdump( peek_t peek, uint8_t bank, uint16_t address, uint32_t size,
       }
 
       printf( "\n" );
+   }
+}
+
+
+int snprint_hexdump( char *b, size_t bsize, peek_t peek,
+                     uint8_t bank, uint16_t address, uint32_t size,
+                     bool showbank )
+{
+   int used = 0;
+   for( uint32_t i = 0; i < size; i += 0x10 )
+   {
+      if( showbank )
+      {
+         used += snprintf( b+used, bsize-used, "%02x:", bank );
+      }
+      used += snprintf( b+used, bsize-used, "%04lx:", address + i );
+
+      for( uint8_t j = 0; j < 0x10; ++j )
+      {
+         uint16_t a = address + i + j;
+         if( (i + j) > size )
+         {
+            used += snprintf( b+used, bsize-used, "   " );
+         }
+         else
+         {
+            used += snprintf( b+used, bsize-used, " %02x", peek( bank, a ) );
+         }
+         if( j == 7 )
+         {
+            used += snprintf( b+used, bsize-used, " " );
+         }
+      }
+      used += snprintf( b+used, bsize-used, "  " );
+      for( uint8_t j = 0; j < 0x10; ++j )
+      {
+         uint16_t a = address + i + j;
+         if( (i + j) > size )
+         {
+            break;
+         }
+         uint8_t v = peek( bank, a );
+         if( (v >= 32) && (v <= 127) )
+         {
+            used += snprintf( b+used, bsize-used, "%c", v );
+         }
+         else
+         {
+            used += snprintf( b+used, bsize-used, "." );
+         }
+      }
+
+      used += snprintf( b+used, bsize-used, "\n" );
    }
 }
 

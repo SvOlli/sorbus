@@ -166,15 +166,15 @@ during startup (see next section).
 
 ## Using an NMOS 6502
 
-The firmware of this core does not support an NMOS 6502, and shows an
+The kernel of this core does not support an NMOS 6502, and shows an
 appropriate message upon startup. Then the kernel attempts to load
 bootblock 2 (see above). If this fails it drops into WozMon. Both can be
 used for some rudimentary work. However, the NMOS 6502 Toolkit should be
 preferred, as it is way more capable than WozMon.
 
 The NMOS 6502 toolkit is implemented without the `ROR` instruction, so it
-will also run on a Rev.A variant of the 6502, making this the most
-versatile system to use with an NMOS 6502 Rev.A.
+will also run on a Rev.A variant of the 6502, making this on of the most
+versatile systems to use with an NMOS 6502 Rev.A.
 
 ---
 

@@ -36,6 +36,7 @@ uf2join(jam_alpha_picotool
 add_executable(jam_alpha
    common/bus_rp2040_purple.c
    common/cpu_detect.c
+   common/fifo256.c
    common/generic_helper.c
    common/heaptrack.c
    common/putcharset.c
@@ -56,11 +57,17 @@ add_executable(jam_alpha
    3rdparty/dhara/error.c
    3rdparty/dhara/journal.c
    3rdparty/dhara/map.c
-   jam/main.c
-   jam/console.c
-   jam/bus.c
+   jam/core_bus.c
+   jam/core_io.c
    jam/dhara_flash.c
    jam/event_queue.c
+   jam/handlers/clocks.c
+   jam/handlers/drive.c
+   jam/handlers/misc.c
+   jam/handlers/reset.c
+   jam/handlers/timers.c
+   jam/handlers/uart.c
+   jam/main.c
    )
 target_compile_options(jam_alpha PRIVATE "-Werror")
 set_property(SOURCE common/cpu_detect.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cpudetect.h)

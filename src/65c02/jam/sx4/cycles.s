@@ -7,6 +7,7 @@
 .export savebuffer, diffbuffer, printbuffer
 
 savebuffer:
+   stz   CYCNTR       ; copy counter to I/O RAM
    ldx   #$00         ; start save at least significant byte
 :
    lda   CYCNTR,x
@@ -17,6 +18,7 @@ savebuffer:
    rts
 
 diffbuffer:
+   stz   CYCNTR       ; copy counter to I/O RAM
    ldx   #$00         ; start calc at least significant byte
    sec
    php

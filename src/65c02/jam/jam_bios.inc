@@ -11,7 +11,7 @@
 ;   be $00
 ; - For NMOS 6502 variant, only CHRIN, CHROUT and PRINT are suppored
 
-; $FF00: read a character from UART in A, returns C=1 when no queue is empty
+; $FF00: read a character from UART in A, returns C=1 when queue is empty
 CHRIN    := $FF00
 
 ; $FF03: write a character from A to UART
@@ -77,12 +77,9 @@ RESET    := $FFDA
  .endif
 .endif
 
-; will jump using vector UVBRK ($DF78/$DF79)
-; will also be triggered by any undefined BRK
-; (for own extensions, interrupts >=$80 are reserved)
-; default configuration is system monitor
-; in/out: depends on user implementation
-.define INTUSER   $00
+; jump into system monitor
+; this is also configured as the default for INTUSER
+.define MONITOR   $00
 
 ; wait for input from CHKIN and convert it to uppercase
 ; in:
@@ -217,9 +214,12 @@ RESET    := $FFDA
 ; X=page for table
 .define GENSINE   $0D
 
-; jump into system monitor
-; this is also configured as the default for INTUSER
-.define MONITOR   $0E
+; fill a page with an ascending number of 256 values
+; in:
+; X=page for table
+; out:
+; -
+.define ASCEND256 $0E
 
 ; set 32x32 pixels framebuffer registers
 ; Y=$00 reset LED registers to framebuffer @ X/A
@@ -246,9 +246,10 @@ RESET    := $FFDA
 ; -
 .define PRDEC16   $12
 
-; fill a page with an ascending number of 256 values
-; in:
-; X=page for table
-; out:
-; -
-.define ASCEND256 $13
+; will jump using vector UVBRK ($DF78/$DF79)
+; will also be triggered by any undefined BRK
+; (for own extensions, interrupts >=$80 are reserved)
+; default configuration is system monitor
+; in/out: depends on user implementation
+.define INTUSER   $80
+

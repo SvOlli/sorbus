@@ -1,9 +1,11 @@
 
 # Memory map & I/O Registers
 
+(TODO before release: clean up here and add labels from jam.inc)
+
 ## Memory map
 
-- $0000-$0001: graphics port
+- $0000-$0001: graphics port (not implemented yet)
 - $0002-$0003: reserved for later use
 - $0004-$0007: zeropage RAM reserved for kernel
     - $04/5: temporary vector used for PRINT and CP/M fs
@@ -16,9 +18,9 @@
 - $0100-$01FF: processor stack
 - $0200-$03FF: RAM reserved for kernel (e.g. CP/M fs, VT100)
 - $0400-$CFFF: RAM for generic use
+- $D000-$DDFF: I/O which can be provided by external boards
 - $D000-$D3FF: scratch RAM that can by exchanged with $0000-$03FF
     by writing to $DF03 (not accessable directly from 65C02)
-- $D000-$DDFF: I/O which can be provided by external boards
 - $DE00-$DEFF: I/O space reserved for future use provided by main RP2040 board
 - $DF00-$DFFF: I/O provided by main RP2040 board
 - $E000-$FFFF: bank 0 (RAM, used to load CP/M 65)
@@ -58,10 +60,11 @@
 - $DF01: (S) trap: stop CPU and jump into debugging console
 - $DF02: (R) random value
 - $DF03: (W) swap out pages $00-$03: lower four bits contain banks,
-    upper two bits mode:
-    - $40 --> store
-    - $80 --> read
-    - $c0 --> swap
+    bits 4,5 define mode:
+    - $10 --> store
+    - $20 --> read
+    - $30 --> swap
+    bit 7 (R): action ongoing
 - $DF04: (R) CPU capabilities using bit set indicate CPU features:
     - $01: NMOS
     - $02: CMOS
@@ -77,39 +80,42 @@
 - $DF05-$DF0A: reserved for future use
 - $DF0B: UART config:
     - bit 0: enable crlf conversion
-    - bit 1: enable flow control
+    - bit 1: enable flow control (removed due to rework)
     - bit 2-3: select auto UTF-8 conversion
         - 00: off
         - 01: standard Sorbus conversion (not fully defined yet)
         - 10: reserved
         - 11: reserved
-    - bit 7: enable CPU overclocking by 50% (likely to be moved)
+    - bit 6: overflow in output uart fifo occurred (will be cleared on read)
+    - bit 7: overflow in input uart fifo occurred (will be cleared on read)
 - $DF0C: (R) UART in queue read
-- $DF0D: (R) serial in queue size (up to 240, 255: error)
+- $DF0D: (R) serial in queue size (up to 250, 255: error)
 - $DF0E: (W) serial out queue write
 - $DF0F: (R) serial out queue size (up to 127, >127: error)
 
+### Timers ($DF10-$DF1F)
 
-### Timer ($DF10-$DF1F)
+- 8 different 16 bit timers are available allowing for an own timer for
+  every combination, see table below
+- writing to lowbyte also stops timer
+- writing to highbyte also starts timer
+- reading from either low- or highbyte shows if timer triggered interrupt
+  ($80) and also acknoledges interrupt
 
-- two 16 bit timers triggering either IRQ or NMI
-- base address IRQ clockcycle timer: $DF10
-- base address NMI clockcycle timer: $DF14
-- base address + 0 = set low counter for repeating timer, stops timer
-- base address + 1 = set high counter for repeating timer, starts timer
-- base address + 2 = set low counter for single shot timer, stops timer
-- base address + 3 = set high counter for single shot timer, starts timer
-- reading any register return $80 if timer was triggered, $00 otherwise
-- reading clears flag and also resets IRQ or NMI line back to high
-- base address IRQ milliseconds timer: $DF18
-- base address NMI milliseconds timer: $DF1A
-- base address + 0 = set lowbyte of milliseconds ($0000 turns off)
-- base address + 1 = set highbyte of milliseconds
-- reading any register return $80 if timer was triggered, $00 otherwise
-- reading clears flag and also resets IRQ or NMI line back to high
+| Address | Repeating | Interrupt | Time Source |
+| ------- | --------- | --------- | ----------- |
+| $DF10/1 | repeat    | IRQ       | cycles      |
+| $DF12/3 | oneshot   | IRQ       | cycles      |
+| $DF14/5 | repeat    | NMI       | cycles      |
+| $DF16/7 | oneshot   | NMI       | cycles      |
+| $DF18/9 | repeat    | IRQ       | 10ths of ms |
+| $DF1A/B | oneshot   | IRQ       | 10ths of ms |
+| $DF1C/D | repeat    | NMI       | 10ths of ms |
+| $DF1E/F | oneshot   | NMI       | 10ths of ms |
 
-IMPORTANT: this might change, if 16-bit counters are not sufficiant
-
+Note: when entering [meta mode](meta_mode.md), the ms based timers will
+be cancelled. The will be restarted from their initial value when meta
+mode is exited.
 
 ### Watchdog ($DF20-$DF23)
 
@@ -120,19 +126,18 @@ to be set again to full value for next "loop".
 - counter is 24 bit
 - base address: $DF20
 - write to base address + 0: turn off
-- write to base address + 1: set low counter, stops watchdog when running
-- write to base address + 2: set mid counter, stops watchdog when running
+- write to base address + 1: set low counter
+- write to base address + 2: set mid counter
 - write to base address + 3: set high counter, starts watchdog
-- read on any address shows watchdog active (bit7: watchdog running)
+- read on $DF20 shows watchdog active (bit7: watchdog running)
+- read on $DF20-$DF23 also re-arms the watchdog
 - triggered watchdog is handled similar to trap ($DF01)
-- todo(?): can be triggered by number of nmis or irqs
 
 
 ### Cyclecount ($DF24-$DF27)
 
 - read only 32 bit register
-- reading at $DF24 copies actual counter to a shadow register
-- other addresses will return timestamp as when $DF24 was accessed
+- writing to any address of the range copies the cycle counter to RAM
 - intended to be used for measuring speed of code
 - address still subject to change
 
@@ -185,7 +190,7 @@ Valid values are:
     - $DF80-$FF80 (will always use RAM under ROM)
 - LBA:
     - $0000-$7FFF (used by CP/M-fs)
-    - $8000-$8FFF (reserved for future use)
+    - $8000-$8FFF (reserved for future use, e.g. ROM-able Forth)
 
 Each transfer stops CPU until transfer is completed. Reading from strobe
 registers return result of last access. (Bit 7 set indicates error.)
@@ -228,82 +233,3 @@ drive, e.g. directory data.
 
 Unused addresses in $DF00-$DF7F behave like RAM, except that they can't
 be used with internal drive DMA.
-
-
-## Kernel Interrupts and BIOS Routines
-
-### BIOS Routines
-
-- $FF00: CHRIN: read a character from UART
-- $FF03: CHROUT: write a character to UART
-- $FF06: PRINT: write everything after the JSR $FF06 up to the next $00
-  byte using CHROUT
-
-### Interrupts
-
-All interrupts are named, names defined in `src/65c02/jam/jam_bios.inc`.
-This include also contains a wrapper `INT` which should be used instead
-of the `BRK` opcode for kernel interrupts. Possible arguments are:
-
-- $00: jmp ($DF78)
-- $01: chrinuc: wait for key and return it uppercase
-- $02: chrcfg: set UART configuration parameters
-- $03: prhex8: output accumulator as 2 digit hex value
-- $04: prhex16: output X and accumulator as 4 digit hex value
-- $05: CP/M-fs set filename: convert filename (pointer in X/A), Y=userid
-- $06: CP/M-fs load: load file to address in ($030c/d)
-- $07: CP/M-fs save: save file from address in ($030c/d) to ($030e/f)
-- $08: CP/M-fs erase: delete file
-- $09: CP/M-fs directory: load directory to address in ($030c/d) or console ($030d=$00)
-- $0A: VT100: several screen functions: Y=specify function (see below)
-- $0B: copy BIOS ($FF00-$FFFF) from ROM to RAM
-- $0C: input a text line from console (pointer in X/A, Y: size of input ($00-$7F), add $80 for only upper case)
-- $0D: fill a page of RAM with sine data (A: bits 7,6 offset, 5 fractions, 4-0 amplitude ($01-$10), X: page)
-- $0E: jump to System Monitor
-- $0F: setup FB32x32 LED Matrix (framebuffer start: X/A. Y=$01 clear)
-- $10: enter SWEET16 interpreter
-- $11: prdec8: output accumulator as 3 digit decimal value with leading zeros
-- $12: prdec16: output X and accumulator as 5 digit decimal value with leading zeros
-- $13: fill page with an ascending order of bytes, so low byte matches data byte (X: page)
-
-For an own interrupt handler invoked via $DF78/9, it is recommended to
-use interrupt arguments starting with $80, as those won't be used by the
-kernel.
-
-Also note that registers are not stored on the stack, but in memory.
-This results in running an interrupt within an interrupt will corrupt
-registers.
-
-
-### CP/M-fs Load And Save
-
-The load and save are done using DMA transfers. Those can only copy a
-full sector of 128 bytes per DMA. So, if the last sector of a save is
-only partially used, still the whole 128 bytes are written to storage,
-even though the directory entry contains the correct size of the file.
-The load routine does the same: it loads a full 128 bytes sector
-overwriting memory with an usused part of the file. The end address of
-the file in address ($030e/f) does state the correct end, but up to 127
-bytes after that address might be corrupted!
-
-
-### VT100 Calls
-
-VT100 calls are identified by the function number passed via the Y
-register. Some functions require / return parameters handed over via the
-A and X registers.
-
-- $00: set cursor pos (in: X=col, A=row, 1 based)
-- $01: set scroll area (in: A=start, X=end)
-- $02: set text attributes (colors) (30..37 bgcol, 40..47 fgcol, DECIMAL)
-- $03: get cursor pos (out: X=col, A=row, 1 based)
-- $04: clear screen
-- $05: clear to end of line
-- $06: reset scroll area
-- $07: scroll down
-- $08: scroll up
-- $09: save cursor pos
-- $0A: restore cursor pos
-- $FD: combined functions: clear screen and go to top left
-- $FE: combined functions: go to start of current line
-- $FF: combined functions: get size of screen

@@ -1,0 +1,40 @@
+#!/bin/sh
+
+cd "$(dirname "${0}")"
+
+dot -Tpng >"site/images/$(basename "${0}" .dot).png" <<EOF
+
+digraph D {
+
+buscore [shape="circle" label="bus core\nmain loop"]
+eventqueue [shape="box" label="event\nqueue"]
+pulledby [shape="ellipse" label="pulled by"]
+
+ram [shape="record" label="{<title>Memory|\$0003-\$CFFF: RAM\l|\$D000-\$DDFF: external I/O\l|<iio>\$DE00-\$DFFF: internal I/O\l|\$E000-\$FFFF: banked ROM/RAM\l}"]
+action_status [shape="ellipse" label="writes status to\ninternal I/O area"]
+action_internalio [shape="ellipse" label="internal I/O read/write\ntriggers function call"]
+fifo [shape="box" label="multicore\nfifo"]
+action_eventqueue [shape="ellipse" label="event queue\ntriggers function call"]
+action_creates [shape="ellipse" label="creates\nevents"]
+iocore [shape="circle" label="I/O core\nmain loop"]
+ioloop [shape="record" label="{<title>I/O core main loop|<in>handle all multicore fifo entries\l|get single character\l|<out>output single character\l}"]
+
+{ rank=same buscore eventqueue pulledby }
+{ rank=same action_internalio action_eventqueue action_status action_creates }
+
+buscore -> ram:title:n [dir="both"];
+eventqueue -> pulledby [arrowhead=none];
+pulledby -> buscore;
+ram:iio:e -> action_internalio [arrowhead=none];
+action_internalio -> fifo;
+fifo -> iocore
+buscore -> action_eventqueue [arrowhead=none];
+action_eventqueue -> fifo;
+iocore -> action_status [arrowhead=none];
+action_status -> ram:iio:w;
+iocore -> action_creates [arrowhead=none];
+action_creates -> eventqueue;
+iocore -> ioloop:in:w;
+ioloop:out:e -> iocore;
+}
+EOF

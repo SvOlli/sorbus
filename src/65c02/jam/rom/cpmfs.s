@@ -379,7 +379,7 @@ dmafile:
 ; - create directory entries
 
 setupsave:
-   lda   #$44           ; save page $0200
+   lda   #$14           ; save page $0200
    sta   XRAMSW
    clc                  ; subtract one more, assuming end address is + 1
    lda   cpm_eaddr+0
@@ -537,7 +537,7 @@ setupsave:
    sta   cpm_nsect+0
    clc
 @restore200:
-   lda   #$84           ; restore page $0200
+   lda   #$24           ; restore page $0200
    sta   XRAMSW
    rts
 
