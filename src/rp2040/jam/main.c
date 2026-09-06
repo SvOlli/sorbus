@@ -56,30 +56,17 @@ bi_decl(bi_program_url("https://sorbus.xayax.net/"))
 void system_cpu_detect()
 {
    cpu_detect( false );
-retry:
-   if( cputype == CPU_ERROR )
+   while( cputype == CPU_ERROR )
    {
-      bool success;
-      uint8_t data;
+      int in = PICO_ERROR_TIMEOUT;
       printf( "  cpu could not be detected, retrying (SPACE for debug)\r" );
-      //success = queue_try_remove( &queue_uart_read, &data );
-      if( success && (data == ' ') )
+      in = getchar_timeout_us( 1000 );
+      if( in == ' ' )
       {
          cpu_detect( true );
          printf( "power jumper set?\n" );
       }
-
-      goto retry;
    }
-}
-
-
-void bus_start()
-{
-   bus_init();
-   system_cpu_detect();
-   system_init();
-   system_reboot();
 }
 
 
@@ -88,13 +75,18 @@ int main()
    // setup UART
    stdio_init_all();
 
-#if 0
+#if 1
    // give some time to connect to console
    sleep_ms( 2000 );
+   puts( sorbus_version );
 #endif
 
    // for toying with overclocking
    set_sys_clock_khz( 133000, false );
+
+   bus_init();
+   system_cpu_detect();
+   system_init();
 
 #if 0
    // setup cores

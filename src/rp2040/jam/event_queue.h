@@ -5,7 +5,7 @@
 #include "jam.h"
 
 #define QUEUE_EVENT_SIZE (32)
-#define QUEUE_EVENT_INLINE (0)
+#define QUEUE_EVENT_INLINE (1)
 
 typedef enum {
    EVENT_NONE = 0,

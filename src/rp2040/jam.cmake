@@ -63,6 +63,7 @@ add_executable(jam_alpha
    jam/event_queue.c
    jam/handlers/clocks.c
    jam/handlers/drive.c
+   jam/handlers/error.c
    jam/handlers/misc.c
    jam/handlers/reset.c
    jam/handlers/timers.c

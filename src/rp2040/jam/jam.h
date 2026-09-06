@@ -23,6 +23,7 @@
 #define BUSMSG_META_MAGICKEY     (BUSMSG_EVENT_META  |   0x0001)
 #define BUSMSG_META_TRAP         (BUSMSG_EVENT_META  |   0x0002)
 #define BUSMSG_META_WATCHDOG     (BUSMSG_EVENT_META  |   0x0003)
+#define BUSMSG_META_INTERROR     (BUSMSG_EVENT_META  |   0x0004)
 
 #define BUSMSG_EVENT_CPUFREQ     (0x05000000)
 #define BUSMSG_EVENT_TIMER       (0x06000000)
@@ -137,12 +138,15 @@ void system_reboot();
 // Core1: debug output routines called from Core0 when CPU is stopped
 typedef enum {
    DEBUG_INFO_ERR = 0,
+   DEBUG_INFO_INTERNALERROR,
    DEBUG_INFO_HEAP,
    DEBUG_INFO_CLOCKS,
    DEBUG_INFO_SYSVECTORS,
    DEBUG_INFO_INTERNALDRIVE,
    DEBUG_INFO_TIMERS,
-   DEBUG_INFO_EVENTQUEUE
+   DEBUG_INFO_EVENTQUEUE,
+   DEBUG_INFO_FIFO_INPUT,
+   DEBUG_INFO_FIFO_OUTPUT
 } debug_info_t;
 const char *debug_get_info( debug_info_t page );
 
@@ -161,6 +165,11 @@ void io_post_watchdog( bool rw, uint8_t data, uint16_t address );
 void event_flash_sync( __unused uint32_t value );
 void io_post_intdrive( bool rw, uint8_t data, uint16_t address );
 int info_internaldrive( char *buffer, size_t size );
+
+// error.c
+void internal_error( const char *file, int line,
+                     const char *message, uint32_t value );
+int internal_error_info( char *b, size_t bsize );
 
 // misc.c
 void misc_reset();

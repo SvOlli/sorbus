@@ -17,7 +17,7 @@
 #include "da_memory.h"
 
 #include <pico/stdio.h>
-//#include <pico/multicore.h>
+#include <pico/multicore.h>
 //#include <pico/stdlib.h>
 //#include <pico/util/queue.h>
 //#include <hardware/clocks.h>
@@ -110,11 +110,14 @@ void debug_poke( uint8_t bank, uint16_t addr, uint8_t value )
 
 const char *debug_get_info( debug_info_t page )
 {
-   static char buffer[1024] = { 0 };
+   static char buffer[1280] = { 0 };
 
    buffer[0] = '\0';
    switch( page )
    {
+      case DEBUG_INFO_INTERNALERROR:
+         internal_error_info( &buffer[0], sizeof(buffer)-1 );
+         break;
       case DEBUG_INFO_HEAP:
          ht_info( &buffer[0], sizeof(buffer)-1 );
          break;
@@ -132,6 +135,12 @@ const char *debug_get_info( debug_info_t page )
          break;
       case DEBUG_INFO_EVENTQUEUE:
          queue_event_info( &buffer[0], sizeof(buffer)-1 );
+         break;
+      case DEBUG_INFO_FIFO_INPUT:
+         fifo256_debug( &buffer[0], sizeof(buffer)-1, &uart_in_queue, true );
+         break;
+      case DEBUG_INFO_FIFO_OUTPUT:
+         fifo256_debug( &buffer[0], sizeof(buffer)-1, &uart_out_queue, true );
          break;
       default:
          break;
@@ -301,18 +310,18 @@ static inline void console_65c02()
       // handle bus and event fifo
       while( multicore_fifo_rvalid() )
       {
-         uint32_t in = multicore_fifo_pop_blocking();
+         uint32_t fifo = multicore_fifo_pop_blocking();
 
-         if( (in >> 24) >= 0x10 )
+         if( (fifo >> 24) >= 0x10 )
          {
-            printf( __FILE__ ":(%d) %08x\n", __LINE__, in );
+            internal_error( __FILE__, __LINE__, "fifo element", fifo );
          }
 
-         event_func_t handler = events[(in >> 24) & 0x0F];
+         event_func_t handler = events[(fifo >> 24) & 0x0F];
          if( handler )
          {
             // handler is available, call it
-            handler( in );
+            handler( fifo );
          }
       }
 
@@ -437,13 +446,17 @@ static inline void console_rp2040()
       addstr( "JAM: Just Another Machine | https://sorbus.xayax.net/jam/" );
       mcurses_line_horizontal( true, 6, 0, cols-1 );
       move( 7, 2 );
+      addstr( sorbus_version );
+      move( 8, 2 );
       addstr( "Meta Menu invoked via " );
       addstr( invoke );
       addstr( ", CPU stopped on RDY" );
 
-      move( 9, 2 );
-      addstr( "B)acktrace, M)emory, D)isassemble, U)pload, E)vent queue, I)nternal drive" );
       move( 10, 2 );
+      addstr( "B)acktrace, M)emory, D)isassemble, U)pload, E)vent queue," );
+      move( 11, 2 );
+      addstr( "I)nternal drive, T)imers," );
+      move( 12, 2 );
       addstr( "C)ontinue, R)eboot ? " );
 
       in = toupper( getchar() );
@@ -464,6 +477,11 @@ static inline void console_rp2040()
                debug_raw_backtrace();
                getch();
             }
+            break;
+         case '?':
+            mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
+                              "Internal Error", debug_get_info( DEBUG_INFO_INTERNALERROR ) );
+            getch();
             break;
          case 'B':
             {
@@ -495,6 +513,16 @@ static inline void console_rp2040()
          case 'E':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
                               "Event Queue", debug_get_info( DEBUG_INFO_EVENTQUEUE ) );
+            getch();
+            break;
+         case 'F':
+            mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
+                              "Fifo Input", debug_get_info( DEBUG_INFO_FIFO_INPUT ) );
+            getch();
+            break;
+         case 'G':
+            mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
+                              "Fifo Output", debug_get_info( DEBUG_INFO_FIFO_OUTPUT ) );
             getch();
             break;
          case 'I':
@@ -548,6 +576,7 @@ cancel:
 
 void io_run()
 {
+   multicore_fifo_drain();
    for(;;)
    {
       /* switching between modes will be handled by leaving */
