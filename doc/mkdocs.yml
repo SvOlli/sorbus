@@ -45,6 +45,7 @@ nav:
       - 'General Information': 'jam/index.md'
       - 'Internal Core Messaging': 'jam/core_messaging.md'
       - 'Terminal Software': 'jam/terminal.md'
+      - 'UTF-8 Codepages': 'jam/utf8codepages.md'
       - 'System Monitor': 'jam/sysmon.md'
       - 'Other Monitors': 'jam/monitors.md'
       - 'Meta-Mode': 'jam/meta_mode.md'

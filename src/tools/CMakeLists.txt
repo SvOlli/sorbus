@@ -124,6 +124,11 @@ add_executable(translation_matrix
    translation_matrix.c
    )
 
+# tool to create utf-8 charset data
+add_executable(utf8codepages
+   utf8codepages.c
+   )
+
 # tool to convert binary data to WozMon input
 add_executable(wozcat
    wozcat.c
