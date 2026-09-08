@@ -18,6 +18,15 @@ static const char *_message = "";
 static uint32_t _value = 0;
 
 
+void internal_error_clear()
+{
+   _file = "";
+   _line = 0;
+   _message = "";
+   _value = 0;
+}
+
+
 void internal_error( const char *file, int line,
                      const char *message, uint32_t value )
 {

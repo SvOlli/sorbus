@@ -80,7 +80,7 @@ void io_post_uart( bool rw, uint8_t data, uint16_t address )
          if( !rw )
          {
             // write on control register
-            console_set_uart( ram[address] );
+            console_set_uart( data );
          }
          break;
       case 4: // uart in queue read
@@ -98,7 +98,10 @@ void io_post_uart( bool rw, uint8_t data, uint16_t address )
 void uart_reset()
 {
    fifo256_init( &uart_in_queue );
-   fifo256_init( &uart_out_queue );
-   console_set_uart( 0x01 );
-   ram[MEM_ADDR_UART_CONTROL] = 0x01;
+   ram[MEM_ADDR_UART_CONTROL]    = 0x05;
+   console_set_uart( ram[MEM_ADDR_UART_CONTROL] );
+   ram[MEM_ADDR_UART_READ]       = 0x00;
+   ram[MEM_ADDR_UART_READ_SIZE]  = 0x00;
+   ram[MEM_ADDR_UART_WRITE]      = 0x00;
+   ram[MEM_ADDR_UART_WRITE_SIZE] = 0x00;
 }

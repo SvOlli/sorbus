@@ -186,7 +186,7 @@ void io_post_misc( bool rw, uint8_t data, uint16_t address )
          break;
       case 4: // cpu feature
          // just overwrite so it can't be modified
-         ram[0xDF04] = cpufeatures[cputype];
+         ram[MEM_ADDR_CPUID] = cpufeatures[cputype];
          break;
       default:
          // just as RAM

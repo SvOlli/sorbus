@@ -30,6 +30,7 @@
 static uint8_t dhara_nand_page_buffer[PAGE_SIZE];
 static uint8_t cache[PAGE_SIZE];
 static int32_t cache_page;
+uint16_t dhara_flash_size = 0;
 
 #define FLASH_DRIVE_OFFSET      (FLASH_DRIVE_START-0x10000000)
 #define SECTOR_MASK ((PAGE_SIZE / SECTOR_SIZE)-1)
@@ -52,20 +53,22 @@ static struct dhara_map dhara;
 
 
 /* init: returns number of sectors */
-uint16_t dhara_flash_init()
+void dhara_flash_init()
 {
    dhara_error_t err = DHARA_E_NONE;
-   int retval = 0;
    cache_page = -1;
    const uint16_t page_sector_ratio = PAGE_SIZE / SECTOR_SIZE;
 
    dhara_map_init( &dhara, &nand, dhara_map_buffer, GC_RATIO );
-   retval = dhara_map_resume( &dhara, &err );
+   (void)dhara_map_resume( &dhara, &err );
    if( err == DHARA_E_NONE )
    {
-      retval = dhara_map_capacity( &dhara ) * page_sector_ratio;
+      dhara_flash_size = dhara_map_capacity( &dhara ) * page_sector_ratio;
    }
-   return retval;
+   else
+   {
+      dhara_flash_size = 0;
+   }
 }
 
 

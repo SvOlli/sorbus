@@ -16,8 +16,10 @@ typedef struct {
    uint32_t read_errcode;
 } dhara_flash_info_t;
 
+extern uint16_t dhara_flash_size;
+
 // returns size of disk as number of LBAs, 0=error
-uint16_t dhara_flash_init();
+void dhara_flash_init();
 int dhara_flash_read( uint16_t lba, uint8_t *data );
 int dhara_flash_write( uint16_t lba, const uint8_t *data );
 int dhara_flash_trim( uint16_t lba );

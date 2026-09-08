@@ -21,6 +21,7 @@
 #include <hardware/clocks.h>
 
 #include "jam.h"
+#include "dhara_flash.h"
 #include "event_queue.h"
 #include "cpu_detect.h"
 
@@ -84,6 +85,7 @@ int main()
    // for toying with overclocking
    set_sys_clock_khz( 133000, false );
 
+   dhara_flash_init();
    bus_init();
    system_cpu_detect();
    system_init();

@@ -38,6 +38,10 @@
 #define MEM_ADDR_CPUID           (0xDF04)
 
 #define MEM_ADDR_UART_CONTROL    (0xDF0B)
+#define MEM_ADDR_UART_READ       (0xDF0C)
+#define MEM_ADDR_UART_READ_SIZE  (0xDF0D)
+#define MEM_ADDR_UART_WRITE      (0xDF0E)
+#define MEM_ADDR_UART_WRITE_SIZE (0xDF0F)
 
 #define MEM_ADDR_TIMERS          (0xDF10)
 
@@ -170,6 +174,7 @@ int info_internaldrive( char *buffer, size_t size );
 void internal_error( const char *file, int line,
                      const char *message, uint32_t value );
 int internal_error_info( char *b, size_t bsize );
+void internal_error_clear();
 
 // misc.c
 void misc_reset();
@@ -197,12 +202,18 @@ void uart_reset();
 
 static inline bool uart_input_add( uint8_t data )
 {
+   if( !fifo256_count( &uart_in_queue ) )
+   {
+      // no data, also add to memory
+      ram[MEM_ADDR_UART_READ] = data;
+   }
    if( !fifo256_put( &uart_in_queue, data ) )
    {
       // buffer full: flag an error
       ram[MEM_ADDR_UART_CONTROL] |= 0x80;
       return false;
    }
+   ram[MEM_ADDR_UART_READ_SIZE] = fifo256_count( &uart_in_queue );
    return true;
 }
 

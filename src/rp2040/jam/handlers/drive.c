@@ -13,7 +13,6 @@
 #include "3rdparty/dhara/error.h"
 
 
-uint16_t dhara_flash_size = 0;
 #define DHARA_SYNC_DELAY (100000)
 
 
@@ -38,33 +37,49 @@ void io_post_intdrive( bool rw, uint8_t data, uint16_t address )
       // nothing needs to be done after read
       return;
    }
+   switch( address & 0x07 )
+   {
+      case 0:
+         return;
+      case 1:
+         return;
+      case 2:
+         return;
+      case 3:
+         return;
+      case 6:
+         return;
+      default:
+         break;
+   }
 
    // signalize that work was started
    ram[address] = 0x00;
+
    // sanity checks
    if( !dhara_flash_size )
    {
       // size = 0: no dhara image found
-      ram[address] |= 0xF0;
+      ram[address] = 0xF0;
+      return;
    }
+
    // filter out bad ranges, removing second line would write protect ROM
    if( (*mem < 0x0004) ||                                    // zeropage I/O
        ((*mem > (0xD000-SECTOR_SIZE)) && (*mem < 0xDF80)) || // $Dxxx I/O
        (*mem > (0x10000-SECTOR_SIZE)) )                      // would go out of bounds
    {
       // DMA would run into I/O which is not possible, only RAM works
-      ram[address] |= 0xF1;
+      ram[address] = 0xF1;
+      return;
    }
+
    if( *lba >= 0x9000 ) // could also be if( *lba >= dhara_flash_size )
    {
       // only 36864 sectors are available
       // sectors up to 32767 are used with CP/M-fs
       // sectors 32768 to 36863 are only accessable via raw sector read write
-      ram[address] |= 0xF2;
-   }
-   if( ram[address] )
-   {
-      // error, do not continue
+      ram[address] = 0xF2;
       return;
    }
 
