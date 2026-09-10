@@ -1,21 +1,21 @@
-# Makefile for building the CPU card test library
+# Makefile for building the Sorbus test runner
 
 CC = gcc
-CFLAGS = -O2 -fPIC -shared -Wall
-LDFLAGS = -shared
+CFLAGS = -O3 -Wall
+LDLIBS = -lm
 
-# Target library
-TARGET = libcpu_card.so
+# Target binary: RP2040 emulator (rp2350js-c.h) wired to the 65C02 CPU card
+TARGET = test_runner
+OBJS = test_runner.o
 
-# Source files
-SOURCES = cpu_card_wrapper.c
+all: $(TARGET)
 
-# Build the shared library
-$(TARGET): $(SOURCES) m65c02.h
-	$(CC) $(CFLAGS) -o $(TARGET) $(SOURCES)
+test_runner: $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
 
-# Clean build artifacts
+test_runner.o: test_runner.c rp2350js-c.h m65c02.h
+
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(OBJS)
 
-.PHONY: clean
+.PHONY: all clean
