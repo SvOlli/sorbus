@@ -15,6 +15,7 @@ typedef struct {
    uint8_t buffer[0x100];
    volatile uint8_t head; // set by producer
    volatile uint8_t tail; // set by consumer
+   uint8_t max; // set by producer
 } fifo256_t;
 
 /* just reset head and tail */
@@ -29,6 +30,10 @@ bool fifo256_put( fifo256_t *fifo, uint8_t data );
 bool fifo256_get( fifo256_t *fifo, uint8_t *data );
 /* Print out the current state of the fifo for debugging */
 int fifo256_debug( char *b, size_t bsize, fifo256_t *fifo, bool verbose );
+/*  */
+bool fifo256_drop( fifo256_t *fifo );
+/*  */
+bool fifo256_peek( fifo256_t *fifo, uint8_t *data );
 
 #endif
 

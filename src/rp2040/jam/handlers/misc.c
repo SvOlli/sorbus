@@ -78,7 +78,6 @@ static inline void handle_scratch_mem( uint8_t flags )
    uint8_t tmpbuf[0x100];
    int i;
 
-   ram[MEM_ADDR_XRAMSW] |= XRAMSW_STATUS_BIT;
    for( i = 0; i < 4; ++i )
    {
       if( flags & (1 << i) )
@@ -99,33 +98,7 @@ static inline void handle_scratch_mem( uint8_t flags )
          }
       }
    }
-   ram[MEM_ADDR_XRAMSW] &= ~XRAMSW_STATUS_BIT;
-}
-
-
-static inline void bank_select( uint8_t bank )
-{
-   // rom banks are counted starting with 1, as 0 is RAM
-   if( bank > (sizeof(rom) / 0x2000) )
-   {
-      // fallback bank is always kernel
-      bank = 1;
-   }
-   if( bank == 0 )
-   {
-      romvec = &ram[0xE000];
-   }
-   else
-   {
-      // right now with just a few banks, all banks are copied from flash
-      // at startup
-      // if there are too many banks, the data could be copied from flash
-      // to a single 8K RAM buffer during each bankswitch
-      romvec = &rom[(bank - 1) * 0x2000];
-   }
-
-   // make sure that RAM reflects config
-   ram[MEM_ADDR_BANK] = bank;
+   ram[MEM_ADDR_XRAMSW] |= XRAMSW_DONE_BIT;
 }
 
 
@@ -137,7 +110,8 @@ static inline void bank_select( uint8_t bank )
 void misc_reset()
 {
    // default bank is always first ROM bank
-   bank_select( 1 );
+   romptr = bankptrs[1];
+   ram[MEM_ADDR_BANK] = 1;
 
    // (re)initialize random number generator
    srand( get_rand_32() );
@@ -155,12 +129,7 @@ void io_post_misc( bool rw, uint8_t data, uint16_t address )
 {
    switch( address & 0x7 )
    {
-      case 0: // bank
-         if( !rw )
-         {
-            bank_select( ram[address] );
-         }
-         break;
+      // case 0 is now handled in core_bus
       case 1: // trap/id
          if( rw )
          {
@@ -171,7 +140,7 @@ void io_post_misc( bool rw, uint8_t data, uint16_t address )
          {
             // write
             ram[MEM_ADDR_CPUID] = *sorbus_id_p; // restore desired value
-            bus_stop_cause = BUSMSG_META_TRAP;
+            bus_stop_cause = META_TRAP;
          }
          break;
       case 2: // random
@@ -180,8 +149,13 @@ void io_post_misc( bool rw, uint8_t data, uint16_t address )
       case 3: // swap pages
          if( !rw )
          {
-            // signal that it's done
+            // write: trigger ram change
             handle_scratch_mem( ram[MEM_ADDR_XRAMSW] );
+         }
+         else
+         {
+            // read: clear done bit
+            ram[MEM_ADDR_XRAMSW] &= ~XRAMSW_DONE_BIT;
          }
          break;
       case 4: // cpu feature

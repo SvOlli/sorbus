@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 
@@ -478,6 +479,11 @@ void mcurses_titlebox( bool dframe, uint16_t line, uint16_t column,
    uint16_t i;
 
    mcurses_textsize( &rows, &width, text );
+   if( strlen( title ) > width )
+   {
+      // seldom case, so running strlen again is okay
+      width = strlen( title );
+   }
 
    if( line == MC_TEXT_CENTER )
    {

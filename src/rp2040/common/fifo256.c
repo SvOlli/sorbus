@@ -31,7 +31,8 @@ STATIC_INLINE int fifo256_debug( char *b, size_t bsize, fifo256_t *fifo, bool ve
 {
    int used = 0;
    used += snprintf( b+used, bsize-used,
-                     "head=0x%02x tail=0x%02x\n", fifo->head, fifo->tail );
+                     "head=0x%02x tail=0x%02x max=0x%02x\n",
+                     fifo->head, fifo->tail, fifo->max );
    if( verbose )
    {
       used += snprint_hexdump_buffer( b+used, bsize-used, &(fifo->buffer[0]),
@@ -69,6 +70,10 @@ STATIC_INLINE bool fifo256_put( fifo256_t *fifo, uint8_t data )
    }
    fifo->buffer[fifo->head] = data;
    fifo->head = next_head;
+   if( fifo->max < fifo256_count( fifo ) )
+   {
+      fifo->max = fifo256_count( fifo );
+   }
    return true;
 }
 
@@ -80,12 +85,33 @@ STATIC_INLINE bool fifo256_get( fifo256_t *fifo, uint8_t *data )
       return false; /* buffer empty */
    }
    *data = fifo->buffer[fifo->tail];
-   fifo->buffer[fifo->tail] = 0;
+   //fifo->buffer[fifo->tail] = 0;
    ++(fifo->tail);
    return true;
 }
 
+
+STATIC_INLINE bool fifo256_drop( fifo256_t *fifo )
+{
+   if( fifo->head == fifo->tail )
+   {
+      return false; /* buffer empty */
+   }
+   ++(fifo->tail);
+   return true;
+}
+
+
+STATIC_INLINE bool fifo256_peek( fifo256_t *fifo, uint8_t *data )
+{
+   if( fifo->head == fifo->tail )
+   {
+      return false; /* buffer empty */
+   }
+   *data = fifo->buffer[fifo->tail];
+}
+
+
 #ifdef FIFO256_INLINE
 #undef STATIC_INLINE
 #endif
-

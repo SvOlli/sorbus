@@ -11,33 +11,31 @@
 #include "bus.h"
 #include "cpu_detect.h"
 #include "da_base.h"
-#include "event_queue.h"
-
 
 #include <time.h>
 #include <hardware/clocks.h>
 
 
-uint32_t watchdog_cycles_total      = 0;
-uint64_t time_per_mcc = 1; // in case a division is done
+uint32_t cycles_per_second = 0;
 
 
-void event_cpufreq( uint32_t data )
+#define busstate gpio_get_all()
+
+static bool callback_cpufreq( struct repeating_timer *t )
 {
    // event handler for estimating the 65C02 CPU speed
    // this event is exactly 1 time in queue
 
-   static uint64_t time_last = 0;
-   uint64_t time_now = time_us_64();
+   static uint32_t cycles_last = 0;
 
-   if( state & bus_config.mask_rdy )
+   if( busstate & bus_config.mask_rdy )
    {
       // only count time when CPU is not halted
-      time_per_mcc = time_now - time_last;
+      cycles_per_second = cycle_counter - cycles_last;
    }
-   time_last = time_now;
+   cycles_last = cycle_counter;
 
-   queue_event_add( 1000000, data );
+   return true;
 }
 
 
@@ -48,11 +46,14 @@ void event_cpufreq( uint32_t data )
 
 void clocks_reset()
 {
-   watchdog_cycles_total = 0;
-   queue_event_cancel( BUSMSG_META_WATCHDOG );
-   if( !queue_event_contains( BUSMSG_EVENT_CPUFREQ ) )
+   static struct repeating_timer *t = 0;
+   // make sure that it's only called once
+   // timer runs always
+   if( !t )
    {
-      queue_event_add( 1000000, BUSMSG_EVENT_CPUFREQ );
+      t = ht_calloc( 1, sizeof(struct repeating_timer) );
+      // once every second
+      add_repeating_timer_ms( -1000, callback_cpufreq, 0, t );
    }
 }
 
@@ -61,7 +62,6 @@ int info_clocks( char *buffer, size_t size )
 {
    uint f_clk_sys  = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_SYS);
    uint f_clk_peri = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_PERI);
-   uint time_hz = (double)1000000.0 / ((double)(time_per_mcc) / CLOCKS_PER_SEC / 10000);
 
    return snprintf( buffer, size,
          "  CLK_SYS: %3u.%03d   MHz\n"
@@ -69,15 +69,8 @@ int info_clocks( char *buffer, size_t size )
          "%9s: %3ld.%06ldMHz"
          , f_clk_sys / 1000, (f_clk_sys % 1000)
          , f_clk_peri / 1000, (f_clk_peri % 1000)
-         , da_cputype_name( cputype ), time_hz / 1000000, time_hz % 1000000 );
-}
-
-
-void event_watchdog( uint32_t data )
-{
-   // stop system when watchdog timer expires
-
-   bus_stop_cause = data;
+         , da_cputype_name( cputype )
+         , cycles_per_second / 1000000, cycles_per_second % 1000000 );
 }
 
 
@@ -91,13 +84,15 @@ void io_post_watchdog( bool rw, uint8_t data, uint16_t address )
       if( !rw )
       {
          // write: copy lower 32 bits of cycle counter to RAM
-         *(uint32_t*)(&ram[MEM_ADDR_CYCLECOUNT]) = (uint32_t)_queue_cycle_counter;
+         *(uint32_t*)(&ram[MEM_ADDR_CYCLECOUNT]) = cycle_counter;
       }
 
       // early return, since we're done with cyclecount
       return;
    }
 
+#if 0
+   // TODO: adjust for time
    // continue with watchdog
    if( rw )
    {
@@ -127,5 +122,6 @@ void io_post_watchdog( bool rw, uint8_t data, uint16_t address )
             break;
       }
    }
+#endif
 }
 

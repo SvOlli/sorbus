@@ -53,18 +53,22 @@
 
 - $DF00: (R/W) bank select register for $E000-$FFFF ROM starts at
    bank 1 (default), bank 0 is RAM; more banks can be added, if
-   bank set > max_bank, bank is set to default
+   bank set > max_bank, bank is set to default. This is also the only
+   point where the system does not behave asynchronous: a bankswitch
+   will be effective immediately after the write and before the next
+   instruction
 - $DF01: (R) Sorbus JAM ID -> contains version information, read
    until $00 starts with ASCII id "SBC23", followed by a $01 and a
-   revision
+   revision (this needs to be checked if it still works with
+   asynchronous architecture)
 - $DF01: (S) trap: stop CPU and jump into debugging console
 - $DF02: (R) random value
 - $DF03: (W) swap out pages $00-$03: lower four bits contain banks,
     bits 4,5 define mode:
-    - $10 --> store
-    - $20 --> read
-    - $30 --> swap
-    bit 7 (R): action ongoing
+    - $1x --> store
+    - $2x --> read
+    - $3x --> swap
+    bit 7 (R): action done, will be cleared after read
 - $DF04: (R) CPU capabilities using bit set indicate CPU features:
     - $01: NMOS
     - $02: CMOS
@@ -102,22 +106,24 @@
 - reading from either low- or highbyte shows if timer triggered interrupt
   ($80) and also acknoledges interrupt
 
-| Address | Repeating | Interrupt | Time Source |
-| ------- | --------- | --------- | ----------- |
-| $DF10/1 | repeat    | IRQ       | cycles      |
-| $DF12/3 | oneshot   | IRQ       | cycles      |
-| $DF14/5 | repeat    | NMI       | cycles      |
-| $DF16/7 | oneshot   | NMI       | cycles      |
-| $DF18/9 | repeat    | IRQ       | 10ths of ms |
-| $DF1A/B | oneshot   | IRQ       | 10ths of ms |
-| $DF1C/D | repeat    | NMI       | 10ths of ms |
-| $DF1E/F | oneshot   | NMI       | 10ths of ms |
+| Address | Repeating | Interrupt | Time Source | Note      |
+| ------- | --------- | --------- | ----------- | --------- |
+| $DF10/1 | repeat    | IRQ       | cycles      | defunc'ed |
+| $DF12/3 | oneshot   | IRQ       | cycles      | defunc'ed |
+| $DF14/5 | repeat    | NMI       | cycles      | defunc'ed |
+| $DF16/7 | oneshot   | NMI       | cycles      | defunc'ed |
+| $DF18/9 | repeat    | IRQ       | 10ths of ms |           |
+| $DF1C/D | repeat    | NMI       | 10ths of ms |           |
+| $DF1A/B | oneshot   | IRQ       | 10ths of ms |           |
+| $DF1E/F | oneshot   | NMI       | 10ths of ms |           |
 
 Note: when entering [meta mode](meta_mode.md), the ms based timers will
 be cancelled. The will be restarted from their initial value when meta
 mode is exited.
 
 ### Watchdog ($DF20-$DF23)
+
+(This will need to be switched from cycles to time based.)
 
 Watchdog will be triggered after the specified number of cycles.
 However, there is no easy way to reset the watchdog counter. It needs
@@ -193,7 +199,8 @@ Valid values are:
     - $8000-$8FFF (reserved for future use, e.g. ROM-able Forth)
 
 Each transfer stops CPU until transfer is completed. Reading from strobe
-registers return result of last access. (Bit 7 set indicates error.)
+registers return result of last access. (A value of $80 indicates
+activity, $Fx indicates error, $00 success.)
 Memory address will be increased by $0080, LBA by $0001 after successful
 read or write to prepare for next sector transfer.
 

@@ -60,7 +60,6 @@ add_executable(jam_alpha
    jam/core_bus.c
    jam/core_io.c
    jam/dhara_flash.c
-   jam/event_queue.c
    jam/handlers/clocks.c
    jam/handlers/drive.c
    jam/handlers/error.c

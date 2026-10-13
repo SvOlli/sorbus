@@ -3,7 +3,7 @@
 ;
 ; This ROM for the native mode is in very early development.
 
-.define VERSION "0.7"
+.define VERSION "0.8"
 .segment "CODE"
 
 ; zeropage addresses used by this part of ROM
@@ -323,6 +323,10 @@ brkjump:
    cmp   #<((@jumptableend - @jumptable)/2)
    bcc   @okay          ; sanity check: if BRK operand out of scope
    ; user defined BRK can lda (TMP16) to get BRK operand
+.if 0
+   ; for debugging: an out-of-scope IRQ also triggers meta-menu
+   sta   TRAP
+.endif
    lda   #<((@jumptableend - @jumptable)/2)
 @okay:
    asl                  ; BRK >=$80 will always be =$00

@@ -20,10 +20,10 @@
 #define BUSMSG_IO_READ           (BUSMSG_TYPE_IO   | 0x01000000)
 
 #define BUSMSG_EVENT_META        (0x04000000)
-#define BUSMSG_META_MAGICKEY     (BUSMSG_EVENT_META  |   0x0001)
-#define BUSMSG_META_TRAP         (BUSMSG_EVENT_META  |   0x0002)
-#define BUSMSG_META_WATCHDOG     (BUSMSG_EVENT_META  |   0x0003)
-#define BUSMSG_META_INTERROR     (BUSMSG_EVENT_META  |   0x0004)
+#define META_MAGICKEY            (BUSMSG_EVENT_META  |   0x0001)
+#define META_TRAP                (BUSMSG_EVENT_META  |   0x0002)
+#define META_WATCHDOG            (BUSMSG_EVENT_META  |   0x0003)
+#define META_INTERROR            (BUSMSG_EVENT_META  |   0x0004)
 
 #define BUSMSG_EVENT_CPUFREQ     (0x05000000)
 #define BUSMSG_EVENT_TIMER       (0x06000000)
@@ -67,7 +67,7 @@
 #define FLASH_KERNEL_START       (FLASH_KERNEL_START_TXT)
 
 
-#define XRAMSW_STATUS_BIT        (0x80)
+#define XRAMSW_DONE_BIT          (0x80)
 #define NUMBER_OF_BANKS          (sizeof(rom) >> 13) // ROMSIZE / 0x2000
 
 
@@ -75,56 +75,34 @@
 // version string for meta mode
 extern const char *sorbus_version;
 
+// default is core 0: I/O, core 1: bus -> setting to non-zero switches
+#define SWITCH_CORES 0
+
 // core_bus.c
+void setup_bankptrs();
+// measure cycles per second and also use for logindex
+extern uint32_t cycle_counter;          // this is also hard bound to buslog_states index
+
+
 // 64k of RAM and I/O cache
 extern uint8_t ram[0x10000];
 // buffer for roms
 extern uint8_t rom[FLASH_DRIVE_START_TXT-FLASH_KERNEL_START_TXT];
-// pointer into current ROM/RAM bank at $E000
-extern const uint8_t *romvec;
-// state of bus
-extern uint32_t state;
-// hardware/clocks.c
-extern uint64_t time_per_mcc;
-
-// setup everything required for the bus core to run
-void setup_bus();
-// main loop for the bus core
-void main_bus();
+// pointer into current ROM/RAM bank at $E000 (minus $E000 to compensate offset)
+extern const uint8_t *romptr;
+// list of possible values for romvec
+extern uint8_t *bankptrs[0x100];
 
 // core_io.c
 // exit 65c02 iohandler/console loop
 extern uint32_t bus_stop_cause;
 
-// enter meta mode by leaving 65c02 iohandler/console loop
-void event_meta( uint32_t value );
-
-// setup everything required for the i/o core to run
-void setup_io();
-// main loop for the i/o core
-void main_io();
-
-typedef union
-{
-   uint32_t       raw      :32;
-   struct {
-      /* similar to trace data */
-      uint16_t    address  :16;
-      uint8_t     data     : 8; /* only valid during write */
-      uint8_t     type     : 8; /* r/!w is encoded as lowest bit of type */
-   };
-} busmsg_t;
-
-typedef enum console_type_e {
-   CONSOLE_TYPE_65C02,
-   CONSOLE_TYPE_RP2040
-} console_type_t;
+// functions required for meta-menu
+uint8_t debug_peek( uint8_t bank, uint16_t addr );
+void debug_poke( uint8_t bank, uint16_t addr, uint8_t value );
 
 // Core0: handle (user) I/O
-void console_type_set( console_type_t type );
-void console_run();
 void console_set_uart( uint8_t charset );
-void cpu_halt( bool stop );
 
 // Core0: handle internal I/O
 void io_run();
@@ -132,14 +110,8 @@ void io_post_misc( bool rw, uint8_t data, uint16_t address );
 void io_post_uart( bool rw, uint8_t data, uint16_t address );
 void io_post_timer( bool rw, uint8_t data, uint16_t address );
 void io_post_watchdog( bool rw, uint8_t data, uint16_t address );
-void io_post_drive( bool rw, uint8_t data, uint16_t address );
 
-// Core1: handle 65c02 bus
-void bus_run();
-void system_init();
-void system_reboot();
-
-// Core1: debug output routines called from Core0 when CPU is stopped
+// Core0: debug output routines called from Core1 when CPU is stopped
 typedef enum {
    DEBUG_INFO_ERR = 0,
    DEBUG_INFO_INTERNALERROR,
@@ -148,25 +120,26 @@ typedef enum {
    DEBUG_INFO_SYSVECTORS,
    DEBUG_INFO_INTERNALDRIVE,
    DEBUG_INFO_TIMERS,
-   DEBUG_INFO_EVENTQUEUE,
+   DEBUG_INFO_BUS_VARS,
    DEBUG_INFO_FIFO_INPUT,
    DEBUG_INFO_FIFO_OUTPUT
 } debug_info_t;
 const char *debug_get_info( debug_info_t page );
 
+// core_bus.c
+// Core1: handle 65c02 bus
+void bus_run();
+
+void info_bus_vars( char *b, size_t bsize );
 void debug_get_backtrace( uint32_t **trace, uint32_t *entries, uint32_t *start );
 void debug_raw_backtrace();
-uint8_t debug_peek( uint8_t bank, uint16_t addr );
-void debug_poke( uint8_t bank, uint16_t addr, uint8_t value );
 
 // clocks.c
-void event_cpufreq( uint32_t data );
 void clocks_reset();
 int info_clocks( char *buffer, size_t size );
 void io_post_watchdog( bool rw, uint8_t data, uint16_t address );
 
 // drive.c
-void event_flash_sync( __unused uint32_t value );
 void io_post_intdrive( bool rw, uint8_t data, uint16_t address );
 int info_internaldrive( char *buffer, size_t size );
 
@@ -182,12 +155,10 @@ void io_post_misc( bool rw, uint8_t data, uint16_t address );
 int info_sysvectors( char *buffer, size_t size );
 
 // reset.c
-void event_reset( uint32_t value );
-void system_init();
+void system_reset( bool init );
 
 // timers.c
 void timers_reset();
-void event_timer_cycle( uint32_t value );
 void io_post_timer( bool rw, uint8_t data, uint16_t address );
 int info_timers( char *b, size_t bsize );
 
@@ -197,9 +168,9 @@ extern bool console_flowcontrol_enabled;
 extern uint8_t console_charset;
 extern fifo256_t uart_in_queue, uart_out_queue;
 void io_post_uart( bool rw, uint8_t data, uint16_t address );
-void event_watchdog( uint32_t data );
 void uart_reset();
 
+// TODO: move to core_io.c
 static inline bool uart_input_add( uint8_t data )
 {
    if( !fifo256_count( &uart_in_queue ) )

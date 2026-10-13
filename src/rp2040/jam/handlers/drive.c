@@ -8,22 +8,28 @@
  */
 
 #include "jam.h"
-#include "event_queue.h"
 #include "dhara_flash.h"
 #include "3rdparty/dhara/error.h"
+
+#include <pico/stdlib.h>
 
 
 #define DHARA_SYNC_DELAY (100000)
 
 
-void event_flash_sync( __unused uint32_t value )
+static int64_t callback_dhara_flush( __unused alarm_id_t id, __unused void *user_data )
 {
-   // event handler for flushing dhara journal
-   // this event is max 1 time in queue
-
    dhara_flash_sync();
+
+   return 0;
 }
 
+
+static void restart_delayed_flush()
+{
+   // TODO: create alarm call
+   dhara_flash_sync();
+}
 
 
 void io_post_intdrive( bool rw, uint8_t data, uint16_t address )
@@ -87,26 +93,15 @@ void io_post_intdrive( bool rw, uint8_t data, uint16_t address )
    {
       case 4: // read
          retval = dhara_flash_read( *lba, &ram[*mem] );
-         if( queue_event_contains( BUSMSG_EVENT_FLASH_SYNC ) )
-         {
-            // delay any waiting sync events
-            queue_event_cancel( BUSMSG_EVENT_FLASH_SYNC );
-            queue_event_add( DHARA_SYNC_DELAY, BUSMSG_EVENT_FLASH_SYNC );
-         }
+         restart_delayed_flush();
          break;
       case 5: // write
          retval = dhara_flash_write( *lba, &ram[*mem] );
-         // drop any waiting sync events, since a new one is created
-         queue_event_cancel( BUSMSG_EVENT_FLASH_SYNC );
-         // after ~.1 seconds without additions writes run sync
-         queue_event_add( DHARA_SYNC_DELAY, BUSMSG_EVENT_FLASH_SYNC );
+         restart_delayed_flush();
          break;
       case 7: // trim
          retval = dhara_flash_trim( *lba );
-         // drop any waiting sync events, since a new one is created
-         queue_event_cancel( BUSMSG_EVENT_FLASH_SYNC );
-         // after ~.1 seconds without additions writes run sync
-         queue_event_add( DHARA_SYNC_DELAY, BUSMSG_EVENT_FLASH_SYNC );
+         restart_delayed_flush();
          break;
       default:
          // unused addresses are treated like RAM, already handled

@@ -68,6 +68,7 @@ upload) mkdocs build --clean &&
            ../build/site/ \
            sorbus.xayax.net:/srv/www/root/sorbus.xayax.net/
 ;;
+"") mkdocs; echo "  upload     push to server using rsync.";;
 *) exec mkdocs "${@}";;
 esac
 

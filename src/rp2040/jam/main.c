@@ -22,10 +22,7 @@
 
 #include "jam.h"
 #include "dhara_flash.h"
-#include "event_queue.h"
 #include "cpu_detect.h"
-
-#define SWITCH_CORES 0
 
 #ifndef SORBUS_VERSION
 #define SORBUS_VERSION "0.8"
@@ -76,7 +73,7 @@ int main()
    // setup UART
    stdio_init_all();
 
-#if 1
+#if 0
    // give some time to connect to console
    sleep_ms( 2000 );
    puts( sorbus_version );
@@ -85,16 +82,11 @@ int main()
    // for toying with overclocking
    set_sys_clock_khz( 133000, false );
 
+   setup_bankptrs();
    dhara_flash_init();
    bus_init();
    system_cpu_detect();
-   system_init();
-
-#if 0
-   // setup cores
-   setup_bus();
-   setup_io();
-#endif
+   system_reset( true );
 
 #if SWITCH_CORES
    // run console and handlers in core1

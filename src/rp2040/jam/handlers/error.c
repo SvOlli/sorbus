@@ -8,7 +8,6 @@
  */
 
 #include "jam.h"
-#include "event_queue.h"
 
 #include <pico/stdio.h>
 
@@ -34,12 +33,19 @@ void internal_error( const char *file, int line,
    _line = line;
    _message = message;
    _value = value;
-   bus_stop_cause = BUSMSG_META_INTERROR;
+   if( *message )
+   {
+      bus_stop_cause = META_INTERROR;
+   }
 }
 
 
 int internal_error_info( char *b, size_t bsize )
 {
-   return snprintf( b, bsize, "%s(%d):\n%s (0x%08x)\n",
-                    _file, _line, _message, _value );
+   if( _message && *_message )
+   {
+      return snprintf( b, bsize, "%s(%d):\n%s (0x%08x)\n",
+                       _file, _line, _message, _value );
+   }
+   return snprintf( b, bsize, "no error\n" );
 }

@@ -38,25 +38,30 @@ static inline void uart_input_was_read( uint16_t address )
 {
    uint8_t data;
 
-   if( fifo256_get( &uart_in_queue, &data ) )
+   // first of all drop first element of queue
+   if( fifo256_drop( &uart_in_queue ) )
    {
-      // there was something in the queue, let's use it
-      ram[address+0] = data;
-      ram[address+1] = fifo256_count( &uart_in_queue ) + 1;
-      return;
+      // now let's check if there still is data left in queue
+      if( fifo256_peek( &uart_in_queue, &data ) )
+      {
+         // there was something in the queue, let's use it
+         ram[MEM_ADDR_UART_READ]      = data;
+         ram[MEM_ADDR_UART_READ_SIZE] = fifo256_count( &uart_in_queue );
+         return;
+      }
    }
 
    // nothing in queue: clear everything
-   ram[address+0] = 0;
-   ram[address+1] = 0;
+   ram[MEM_ADDR_UART_READ]      = 0;
+   ram[MEM_ADDR_UART_READ_SIZE] = 0;
 }
 
 
-static inline void uart_output_was_written( uint16_t address )
+static inline void uart_output_was_written( uint8_t data )
 {
-   if( fifo256_put( &uart_out_queue, ram[address+0] ) )
+   if( fifo256_put( &uart_out_queue, data ) )
    {
-      ram[address+1] = fifo256_count( &uart_out_queue );
+      ram[MEM_ADDR_UART_WRITE_SIZE] = fifo256_count( &uart_out_queue );
       return;
    }
 
@@ -72,6 +77,7 @@ static inline void uart_output_was_written( uint16_t address )
 
 void io_post_uart( bool rw, uint8_t data, uint16_t address )
 {
+//printf( "io_post_uart(%d,%02x,%04x)\n", rw, data, address );
    switch( address & 0x7 )
    {
       case 3: // config control
@@ -87,7 +93,7 @@ void io_post_uart( bool rw, uint8_t data, uint16_t address )
          uart_input_was_read( address );
          break;
       case 6: // uart out queue write
-         uart_output_was_written( address );
+         uart_output_was_written( data );
          break;
       default: // queue sizes will be updated with en-/dequeueing
          break;
@@ -98,6 +104,7 @@ void io_post_uart( bool rw, uint8_t data, uint16_t address )
 void uart_reset()
 {
    fifo256_init( &uart_in_queue );
+   fifo256_init( &uart_out_queue );
    ram[MEM_ADDR_UART_CONTROL]    = 0x05;
    console_set_uart( ram[MEM_ADDR_UART_CONTROL] );
    ram[MEM_ADDR_UART_READ]       = 0x00;

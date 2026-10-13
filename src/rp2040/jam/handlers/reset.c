@@ -9,41 +9,77 @@
 
 #include "jam.h"
 #include "bus.h"
-#include "event_queue.h"
 
 #include <string.h>
 
+#define RESET_TO_METAMENU 0
 
-void event_reset( uint32_t value )
+
+#if RESET_TO_METAMENU
+static int64_t callback_reset_metamenu( alarm_id_t id, void *user_data )
 {
-   switch( value )
-   {
-      case BUSMSG_RESET_START:
-         // reset all subsystems
-         clocks_reset();
-         misc_reset();
-         timers_reset();
-         uart_reset();
-         break;
-      case BUSMSG_RESET_CLEAR:
-         gpio_set_mask( bus_config.mask_reset );
-         break;
-      default:
-         printf( __FILE__ "(%d): internal error unexpected reset value: %08x\n",
-                 __LINE__, value );
-   }
+   bus_stop_cause = META_WATCHDOG;
+
+   // no re-firing
+   return 0;
+}
+#endif
+
+
+static int64_t callback_reset_done( alarm_id_t id, void *user_data )
+{
+   bool *already_running = (bool*)user_data;
+
+#if RESET_TO_METAMENU
+   // trigger meta-menu after running for a few clock cycles
+   add_alarm_in_us( 100, callback_reset_metamenu, &already_running, false );
+#endif
+
+   // undo pulling reset line
+   gpio_set_mask( bus_config.mask_reset );
+
+   // clear flag
+   *already_running = false;
+
+   // no re-firing
+   return 0;
 }
 
 
-void system_init()
+void system_reset( bool init )
 {
-   // cpu in reset state
-   gpio_clr_mask( bus_config.mask_reset );
-   // this will trigger event_reset indirectly
+   // TODO: decide if breaking of init=true in a separate function
+   //       is a good idea
+   static bool already_running = false;
 
-   // clear out RAM
-   memset( &ram[0x0000], 0, sizeof( ram ) );
-   // copy ROM from flash
-   memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof( rom ) );
+   // don't continue, if already running
+   if( already_running )
+   {
+      return;
+   }
+   already_running = true;
+
+   // pull reset line low
+   gpio_clr_mask( bus_config.mask_reset );
+
+   // doing main reset stuff
+   clocks_reset();
+   misc_reset();
+   timers_reset();
+   uart_reset();
+   if( init )
+   {
+      // clear out RAM
+      memset( &ram[0x0000], 0, sizeof( ram ) );
+      // copy ROM from flash
+      memcpy( &rom[0x0000], (const void*)FLASH_KERNEL_START, sizeof( rom ) );
+
+      already_running = false;
+   }
+   else
+   {
+      // create alarm for release
+      add_alarm_in_ms( 1, callback_reset_done, &already_running, false );
+   }
 }
 

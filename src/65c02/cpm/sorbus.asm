@@ -52,8 +52,8 @@ reboot:
    jmp   (RESET)
 
 monitor:
-   \ implement 2-byte BRK #$0e
-   .byte $00,$0e
+   \ implement 2-byte BRK #$00
+   .byte $00,$00
    rts
 
 trap:

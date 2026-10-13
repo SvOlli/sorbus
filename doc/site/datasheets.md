@@ -76,6 +76,8 @@ directory that can be used to download these documents (PDFs only).
 * [PGA2350 pinout](https://cdn.shopify.com/s/files/1/0174/1800/files/pga2350_pinout_diagram.png)
 * [Raspberry Pi RP2040 MCU](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)
 * [Raspberry Pi RP2350 MCU](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf)
+* [Thumb2 Quick Reference Card](https://users.ece.utexas.edu/~valvano/Volume1/QuickReferenceCard.pdf)
+* [ARM Architecture Reference Manual Thumb-2 Supplement](https://raw.githubusercontent.com/wiki/kmfb21/STM32_LabWork/docs/Thumb2_Sup.pdf)
 
 
 ## Documentation Of Old Hardware And Software
