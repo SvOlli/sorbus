@@ -1,7 +1,8 @@
 
 # Meta-Mode
 
-Pressing `Ctrl+]` (or the backtick `` ` ``) will get you in a "meta-mode"
+Pressing `Ctrl+]` (or pressing the backslash `\` twice two time within
+0.15s) will get you in a "meta-mode"
 where the CPU stops. This mode can also be invoked by writing to address
 `$DF01` or programming the watchdog timer (see
 [Memory Map & I/O Registers](memory_map_io_registers.md#watchdog-df20-df23)

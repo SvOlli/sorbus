@@ -170,16 +170,23 @@ static inline void console_65c02()
       {
          if( console_crlf_enabled )
          {
-            if( in == '`' )
+            if( in == '\\' )
             {
-               in = getchar_timeout_us( 100000 );
-               if( in == '`' )
+               int in2 = getchar_timeout_us( 150000 );
+               if( in2 == PICO_ERROR_TIMEOUT )
+               {
+                  uart_input_add( in );
+               }
+               else if( in2 == '\\' )
                {
                   // only trigger on double keypress
                   bus_stop_cause = META_MAGICKEY;
                }
-               // make sure that a '`' get sent if timeout of other key occurs
-               in = '`';
+               else
+               {
+                  uart_input_add( in );
+                  uart_input_add( in2 );
+               }
             }
             else if( in == 0x1d ) // 0x1d = CTRL+]
             {
