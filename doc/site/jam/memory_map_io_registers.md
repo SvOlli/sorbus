@@ -63,24 +63,30 @@
    asynchronous architecture)
 - $DF01: (S) trap: stop CPU and jump into debugging console
 - $DF02: (R) random value
-- $DF03: (W) swap out pages $00-$03: lower four bits contain banks,
-    bits 4,5 define mode:
-    - $1x --> store
-    - $2x --> read
-    - $3x --> swap
-    bit 7 (R): action done, will be cleared after read
-- $DF04: (R) CPU capabilities using bit set indicate CPU features:
-    - $01: NMOS
-    - $02: CMOS
-    - $04: BIT (RE)SET
-    - $08: Z reg
-    - $10: 16 bit
+- $DF03: (W) swap out pages $00-$03:
+    - lower four bits contain banks,
+    - bits 4,5 define mode:
+        - $0x --> nothing
+        - $1x --> store
+        - $2x --> read
+        - $3x --> swap
+    - bits 6,7 are for future usage
+    - value is set back to $00, once action is completed
+- $DF04: (R) CPU capabilities
+    - using bit set to indicate CPU features:
+        - $01: NMOS
+        - $02: CMOS
+        - $04: BIT (RE)SET
+        - $08: Z reg
+        - $10: 16 bit
+        - $20: ROR instruction missing
     - This means for known CPUs:
-    - $01: 6502
-    - $06: 65C02
-    - $12: 65816
-    - $0e: 65CE02
-    - $02: 65SC02
+        - $01: 6502 Rev.D
+        - $02: 65SC02
+        - $06: 65C02
+        - $0e: 65CE02
+        - $12: 65816
+        - $21: 6502 Rev.A
 - $DF05-$DF0A: reserved for future use
 - $DF0B: UART config:
     - bit 0: enable crlf conversion
@@ -113,8 +119,8 @@
 | $DF14/5 | repeat    | NMI       | cycles      | defunc'ed |
 | $DF16/7 | oneshot   | NMI       | cycles      | defunc'ed |
 | $DF18/9 | repeat    | IRQ       | 10ths of ms |           |
-| $DF1C/D | repeat    | NMI       | 10ths of ms |           |
-| $DF1A/B | oneshot   | IRQ       | 10ths of ms |           |
+| $DF1A/B | repeat    | NMI       | 10ths of ms |           |
+| $DF1C/D | oneshot   | IRQ       | 10ths of ms |           |
 | $DF1E/F | oneshot   | NMI       | 10ths of ms |           |
 
 Note: when entering [meta mode](meta_mode.md), the ms based timers will

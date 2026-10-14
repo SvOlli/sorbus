@@ -98,7 +98,7 @@ static inline void handle_scratch_mem( uint8_t flags )
          }
       }
    }
-   ram[MEM_ADDR_XRAMSW] |= XRAMSW_DONE_BIT;
+   ram[MEM_ADDR_XRAMSW] = 0;
 }
 
 
@@ -151,11 +151,6 @@ void io_post_misc( bool rw, uint8_t data, uint16_t address )
          {
             // write: trigger ram change
             handle_scratch_mem( ram[MEM_ADDR_XRAMSW] );
-         }
-         else
-         {
-            // read: clear done bit
-            ram[MEM_ADDR_XRAMSW] &= ~XRAMSW_DONE_BIT;
          }
          break;
       case 4: // cpu feature
