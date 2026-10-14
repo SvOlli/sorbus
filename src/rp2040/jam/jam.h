@@ -137,6 +137,9 @@ void debug_raw_backtrace();
 // clocks.c
 void clocks_reset();
 int info_clocks( char *buffer, size_t size );
+int info_watchdog( char *buffer, size_t size );
+void watchdog_freeze();
+void watchdog_unfreeze();
 void io_post_watchdog( bool rw, uint8_t data, uint16_t address );
 
 // drive.c
@@ -161,6 +164,8 @@ void system_reset( bool init );
 void timers_reset();
 void io_post_timer( bool rw, uint8_t data, uint16_t address );
 int info_timers( char *b, size_t bsize );
+void timers_freeze();
+void timers_unfreeze();
 
 // uart.c
 extern bool console_crlf_enabled;

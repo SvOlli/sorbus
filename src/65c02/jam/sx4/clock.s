@@ -68,6 +68,7 @@ loop:
 
 irqhandler:
    pha
+   lda   TMIMRL
    phx
    sed
    sec                  ; add a second
@@ -111,7 +112,6 @@ irqhandler:
    cpx   #$03
    bcc   :-
    plx
-   lda   TMIMRL
    pla
    rti
 

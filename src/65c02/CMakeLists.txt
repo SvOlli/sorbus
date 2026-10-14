@@ -274,6 +274,7 @@ quick_sx4(inst-ass)
 quick_sx4(keycode)
 quick_sx4(memcheck)
 quick_sx4(opcodes)
+quick_sx4(watchdog)
 quick_sx4(wozmon2c)
 quick_sx4(wrtboot)
 

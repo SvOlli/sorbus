@@ -28,6 +28,7 @@
 
 typedef void (*io_post_func_t)( bool rw, uint8_t data, uint16_t address );
 
+
 /* will be used in event functions array */
 void handle_io( uint32_t in );
 
@@ -90,6 +91,7 @@ void debug_poke( uint8_t bank, uint16_t addr, uint8_t value )
 const char *debug_get_info( debug_info_t page )
 {
    static char buffer[1280] = { 0 };
+   int used = 0;
 
    buffer[0] = '\0';
    switch( page )
@@ -110,7 +112,9 @@ const char *debug_get_info( debug_info_t page )
          info_internaldrive( &buffer[0], sizeof(buffer)-1 );
          break;
       case DEBUG_INFO_TIMERS:
-         info_timers( &buffer[0], sizeof(buffer)-1 );
+         used += info_timers( &buffer[0], sizeof(buffer)-1 );
+         used += snprintf( &buffer[used], sizeof(buffer)-1-used, "Watchdog: " );
+         used += info_watchdog( &buffer[used], sizeof(buffer)-1-used );
          break;
       case DEBUG_INFO_BUS_VARS:
          info_bus_vars( &buffer[0], sizeof(buffer)-1 );
@@ -227,6 +231,10 @@ static inline void console_rp2040()
 
    const char *invoke = "unknown";
 
+
+   watchdog_freeze();
+   timers_freeze();
+
    switch( bus_stop_cause )
    {
       case META_MAGICKEY:
@@ -331,12 +339,14 @@ static inline void console_rp2040()
             break;
          case '#':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
-                              "Bus States", debug_get_info( DEBUG_INFO_BUS_VARS ) );
+                              "Bus States",
+                              debug_get_info( DEBUG_INFO_BUS_VARS ) );
             getch();
             break;
          case '?':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
-                              "Internal Error", debug_get_info( DEBUG_INFO_INTERNALERROR ) );
+                              "Internal Error",
+                              debug_get_info( DEBUG_INFO_INTERNALERROR ) );
             if( toupper( getch() ) == 'C' )
             {
                internal_error_clear();
@@ -371,12 +381,14 @@ static inline void console_rp2040()
             break;
          case 'F':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
-                              "Fifo Input", debug_get_info( DEBUG_INFO_FIFO_INPUT ) );
+                              "Fifo Input",
+                              debug_get_info( DEBUG_INFO_FIFO_INPUT ) );
             getch();
             break;
          case 'I':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
-                              "Internal Drive", debug_get_info( DEBUG_INFO_INTERNALDRIVE ) );
+                              "Internal Drive",
+                              debug_get_info( DEBUG_INFO_INTERNALDRIVE ) );
             getch();
             break;
          case 'M':
@@ -395,7 +407,8 @@ static inline void console_rp2040()
             break;
          case 'O':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
-                              "Fifo Output", debug_get_info( DEBUG_INFO_FIFO_OUTPUT ) );
+                              "Fifo Output",
+                              debug_get_info( DEBUG_INFO_FIFO_OUTPUT ) );
             getch();
             break;
          case 'P':
@@ -403,12 +416,14 @@ static inline void console_rp2040()
             break;
          case 'T':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
-                              "Timers", debug_get_info( DEBUG_INFO_TIMERS ) );
+                              "Timers (decimal values in ms)",
+                              debug_get_info( DEBUG_INFO_TIMERS ) );
             getch();
             break;
          case 'U':
             leave = mc_xmodem_upload( debug_poke );
             break;
+
          case 'R':
             //gpio_clr_mask( bus_config.mask_reset );
             system_reset( false );
@@ -424,6 +439,9 @@ cancel:
    uart_set_translate_crlf( uart0, console_crlf_enabled );
 
    screen_restore();
+
+   timers_unfreeze();
+   watchdog_unfreeze();
 }
 
 

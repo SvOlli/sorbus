@@ -33,8 +33,9 @@ const uint8_t  timer_triggered_mask[2]  = { 0x05, 0x0A };
 
 uint8_t timer_triggered          = 0x00;
 
-struct repeating_timer timer_ms[4];
+repeating_timer_t timer_ms[4];
 int64_t timer_ms_saved[4];
+void *timer_userdata_saved[4];
 // need to cache values written to RAM as they are overwritten by status
 uint16_t timer_cache[4]          = { 0x0000, 0x0000, 0x0000, 0x0000 };
 int64_t timer_remaining_us[4]    = { 0, 0, 0, 0 };
@@ -65,7 +66,7 @@ static void set_state( uint8_t id, bool value )
       // clear remembered id in bitfield
       timer_triggered &= ~(1 << id);
       // any other IRQs or NMIs left?
-      if( !timer_triggered_mask[nmi] )
+      if( !(timer_triggered & timer_triggered_mask[nmi]) )
       {
          // no -> clear interrupt
          gpio_set_mask( timer_mask[nmi] );
@@ -78,10 +79,10 @@ static void set_state( uint8_t id, bool value )
 }
 
 
-static bool callback_timer_ms( struct repeating_timer *t )
+static bool callback_timer_ms( repeating_timer_t *t )
 {
    // data is not a pointer, but an uint32_t
-   uint32_t id = (uint32_t)t->user_data;
+   uint32_t id = (uint32_t)(t->user_data-1);
    // bit 0 contains single shot=1 instead of repeat=0
    bool repeat = !(id & 2);
 
@@ -89,7 +90,7 @@ static bool callback_timer_ms( struct repeating_timer *t )
    if( repeat )
    {
       // make sure that the timer has the correct value (again)
-      t->delay_us = -100 * timer_cache[id];
+      t->delay_us = (int64_t)-100 * timer_cache[id];
    }
    else
    {
@@ -106,25 +107,26 @@ static bool callback_timer_ms( struct repeating_timer *t )
 //
 
 
-void timer_stop()
+void timers_freeze()
 {
    for( int id = 0; id < 4; ++id )
    {
-      struct repeating_timer *t = &timer_ms[id];
-      timer_remaining_us[id] = remaining_alarm_time_us(t->alarm_id);
+      repeating_timer_t *t = &timer_ms[id];
+      timer_remaining_us[id] = remaining_alarm_time_us( t->alarm_id );
+      timer_userdata_saved[id] = t->user_data;
       cancel_repeating_timer( t );
    }
 }
 
 
-void timer_restart()
+void timers_unfreeze()
 {
    for( int id = 0; id < 4; ++id )
    {
-      struct repeating_timer *t = &timer_ms[id];
-      if( t->user_data )
+      repeating_timer_t *t = &timer_ms[id];
+      if( timer_userdata_saved[id] )
       {
-         add_repeating_timer_us( timer_remaining_us[id], callback_timer_ms, t->user_data, t );
+         add_repeating_timer_us( timer_remaining_us[id], callback_timer_ms, timer_userdata_saved[id], t );
       }
    }
 }
@@ -132,7 +134,7 @@ void timer_restart()
 
 void timers_reset()
 {
-   timer_stop();
+   timers_freeze();
    timer_triggered = 0x00;
    memset( &timer_cache[0],        0, sizeof( timer_cache ) );
    memset( &timer_ms[0],           0, sizeof( timer_ms ) );
@@ -150,7 +152,7 @@ void io_post_timer( bool rw, uint8_t data, uint16_t address )
    uint8_t config = address & 0x07;
    bool highbyte  = address & 0x01;
    uint32_t id    = config >> 1;
-   struct repeating_timer *t = &timer_ms[id];
+   repeating_timer_t *t = &timer_ms[id];
    uint8_t value  = ram[address];
 
    // it make sense to clear out memory here:
@@ -182,7 +184,8 @@ void io_post_timer( bool rw, uint8_t data, uint16_t address )
 
    if( timer_cache[id] && highbyte )
    {
-      add_repeating_timer_us( -100 * timer_cache[id], callback_timer_ms, (void*)id, t );
+      add_repeating_timer_us( -100 * timer_cache[id], callback_timer_ms,
+                              (void*)(id+1), t );
    }
 
    // clear flag for later read
@@ -195,7 +198,7 @@ int info_timers( char *b, size_t bsize )
    int   used = 0;
    int   i;
 
-   used += snprintf( b+used, bsize-used, "ID | config     | value\n" );
+   used += snprintf( b+used, bsize-used, "ID | config     |  value | remain\n" );
    for( i = 0; i < 4; ++i )
    {
       if( (used+1) >= bsize )
@@ -203,9 +206,10 @@ int info_timers( char *b, size_t bsize )
          break;
       }
       used += snprintf( b+used, bsize-used,
-                        "%2d | %s %s | %5d\n",
+                        "%2d | %s %s | %4d.%01d | %4d.%01d \n",
                         i, i&1 ? "NMI":"IRQ", i&2 ? "single":"repeat",
-                        timer_cache[i] );
+                        timer_cache[i]/10, timer_cache[i]%10,
+                        timer_remaining_us[i]/1000, (timer_remaining_us[i]%1000)/100 );
    }
    return used;
 }

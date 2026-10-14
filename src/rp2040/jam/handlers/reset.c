@@ -63,6 +63,7 @@ void system_reset( bool init )
    gpio_clr_mask( bus_config.mask_reset );
 
    // doing main reset stuff
+   memset( &ram[0xDF00], 0, 0x80 ); // clear out internal I/O
    clocks_reset();
    misc_reset();
    timers_reset();
