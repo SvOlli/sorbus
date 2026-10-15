@@ -659,7 +659,7 @@ const uint32_t da_opcodes65816[0x100] = {
    /* $69 */ OPCODE( ADC, IMM, 0, 2, 2, 0, 0, 2 ),
    /* $6A */ OPCODE( ROR, IMP, 0, 1, 2, 0, 0, 0 ),
    /* $6B */ OPCODE( RTL, IMP, 0, 1, 6, 0, 0, 0 ),
-   /* $6C */ OPCODE( JMP, AI, 0, 3, 6, 0, 1, 0 ),
+   /* $6C */ OPCODE( JMP, AI, 0, 3, 5, 0, 1, 0 ),
    /* $6D */ OPCODE( ADC, ABS, 0, 3, 4, 0, 0, 0 ),
    /* $6E */ OPCODE( ROR, ABS, 0, 3, 6, 0, 0, 0 ),
    /* $6F */ OPCODE( ADC, ABSL, 0, 4, 5, 0, 0, 0 ),
