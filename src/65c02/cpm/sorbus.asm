@@ -7,6 +7,7 @@
 
 BANK   = $DF00
 TRAP   = $DF01
+RANDOM = $DF02
 IDBASE = $DF70
 ID_LBA = IDBASE+$0 \ alternative notation: ID_LBA+0/ID_LBA+1
 ID_MEM = IDBASE+$2 \ alternative notation: ID_MEM+0/ID_MEM+1
@@ -83,34 +84,23 @@ waitreaddone:
 
    \ TODO: complete implementation
 
-   lda   #<m_nosorbus
-   ldx   #>m_nosorbus
+   lda   #<m_trim
+   ldx   #>m_trim
    ldy   #BDOS_PRINTSTRING
    jmp   BDOS
 
 
-check:
-   ldx   #$00
-resetreg:
-   lda   TRAP
-   beq   check2
-   inx
-   bne   resetreg
-   beq   nosorbus
-check2:
-   lda   TRAP
-   cmp   #'S'
-   bne   nosorbus
-   lda   TRAP
-   cmp   #'B'
-   bne   nosorbus
-   lda   TRAP
-   cmp   #'C'
-   bne   nosorbus
-resetreg2:
-   lda   TRAP
-   bne   resetreg2
+issorbus:
    rts
+check:
+   \ a bit clunky: check if RANDOM register really provides random data
+   ldx   #$00
+   lda   RANDOM
+checkloop:
+   cmp   RANDOM
+   bne   issorbus
+   inx
+   bne   checkloop
 
 nosorbus:
    lda   #<m_nosorbus

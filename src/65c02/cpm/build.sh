@@ -28,14 +28,14 @@ CPMASM="${CPM65_DIR}/.obj/apps/+asm/asm"
 
 readonly BINDIR SRCDIR CPM65_DIR
 
-type -p mos-cpm65-clang >/dev/null || {
+type mos-cpm65-clang || {
    echo "**********************************************************************"
    echo "'mos-cpm65-clang' not found, skipping build of custom CP/M-65 software"
    echo "**********************************************************************"
    exit 0
 }
 
-if [ ! -x "${CPMEMU}" -o ! -x "${CPMASM}" ]; then
+if [ ! -x "${CPMEMU}" -o ! -f "${CPMASM}" ]; then
    echo "*********************************************************************"
    echo "CP/M-65 emu or asm missing, skipping build of custom CP/M-65 software"
    echo "*********************************************************************"
