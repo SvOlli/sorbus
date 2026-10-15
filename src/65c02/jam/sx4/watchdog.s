@@ -3,6 +3,9 @@
 .include "jam.inc"
 
 start:
+   jsr   PRINT
+   .byte "Triggering watchdog in ~2 seconds.\n"
+   .byte "Dropping to monitor for now.\n\n", 0
    lda   #$08           ; 2048ms
    stz   WDCL
    sta   WDCM
