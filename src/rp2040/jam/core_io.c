@@ -105,6 +105,9 @@ const char *debug_get_info( debug_info_t page )
       case DEBUG_INFO_CLOCKS:
          info_clocks( &buffer[0], sizeof(buffer)-1 );
          break;
+      case DEBUG_INFO_CYCLECOUNT:
+         info_cyclecount( &buffer[0], sizeof(buffer)-1 );
+         break;
       case DEBUG_INFO_SYSVECTORS:
          info_sysvectors( &buffer[0], sizeof(buffer)-1 );
          break;

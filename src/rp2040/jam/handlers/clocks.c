@@ -19,6 +19,9 @@
 uint32_t cycles_per_second = 0;
 static alarm_id_t watchdog_alarm = 0;
 static int64_t watchdog_remain = 0;
+uint32_t cycles_list[16] = { 0 };
+uint8_t cycles_index = 0;
+
 
 #define busstate gpio_get_all()
 
@@ -44,6 +47,8 @@ static bool callback_cpufreq( repeating_timer_t *t )
    {
       // only count time when CPU is not halted
       cycles_per_second = cycle_counter - cycles_last;
+      cycles_list[cycles_index++] = cycles_per_second;
+      cycles_index &= 0x0f;
    }
    cycles_last = cycle_counter;
 
@@ -54,6 +59,18 @@ static bool callback_cpufreq( repeating_timer_t *t )
 //
 // API functions
 //
+
+
+void info_cyclecount( char *buffer, size_t size )
+{
+   int i;
+   int used = 0;
+
+   for( i = cycles_index+1; i != cycles_index; i = (i+1) & 0x0F )
+   {
+      used += snprintf( buffer+used, size-used-1, "%8d\n", cycles_list[i] );
+   }
+}
 
 
 void watchdog_freeze()

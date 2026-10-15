@@ -117,6 +117,7 @@ typedef enum {
    DEBUG_INFO_INTERNALERROR,
    DEBUG_INFO_HEAP,
    DEBUG_INFO_CLOCKS,
+   DEBUG_INFO_CYCLECOUNT,
    DEBUG_INFO_SYSVECTORS,
    DEBUG_INFO_INTERNALDRIVE,
    DEBUG_INFO_TIMERS,
@@ -138,6 +139,7 @@ void debug_raw_backtrace();
 void clocks_reset();
 int info_clocks( char *buffer, size_t size );
 int info_watchdog( char *buffer, size_t size );
+void info_cyclecount( char *buffer, size_t size );
 void watchdog_freeze();
 void watchdog_unfreeze();
 void io_post_watchdog( bool rw, uint8_t data, uint16_t address );
