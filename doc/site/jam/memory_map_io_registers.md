@@ -57,10 +57,6 @@
    point where the system does not behave asynchronous: a bankswitch
    will be effective immediately after the write and before the next
    instruction
-- $DF01: (R) Sorbus JAM ID -> contains version information, read
-   until $00 starts with ASCII id "SBC23", followed by a $01 and a
-   revision (this needs to be checked if it still works with
-   asynchronous architecture)
 - $DF01: (S) trap: stop CPU and jump into debugging console
 - $DF02: (R) random value
 - $DF03: (W) swap out pages $00-$03:
@@ -70,7 +66,7 @@
         - $1x --> store
         - $2x --> read
         - $3x --> swap
-    - bits 6,7 are for future usage
+    - bits 6,7 are reserved for future usage
     - value is set back to $00, once action is completed
 - $DF04: (R) CPU capabilities
     - using bit set to indicate CPU features:

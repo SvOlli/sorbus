@@ -17,9 +17,6 @@
 #include <pico/rand.h>
 
 
-// identification
-const uint8_t sorbus_id[] = { 'S', 'B', 'C', '2', '3', 1, 3, 0 };
-const uint8_t *sorbus_id_p = &sorbus_id[0];
 const static uint8_t cpufeatures[] =
 {
    0x00, // CPU_ERROR
@@ -36,24 +33,6 @@ const static uint8_t cpufeatures[] =
 //
 // internal helper functions
 //
-
-static inline void sorbus_id_next()
-{
-   // data has been fetched, get next
-   ram[MEM_ADDR_CPUID] = *sorbus_id_p;
-
-   // now move pointer
-   if( *sorbus_id_p )
-   {
-      // no $00 copied, so there's still data
-      ++sorbus_id_p;
-   }
-   else
-   {
-      // a $00 got copied to memory, now reset
-      sorbus_id_p = sorbus_id;
-   }
-}
 
 
 static inline void random_next()
@@ -117,11 +96,6 @@ void misc_reset()
    srand( get_rand_32() );
    // make sure that random data is in RAM
    random_next();
-
-   // write first byte to buffer
-   ram[MEM_ADDR_CPUID] = sorbus_id[0];
-   // set pointer to next;
-   sorbus_id_p = &sorbus_id[1];
 }
 
 
@@ -131,15 +105,9 @@ void io_post_misc( bool rw, uint8_t data, uint16_t address )
    {
       // case 0 is now handled in core_bus
       case 1: // trap/id
-         if( rw )
-         {
-            // read
-            sorbus_id_next();
-         }
-         else
+         if( !rw )
          {
             // write
-            ram[MEM_ADDR_CPUID] = *sorbus_id_p; // restore desired value
             bus_stop_cause = META_TRAP;
          }
          break;

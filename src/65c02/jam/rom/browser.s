@@ -259,29 +259,7 @@ browser:
    int   VT100
 
    jsr   PRINT
-   .byte "Sorbus Filebrowser V0.1   User:    HW-Rev:",0
-
-   ; TRAP contains hardware information. Format:
-   ; ASCII of "SBC23" (only hardware code so far), followed by a byte < $20
-   ; then a binary sub-versioning ending with $00
-:
-   lda   TRAP
-   bne   :-             ; read until $00
-
-:
-   lda   TRAP
-   cmp   #' '           ; check for end of ASCII part
-   bcc   :+
-   jsr   CHROUT         ; print out ASCII part
-   bra   :-
-:
-   pha
-   lda   #' '
-   jsr   CHROUT
-   pla
-   int   PRHEX8         ; print the rest as space separated hexdump
-   lda   TRAP
-   bne   :-
+   .byte "Sorbus Filebrowser V0.1   User:",0
 
    lda   #INPUTLINE
    jsr   clrline
