@@ -34,7 +34,7 @@ void console_set_uart( uint8_t data )
 }
 
 
-static inline void uart_input_was_read( uint16_t address )
+static inline void uart_input_was_read()
 {
    uint8_t data;
 
@@ -57,45 +57,79 @@ static inline void uart_input_was_read( uint16_t address )
 }
 
 
-static inline void uart_output_was_written( uint8_t data )
-{
-   if( fifo256_put( &uart_out_queue, data ) )
-   {
-      ram[MEM_ADDR_UART_WRITE_SIZE] = fifo256_count( &uart_out_queue );
-      return;
-   }
-
-   // buffer overflow... really?
-   ram[MEM_ADDR_UART_CONTROL] |= 0x40;
-}
-
-
 //
 // API functions
 //
 
 
-void io_irq_uart( bool rw, uint8_t data, uint16_t address )
+void io_irq_uart_w( uint32_t in )
 {
-//printf( "io_post_uart(%d,%02x,%04x)\n", rw, data, address );
-   switch( address & 0x7 )
+   uint8_t data;
+   switch( in & 0x07 )
+   {
+      case 3: // config control
+         console_set_uart( ram[MEM_ADDR_UART_CONTROL] );
+         break;
+      case 4: // uart in queue read
+         // first of all drop first element of queue
+         if( fifo256_drop( &uart_in_queue ) )
+         {
+            // now let's check if there still is data left in queue
+            if( fifo256_peek( &uart_in_queue, &data ) )
+            {
+               // there was something in the queue, let's use it
+               ram[MEM_ADDR_UART_READ]      = data;
+               ram[MEM_ADDR_UART_READ_SIZE] = fifo256_count( &uart_in_queue );
+               return;
+            }
+         }
+         // nothing in queue: clear everything
+         ram[MEM_ADDR_UART_READ]      = 0;
+         ram[MEM_ADDR_UART_READ_SIZE] = 0;
+         break;
+      case 6: // uart out queue write
+         if( fifo256_put( &uart_out_queue, ram[MEM_ADDR_UART_WRITE] ) )
+         {
+            ram[MEM_ADDR_UART_WRITE_SIZE] = fifo256_count( &uart_out_queue );
+            return;
+         }
+         // buffer overflow... really?
+         ram[MEM_ADDR_UART_CONTROL] |= 0x40;
+         break;
+      default:
+         break;
+   }
+}
+
+
+void io_irq_uart_r( uint32_t in )
+{
+   uint8_t data;
+
+   switch( in & 0x07 )
    {
       case 3: // config control
          // clear error bits
-         ram[address] &= 0x3F;
-         if( !rw )
-         {
-            // write on control register
-            console_set_uart( data );
-         }
+         ram[MEM_ADDR_UART_CONTROL] &= 0x3F;
          break;
       case 4: // uart in queue read
-         uart_input_was_read( address );
+         // first of all drop first element of queue
+         if( fifo256_drop( &uart_in_queue ) )
+         {
+            // now let's check if there still is data left in queue
+            if( fifo256_peek( &uart_in_queue, &data ) )
+            {
+               // there was something in the queue, let's use it
+               ram[MEM_ADDR_UART_READ]      = data;
+               ram[MEM_ADDR_UART_READ_SIZE] = fifo256_count( &uart_in_queue );
+               return;
+            }
+         }
+         // nothing in queue: clear everything
+         ram[MEM_ADDR_UART_READ]      = 0;
+         ram[MEM_ADDR_UART_READ_SIZE] = 0;
          break;
-      case 6: // uart out queue write
-         uart_output_was_written( data );
-         break;
-      default: // queue sizes will be updated with en-/dequeueing
+      default:
          break;
    }
 }

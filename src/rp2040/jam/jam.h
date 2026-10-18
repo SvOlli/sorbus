@@ -144,10 +144,11 @@ int info_watchdog( char *buffer, size_t size );
 void info_cyclecount( char *buffer, size_t size );
 void watchdog_freeze();
 void watchdog_unfreeze();
-void io_irq_watchdog( bool rw, uint8_t data, uint16_t address );
+void io_irq_watchdog_w( uint32_t in );
+void io_irq_watchdog_r( uint32_t in );
 
 // drive.c
-void io_irq_intdrive( bool rw, uint8_t data, uint16_t address );
+void io_irq_intdrive_w( uint32_t in );
 int info_internaldrive( char *buffer, size_t size );
 
 // error.c
@@ -158,7 +159,8 @@ void internal_error_clear();
 
 // misc.c
 void misc_reset();
-void io_irq_misc( bool rw, uint8_t data, uint16_t address );
+void io_irq_misc_w( uint32_t in );
+void io_irq_misc_r( uint32_t in );
 int info_sysvectors( char *buffer, size_t size );
 
 // reset.c
@@ -166,7 +168,7 @@ void system_reset( bool init );
 
 // timers.c
 void timers_reset();
-void io_irq_timer( bool rw, uint8_t data, uint16_t address );
+void io_irq_timer_w( uint32_t in );
 int info_timers( char *b, size_t bsize );
 void timers_freeze();
 void timers_unfreeze();
@@ -176,7 +178,8 @@ extern bool console_crlf_enabled;
 extern bool console_flowcontrol_enabled;
 extern uint8_t console_charset;
 extern fifo256_t uart_in_queue, uart_out_queue;
-void io_irq_uart( bool rw, uint8_t data, uint16_t address );
+void io_irq_uart_w( uint32_t in );
+void io_irq_uart_r( uint32_t in );
 void uart_reset();
 
 // TODO: move to core_io.c

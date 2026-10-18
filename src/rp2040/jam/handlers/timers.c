@@ -143,18 +143,19 @@ void timers_reset()
 }
 
 
-void io_irq_timer( bool rw, uint8_t data, uint16_t address )
+void io_irq_timer_w( uint32_t in )
 {
    // config bits (decoded from address)
    //           0        1
    // bit 0: lobyte   hibyte
    // bit 1: irq      nmi
    // bit 2: repeat   oneshot
-   uint8_t config = address & 0x07;
-   bool highbyte  = address & 0x01;
+   uint8_t config = in & 0x07;
+   bool highbyte  = in & 0x01;
+   bool rw        = (in >> 24) & 1;
    uint32_t id    = config >> 1;
    repeating_timer_t *t = &timer_ms[id];
-   uint8_t value  = ram[address];
+   uint8_t value  = ram[in & 0xFFFF];
 
    // it make sense to clear out memory here:
    // read: after an acknoledge it should be $00
@@ -190,7 +191,7 @@ void io_irq_timer( bool rw, uint8_t data, uint16_t address )
    }
 
    // clear flag for later read
-   set_state( address, false );
+   set_state( id, false );
 }
 
 

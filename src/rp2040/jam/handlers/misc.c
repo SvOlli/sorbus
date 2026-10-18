@@ -103,6 +103,7 @@ void misc_reset()
    // default bank is always first ROM bank
    romptr = bankptrs[1];
    ram[MEM_ADDR_BANK] = 1;
+   ram[MEM_ADDR_CPUID] = cpufeatures[cputype];
 
    // (re)initialize random number generator
    srand( get_rand_32() );
@@ -111,35 +112,35 @@ void misc_reset()
 }
 
 
-void io_irq_misc( bool rw, uint8_t data, uint16_t address )
+void io_irq_misc_r( uint32_t in )
 {
-   switch( address & 0x7 )
+   switch( in & 0x07 )
    {
-      // case 0 is now handled in core_bus
-      case 1: // trap/id
-         if( !rw )
-         {
-            // write
-            bus_stop_cause = META_TRAP;
-         }
-         break;
       case 2: // random
          random_next();
          break;
+      default:
+         break;
+   }
+}
+
+
+void io_irq_misc_w( uint32_t in )
+{
+   switch( in & 0x07 )
+   {
+      case 1: // trap
+         bus_stop_cause = META_TRAP;
+         break;
       case 3: // swap pages
-         if( !rw )
-         {
-            // write: trigger ram change
-            scratch_mem_alarm = add_alarm_in_us( 2, scratch_mem_action,
-                                                 (void*)(uint32_t)ram[MEM_ADDR_XRAMSW], true );
-         }
+         scratch_mem_alarm = add_alarm_in_us( 2, scratch_mem_action,
+                                              (void*)(uint32_t)ram[MEM_ADDR_XRAMSW], true );
          break;
       case 4: // cpu feature
-         // just overwrite so it can't be modified
+         // just overwrite so it can't be modified for a longer time
          ram[MEM_ADDR_CPUID] = cpufeatures[cputype];
          break;
       default:
-         // just as RAM
          break;
    }
 }

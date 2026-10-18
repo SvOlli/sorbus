@@ -32,7 +32,7 @@
 #endif
 
 
-typedef void (*io_post_func_t)( bool rw, uint8_t data, uint16_t address );
+typedef void (*io_post_func_t)( uint32_t in );
 
 
 /* will be used in event functions array */
@@ -45,12 +45,12 @@ bool console_flowcontrol_enabled;
 
 // callbacks for 0x00xxxxxx & 0x01xxxxxx
 // sliced up to handle areas of 8 bytes
-const io_post_func_t io_handlers[0x10] = {
-   io_irq_misc,         // $df00-$df07: misc like bank, trap, rnd, etc.
-   io_irq_uart,         // $df08-$df0f: UART
+const io_post_func_t io_handlers_w[0x10] = {
+   io_irq_misc_w,       // $df00-$df07: misc like bank, trap, rnd, etc.
+   io_irq_uart_w,       // $df08-$df0f: UART
    0,                   // $df10-$df17: (was timer cycle)
-   io_irq_timer,        // $df18-$df1f: timer ms/10
-   io_irq_watchdog,     // $df20-$df23: watchdog
+   io_irq_timer_w,      // $df18-$df1f: timer ms/10
+   io_irq_watchdog_w,   // $df20-$df23: watchdog
    //                      $df24-$df27: cyclecount
    0,                   // $df28-$df2f: unused RAM / kernel variables
    0,                   // $df30-$df37: system monitor variables
@@ -61,9 +61,77 @@ const io_post_func_t io_handlers[0x10] = {
    0,                   // $df58-$df5f: unused RAM
    0,                   // $df60-$df67: unused RAM
    0,                   // $df68-$df6f: unused RAM
-   io_irq_intdrive,     // $df70-$df77: internal drive data/strobe registers
+   io_irq_intdrive_w,   // $df70-$df77: internal drive data/strobe registers
    0                    // $df78-$df7f: RAM: interrupt vectors
 };
+
+
+const io_post_func_t io_handlers_r[0x10] = {
+   io_irq_misc_r,       // $df00-$df07: misc like bank, trap, rnd, etc.
+   io_irq_uart_r,       // $df08-$df0f: UART
+   0,                   // $df10-$df17: (was timer cycle)
+   0,                   // $df18-$df1f: timer ms/10
+   io_irq_watchdog_r,   // $df20-$df23: watchdog
+   //                      $df24-$df27: cyclecount
+   0,                   // $df28-$df2f: unused RAM / kernel variables
+   0,                   // $df30-$df37: system monitor variables
+   0,                   // $df38-$df3f: unused RAM
+   0,                   // $df40-$df47: unused RAM
+   0,                   // $df48-$df4f: unused RAM
+   0,                   // $df50-$df57: unused RAM
+   0,                   // $df58-$df5f: unused RAM
+   0,                   // $df60-$df67: unused RAM
+   0,                   // $df68-$df6f: unused RAM
+   0,                   // $df70-$df77: internal drive data/strobe registers
+   0                    // $df78-$df7f: RAM: interrupt vectors
+};
+
+
+void fifo_irq_handler()
+{
+   /* IRQ handler, try to minimize time spent here */
+   while( multicore_fifo_rvalid() )
+   {
+      uint32_t in = multicore_fifo_pop_blocking();
+      // in now is
+      // r/w << 24 | data << 16 | address
+
+      //if( (msg.address & 0xFF80) == 0xDF00 )
+      //0xFF80 >> 7 = 0x01FF, 0xDF00 >> 7 = 0x01BE
+      if( ((in >> 7) & 0x01FF) == 0x01BE )
+      {
+#if 1
+         const io_post_func_t *handler_list = ((in >> 24) & 1) ? &io_handlers_r[0] : &io_handlers_w[0];
+         io_post_func_t handler = handler_list[(in >> 3) & 0x0F];
+         if( handler )
+         {
+            handler( in );
+         }
+#else
+         if( (in >> 24) & 1 )
+         {
+            // read
+            io_post_func_t handler = io_handlers_r[(in >> 3) & 0x0F];
+            if( handler )
+            {
+               handler( in );
+            }
+         }
+         else
+         {
+            // read
+            io_post_func_t handler = io_handlers_w[(in >> 3) & 0x0F];
+            if( handler )
+            {
+               handler( in );
+            }
+         }
+#endif
+      }
+   }
+
+   multicore_fifo_clear_irq();
+}
 
 
 uint8_t debug_peek( uint8_t bank, uint16_t addr )
@@ -147,30 +215,6 @@ const char *debug_get_info( debug_info_t page )
          break;
    }
    return &buffer[0];
-}
-
-
-void fifo_irq_handler()
-{
-   while( multicore_fifo_rvalid() )
-   {
-      uint32_t in = multicore_fifo_pop_blocking();
-
-      //if( (msg.address & 0xFF80) == 0xDF00 )
-      //0xFF80 >> 7 = 0x01FF, 0xDF00 >> 7 = 0x01BE
-      if( ((in >> 7) & 0x01FF) == 0x01BE )
-      {
-         /* in area $DF00-$DF7F */
-         io_post_func_t handler = io_handlers[(in >> 3) & 0x0F];
-         if( handler )
-         {
-            // handler is available, call it
-            handler( (in >> 24) & 1, in >> 16, in );
-         }
-      }
-   }
-
-   multicore_fifo_clear_irq();
 }
 
 
@@ -453,7 +497,7 @@ static inline void console_rp2040()
             break;
 
          case 'R':
-            //gpio_clr_mask( bus_config.mask_reset );
+            multicore_fifo_overflow_counter = 0;
             system_reset( false );
             /* slip through, as reset also leaves */
          case 'C':

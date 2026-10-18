@@ -56,31 +56,6 @@ static bool callback_cpufreq( repeating_timer_t *t )
 }
 
 
-void watchdog_start( bool rw )
-{
-   uint32_t watchdog_timeout = (*(uint32_t*)&ram[MEM_ADDR_WATCHDOG] >> 8);
-
-   // the old alarm will always be cancelled
-   if( watchdog_alarm )
-   {
-      cancel_alarm( watchdog_alarm );
-   }
-
-   // if we are reading it's only about retriggering
-   if( rw )
-   {
-      // we can only retrigger an alarm that was already running
-      if( !watchdog_alarm )
-      {
-         return;
-      }
-   }
-
-   watchdog_alarm = add_alarm_in_ms( watchdog_timeout, watchdog_action,
-                                     NULL, true );
-}
-
-
 //
 // API functions
 //
@@ -174,32 +149,16 @@ int info_watchdog( char *buffer, size_t size )
 }
 
 
-void io_irq_watchdog( bool rw, uint8_t data, uint16_t address )
+void io_irq_watchdog_w( uint32_t in )
 {
-   if( address & 0x04 )
+   if( in & 0x04 )
    {
-      // cyclecount shares the same 8-byte address space with watchdog
-      // so it needs to be worked on within the same handler
-      // since its implementation is simple, that's not a problem
-      if( !rw )
-      {
-         // write: copy lower 32 bits of cycle counter to RAM
-         *(uint32_t*)(&ram[MEM_ADDR_CYCLECOUNT]) = cycle_counter;
-      }
-
-      // early return, since we're done with cyclecount
-      return;
-   }
-
-   // TODO: adjust for time
-   // continue with watchdog
-   if( rw )
-   {
-      watchdog_start( rw );
+      // write: copy lower 32 bits of cycle counter to RAM
+      *(uint32_t*)(&ram[MEM_ADDR_CYCLECOUNT]) = cycle_counter;
    }
    else
    {
-      switch( address & 0x03 )
+      switch( in & 0x03 )
       {
          case 0: // stop
             if( watchdog_alarm )
@@ -210,7 +169,16 @@ void io_irq_watchdog( bool rw, uint8_t data, uint16_t address )
             ram[MEM_ADDR_WATCHDOG] = 0x00;
             break;
          case 3: // start
-            watchdog_start( rw );
+            if( watchdog_alarm )
+            {
+               cancel_alarm( watchdog_alarm );
+            }
+            {
+               uint32_t watchdog_timeout = (*(uint32_t*)&ram[MEM_ADDR_WATCHDOG] >> 8);
+               watchdog_alarm = add_alarm_in_ms( watchdog_timeout, watchdog_action,
+                                                 NULL, true );
+            }
+            ram[MEM_ADDR_WATCHDOG] = 0x80;
             break;
          default: // nothing
             break;
@@ -218,3 +186,17 @@ void io_irq_watchdog( bool rw, uint8_t data, uint16_t address )
    }
 }
 
+
+void io_irq_watchdog_r( uint32_t in )
+{
+   if( !(in & 0x04) )
+   {
+      if( watchdog_alarm )
+      {
+         uint32_t watchdog_timeout = (*(uint32_t*)&ram[MEM_ADDR_WATCHDOG] >> 8);
+         cancel_alarm( watchdog_alarm );
+         watchdog_alarm = add_alarm_in_ms( watchdog_timeout, watchdog_action,
+                                           NULL, true );
+      }
+   }
+}

@@ -8,6 +8,7 @@
  */
 
 #include "jam.h"
+#include "bus.h"
 #include "dhara_flash.h"
 #include "3rdparty/dhara/error.h"
 
@@ -42,6 +43,95 @@ static inline void intdrive_delayed_flush()
 }
 
 
+#if 1
+static int64_t intdrive_action( __unused alarm_id_t id,
+                                void *user_data )
+{
+   uint16_t address = (uint32_t)user_data;
+   intdrive_alarm = 0;
+   int retval;
+
+//internal_error( __FILE__, __LINE__, "action" ,(uint32_t)user_data );
+   // only triggered on write
+   if( intdrive_alarm )
+   {
+      return 0;
+   }
+
+   // gap before trim
+   if( (address & 0x07) == 6 )
+   {
+      return 0;
+   }
+
+   uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
+   uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
+
+   // sanity checks
+   if( !dhara_flash_size )
+   {
+      // size = 0: no dhara image found
+      ram[address] = 0xF0;
+      return 0;
+   }
+
+   // signalize that work was started
+   ram[address] = 0x00;
+
+   // filter out bad ranges, removing second line would write protect ROM
+   if( (*mem < 0x0004) ||                                    // zeropage I/O
+       ((*mem > (0xD000-SECTOR_SIZE)) && (*mem < 0xDF80)) || // $Dxxx I/O
+       (*mem > (0x10000-SECTOR_SIZE)) )                      // would go out of bounds
+   {
+      // DMA would run into I/O which is not possible, only RAM works
+      ram[address] = 0xF1;
+      return 0;
+   }
+
+   if( *lba >= 0x9000 ) // could also be if( *lba >= dhara_flash_size )
+   {
+      // only 36864 sectors are available
+      // sectors up to 32767 are used with CP/M-fs
+      // sectors 32768 to 36863 are only accessable via raw sector read write
+      ram[address] = 0xF2;
+      return 0;
+   }
+
+   switch( address & 7 )
+   {
+      case 4: // read
+         retval = dhara_flash_read( *lba, &ram[*mem] );
+         break;
+      case 5: // write
+         retval = dhara_flash_write( *lba, &ram[*mem] );
+         intdrive_delayed_flush();
+         break;
+      case 7: // trim
+         retval = dhara_flash_trim( *lba );
+         intdrive_delayed_flush();
+         break;
+      default:
+         internal_error( __FILE__, __LINE__, "unhandled switch", address );
+         break;
+   }
+
+   if( retval )
+   {
+      // report error, do not continue
+      ram[address] = 0xF4;
+      return 0;
+   }
+
+   // increment pointers
+   (*lba)++;
+   (*mem) += SECTOR_SIZE;
+   // signalize that operation was completed successfully
+   ram[address] = 0x80;
+
+   // alarm is done
+   return 0;
+}
+#else
 static int64_t intdrive_action( __unused alarm_id_t id,
                                 void *user_data )
 {
@@ -86,6 +176,7 @@ static int64_t intdrive_action( __unused alarm_id_t id,
    // alarm is done
    return 0;
 }
+#endif
 
 
 //
@@ -93,36 +184,50 @@ static int64_t intdrive_action( __unused alarm_id_t id,
 //
 
 
-void io_irq_intdrive( bool rw, uint8_t data, uint16_t address )
+#if 1
+void io_irq_intdrive_w( uint32_t in )
 {
-   if( rw || intdrive_alarm )
+   if( in & BUS_CONFIG_mask_rw )
    {
-      // nothing needs to be done after read
-      // also make sure only one action is queued
       return;
    }
 
-   uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
-   uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
-
-   switch( address & 0x07 )
+   // MEM and LBA registers
+   if( (in & 0x07) < 4 )
    {
-      case 0:
-         return;
-      case 1:
-         return;
-      case 2:
-         return;
-      case 3:
-         return;
-      case 6:
-         return;
-      default:
-         break;
+      return;
    }
 
-   // signalize that work was started
-   ram[address] = 0x00;
+   if( !intdrive_alarm )
+   {
+      intdrive_alarm = add_alarm_in_us( 0, intdrive_action,
+                                       (void*)in, true );
+   }
+}
+#else
+void io_irq_intdrive_w( uint32_t in )
+{
+   // only triggered on write
+   if( intdrive_alarm )
+   {
+      return;
+   }
+
+   // MEM and LBA registers
+   if( (in & 0x07) < 4 )
+   {
+      return;
+   }
+
+   // gap before trim
+   if( (in & 0x07) == 6 )
+   {
+      return;
+   }
+
+   uint16_t address = in;
+   uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
+   uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
 
    // sanity checks
    if( !dhara_flash_size )
@@ -131,6 +236,9 @@ void io_irq_intdrive( bool rw, uint8_t data, uint16_t address )
       ram[address] = 0xF0;
       return;
    }
+
+   // signalize that work was started
+   ram[address] = 0x00;
 
    // filter out bad ranges, removing second line would write protect ROM
    if( (*mem < 0x0004) ||                                    // zeropage I/O
@@ -151,9 +259,10 @@ void io_irq_intdrive( bool rw, uint8_t data, uint16_t address )
       return;
    }
 
-   intdrive_alarm = add_alarm_in_us( 2, intdrive_action,
+   intdrive_alarm = add_alarm_in_us( 0, intdrive_action,
                                      (void*)(uint32_t)address, true );
 }
+#endif
 
 
 int info_internaldrive( char *buffer, size_t size )
