@@ -15,6 +15,10 @@
 #include <string.h>
 
 #include <pico/rand.h>
+#include <pico/stdlib.h>
+
+
+static alarm_id_t scratch_mem_alarm = 0;
 
 
 const static uint8_t cpufeatures[] =
@@ -41,7 +45,8 @@ static inline void random_next()
 }
 
 
-static inline void handle_scratch_mem( uint8_t flags )
+static int64_t scratch_mem_action( __unused alarm_id_t id,
+                                   void *user_data )
 {
    // bits are defined like this:
    // 0: use page $0000
@@ -54,8 +59,10 @@ static inline void handle_scratch_mem( uint8_t flags )
 
    // not accessable RAM is used as scratch memory:
    // $D000-$D3FF 1k of scratch RAM, can be copied from/to $0000-$03FF
-   uint8_t tmpbuf[0x100];
+   uint32_t flags = (uint32_t)user_data;
    int i;
+
+   scratch_mem_alarm = 0;
 
    for( i = 0; i < 4; ++i )
    {
@@ -70,14 +77,19 @@ static inline void handle_scratch_mem( uint8_t flags )
                memcpy( &ram[i*0x100], &ram[0xD000+i*0x100], 0x100 );
                break;
             case 0x30:
-               memcpy( &tmpbuf[0], &ram[i*0x100], 0x100 );
-               memcpy( &ram[i*0x100], &ram[0xD000+i*0x100], 0x100 );
-               memcpy( &ram[0xD000+i*0x100], &tmpbuf[0], 0x100 );
+               {
+                  uint8_t tmpbuf[0x100];
+                  memcpy( &tmpbuf[0], &ram[i*0x100], 0x100 );
+                  memcpy( &ram[i*0x100], &ram[0xD000+i*0x100], 0x100 );
+                  memcpy( &ram[0xD000+i*0x100], &tmpbuf[0], 0x100 );
+               }
                break;
          }
       }
    }
    ram[MEM_ADDR_XRAMSW] = 0;
+
+   return 0;
 }
 
 
@@ -99,7 +111,7 @@ void misc_reset()
 }
 
 
-void io_post_misc( bool rw, uint8_t data, uint16_t address )
+void io_irq_misc( bool rw, uint8_t data, uint16_t address )
 {
    switch( address & 0x7 )
    {
@@ -118,7 +130,8 @@ void io_post_misc( bool rw, uint8_t data, uint16_t address )
          if( !rw )
          {
             // write: trigger ram change
-            handle_scratch_mem( ram[MEM_ADDR_XRAMSW] );
+            scratch_mem_alarm = add_alarm_in_us( 2, scratch_mem_action,
+                                                 (void*)(uint32_t)ram[MEM_ADDR_XRAMSW], true );
          }
          break;
       case 4: // cpu feature

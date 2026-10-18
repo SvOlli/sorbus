@@ -26,8 +26,8 @@ uint8_t cycles_index = 0;
 #define busstate gpio_get_all()
 
 
-static int64_t watchdog_triggered( __unused alarm_id_t id,
-                                   __unused void *user_data )
+static int64_t watchdog_action( __unused alarm_id_t id,
+                                __unused void *user_data )
 {
    watchdog_alarm = 0;
    bus_stop_cause = META_WATCHDOG;
@@ -56,6 +56,31 @@ static bool callback_cpufreq( repeating_timer_t *t )
 }
 
 
+void watchdog_start( bool rw )
+{
+   uint32_t watchdog_timeout = (*(uint32_t*)&ram[MEM_ADDR_WATCHDOG] >> 8);
+
+   // the old alarm will always be cancelled
+   if( watchdog_alarm )
+   {
+      cancel_alarm( watchdog_alarm );
+   }
+
+   // if we are reading it's only about retriggering
+   if( rw )
+   {
+      // we can only retrigger an alarm that was already running
+      if( !watchdog_alarm )
+      {
+         return;
+      }
+   }
+
+   watchdog_alarm = add_alarm_in_ms( watchdog_timeout, watchdog_action,
+                                     NULL, true );
+}
+
+
 //
 // API functions
 //
@@ -80,6 +105,7 @@ void watchdog_freeze()
       watchdog_remain = remaining_alarm_time_us( watchdog_alarm );
       if( watchdog_remain >= 0 )
       {
+         cancel_alarm( watchdog_alarm );
          watchdog_alarm = 0;
       }
       else
@@ -95,7 +121,7 @@ void watchdog_unfreeze()
    if( !watchdog_alarm && watchdog_remain )
    {
       watchdog_alarm = add_alarm_in_us( (uint64_t)watchdog_remain,
-         watchdog_triggered, NULL, false );
+         watchdog_action, NULL, true );
       watchdog_remain = 0;
    }
 }
@@ -148,31 +174,7 @@ int info_watchdog( char *buffer, size_t size )
 }
 
 
-void watchdog( bool rw )
-{
-   uint32_t watchdog_timeout = (*(uint32_t*)&ram[MEM_ADDR_WATCHDOG] >> 8);
-
-   // the old alarm will always be cancelled
-   if( watchdog_alarm )
-   {
-      cancel_alarm( watchdog_alarm );
-   }
-
-   // if we are reading it's only about retriggering
-   if( rw )
-   {
-      // we can only retrigger an alarm that was already running
-      if( !watchdog_alarm )
-      {
-         return;
-      }
-   }
-
-   watchdog_alarm = add_alarm_in_ms( watchdog_timeout, watchdog_triggered, NULL, false );
-}
-
-
-void io_post_watchdog( bool rw, uint8_t data, uint16_t address )
+void io_irq_watchdog( bool rw, uint8_t data, uint16_t address )
 {
    if( address & 0x04 )
    {
@@ -193,7 +195,7 @@ void io_post_watchdog( bool rw, uint8_t data, uint16_t address )
    // continue with watchdog
    if( rw )
    {
-      watchdog( rw );
+      watchdog_start( rw );
    }
    else
    {
@@ -208,7 +210,7 @@ void io_post_watchdog( bool rw, uint8_t data, uint16_t address )
             ram[MEM_ADDR_WATCHDOG] = 0x00;
             break;
          case 3: // start
-            watchdog( rw );
+            watchdog_start( rw );
             break;
          default: // nothing
             break;

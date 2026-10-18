@@ -116,9 +116,11 @@ void lineview( lineview_t *config )
          case KEY_NPAGE:
             step = +page;
             break;
+         case 't':
          case KEY_HOME:
             step = MC_LINEVIEW_FIRSTLINE;
             break;
+         case 'b':
          case KEY_END:
             step = MC_LINEVIEW_LASTLINE;
             break;

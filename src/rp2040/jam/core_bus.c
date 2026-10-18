@@ -29,6 +29,7 @@ const uint8_t *romptr;           // pointer into current ROM/RAM bank at $E000
 uint16_t address = 0;
 uint32_t bus_stop_cause = 0;
 //uint32_t busstate;
+uint32_t multicore_fifo_overflow_counter = 0;
 
 uint8_t *bankptrs[0x100] = { 0 };
 
@@ -79,8 +80,6 @@ void info_bus_vars( char *b, size_t bsize )
 
 void bus_run()
 {
-   puts( "bus_run()" );
-
    for(;;)
    {
       // clock starts with low
@@ -104,7 +103,10 @@ void bus_run()
             }
             else
             {
-               internal_error( __FILE__, __LINE__, "fifo overflow", buslog_states[cycle_counter & (BUSLOG_SIZE-1)] );
+               ++multicore_fifo_overflow_counter;
+#if 1
+               internal_error( __FILE__, __LINE__, ""/*"fifo overflow"*/, buslog_states[cycle_counter & (BUSLOG_SIZE-1)] );
+#endif
             }
             if( address == 0xDF00 )
             {

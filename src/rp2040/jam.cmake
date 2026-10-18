@@ -69,6 +69,9 @@ add_executable(jam_alpha
    jam/handlers/uart.c
    jam/main.c
    )
+target_compile_definitions(jam_alpha PRIVATE
+   PICO_SDK_VERSION_STRING="${PICO_SDK_VERSION_STRING}"
+   )
 target_compile_options(jam_alpha PRIVATE "-Werror")
 set_property(SOURCE common/cpu_detect.c APPEND PROPERTY OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cpudetect.h)
 

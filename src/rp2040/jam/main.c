@@ -24,23 +24,19 @@
 #include "dhara_flash.h"
 #include "cpu_detect.h"
 
-#ifndef SORBUS_VERSION
-#define SORBUS_VERSION "0.8"
-#endif
-
 
 #ifdef __OPTIMIZE__
 #ifdef __OPTIMIZE_SIZE__
-#define SORBUS_OPTIMIZED " optimized for size"
+#define GCC_OPTIMIZED " optimized for size"
 #else
-#define SORBUS_OPTIMIZED " optimized for speed"
+#define GCC_OPTIMIZED " optimized for speed"
 #endif
 #else
-#define SORBUS_OPTIMIZED " not optimized"
+#define GCC_OPTIMIZED " not optimized"
 #endif
 
 #define SORBUS_LONG_VERSION \
-"JAM Version " SORBUS_VERSION ", compiled with: gcc " __VERSION__ SORBUS_OPTIMIZED
+"JAM Version " SORBUS_JAM_VERSION ", compiled with: gcc " __VERSION__ GCC_OPTIMIZED
 
 const char *sorbus_version = SORBUS_LONG_VERSION;
 

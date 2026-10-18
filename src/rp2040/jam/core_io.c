@@ -21,8 +21,14 @@
 //#include <pico/util/queue.h>
 //#include <hardware/clocks.h>
 
-#ifndef SORBUS_VERSION
-#define SORBUS_VERSION "0.8"
+#ifdef __OPTIMIZE__
+#ifdef __OPTIMIZE_SIZE__
+#define GCC_OPTIMIZED "Optimized for size"
+#else
+#define GCC_OPTIMIZED "Optimized for speed"
+#endif
+#else
+#define GCC_OPTIMIZED "Not optimized"
 #endif
 
 
@@ -40,11 +46,11 @@ bool console_flowcontrol_enabled;
 // callbacks for 0x00xxxxxx & 0x01xxxxxx
 // sliced up to handle areas of 8 bytes
 const io_post_func_t io_handlers[0x10] = {
-   io_post_misc,        // $df00-$df07: misc like bank, trap, rnd, etc.
-   io_post_uart,        // $df08-$df0f: UART
+   io_irq_misc,         // $df00-$df07: misc like bank, trap, rnd, etc.
+   io_irq_uart,         // $df08-$df0f: UART
    0,                   // $df10-$df17: (was timer cycle)
-   io_post_timer,       // $df18-$df1f: timer ms/10
-   io_post_watchdog,    // $df20-$df23: watchdog
+   io_irq_timer,        // $df18-$df1f: timer ms/10
+   io_irq_watchdog,     // $df20-$df23: watchdog
    //                      $df24-$df27: cyclecount
    0,                   // $df28-$df2f: unused RAM / kernel variables
    0,                   // $df30-$df37: system monitor variables
@@ -55,7 +61,7 @@ const io_post_func_t io_handlers[0x10] = {
    0,                   // $df58-$df5f: unused RAM
    0,                   // $df60-$df67: unused RAM
    0,                   // $df68-$df6f: unused RAM
-   io_post_intdrive,    // $df70-$df77: internal drive data/strobe registers
+   io_irq_intdrive,     // $df70-$df77: internal drive data/strobe registers
    0                    // $df78-$df7f: RAM: interrupt vectors
 };
 
@@ -88,6 +94,24 @@ void debug_poke( uint8_t bank, uint16_t addr, uint8_t value )
 }
 
 
+void info_system( char *b, int bsize )
+{
+   int used = 0;
+
+   used += snprintf( b+used, bsize-used,
+                     "Sorbus JAM Version " SORBUS_JAM_VERSION
+                     "\nCompiled with: gcc " __VERSION__
+                     "\n" GCC_OPTIMIZED
+                     "\nUsing PICO SDK: " PICO_SDK_VERSION_STRING
+                     "\n\nMulticover FIFOs overflows: %u"
+                     "\nLast reported error:\n"
+                     , multicore_fifo_overflow_counter );
+   used += internal_error_info( b+used, bsize-used );
+   used += snprintf( b+used, bsize-used,
+                     "\nPress 'C' to clear last error\n" );
+}
+
+
 const char *debug_get_info( debug_info_t page )
 {
    static char buffer[1280] = { 0 };
@@ -96,8 +120,8 @@ const char *debug_get_info( debug_info_t page )
    buffer[0] = '\0';
    switch( page )
    {
-      case DEBUG_INFO_INTERNALERROR:
-         internal_error_info( &buffer[0], sizeof(buffer)-1 );
+      case DEBUG_INGO_SYSINFO:
+         info_system( &buffer[0], sizeof(buffer)-1 );
          break;
       case DEBUG_INFO_HEAP:
          ht_info( &buffer[0], sizeof(buffer)-1 );
@@ -311,21 +335,18 @@ static inline void console_rp2040()
       addstr( "JAM: Just Another Machine | https://sorbus.xayax.net/jam/" );
       mcurses_line_horizontal( true, 6, 0, cols-1 );
       move( 7, 2 );
-      addstr( sorbus_version );
-      move( 8, 2 );
-      addstr( "Meta Menu invoked via " );
+      addstr( "CPU stopped on RDY, Meta Menu invoked via " );
       addstr( invoke );
-      addstr( ", CPU stopped on RDY" );
 
+      move(  9, 2 );
+      addstr( "B)acktrace, M)emory, D)isassemble" );
       move( 10, 2 );
-      addstr( "B)acktrace, M)emory, D)isassemble, #)Bus Debug" );
-      move( 11, 2 );
       addstr( "I)nternal Drive, T)imers, Input F)ifo, O)utput Fifo" );
+      move( 11, 2 );
+      addstr( "!)Dump Backtrace, @)CPUdetect Backtrace, X-Modem U)pload" );
       move( 12, 2 );
-      addstr( "!)Dump Backtrace @)CPUdetect Backtrace, X-Modem U)pload" );
-      move( 13, 2 );
-      addstr( "?)Last Error" );
-      move( 15, 2 );
+      addstr( "?)System Info, Cy)clecount, #)Banks Debug" );
+      move( 14, 2 );
       addstr( "C)ontinue, R)eset ? " );
 
       in = toupper( getchar() );
@@ -349,14 +370,14 @@ static inline void console_rp2040()
             break;
          case '#':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
-                              "Bus States",
+                              "Bank Pointers",
                               debug_get_info( DEBUG_INFO_BUS_VARS ) );
             getch();
             break;
          case '?':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
-                              "Internal Error",
-                              debug_get_info( DEBUG_INFO_INTERNALERROR ) );
+                              "System Information",
+                              debug_get_info( DEBUG_INGO_SYSINFO ) );
             if( toupper( getch() ) == 'C' )
             {
                internal_error_clear();
@@ -432,6 +453,12 @@ static inline void console_rp2040()
             break;
          case 'U':
             leave = mc_xmodem_upload( debug_poke );
+            break;
+         case 'Y':
+            mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
+                              "Cyclecount",
+                              debug_get_info( DEBUG_INFO_CYCLECOUNT ) );
+            getch();
             break;
 
          case 'R':

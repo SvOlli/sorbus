@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2023-2026 Sven Oliver "SvOlli" Moll
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -14,35 +14,97 @@
 #include <pico/stdlib.h>
 
 
-#define DHARA_SYNC_DELAY (100000)
+static alarm_id_t intdrive_alarm = 0;
+static alarm_id_t flush_alarm = 0;
 
 
-static int64_t callback_dhara_flush( __unused alarm_id_t id, __unused void *user_data )
+static int64_t intdrive_flush( __unused alarm_id_t id,
+                               __unused void *user_data )
 {
+   // alarm is triggered, so it can't be cancelled anymore
+   flush_alarm = 0;
+
+   // run the actual sync
    dhara_flash_sync();
 
+   // alarm is done
    return 0;
 }
 
 
-static void restart_delayed_flush()
+static inline void intdrive_delayed_flush()
 {
-   // TODO: create alarm call
-   dhara_flash_sync();
+   if( flush_alarm )
+   {
+      cancel_alarm( flush_alarm );
+   }
+   flush_alarm = add_alarm_in_ms( 250, intdrive_flush, NULL, true );
 }
 
 
-void io_post_intdrive( bool rw, uint8_t data, uint16_t address )
+static int64_t intdrive_action( __unused alarm_id_t id,
+                                void *user_data )
 {
+   uint32_t address = (uint32_t)user_data;
    uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
    uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
    int retval = 0;
 
-   if( rw )
+   intdrive_alarm = 0;
+
+   switch( address & 7 )
+   {
+      case 4: // read
+         retval = dhara_flash_read( *lba, &ram[*mem] );
+         break;
+      case 5: // write
+         retval = dhara_flash_write( *lba, &ram[*mem] );
+         intdrive_delayed_flush();
+         break;
+      case 7: // trim
+         retval = dhara_flash_trim( *lba );
+         intdrive_delayed_flush();
+         break;
+      default:
+         internal_error( __FILE__, __LINE__, "unhandled switch", address );
+         break;
+   }
+
+   if( retval )
+   {
+      // report error, do not continue
+      ram[address] = 0xF4;
+      return 0;
+   }
+
+   // increment pointers
+   (*lba)++;
+   (*mem) += SECTOR_SIZE;
+   // signalize that operation was completed successfully
+   ram[address] = 0x80;
+
+   // alarm is done
+   return 0;
+}
+
+
+//
+// API functions
+//
+
+
+void io_irq_intdrive( bool rw, uint8_t data, uint16_t address )
+{
+   if( rw || intdrive_alarm )
    {
       // nothing needs to be done after read
+      // also make sure only one action is queued
       return;
    }
+
+   uint16_t *lba = (uint16_t*)&ram[MEM_ADDR_ID_LBA];
+   uint16_t *mem = (uint16_t*)&ram[MEM_ADDR_ID_MEM];
+
    switch( address & 0x07 )
    {
       case 0:
@@ -89,37 +151,8 @@ void io_post_intdrive( bool rw, uint8_t data, uint16_t address )
       return;
    }
 
-   switch( address & 7 )
-   {
-      case 4: // read
-         retval = dhara_flash_read( *lba, &ram[*mem] );
-         restart_delayed_flush();
-         break;
-      case 5: // write
-         retval = dhara_flash_write( *lba, &ram[*mem] );
-         restart_delayed_flush();
-         break;
-      case 7: // trim
-         retval = dhara_flash_trim( *lba );
-         restart_delayed_flush();
-         break;
-      default:
-         // unused addresses are treated like RAM, already handled
-         break;
-   }
-
-   if( retval )
-   {
-      // report error, do not continue
-      ram[address] = 0xF4;
-      return;
-   }
-
-   // increment pointers
-   (*lba)++;
-   (*mem) += SECTOR_SIZE;
-   // signalize that operation was completed successfully
-   ram[address] = 0x80;
+   intdrive_alarm = add_alarm_in_us( 2, intdrive_action,
+                                     (void*)(uint32_t)address, true );
 }
 
 

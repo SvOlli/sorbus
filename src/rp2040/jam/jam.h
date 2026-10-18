@@ -2,6 +2,10 @@
 #ifndef _JAM_H_
 #define _JAM_H_ _JAM_H_
 
+#ifndef SORBUS_JAM_VERSION
+#define SORBUS_JAM_VERSION "0.8"
+#endif
+
 #include "fifo256.h"
 #include "common/generic_helper.h"
 #include "flash_config.h"
@@ -106,15 +110,12 @@ void console_set_uart( uint8_t charset );
 
 // Core0: handle internal I/O
 void io_run();
-void io_post_misc( bool rw, uint8_t data, uint16_t address );
-void io_post_uart( bool rw, uint8_t data, uint16_t address );
-void io_post_timer( bool rw, uint8_t data, uint16_t address );
-void io_post_watchdog( bool rw, uint8_t data, uint16_t address );
+
 
 // Core0: debug output routines called from Core1 when CPU is stopped
 typedef enum {
    DEBUG_INFO_ERR = 0,
-   DEBUG_INFO_INTERNALERROR,
+   DEBUG_INGO_SYSINFO,
    DEBUG_INFO_HEAP,
    DEBUG_INFO_CLOCKS,
    DEBUG_INFO_CYCLECOUNT,
@@ -129,6 +130,7 @@ const char *debug_get_info( debug_info_t page );
 
 // core_bus.c
 // Core1: handle 65c02 bus
+extern uint32_t multicore_fifo_overflow_counter;
 void bus_run();
 
 void info_bus_vars( char *b, size_t bsize );
@@ -142,10 +144,10 @@ int info_watchdog( char *buffer, size_t size );
 void info_cyclecount( char *buffer, size_t size );
 void watchdog_freeze();
 void watchdog_unfreeze();
-void io_post_watchdog( bool rw, uint8_t data, uint16_t address );
+void io_irq_watchdog( bool rw, uint8_t data, uint16_t address );
 
 // drive.c
-void io_post_intdrive( bool rw, uint8_t data, uint16_t address );
+void io_irq_intdrive( bool rw, uint8_t data, uint16_t address );
 int info_internaldrive( char *buffer, size_t size );
 
 // error.c
@@ -156,7 +158,7 @@ void internal_error_clear();
 
 // misc.c
 void misc_reset();
-void io_post_misc( bool rw, uint8_t data, uint16_t address );
+void io_irq_misc( bool rw, uint8_t data, uint16_t address );
 int info_sysvectors( char *buffer, size_t size );
 
 // reset.c
@@ -164,7 +166,7 @@ void system_reset( bool init );
 
 // timers.c
 void timers_reset();
-void io_post_timer( bool rw, uint8_t data, uint16_t address );
+void io_irq_timer( bool rw, uint8_t data, uint16_t address );
 int info_timers( char *b, size_t bsize );
 void timers_freeze();
 void timers_unfreeze();
@@ -174,7 +176,7 @@ extern bool console_crlf_enabled;
 extern bool console_flowcontrol_enabled;
 extern uint8_t console_charset;
 extern fifo256_t uart_in_queue, uart_out_queue;
-void io_post_uart( bool rw, uint8_t data, uint16_t address );
+void io_irq_uart( bool rw, uint8_t data, uint16_t address );
 void uart_reset();
 
 // TODO: move to core_io.c

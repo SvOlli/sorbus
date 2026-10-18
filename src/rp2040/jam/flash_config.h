@@ -1,6 +1,6 @@
 
-#ifndef __NATIVE_FLASH_CONFIG_H__
-#define __NATIVE_FLASH_CONFIG_H__ __NATIVE_FLASH_CONFIG_H__
+#ifndef __JAM_FLASH_CONFIG_H__
+#define __JAM_FLASH_CONFIG_H__ __JAM_FLASH_CONFIG_H__
 
 // full flash size found in rp2040_purple.h
 #include "../rp2040_purple.h"

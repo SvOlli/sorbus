@@ -33,7 +33,7 @@ void internal_error( const char *file, int line,
    _line = line;
    _message = message;
    _value = value;
-   if( *message )
+   if( _message && *_message )
    {
       bus_stop_cause = META_INTERROR;
    }

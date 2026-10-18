@@ -31,14 +31,15 @@ const uint32_t timer_mask[2]     = { BUS_CONFIG_mask_irq, BUS_CONFIG_mask_nmi };
 const uint16_t timer_triggered_value[2] = { 0x0000, 0x8080 };
 const uint8_t  timer_triggered_mask[2]  = { 0x05, 0x0A };
 
+// bitmask of all timers
 uint8_t timer_triggered          = 0x00;
 
 repeating_timer_t timer_ms[4];
-int64_t timer_ms_saved[4];
+// for reconstructing the timers after unfreeze
+int64_t timer_remaining_us[4]    = { 0, 0, 0, 0 };
 void *timer_userdata_saved[4];
 // need to cache values written to RAM as they are overwritten by status
 uint16_t timer_cache[4]          = { 0x0000, 0x0000, 0x0000, 0x0000 };
-int64_t timer_remaining_us[4]    = { 0, 0, 0, 0 };
 
 
 //
@@ -142,7 +143,7 @@ void timers_reset()
 }
 
 
-void io_post_timer( bool rw, uint8_t data, uint16_t address )
+void io_irq_timer( bool rw, uint8_t data, uint16_t address )
 {
    // config bits (decoded from address)
    //           0        1

@@ -75,7 +75,7 @@ static inline void uart_output_was_written( uint8_t data )
 //
 
 
-void io_post_uart( bool rw, uint8_t data, uint16_t address )
+void io_irq_uart( bool rw, uint8_t data, uint16_t address )
 {
 //printf( "io_post_uart(%d,%02x,%04x)\n", rw, data, address );
    switch( address & 0x7 )
