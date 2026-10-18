@@ -195,7 +195,7 @@ boota:
    lda   #>SECTOR_BUFFER
    sta   ID_MEM+1
 
-   sta   IDREAD
+   stx   IDREAD
 :
    lda   IDREAD
    bpl   :-
@@ -222,7 +222,7 @@ boota:
 
    ldy   #$40           ; banksize ($2000) / sectorsize ($80)
 :
-   sta   IDREAD         ; yep, it's really that easy to load a boot block
+   sty   IDREAD         ; yep, it's really that easy to load a boot block
 :
    lda   IDREAD
    bpl   :-
