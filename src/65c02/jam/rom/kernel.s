@@ -153,7 +153,7 @@ cmos6502:
    jmp   (@jmps,x)
 
 @keys:
-   .byte "01234BFIMTW_"
+   .byte "01234BFMTW_"
 @jmps:
    .word execram        ; 0
    .word boot           ; 1 -> boot block @ sector $0000 (offset $0000)
@@ -162,29 +162,10 @@ cmos6502:
    .word boot           ; 4 -> boot block @ sector $00c0 (offset $6000)
    .word basic          ; B
    .word filebrowser    ; F
-   .word @info          ; I
    .word mon_init       ; M
    .word timstart       ; T
    .word woz            ; W
    .word forth          ; _
-
-@info:
-   lda   #$0a
-   jsr   CHROUT
-
-:
-   lda   TRAP           ; find start of data stream after $00 byte
-   bne   :-
-:
-   lda   TRAP
-   bne   @out
-@iloop2:
-   jmp   @iloop
-@out:
-   jsr   prhex8
-   lda   #' '
-   jsr   CHROUT
-   bra   :-
 
 boot:
    dec
