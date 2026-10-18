@@ -11,6 +11,9 @@
 
 #include <pico/stdio.h>
 
+#include <string.h>
+
+
 static const char *_file = "";
 static int _line = 0;
 static const char *_message = "";
@@ -33,7 +36,7 @@ void internal_error( const char *file, int line,
    _line = line;
    _message = message;
    _value = value;
-   if( _message && *_message )
+   if( _message && *_message && (*message != ' ') )
    {
       bus_stop_cause = META_INTERROR;
    }
@@ -44,8 +47,13 @@ int internal_error_info( char *b, size_t bsize )
 {
    if( _message && *_message )
    {
-      return snprintf( b, bsize, "%s(%d):\n%s (0x%08x)\n",
-                       _file, _line, _message, _value );
+      const char *rp2040 = strstr( _file, "/rp2040/" );
+      if( !*rp2040 )
+      {
+         rp2040 = _file;
+      }
+      return snprintf( b, bsize, "...%s(%d):\n%s (0x%08x)\n",
+                       rp2040, _line, _message, _value );
    }
    return snprintf( b, bsize, "no error\n" );
 }
