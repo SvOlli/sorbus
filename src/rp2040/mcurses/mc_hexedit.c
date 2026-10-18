@@ -178,7 +178,6 @@ void hexedit( mc_hexedit_t *config )
    uint8_t     byte;
    uint8_t     mode    = MODE_HEX;
    uint8_t     cmove   = MOVE_NONE;
-   uint8_t     bank    = config->bank;
    bool        redraw  = true;
 
    clear();
@@ -241,7 +240,7 @@ void hexedit( mc_hexedit_t *config )
       mcurses_hexout2( address >> 8 );
       mcurses_hexout2( address & 0xFF );
       addch( ':' );
-      mcurses_hexout( bank, 1 );
+      mcurses_hexout( config->bank, 1 );
 
       attrset( B_DEFAULT | F_DEFAULT );
 
@@ -305,9 +304,9 @@ void hexedit( mc_hexedit_t *config )
          case 0x02: /* Ctrl+B: select bank */
          {
             /* banks is number of ROM banks + 1 RAM bank */
-            if( ++bank > config->banks )
+            if( ++(config->bank) > config->banks )
             {
-               bank = 0;
+               config->bank = 0;
             }
             redraw = true;
             break;
@@ -451,7 +450,6 @@ void hexedit( mc_hexedit_t *config )
    }
    while (ch != 0x03);  // Ctrl+C exits
 
-   config->bank    = bank;
    config->address = address;
    config->topleft = topleft;
    return;

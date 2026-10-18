@@ -72,16 +72,7 @@ uint8_t debug_peek( uint8_t bank, uint16_t addr )
    {
       return ram[addr];
    }
-   if( (bank > 0) && (bank <= NUMBER_OF_BANKS) )
-   {
-      /* assembling address in ROM array is a bit more complicated */
-      return rom[((bank-1) << 13) | (addr & 0x1FFF)];
-   }
-   else
-   {
-      /* bank0: RAM under ROM */
-      return ram[addr];
-   }
+   return bankptrs[bank][addr];
 }
 
 
