@@ -97,20 +97,27 @@ void bus_run()
          if( (address >> 8) == 0xDF )
          //if( (address >> 9) == 0x6F ) // this is faster
          {
-            if( multicore_fifo_wready() )
+            // this is a bit tricky as two things are done here:
+            // on write (bit 24=0): only trigger at DF7F or lower
+            // on read  (bit 24=1): only trigger at DF0F or lower
+            if( (buslog_states[cycle_counter & (BUSLOG_SIZE-1)] & 0x0100007f)
+                < 0x0100000f )
             {
-               multicore_fifo_push_blocking_inline( buslog_states[cycle_counter & (BUSLOG_SIZE-1)] & BUS_CONFIG_mask_input );
-            }
-            else
-            {
-               ++multicore_fifo_overflow_counter;
+               if( multicore_fifo_wready() )
+               {
+                  multicore_fifo_push_blocking_inline( buslog_states[cycle_counter & (BUSLOG_SIZE-1)] & BUS_CONFIG_mask_input );
+               }
+               else
+               {
+                  ++multicore_fifo_overflow_counter;
 #if 1
-               internal_error( __FILE__, __LINE__, ""/*"fifo overflow"*/, buslog_states[cycle_counter & (BUSLOG_SIZE-1)] );
+                  internal_error( __FILE__, __LINE__, " fifo overflow", buslog_states[cycle_counter & (BUSLOG_SIZE-1)] );
 #endif
-            }
-            if( address == 0xDF00 )
-            {
-               romptr = bankptrs[ram[address]];
+               }
+               if( address == 0xDF00 )
+               {
+                  romptr = bankptrs[ram[address]];
+               }
             }
          }
 
@@ -161,9 +168,7 @@ void bus_run()
             }
             else
             {
-               // TODO for assember: set romvec @ address - 0xE000, so and is not required
                data = romptr[address];
-               //data = romvec[address & 0x1FFF];
             }
             gpio_put_masked( BUS_CONFIG_mask_data, data << BUS_CONFIG_shift_data );
             buslog_states[cycle_counter & (BUSLOG_SIZE-1)] =
