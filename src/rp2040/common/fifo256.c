@@ -23,6 +23,8 @@
 #include "generic_helper.h"
 
 #include <stdio.h>
+#include <string.h>
+
 
 #define FIFO256_SIZE (256)
 
@@ -46,6 +48,7 @@ STATIC_INLINE void fifo256_init( fifo256_t *fifo )
 {
    fifo->head = 0;
    fifo->tail = 0;
+   memset( &(fifo->buffer)[0], 0, FIFO256_SIZE );
 }
 
 
