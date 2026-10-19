@@ -125,20 +125,16 @@ mode is exited.
 
 ### Watchdog ($DF20-$DF23)
 
-(This will need to be switched from cycles to time based.)
-
-Watchdog will be triggered after the specified number of cycles.
-However, there is no easy way to reset the watchdog counter. It needs
-to be set again to full value for next "loop".
+Watchdog will be triggered after the specified number milliseconds.
 
 - counter is 24 bit
 - base address: $DF20
-- write to base address + 0: turn off
-- write to base address + 1: set low counter
-- write to base address + 2: set mid counter
-- write to base address + 3: set high counter, starts watchdog
+- write to base address + 0: start watchdog, if milliseconds > 0
+- write to base address + 1: stop, set milliseconds low byte
+- write to base address + 2: stop, set milliseconds mid byte
+- write to base address + 3: stop, set milliseconds high byte
 - read on $DF20 shows watchdog active (bit7: watchdog running)
-- read on $DF20-$DF23 also re-arms the watchdog
+- write to $DF20 also re-arms the watchdog, value written does not matter
 - triggered watchdog is handled similar to trap ($DF01)
 
 

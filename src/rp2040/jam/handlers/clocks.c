@@ -158,45 +158,29 @@ void io_irq_watchdog_w( uint32_t in )
    }
    else
    {
-      switch( in & 0x03 )
-      {
-         case 0: // stop
-            if( watchdog_alarm )
-            {
-               cancel_alarm( watchdog_alarm );
-               watchdog_alarm = 0;
-            }
-            ram[MEM_ADDR_WATCHDOG] = 0x00;
-            break;
-         case 3: // start
-            if( watchdog_alarm )
-            {
-               cancel_alarm( watchdog_alarm );
-            }
-            {
-               uint32_t watchdog_timeout = (*(uint32_t*)&ram[MEM_ADDR_WATCHDOG] >> 8);
-               watchdog_alarm = add_alarm_in_ms( watchdog_timeout, watchdog_action,
-                                                 NULL, true );
-            }
-            ram[MEM_ADDR_WATCHDOG] = 0x80;
-            break;
-         default: // nothing
-            break;
-      }
-   }
-}
-
-
-void io_irq_watchdog_r( uint32_t in )
-{
-   if( !(in & 0x04) )
-   {
+      // if an alarm is running, it needs to be cancelled
+      // even if restarted
       if( watchdog_alarm )
       {
-         uint32_t watchdog_timeout = (*(uint32_t*)&ram[MEM_ADDR_WATCHDOG] >> 8);
          cancel_alarm( watchdog_alarm );
-         watchdog_alarm = add_alarm_in_ms( watchdog_timeout, watchdog_action,
-                                           NULL, true );
+      }
+      ram[MEM_ADDR_WATCHDOG] = 0x00;
+      switch( in & 0x03 )
+      {
+         case 0: // start/rearm
+            {
+               uint32_t watchdog_timeout = (*(uint32_t*)&ram[MEM_ADDR_WATCHDOG] >> 8);
+               if( watchdog_timeout > 0 )
+               {
+                  watchdog_alarm = add_alarm_in_ms( watchdog_timeout, watchdog_action,
+                                                    NULL, true );
+                  ram[MEM_ADDR_WATCHDOG] = 0x80;
+               }
+            }
+            break;
+         default: // stop
+            watchdog_alarm = 0;
+            break;
       }
    }
 }

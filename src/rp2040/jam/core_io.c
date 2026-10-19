@@ -71,7 +71,7 @@ const io_post_func_t io_handlers_r[0x10] = {
    io_irq_uart_r,       // $df08-$df0f: UART
    0,                   // $df10-$df17: (was timer cycle)
    0,                   // $df18-$df1f: timer ms/10
-   io_irq_watchdog_r,   // $df20-$df23: watchdog
+   0,                   // $df20-$df23: watchdog
    //                      $df24-$df27: cyclecount
    0,                   // $df28-$df2f: unused RAM / kernel variables
    0,                   // $df30-$df37: system monitor variables

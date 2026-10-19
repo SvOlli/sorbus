@@ -60,10 +60,10 @@ TMNMRH := TMBASE+$B ; repeating NMI timer high, both $00 stop timer
 TM_NMR := TMNMRL    ; alternative notation
 
 WDBASE := $DF20     ; watchdog
-WDOFF  := WDBASE+$0 ; stops timer
-WDCL   := WDBASE+$1 ; set low counter, write resets watchdog when running
-WDCM   := WDBASE+$2 ; set mid counter, write resets watchdog when running
-WDCH   := WDBASE+$3 ; set high counter, stars watchdog, reset when running
+WDRUN  := WDBASE+$0 ; (re-)starts watchdog timer
+WDCL   := WDBASE+$1 ; stop, set milliseconds low byte
+WDCM   := WDBASE+$2 ; stop, set milliseconds mid byte
+WDCH   := WDBASE+$3 ; stop, set milliseconds high byte
 WDC    := WDCL      ; alternative notation
 ; reading WDxxx indicates if watchdog is enabled ($80)
 

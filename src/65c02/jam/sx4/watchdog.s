@@ -10,5 +10,6 @@ start:
    stz   WDCL
    sta   WDCM
    stz   WDCH
+   stz   WDRUN
    int   MONITOR        ; wait in monitor for watchdog to occur
    jmp   ($fffc)        ; reset when leaving monitor
