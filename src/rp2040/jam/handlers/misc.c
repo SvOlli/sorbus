@@ -129,6 +129,13 @@ void io_irq_misc_w( uint32_t in )
 {
    switch( in & 0x07 )
    {
+      case 0:
+         if( ram[MEM_ADDR_BANK] >= NUMBER_OF_BANKS )
+         {
+            // sanitize bank number
+            ram[MEM_ADDR_BANK] = 1;
+         }
+         break;
       case 1: // trap
          bus_stop_cause = META_TRAP;
          break;
