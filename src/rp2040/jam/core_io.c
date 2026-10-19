@@ -162,7 +162,7 @@ void info_system( char *b, int bsize )
                      "\nCompiled with: gcc " __VERSION__
                      "\n" GCC_OPTIMIZED
                      "\nUsing PICO SDK: " PICO_SDK_VERSION_STRING
-                     "\n\nMulticover FIFOs overflows: %u"
+                     "\n\nMulticore FIFOs overflows: %u"
                      "\nLast reported error:\n"
                      , multicore_fifo_overflow_counter );
    used += internal_error_info( b+used, bsize-used );
@@ -266,14 +266,13 @@ static inline void console_65c02()
             // especially when removing take place in the same thread
             // as adding
             uart_input_add( in );
-            // need event for keypress
-            ram[MEM_ADDR_UART_READ_SIZE] = (uart_in_queue.tail) - (uart_in_queue.head);
          }
       }
+      // need event for keypress
+      ram[MEM_ADDR_UART_READ_SIZE] = (uart_in_queue.tail) - (uart_in_queue.head);
 
       if( fifo256_get( &uart_out_queue, &out ) )
       {
-         ram[MEM_ADDR_UART_WRITE_SIZE] = fifo256_count( &uart_out_queue );
          if( out == 0x7f )
          {
             /* full delete sequence: backspace, space, backspace */
@@ -286,6 +285,7 @@ static inline void console_65c02()
             cs_put_utf8( out, console_charset );
          }
       }
+      ram[MEM_ADDR_UART_WRITE_SIZE] = fifo256_count( &uart_out_queue );
    }
 }
 
