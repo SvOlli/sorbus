@@ -148,6 +148,7 @@ void io_irq_watchdog_w( uint32_t in );
 void io_irq_watchdog_r( uint32_t in );
 
 // drive.c
+extern uint32_t internaldrive_job;
 void io_irq_intdrive_w( uint32_t in );
 int info_internaldrive( char *buffer, size_t size );
 void internaldrive_check_job();

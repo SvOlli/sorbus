@@ -17,7 +17,7 @@
 
 static alarm_id_t flush_alarm = 0;
 static uint32_t lba_mem = 0;
-static uint32_t internaldrive_job = 0;
+uint32_t internaldrive_job = 0;
 
 static int64_t intdrive_flush( __unused alarm_id_t id,
                                __unused void *user_data )
