@@ -2,6 +2,9 @@
 
 set -e
 
+readonly server_name="sorbus.xayax.net"
+readonly server_path="/srv/www/root/${server_name}"
+
 cd "$(dirname "${0}")/../.."
 
 readonly basedir="${PWD}"
@@ -63,10 +66,13 @@ done
 
 cd doc
 case "${1}" in
-upload) mkdocs build --clean &&
+upload) branch="$(git branch --show-current || echo no_branch)"
+        upload_path="${server_name}:${server_path}/${branch}/"
+        mkdocs build --clean &&
         rsync -avz --modify-window=5 --delete-before \
            ../build/site/ \
-           sorbus.xayax.net:/srv/www/root/sorbus.xayax.net/
+           "${upload_path}" &&
+        echo "Successfully uploaded to ${upload_path}"
 ;;
 "") mkdocs; echo "  upload     push to server using rsync.";;
 *) exec mkdocs "${@}";;
