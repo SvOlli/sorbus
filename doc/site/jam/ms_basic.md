@@ -30,7 +30,8 @@ officially released by [Microsoft on GitHub](https://github.com/microsoft/BASIC-
 - BASIC variables are case sensitive (A <> a, both can be used)
 - the token of the useless NULL instrution has been replaced by SYS
     - sys0 calls the machine language monitor
-    - addresses 13,14,15 will be used to shadow A,X,Y registers
+    - addresses 13,14,15 will be used to shadow A,X,Y registers,
+      processor status is not shadowed
     - rest of tokens are unchanged, so most of the code for OSI BASIC should
       work on the Sorbus Computer as well
 - address 9 can be used to select charset in list output

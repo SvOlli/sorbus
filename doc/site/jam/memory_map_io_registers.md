@@ -101,7 +101,7 @@
 
 ### Timers ($DF10-$DF1F)
 
-- 8 different 16 bit timers are available allowing for an own timer for
+- 4 different 16 bit timers are available allowing for an own timer for
   every combination, see table below
 - writing to lowbyte also stops timer
 - writing to highbyte also starts timer
@@ -152,7 +152,7 @@ Watchdog will be triggered after the specified number milliseconds.
 - $DF2D: accumulator
 - $DF2E: X index register
 - $DF2F: Y index register
-- $DF76: Z index register (65CE02 userland only, this might change)
+- $DF76: Z index register (65CE02 only, handled by userland, address will change)
 
 This are just variables used during handling an interrupt service call.
 
@@ -184,8 +184,9 @@ System provides 36864 blocks of 128 bytes = 4.5MB Data stored in flash @
 - base address + $3: DMA memory address high
 - base address + $4: (S) read sector (strobe, adjusts DMA memory and LBA)
 - base address + $5: (S) write sector (strobe, also adjusts)
-- base address + $6: (unused, see variables used by kernel)
-- base address + $7: (S) flash discard
+- base address + $6: (S) flush cached data
+  (strobe, also triggered automatically after write and trim)
+- base address + $7: (S) flash discard (strobe)
 
 Valid values are:
 
