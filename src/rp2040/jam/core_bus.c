@@ -80,6 +80,8 @@ void info_bus_vars( char *b, size_t bsize )
 
 void bus_run()
 {
+   multicore_lockout_victim_init();
+
    for(;;)
    {
       // clock starts with low

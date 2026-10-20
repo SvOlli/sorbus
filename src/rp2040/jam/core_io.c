@@ -286,6 +286,8 @@ static inline void console_65c02()
          }
       }
       ram[MEM_ADDR_UART_WRITE_SIZE] = fifo256_count( &uart_out_queue );
+
+      internaldrive_check_job();
    }
 }
 
