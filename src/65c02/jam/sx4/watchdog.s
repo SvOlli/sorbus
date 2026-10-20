@@ -4,12 +4,14 @@
 
 start:
    jsr   PRINT
-   .byte "Triggering watchdog in ~2 seconds.\n"
-   .byte "Dropping to monitor for now.\n\n", 0
+   .byte "Triggering watchdog in ~2 seconds.",10
+   .byte "You can enter 'g' to re-trigger.",10
+   .byte "Dropping to monitor for now.",10,10,0
    lda   #$08           ; 2048ms
    stz   WDCL
    sta   WDCM
    stz   WDCH
+:
    stz   WDRUN
    int   MONITOR        ; wait in monitor for watchdog to occur
-   jmp   ($fffc)        ; reset when leaving monitor
+   bra   :-
