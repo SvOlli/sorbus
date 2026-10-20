@@ -374,7 +374,7 @@ static inline void console_rp2040()
       addstr( invoke );
 
       move(  9, 2 );
-      addstr( "B)acktrace, M)emory, D)isassemble" );
+      addstr( "B)acktrace, M)emory, D)isassemble, S)creen" );
       move( 10, 2 );
       addstr( "I)nternal Drive, T)imers, Input F)ifo, O)utput Fifo" );
       move( 11, 2 );
@@ -479,6 +479,11 @@ static inline void console_rp2040()
             break;
          case 'P':
             /* TODO: papertape upload */
+            break;
+         case 'S':
+            screen_restore();
+            getch();
+            screen_save();
             break;
          case 'T':
             mcurses_titlebox( false, MC_TEXT_CENTER, MC_TEXT_CENTER,
