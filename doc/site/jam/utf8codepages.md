@@ -56,9 +56,9 @@ byte. The association of bytes to characters is stated below.
 | $aa | 0xfffd | &#xfffd; | (to be defined) |
 | $ab | 0xfffd | &#xfffd; | (to be defined) |
 | $ac | 0x20ac | &#x20ac; | euro sign |
-| $ad | 0x2571 | &#x2571; | box drawings light diagonal upper right to lower left |
-| $ae | 0x2572 | &#x2572; | box drawings light diagonal upper left to lower right |
-| $af | 0x2573 | &#x2573; | box drawings light diagonal cross |
+| $ad | 0xfffd | &#xfffd; | (to be defined) |
+| $ae | 0x2020 | &#x2020; | dagger |
+| $af | 0x2021 | &#x2021; | double dagger |
 | $b0 | 0x00b0 | &#x00b0; | degree sign |
 | $b1 | 0x00b9 | &#x00b9; | superscript one |
 | $b2 | 0x00b2 | &#x00b2; | superscript two |
@@ -81,16 +81,16 @@ byte. The association of bytes to characters is stated below.
 | $c3 | 0x25ba | &#x25ba; | black right-pointing pointer |
 | $c4 | 0x263a | &#x263a; | white smiling face |
 | $c5 | 0x263b | &#x263b; | black smiling face |
-| $c6 | 0x2020 | &#x2020; | dagger |
-| $c7 | 0x2021 | &#x2021; | double dagger |
+| $c6 | 0x2194 | &#x2194; | left right arrow |
+| $c7 | 0x2195 | &#x2195; | up down arrow |
 | $c8 | 0x2190 | &#x2190; | leftwards arrow |
 | $c9 | 0x2191 | &#x2191; | upwards arrow |
 | $ca | 0x2192 | &#x2192; | rightwards arrow |
 | $cb | 0x2193 | &#x2193; | downwards arrow |
-| $cc | 0x2194 | &#x2194; | left right arrow |
-| $cd | 0x2195 | &#x2195; | up down arrow |
-| $ce | 0x21b5 | &#x21b5; | downwards arrow with corner leftwards |
-| $cf | 0xfffd | &#xfffd; | (to be defined) |
+| $cc | 0x21b5 | &#x21b5; | downwards arrow with corner leftwards |
+| $cd | 0x2571 | &#x2571; | box drawings light diagonal upper right to lower left |
+| $ce | 0x2572 | &#x2572; | box drawings light diagonal upper left to lower right |
+| $cf | 0x2573 | &#x2573; | box drawings light diagonal cross |
 | $d0 | 0x2669 | &#x2669; | quarter note |
 | $d1 | 0x266a | &#x266a; | eighth note |
 | $d2 | 0x266b | &#x266b; | beamed eighth notes |
@@ -139,6 +139,8 @@ byte. The association of bytes to characters is stated below.
 | $fd | 0x259c | &#x259c; | quadrant upper left and upper right and lower right |
 | $fe | 0x259f | &#x259f; | quadrant upper right and lower left and lower right |
 | $ff | 0x2588 | &#x2588; | full block |
+
+Still 15 glyphs to be defined.
 
 ## Codepage 2
 

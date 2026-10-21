@@ -1,4 +1,6 @@
 
+// doc-as-code taken a bit too literally
+
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -69,9 +71,9 @@ charset_t codepage1[0x80] = {
    { 0xFFFD, "(to be defined)" },
    { 0xFFFD, "(to be defined)" },
    { 0x20AC, "Euro Sign" },
-   { 0x2571, "BOX DRAWINGS LIGHT DIAGONAL UPPER RIGHT TO LOWER LEFT" },
-   { 0x2572, "BOX DRAWINGS LIGHT DIAGONAL UPPER LEFT TO LOWER RIGHT" },
-   { 0x2573, "BOX DRAWINGS LIGHT DIAGONAL CROSS" },
+   { 0xFFFD, "(to be defined)" },
+   { 0x2020, "Dagger" },
+   { 0x2021, "Double Dagger" },
 
 // 0xB0-0xB5:
    { 0x00B0, "DEGREE SIGN" },
@@ -104,16 +106,16 @@ charset_t codepage1[0x80] = {
 // 0xC4-0xCF:
    { 0x263A, "WHITE SMILING FACE" },
    { 0x263B, "BLACK SMILING FACE" },
-   { 0x2020, "Dagger" },
-   { 0x2021, "Double Dagger" },
+   { 0x2194, "LEFT RIGHT ARROW" },
+   { 0x2195, "UP DOWN ARROW" },
    { 0x2190, "LEFTWARDS ARROW" },
    { 0x2191, "UPWARDS ARROW" },
    { 0x2192, "RIGHTWARDS ARROW" },
    { 0x2193, "DOWNWARDS ARROW" },
-   { 0x2194, "LEFT RIGHT ARROW" },
-   { 0x2195, "UP DOWN ARROW" },
    { 0x21B5, "DOWNWARDS ARROW WITH CORNER LEFTWARDS" },
-   { 0xFFFD, "(to be defined)" },
+   { 0x2571, "BOX DRAWINGS LIGHT DIAGONAL UPPER RIGHT TO LOWER LEFT" },
+   { 0x2572, "BOX DRAWINGS LIGHT DIAGONAL UPPER LEFT TO LOWER RIGHT" },
+   { 0x2573, "BOX DRAWINGS LIGHT DIAGONAL CROSS" },
 
 // 0xD0-0xD3:
    { 0x2669, "Quarter note" },
@@ -210,6 +212,7 @@ bool cdroot()
 int doc( FILE *f )
 {
    int i;
+   int undef = 0;
    const char *c;
 
    fprintf( f,
@@ -235,8 +238,13 @@ int doc( FILE *f )
          fputc( tolower(*c), f );
       }
       fprintf( f, " |\n" );
+      if( codepage1[i].glyph == 0xFFFD )
+      {
+         ++undef;
+      }
    }
-
+   fprintf( f, "\nStill %d glyphs to be defined.\n", undef );
+   
    fprintf( f, "\n## Codepage 2\n\nRight now it is the same as codepage 1.\n" );
    fprintf( f, "\n## Codepage 3\n\nRight now it is the same as codepage 1.\n" );
 
