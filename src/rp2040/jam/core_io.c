@@ -271,6 +271,7 @@ static inline void console_65c02()
       // need event for keypress
       ram[MEM_ADDR_UART_READ_SIZE] = (uart_in_queue.tail) - (uart_in_queue.head);
 
+#if 0
       if( fifo256_get( &uart_out_queue, &out ) )
       {
          if( out == 0x7f )
@@ -285,6 +286,24 @@ static inline void console_65c02()
             cs_put_utf8( out, console_charset );
          }
       }
+#else
+      // inline optimized fifo256_get( &uart_out_queue, &out )
+      if( uart_out_queue.head != uart_out_queue.tail )
+      {
+         out = uart_out_queue.buffer[(uart_out_queue.tail)++];
+         if( out == 0x7f )
+         {
+            /* full delete sequence: backspace, space, backspace */
+            putchar( 8 );
+            putchar( ' ' );
+            putchar( 8 );
+         }
+         else
+         {
+            cs_put_utf8( out, console_charset );
+         }
+      }
+#endif
       ram[MEM_ADDR_UART_WRITE_SIZE] = fifo256_count( &uart_out_queue );
 
       // checking outside the function saves time
