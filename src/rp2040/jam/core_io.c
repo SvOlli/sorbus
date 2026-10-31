@@ -35,9 +35,7 @@
 typedef void (*io_post_func_t)( uint32_t in );
 
 
-/* will be used in event functions array */
-void handle_io( uint32_t in );
-
+// UART configuration
 uint8_t console_charset = 0;
 bool console_crlf_enabled;
 bool console_flowcontrol_enabled;
@@ -90,6 +88,7 @@ const io_post_func_t io_handlers_r[0x10] = {
 void fifo_irq_handler()
 {
    /* IRQ handler, try to minimize time spent here */
+   /* also skip if subsequent IRQ that was already handled */
    while( multicore_fifo_rvalid() )
    {
       uint32_t in = multicore_fifo_pop_blocking();
@@ -252,7 +251,6 @@ static inline void console_65c02()
             }
             else if( in == 0x1d ) // 0x1d = CTRL+]
             {
-               // TODO: EVENT_QUEUE
                bus_stop_cause = META_MAGICKEY;
             }
             else
@@ -294,9 +292,7 @@ static inline void console_65c02()
          if( out == 0x7f )
          {
             /* full delete sequence: backspace, space, backspace */
-            putchar( 8 );
-            putchar( ' ' );
-            putchar( 8 );
+            stdio_put_string("\b \b", 3, false, false);
          }
          else
          {

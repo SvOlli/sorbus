@@ -32,7 +32,7 @@ static int64_t callback_reset_done( alarm_id_t id, void *user_data )
 
 #if RESET_TO_METAMENU
    // trigger meta-menu after running for a few clock cycles
-   add_alarm_in_us( 100, callback_reset_metamenu, &already_running, true );
+   add_alarm_in_us( 100, callback_reset_metamenu, user_data, true );
 #endif
 
    // undo pulling reset line

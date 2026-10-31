@@ -58,7 +58,7 @@ charset_t codepage1[0x80] = {
    { 0xFFFD, "(to be defined)" },
 
 // 0xA0-0xAF:
-   { 0xFFFD, "(to be defined)" },
+   { 0xFFFD, "(to be defined)" }, // non-breakable space (0xA0)?
    { 0xFFFD, "(to be defined)" },
    { 0x00A2, "CENT SIGN" },
    { 0x00A3, "POUND SIGN" },
