@@ -49,7 +49,7 @@ Links will be created in
 /usr/local
 need sudo to create links
 
-Continue? 
+Continue?
 ```
 
 It explains everything is going to. It names the package it's going to

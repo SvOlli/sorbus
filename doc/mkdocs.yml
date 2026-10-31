@@ -73,7 +73,8 @@ nav:
       - 'CPU Detection': 'opcodes/cpu_detect.md'
       - 'Observed 65816 Behavior': 'opcodes/observed_65816_behavior.md'
    - 'Appendix':
-      - 'Thanks': 'thanks.md'
-      - 'Setting up build environment': 'buildenv.md'
-      - 'Datasheets': 'datasheets.md'
-      - 'Links': 'links.md'
+      - 'Thanks': 'appendix/thanks.md'
+      - 'RP2040 Assembly': 'appendix/rp2040_assembly.md'
+      - 'Setting up build environment': 'appendix/buildenv.md'
+      - 'Datasheets': 'appendix/datasheets.md'
+      - 'Links': 'appendix/links.md'
