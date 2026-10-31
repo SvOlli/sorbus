@@ -390,9 +390,17 @@ static uint8_t da_cc_65816( da_trace_t d, uint32_t pos )
             break;
          case PHP: // could be read from trace
             d->flag_c = fullinfo[pos+2].data & 0x01 ? FLAG_SET : FLAG_UNSET;
+            /* slip through */
+         case PHA:
+         case PHX:
+         case PHY:
             return 3;
          case PLP: // could be read from trace
             d->flag_c = fullinfo[pos+3].data & 0x01 ? FLAG_SET : FLAG_UNSET;
+            /* slip through */
+         case PLA: // without this workaround, these only counted as 2 cycles
+         case PLX: // ...because address is already read before stack access
+         case PLY: // ...so for loop below gives a false positive
             return 4;
          case RTI: // could be read from trace
             d->flag_c = fullinfo[pos+3].data & 0x01 ? FLAG_SET : FLAG_UNSET;
