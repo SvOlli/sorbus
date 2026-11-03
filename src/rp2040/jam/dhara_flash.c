@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2023-2026 Sven Oliver "SvOlli" Moll
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * This program implements a JAM (Just Another Machine) custom platform
+ * for the Sorbus Computer
+ */
 
 #include "dhara_flash.h"
 #include "3rdparty/dhara/error.h"

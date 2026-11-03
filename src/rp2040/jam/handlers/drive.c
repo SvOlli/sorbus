@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2023-2026 Sven Oliver "SvOlli" Moll
  *
  * SPDX-License-Identifier: GPL-3.0-or-later

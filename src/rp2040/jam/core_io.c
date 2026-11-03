@@ -33,6 +33,8 @@
 
 
 typedef void (*io_post_func_t)( uint32_t in );
+// when using assembly IRQ handler
+//typedef void (*io_post_func_t)( uint32_t in, uint16_t address, uint8_t data );
 
 
 // UART configuration
@@ -40,6 +42,16 @@ uint8_t console_charset = 0;
 bool console_crlf_enabled;
 bool console_flowcontrol_enabled;
 
+// placeholders for functions to come when switching to asm irq handler
+const io_post_func_t io_irq_misc0_w = 0;
+const io_post_func_t io_irq_misc1_w = 0;
+const io_post_func_t io_irq_uart0_w = 0;
+const io_post_func_t io_irq_uart1_w = 0;
+const io_post_func_t io_irq_irqtimer_w = 0;
+const io_post_func_t io_irq_nmitimer_w = 0;
+const io_post_func_t io_irq_cyclecount_w = 0;
+const io_post_func_t io_irq_random_r = 0;
+const io_post_func_t io_irq_uart_config = 0;
 
 // callbacks for 0x00xxxxxx & 0x01xxxxxx
 // sliced up to handle areas of 8 bytes
@@ -63,6 +75,51 @@ const io_post_func_t io_handlers_w[0x10] = {
    0                    // $df78-$df7f: RAM: interrupt vectors
 };
 
+// sliced up to handle areas of 4 bytes
+const io_post_func_t irq_write_handlers[0x20] = {
+   io_irq_misc0_w,      // $df00-$df03: misc like bank, trap, rnd, etc.
+   io_irq_misc1_w,      // $df04-$df07: continued
+   io_irq_uart0_w,      // $df08-$df0b: UART control register
+   io_irq_uart1_w,      // $df0c-$df0f: UART data and data direction
+
+   0,                   // $df10-$df13: RAM: unused, was cycle based IRQ/NMI
+   0,                   // $df14-$df17: RAM: unused, was cycle based IRQ/NMI
+   io_irq_irqtimer_w,   // $df18-$df1b: timers for repeat
+   io_irq_nmitimer_w,   // $df1c-$df1f: timers for oneshot
+
+   io_irq_watchdog_w,   // $df20-$df23: watchdog
+   io_irq_cyclecount_w, // $df24-$df27: cycle counter
+   0,                   // $df28-$df2b: RAM: unused
+   0,                   // $df2c-$df2f: RAM: kernel variables
+
+   0,                   // $df30-$df33: RAM: system monitor variables
+   0,                   // $df34-$df37: RAM: system monitor variables
+   0,                   // $df37-$df3b: RAM: unused
+   0,                   // $df3c-$df3f: RAM: unused
+
+   0,                   // $df40-$df43: RAM: unused
+   0,                   // $df44-$df47: RAM: unused
+   0,                   // $df48-$df4b: RAM: unused
+   0,                   // $df44-$df4f: RAM: unused
+
+   0,                   // $df50-$df53: RAM: unused
+   0,                   // $df54-$df57: RAM: unused
+   0,                   // $df58-$df5b: RAM: unused
+   0,                   // $df54-$df5f: RAM: unused
+
+   0,                   // $df60-$df63: RAM: unused
+   0,                   // $df64-$df67: RAM: unused
+   0,                   // $df68-$df6b: RAM: unused
+   0,                   // $df64-$df6f: RAM: unused
+
+   0,                   // $df70-$df73: internal drive data registers
+   io_irq_intdrive_w,   // $df74-$df77: internal drive strobe registers
+   0,                   // $df78-$df7b: RAM: interrupt vectors (BRK,NMI)
+   0                    // $df7c-$df7f: RAM: interrupt vectors (NBI,IRQ)
+};
+
+
+
 
 const io_post_func_t io_handlers_r[0x10] = {
    io_irq_misc_r,       // $df00-$df07: misc like bank, trap, rnd, etc.
@@ -83,6 +140,27 @@ const io_post_func_t io_handlers_r[0x10] = {
    0,                   // $df70-$df77: internal drive data/strobe registers
    0                    // $df78-$df7f: RAM: interrupt vectors
 };
+
+const io_post_func_t irq_read_handlers[0x10] = {
+   0,                   // $df00: bank
+   0,                   // $df01: trap
+   io_irq_random_r,     // $df02: random
+   0,                   // $df03: xramsw
+   0,                   // $df04: cpu capabilities
+   0,                   // $df05: reserverd
+   0,                   // $df06: reserverd
+   0,                   // $df07: reserverd
+   0,                   // $df08: reserverd
+   0,                   // $df09: reserverd
+   0,                   // $df0a: reserverd
+   io_irq_uart_config,  // $df0b: UART config
+   io_irq_uart_r,       // $df0c: UART read
+   0,                   // $df0d: UART read queue size
+   0,                   // $df0e: UART write
+   0,                   // $df0f: UART write queue size
+};
+
+
 
 
 void fifo_irq_handler()

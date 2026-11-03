@@ -68,6 +68,8 @@ add_executable(jam_alpha
    jam/handlers/timers.c
    jam/handlers/uart.c
    jam/main.c
+   jam/bus_loop.S
+   jam/fifo_irq_handler.S
    )
 target_compile_definitions(jam_alpha PRIVATE
    PICO_SDK_VERSION_STRING="${PICO_SDK_VERSION_STRING}"

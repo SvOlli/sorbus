@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2023-2026 Sven Oliver "SvOlli" Moll
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * This program implements a JAM (Just Another Machine) custom platform
+ * for the Sorbus Computer
+ */
 
 #ifndef __JAM_FLASH_CONFIG_H__
 #define __JAM_FLASH_CONFIG_H__ __JAM_FLASH_CONFIG_H__

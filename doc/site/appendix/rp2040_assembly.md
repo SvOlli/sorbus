@@ -26,7 +26,7 @@ ADD, BLX, BX, CMP, and MOV.
 | ADD   | 1 | Rd, SP, #imm8 - does not set flags |
 | ADD   | 1 | SP, SP, #imm8 - does not set flags |
 | ADR   | 1 | Rd, label - PC-relative address |
-| ANDS  | 1 | Rd, Rn, Rm |
+| ANDS  | 1 | Rdn, Rm |
 | ASRS  | 1 | Rd, Rm, #imm8 |
 | ASRS  | 1 | Rd, Rn, Rm |
 | B     | 2 | label - unconditional |
