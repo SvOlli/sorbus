@@ -6,6 +6,8 @@
 
 .export     reset
 .export     brkjump
+.export     _mon_nmi
 
 reset    = $e000
 brkjump  = $ffda
+_mon_nmi = $e003

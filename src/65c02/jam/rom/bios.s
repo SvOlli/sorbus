@@ -18,6 +18,7 @@
 
 .export  BIOS
 .export  IRQCHECK
+.export  NMIROM
 .export  bankrti        ; used in kernel and mon only, to jump to another bank
                         ; - target address needs to be on the stack
                         ; - also dummy processor status, like BRK
@@ -27,6 +28,7 @@
 
 .import  brkjump        ; kernel.s
 .import  reset          ; kernel.s
+.import  _mon_nmi       ; kernel.s
 
 
 .segment "BIOS"
@@ -135,6 +137,11 @@ bankrti:
    rti                  ; return to calling code
 _biosend:
 
+NMIROM:
+   stz   BANK           ; switch to bank 0
+   inc   BANK           ; switch to bank 1
+   jmp   _mon_nmi       ; now the monitor can be executed
+
 BRK_65816N:
    .byte $E2,$30        ; SEP #$30
    sta   BRK_SA
@@ -209,11 +216,11 @@ IRQ:
 _biossize = (_biosend-BIOS)
 _fixsize = (_fixend-_fixstart)
 ; beware of hardcoded values below copy/pasted from linker script
-.out "   =============================="
+.out "   ==============================="
 .out .sprintf( "   BIOS  size: $%04x ($%04x free)", _biossize, $D4 - (_biossize) )
 .out .sprintf( "   FIXED size: $%04x", _fixsize )
 .out .sprintf( "   _reset at:  $%04x ($%04x=RESET)", RESET, $FFD4 + _reset - _fixstart )
-.out "   =============================="
+.out "   ==============================="
 
 .assert  CHRIN     = _chrin,   error, "CHRIN at wrong address"
 .assert  CHROUT    = _chrout,  error, "CHROUT at wrong address"

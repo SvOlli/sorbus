@@ -10,15 +10,6 @@
 ; this BIOS is only for the NMOS 6502 toolkit
 ; NMOS CPU does not work with CMOS BIOS due to moved code
 ;-------------------------------------------------------------------------
-; CHRIN, CHROUT, PRINT and BRK should work on all 6502 variants
-; notable exceptions are:
-; NMOS 6502:
-; - IRQ handler code does not work, because code in kernel is for CMOS
-; 65CE02:
-; - Z register must be $00 when BRK is triggered
-;   (there is a wrapper in jam_bios.inc)
-; 65816:
-; - using extra vectors is only possible when running from bank $00 (RAM)
 
 
 .export  BIOS
@@ -173,11 +164,11 @@ IRQ:
 _biossize = (_biosend-BIOS)
 _fixsize = (_fixend-_fixstart)
 ; beware of hardcoded values below copy/pasted from linker script
-.out "   =============================="
+.out "   ==============================="
 .out .sprintf( "   BIOS  size: $%04x ($%04x free)", _biossize, $D4 - (_biossize) )
 .out .sprintf( "   FIXED size: $%04x", _fixsize )
 .out .sprintf( "   _reset at:  $%04x ($%04x=RESET)", RESET, $FFD4 + _reset - _fixstart )
-.out "   =============================="
+.out "   ==============================="
 
 .assert  CHRIN     = _chrin,   error, "CHRIN at wrong address in NMOS"
 .assert  CHROUT    = _chrout,  error, "CHROUT at wrong address in NMOS"

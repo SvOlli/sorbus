@@ -415,4 +415,6 @@ part3end:
 .out .sprintf( "   SWEET16 part2 size: $%04x", part2end-part2start )
 .out .sprintf( "   SWEET16 part3 size: $%04x", part3end-part3start )
 .out .sprintf( "   SWEET16 total size: $%04x", part1end-part1start + part2end-part2start + part3end-part3start )
+; magic number $fa = $100 - 6 bytes (jmp reset, jmp nmi)
+.out .sprintf( "   SWEET16 page cross: $%04x", $fa-(part1check-part1start) )
 .out "   ========================="

@@ -21,6 +21,7 @@ TRAMPOLINE    := $0100
 
 .import  BIOS           ; bios.s
 .import  IRQCHECK       ; bios.s
+.import  NMIROM         ; bios.s
 .import  bankrti        ; bios.s
 .import  bankstart      ; bios.s
 .import  banksubgo      ; bios.s
@@ -29,6 +30,7 @@ TRAMPOLINE    := $0100
 
 .export  brkjump
 .export  reset
+.export  _mon_nmi
 
 ; set to 65c02 code
 ; ...best not make use of opcode that are not supported by 65816 CPUs
@@ -51,6 +53,8 @@ TRAMPOLINE    := $0100
 .segment "ROMSTART"
 ROMSTART:
    jmp   reset
+_mon_nmi:
+   jmp   mon_nmi
 
 .segment "CODE"
 
@@ -642,6 +646,6 @@ signatureend:
 
 vectab:
    .word mon_brk        ; UVBRK: IRQ handler dispatches BRK
-   .word mon_nmi        ; UVNMI: hardware NMI handler
+   .word NMIROM         ; UVNMI: hardware NMI handler
    .word mon_irq        ; UVNBI: IRQ handler dispatches non-BRK
    .word IRQCHECK       ; UVIRQ: hardware IRQ handler
