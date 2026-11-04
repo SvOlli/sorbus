@@ -3,7 +3,8 @@
 
 #include <fcntl.h>
 #include <stdio.h>
-#include <termio.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 #include <unistd.h>
 
 /*
