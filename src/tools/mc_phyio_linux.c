@@ -12,8 +12,8 @@
  * PHYIO: init, done, putc, getc, nodelay, halfdelay, flush for UNIX or LINUX
  *------------------------------------------------------------------------------
  */
-static struct termio    mcurses_oldmode;
-static struct termio    mcurses_newmode;
+static struct termios   mcurses_oldmode;
+static struct termios   mcurses_newmode;
 static uint8_t          mcurses_nodelay   = 0;
 
 /*

@@ -44,7 +44,8 @@ void disassemble( cputype_t cpu, uint16_t address, uint16_t size )
    uint16_t a = address;
    da_memory_t dam;
 
-   dam = da_memory_init( memsim_peek );
+   dam = da_memory_init();
+   dam->peek = memsim_peek;
    dam->cpu = cpu;
 
    while( a < (address+size) )
