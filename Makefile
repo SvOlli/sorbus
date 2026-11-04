@@ -23,6 +23,10 @@ ifneq ($(LLVM_MOS_PATH),)
 export PATH := $(PATH):$(LLVM_MOS_PATH)
 endif
 
+ifeq ($(QUIET),yes)
+EXTRA_CMAKE_ARGS += -DCMAKE_RULE_MESSAGES=OFF
+endif
+
 ifeq ($(PICO_SDK_PATH),)
 PICO_SDK_PATH=$(shell readlink -f ../pico-sdk)
 $(info # Using local pico sdk at: $(PICO_SDK_PATH))

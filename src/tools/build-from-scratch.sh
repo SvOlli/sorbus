@@ -38,7 +38,7 @@ build()
    mybanner "Build taliforth2"
    src/tools/external-taliforth2.sh
    mybanner "Build release"
-   make release
+   make release QUIET=yes
    mybanner "Done"
 }
 
