@@ -29,21 +29,21 @@ ADD, BLX, BX, CMP, and MOV.
 | ANDS  | 1 | Rdn, Rm |
 | ASRS  | 1 | Rd, Rm, #imm8 |
 | ASRS  | 1 | Rd, Rn, Rm |
-| B     | 2 | label - unconditional |
-| BCC / BLO | 1/2** | label - aliases |
-| BCS / BHS | 1/2** | label - aliases |
 | BEQ   | 1/2** | label |
-| BGE   | 1/2** | label |
-| BGT   | 1/2** | label |
-| BHI   | 1/2** | label |
-| BLE   | 1/2** | label |
-| BLS   | 1/2** | label |
-| BLT   | 1/2** | label |
-| BMI   | 1/2** | label |
 | BNE   | 1/2** | label |
+| BCS / BHS | 1/2** | label - aliases |
+| BCC / BLO | 1/2** | label - aliases |
+| BMI   | 1/2** | label |
 | BPL   | 1/2** | label |
-| BVC   | 1/2** | label |
 | BVS   | 1/2** | label |
+| BVC   | 1/2** | label |
+| BHI   | 1/2** | label |
+| BLS   | 1/2** | label |
+| BGE   | 1/2** | label |
+| BLT   | 1/2** | label |
+| BGT   | 1/2** | label |
+| BLE   | 1/2** | label |
+| B     | 2 | label - unconditional |
 | BICS  | 1 | Rd, Rn, Rm |
 | BL    | 3 | label |
 | BLX*  | 2 | Rm\* |
@@ -147,22 +147,22 @@ ADD, BLX, BX, CMP, and MOV.
 | ADR   | Places a PC-relative address in a register |
 | ANDS  | Performs a bitwise AND and updates the condition flags |
 | ASRS  | Arithmetic-shifts a value right and updates the condition flags |
-| B     | Branches to a label |
-| BCC / BLO | Branches if carry is clear / lower |
-| BCS / BHS | Branches if carry is set / higher or same |
-| BEQ   | Branches if equal |
-| BGE   | Branches if greater than or equal |
-| BGT   | Branches if greater than |
-| BHI   | Branches if higher |
-| BLE   | Branches if less than or equal |
-| BLS   | Branches if lower or same |
-| BLT   | Branches if less than |
-| BMI   | Branches if negative |
-| BNE   | Branches if not equal |
-| BPL   | Branches if positive or zero |
-| BVC   | Branches if overflow is clear |
-| BVS   | Branches if overflow is set |
-| BICS  | Performs a bitwise AND with the complement of a value and updates the condition flags |
+| BEQ   | Branches if equal (Z == 1)|
+| BNE   | Branches if not equal (Z == 0) |
+| BCS / BHS | Branches if carry is set / higher or same (C == 1) |
+| BCC / BLO | Branches if carry is clear / lower (C == 0) |
+| BMI   | Branches if negative (N ==1 ) |
+| BPL   | Branches if positive or zero (N == 0) |
+| BVS   | Branches if overflow is set (V == 1) |
+| BVC   | Branches if overflow is clear (V == 0) |
+| BHI   | Branches if higher (unsigned) (C == 1 and Z == 0) |
+| BLS   | Branches if lower or same (unsigned) (C == 0 or Z == 1) |
+| BGE   | Branches if greater than or equal (signed) (N == V) |
+| BLT   | Branches if less than (signed) (N != V) |
+| BGT   | Branches if greater than (signed) (Z == 0 and N == V) |
+| BLE   | Branches if less than or equal (signed) (Z == 1 or N != V) |
+| B     | Branches always to a label |
+| BICS  | Performs a bitwise AND with the complement of a value and updates the condition flags (Rd = Rn & ~Rm) |
 | BKPT  | Causes a breakpoint |
 | BL    | Branches to a label and stores the return address |
 | BLX   | Branches to an address in a register and stores the return address |
