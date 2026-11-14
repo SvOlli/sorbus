@@ -18,6 +18,10 @@
 #include <hardware/regs/pads_bank0.h>
 #include <hardware/regs/m0plus.h>
 
+#ifndef BUS_CONFIG_mask_clock
+#define BUS_CONFIG_mask_clock 0x02000000
+#endif
+
 @ =========================================================================
 @ Notes that will help with implementation
 @ =========================================================================
@@ -33,8 +37,20 @@
 .cpu cortex-m0plus
 .thumb
 
-.section .time_critical.my_irq_handler, "ax", %progbits
+.section .time_critical.tight_loop, "ax", %progbits
 .align 2
+
+.global tight_loop
+.type tight_loop, %function
+
+@ =========================================================================
+@ Macro Definitions
+@ =========================================================================
+.macro delay count
+    .rept \count
+        nop
+    .endr
+.endm
 
 @ =========================================================================
 @ External C variables
@@ -52,12 +68,12 @@
 @  r1: 65c02 addressbus
 @  r2: 65c02 databus
 @  r3: #0xD0000000: RP2040 SIO bank start
-@  r4: #0x02000000: 65C02 R/W mask
-@  r5: 
-@  r6: 
-@  r7: 
+@  r4: #0x02000000: 65C02 CLK mask
+@  r5: memptr
+@  r6: scratch / end of fifo area / fifo flag
+@  r7: scratch
 @  r8: cycle_counter
-@  r9: 
+@  r9: romptr
 @ r10: #0x0000D000: 65C02 I/O start
 @ r11: #0x0000DF00: 65C02 internal I/O start
 @ r12: #0x0000E000: 65C02 ROM start
@@ -69,13 +85,10 @@
 @ Assembly code section
 @ =========================================================================
 
-.section .text.bus_loop_asm, "ax"
-.align 2
-
-.global bus_loop_asm
-.type bus_loop_asm, %function
-
 bus_loop_asm:
+@ -------------------------------------------------------------------------
+@ Setup
+@ -------------------------------------------------------------------------
    @ clear cycle counter
    movs  r3, #0
    mov   r8, r3
@@ -90,32 +103,279 @@ bus_loop_asm:
    mov   r12, r3
    @ from here on r3 is always SIO_BASE
    ldr   r3, =SIO_BASE
-   ldr   r4, =0x02000000
-   @ since the low clock of 6502 will be used for aftermath, start with high
-   b     .Lhighclock_6502
+   @ from here on r4 is always 65C02 CLK
+   ldr   r4, =BUS_CONFIG_mask_clock
 
+@ --> 27cy
+.Lmain_loop:
+   @ r9 = romptr
+   ldr   r5, =romptr                         @ 2cy
+   mov   r9, r5                              @ 1cy
+
+   @ r5 = memptr -> RAM
+   ldr   r5, =ram                            @ 2cy
 
 @ -------------------------------------------------------------------------
-@ Steps to go
+@ end of clock low phase
 @ -------------------------------------------------------------------------
-@ > set clock low
-@ > set clock high
-@ > loop
-@ Cycle counter and logging
-@ Prepare high phase:
-@ - set data bus to read
-@ - read GPIOs
-@ - calculate address
-@ RAM / ROM / I/O access check
+
+   @ r4 = 65C02 CLK, r3 = SIO_BASE
+   str   r4, [r3, #SIO_GPIO_OUT_SET_OFFSET]  @ 1cy
+
+@ -------------------------------------------------------------------------
+@ Start of clock high phase
+@ RP2040 cycle counting starts now
+@ -------------------------------------------------------------------------
+
+   @ r0 = 0x00FF0000
+   movs  r0, #0xFF                           @ 1cy
+   lsls  r0, r0, #16                         @ 1cy
+   @ data bus direction: read
+   str   r0, [r3, #SIO_GPIO_OE_SET_OFFSET]   @ 1cy
+
+   @ CLK: pin 26 -> R/W: pin 25
+   lsrs  r7, r4, #1                          @ 1cy
+
+   @ r6: 0xDF00 (for later modification of end of internal I/O)
+   mov   r6, r11                             @ 1cy
+
+   @ get GPIOs (must not occur before 40ns (6cy) after clock high,
+   @            then data bus write will be also read)
+   ldr   r0, [r3, #SIO_GPIO_IN_OFFSET]       @ 1cy
+
+   @ also prepare r1 = address word and r2 = data byte
+   uxth  r1, r0                              @ 1cy
+   lsrs  r2, r0, #16                         @ 1cy
+   uxtb  r2, r2                              @ 1cy
+                                             @ --> 9cy
+
+   @ mask 65C02 R/W
+   ands  r7, r0                              @ 1cy
+   beq   .Lmemread                           @ 1cy --> 12cy
+                                             @ --> 11cy
+
+@ =========================================================================
+@ handling memory write cases
+@ =========================================================================
+@ --> 11cy
+   cmp   r1, r10  @ #0xD000                  @ 1cy
+   bcc   .Lwrite_l_d000                      @ 1cy --> 14cy
+   cmp   r1, r11  @ #0xDF00                  @ 1cy
+   bne   .Lnobank                            @ 1cy --> 16cy
+
+@ -------------------------------------------------------------------------
 @ Set bank
-@ Get from RAM/ROM to data bus
+@ -------------------------------------------------------------------------
+@ assumption: r0 contains GPIO data
+@ assumption: r2 contains data
+@ using r6, r7
+@ --> 15cy
+
+   @ convert index to 32bit addressing
+   lsls  r7, r2, #2                          @ 1cy
+
+   @ get from list of pointers
+   ldr   r6, =bankptrs                       @ 2cy
+   ldr   r7, [r7, r6]                        @ 2cy
+
+   @ write to variable
+   ldr   r6, =romptr                         @ 2cy
+   str   r7, [r6]                            @ 2cy
+                                             @ --> 24cy
+
+@ -------------------------------------------------------------------------
+@ at the entry of high phase, r6 marks, if multicore fifo is used:
+@ r6=0 use fifo, r6!=0 no fifo, unless explicitly cleared r6 is never 0
+@ -------------------------------------------------------------------------
+@ --> 24cy
+.Lwritemarkfifo:
+   movs  r6, #0                              @ 1cy
+                                             @ --> 25cy
+
+@ -------------------------------------------------------------------------
+@ Write data to RAM
+@ -------------------------------------------------------------------------
+@ assumption: r1 contains address bus
+@ assumption: r2 contains data
+@ assumption: r5 contains memory pointer (RAM/ROM)
+@ --> 25cy
+
+.Lwritetoram:
+   strb  r2, [r5, r1]                        @ 1cy
+   b     .Lend_of_high_at_28cy                         @ 2cy --> 28cy
+
+@ -------------------------------------------------------------------------
+@ testing addresses >
+@ -------------------------------------------------------------------------
+@ --> 16cy
+.Lnobank:
+   @ coming in from cmp #0xDF00
+   bcc   .Lwrite_l_df00                      @ 1cy --> 18cy
+   delay 3                                   @ 3cy
+   adds  r6, #0x80                           @ 1cy
+   cmp   r1, r6   @ #0xDF80                  @ 1cy
+   bcc   .Lwritemarkfifo                     @ 1cy --> 24cy
+   b     .Lwritetoram                        @ 2cy --> 25cy
+
+@ -------------------------------------------------------------------------
+@ write is in $D000-$DEFF: do nothing
+@ -------------------------------------------------------------------------
+@ --> 18cy
+.Lwrite_l_df00:
+   delay 8                                   @ 8cy
+   b     .Lend_of_high_at_28cy               @ 2cy --> 28cy
+
+@ -------------------------------------------------------------------------
+@ write is in $0000-$CFFF: write to ram after respecting timing
+@ -------------------------------------------------------------------------
+@ --> 14cy
+.Lwrite_l_d000:
+   delay 9                                   @ 9cy
+   b     .Lwritetoram                        @ 2cy --> 25cy
+
+
+@ =========================================================================
+@ handling memory read cases
+@ =========================================================================
+
+@ -------------------------------------------------------------------------
+@ comparisons besides the critical path
+@ -------------------------------------------------------------------------
+@ --> 15cy
+.Lread_l_df00:
+   cmp   r1, r10  @ #0xD000                  @ 1cy
+   bcs   .Lread_g_d000                       @ 1cy --> 18cy
+   cmp   r1, #0x0004                         @ 1cy
+   bcs   .Ldataoutput                        @ 1cy --> 20cy
+                                             @ --> 19cy
+   b     .Lread_l_0004                       @ 2cy --> 21cy
+
+@ --> 18cy
+.Lread_g_d000:
+   delay 3
+@ --> 21cy
+.Lread_l_0004:
+   delay 5
+   b     .Lend_of_high_at_28cy
+
+.Lread_l_df10: @ 6cy --> 10cy --> .Ldataoutput
+   movs  r6, #0x00   @ r6=0: trigger fifo    @ 1cy
+   nop                                       @ 1cy
+   b     .Ldataoutput                        @ 2cy
+
+
+@ -------------------------------------------------------------------------
+@ switch memory pointer to ROM bank pointer
+@ -------------------------------------------------------------------------
+@ --> 17cy
+.Lread_g_e000:
+   mov   r5, r9                              @ 1cy
+   b     .Ldataoutput                        @ --> 20cy
+
+@ -------------------------------------------------------------------------
+@ read critical path
+@ -------------------------------------------------------------------------
+@ --> 12cy
+.Lmemread:
+   cmp   r1, r11  @ #0xDF00                  @ 1cy
+   bcc   .Lread_l_df00                       @ 1cy --> 15cy
+
+   cmp   r1, r12  @ #0xE000                  @ 1cy
+   bcs   .Lread_g_e000                       @ 1cy --> 17cy
+
+   adds  r6, #0x10                           @ 1cy
+   cmp   r1, r6   @ #0xDF10                  @ 1cy
+   bcs   .Ldataoutput                        @ 1cy --> 20cy
+                                             @ --> 19cy
+
+@ -------------------------------------------------------------------------
+@ at the entry of high phase, r6 marks, if multicore fifo is used:
+@ r6=0 use fifo, r6!=0 no fifo, unless explicitly cleared r6 is never 0
+@ -------------------------------------------------------------------------
+@ --> 19cy
+   movs  r6, #0                              @ 1cy
+                                             @ --> 20cy
+
+.Ldataoutput:
+@ -------------------------------------------------------------------------
+@ get from RAM/ROM to data bus
+@ -------------------------------------------------------------------------
+@ assumption: r1 contains address bus
+@ assumption: r3 contains SIO_BASE
+@ assumption: r5 contains memory pointer (RAM/ROM)
+@ using r7
+@ --> 20cy
+
+   @ r7 = 0x00FF0000
+   movs  r7, #0xFF                           @ 1cy
+   lsls  r7, r7, #16                         @ 1cy
+
+   @ data bus direction: write
+   str   r7, [r3, #SIO_GPIO_OE_SET_OFFSET]   @ 1cy
+
+   @ remove data bus data from GPIO shadow
+   bics  r0, r0, r7   @ r7 = r0 & ~r6        @ 1cy
+
+   @ get data from memory
+   ldrb  r2, [r7, r1]                        @ 1cy
+
+   @ combine with GPIO shadow
+   lsls  r7, r2, #16                         @ 1cy
+   orrs  r0, r0, r7                          @ 1cy
+   str   r0, [r3, #SIO_GPIO_OUT_OFFSET]      @ 1cy
+                                             @ --> 28cy
+
+   @ this write should occur at least 20ns (3 cycles) before CLK goes
+   @ low having 33 cycles for each CLK phase, it means at cycle 30 or
+   @ earlier. we are at cycle 28 here.
+   @ "mission accomplished. congratulations!"
+   @    -- impossible mission
+
+@ --> 28cy
+.Lend_of_high_at_28cy:
+   @ just pad the remaining 4 cycles
+   delay 4                                   @ 4cy
+
+@ -------------------------------------------------------------------------
+@ end of clock low phase
+@ -------------------------------------------------------------------------
+
+   @ r4 = 65C02 CLK, r3 = SIO_BASE
+   str   r4, [r3, #SIO_GPIO_OUT_CLR_OFFSET]  @ 1cy
+
+@ =========================================================================
+@ high clock phase starts here
+@ =========================================================================
+
+   @ first check if something needs to be send to other core
+   cmp   r6, #0                              @ 1cy
+   bne   .Lno_multicore_fifo                 @ 1cy --> 3cy
+
+@ -------------------------------------------------------------------------
 @ Send GPIO state via FIFO
+@ -------------------------------------------------------------------------
+@ assumption: r0 contains GPIO data
+@ assumption: r3 contains SIO_BASE
+@ --> 2cy
 
-
-@ =========================================================================
-@ Routine catalog
-@ =========================================================================
-
+   @ldr   r7, =SIO_FIFO_ST_RDY_BITS           @ 2cy
+   @ we need to speed up the instruction above
+   @ since SIO_FIFO_ST_RDY_BITS = 0x00000002
+   @ r4 = 0x02000000
+   @ sanity check below
+#if SIO_FIFO_ST_RDY_BITS != (BUS_CONFIG_mask_clock >> 24)
+#error SIO_FIFO_ST_RDY_BITS/BUS_CONFIG_mask_clock are not as expected
+#endif
+   lsrs  r7, r4, #24                         @ 1cy
+   ldr   r6, [r3, #SIO_FIFO_ST_OFFSET]       @ 1cy
+   ands  r7, r6                              @ 1cy
+   @ timing error here
+   @ in case of a full fifo, 65c02 cycle falls short 1 RP2040 cycle
+   @ as this should not happen (but could), this must be accepted
+   beq   .Lmulticore_fifo_done               @ 1cy --> 7cy
+   str   r0, [r3, #SIO_FIFO_WR_OFFSET]       @ 2cy
+                                             @ --> 8cy
+.Lmulticore_fifo_done:
 
 @ -------------------------------------------------------------------------
 @ Cycle counter and logging
@@ -123,323 +383,38 @@ bus_loop_asm:
 @ assumption: r0 contains bus data
 @ assumption: r4 contains clock mask
 @ assumption: r8 contains cycle counter
-@ using: r5
 @ using: r6
-@ cycles: 4, 17
+@ using: r7
+@ --> 8cy
 
    @ CLK is pin 26, RDY is pin 27
-   lsls  r6, r4, #1                          @ 1cy
-   ands  r6, r0                              @ 1cy
-   beq   .Lnocount                           @ 1cy --> 4cy
+   lsls  r7, r4, #1                          @ 1cy
+   ands  r7, r0                              @ 1cy
+   beq   .Lnocount                           @ 1cy --> 12cy
 
-   movs  r6, #1                              @ 1cy
+   movs  r7, #1                              @ 1cy
    @ high register form
-   add   r8, r6                              @ 1cy
-   mov   r6, r8                              @ 1cy
+   add   r8, r7                              @ 1cy
+   mov   r7, r8                              @ 1cy
    @ store cycle counter for C
    ldr   r5, =cycle_counter                  @ 2cy
-   str   r6, [r5]                            @ 2cy
+   str   r7, [r5]                            @ 2cy
    @ move bits up to discard bits and get them down again
    @ --> and #0x00000FFF
-   lsls  r6, r6, #20                         @ 1cy
-   lsrs  r6, r6, #20                         @ 1cy
+   lsls  r7, r7, #20                         @ 1cy
+   lsrs  r7, r7, #20                         @ 1cy
    @ align index to 32bit addressing
-   lsls  r6, r6, #2                          @ 1cy
+   lsls  r7, r7, #2                          @ 1cy
    ldr   r5, =bus_log                        @ 2cy
    str   r0, [r5, r6]                        @ 2cy
+   b     mainloop                            @ 2cy --> 27cy
+
+@ --> 12cy
 .Lnocount:
+   delay 13                                  @ 13cy
+   b     mainloop                            @ 2cy --> 27cy
 
-
-@ -------------------------------------------------------------------------
-@ Prepare high phase:
-@ - set data bus to read
-@ - read GPIOs
-@ - calculate address
-@ -------------------------------------------------------------------------
-@ assumption: r3 contains SIO_BASE
-@ using: r0 -> bus data
-@ cycles: 5 (3, if #0x00FF0000 gets its own register)
-
-   @ a branch for the loop is required
-   @ put it in front of this after the clock high?
-   @ would add up to 6 cycles (see below)
-
-   movs  r0, #0xFF                           @ 1cy
-   lsls  r0, r0, #16                         @ 1cy
-   @ r0 = 0x00FF0000
-   str   r0, [r3, #SIO_GPIO_OUT_CLR_OFFSET]  @ 1cy
-   @ get GPIOs (must not occur before 40ns (6cy) after clock high,
-   @            then data bus write will be also read)
-   ldr   r0, [r3, #SIO_GPIO_IN_OFFSET]       @ 1cy
-   @ also prepare address word
-   uxth  r1, r0                              @ 1cy
-
-
-@ -------------------------------------------------------------------------
-@ RAM / ROM / I/O access check
-@ -------------------------------------------------------------------------
-
-   lsrs  r7, r4, #1                          @ 1cy
-   ands  r7, r0                              @ 1cy
-   bne   .Lmemread                           @ 1cy --> 4cy
-                                             @ --> 3cy
-
-   @ selecting function according to writing
-   @ address < 0x0004 can be written, will just never be read
-   @ writing >= 0xE000 always writes to RAM, so extra check after 0xDF80
-   @ 0xDF00 triggers banking
-   @ 0xDF00-0xDF7F triggers FIFO (and is RAM)
-   @ 0xD000-0xDEFF must be hands off
-   uxtb  r2, r0                              @ 1cy
-   lsls  r2, r2, #16                         @ 1cy
-
-   cmp   r1, r10 @ #0xD000                   @ 1cy
-   bcc   .L0ramwrite                         @ 1cy --> 5cy
-   cmp   r1, r11 @ #0xDF00                   @ 1cy
-   bcc   .L0handoff                          @ 1cy --> 7cy
-   bne   .L0nobankswitch                     @ 1cy --> 8cy
-                                             @ --> 7cy
-
-.L0nobankswitch:
-   uxtb  r7, r0                              @ 1cy
-   cmp   r7, #0x80                           @ 1cy
-   bcs   .L0ramwrite                         @ 1cy --> 4cy
-                                             @ 3cy
-.L0fifosend:
-   @ TODO: inline here                         7cy
-
-.L0ramwrite:
-   ldr   r6, =ram                            @ 2cy
-   str   r2, [r6, r1]                        @ 2cy
-   @ TODO: where next?
-
-
-.Lmemread:
-   @ selecting function according to reading
-   @ 0x0000-0x0003 and 0xD000-0xDEFF must be hands off
-   @ 0xDF00-0xDF0F triggers FIFO (and is RAM)
-   @ >= 0xE000 is ROM
-   @ rest is RAM
-
-   @ get data pointer: RAM or ROM
-   ldr   r7, =romvec                         @ 2cy
-   cmp   r1, r12 @ #0xE000                   @ 1cy
-   bcs   .Lromread                           @ 1cy --> 5cy
-   ldr   r7, =ram                            @ 2cy
-                                             @ --> 6cy
-
-   @ check hands off
-   cmp   r1, #0x0004                         @ 1cy
-   bcc   .Lhandsoff                          @ 1cy --> 3cy
-   cmp   r1, r10 @ #0xD000                   @ 1cy
-   bcc   .Ldatatobus                         @ 1cy --> 5cy
-   cmp   r1, r11 @ #0xDF00                   @ 1cy
-   bcc   .Lhandsoff                          @ 1cy --> 7cy
-                                             @ --> 6cy
-
-.Ldatatobus:
-   @ get the data from SRAM to the bus
-   ldrb  r2, [r7, r1]                        @ 1cy
-   lsls  r2, r2, #16                         @ 1cy
-   movs  r6, #0xFF                           @ 1cy
-   lsls  r6, r6, #16                         @ 1cy
-   bics  r0, r0, r6   @ r7 = r0 & ~r6        @ 1cy
-   orrs  r0, r0, r2                          @ 1cy
-   str   r0, [r3, #SIO_GPIO_OUT_OFFSET]      @ 2cy
-                                             @ --> 8cy (6cy @ 0x00FF0000)
-
-   @ now check for read FIFO
-   lsrs  r7, r1, #8                          @ 1cy
-   cmp   r7, #0xDF                           @ 1cy
-   bne   .Lnofifoonread                      @ 1cy --> 4cy
-   uxtb  r7, r1                              @ 1cy
-   cmp   r7, #0x10                           @ 1cy
-   bcs   .Lnofifoonread                      @ 1cy --> 7cy
-                                             @ --> 6cy
-
-   @ put GPIOs in FIFO
-   ldr   r7, =SIO_FIFO_ST_RDY_BITS           @ 2cy
-   ldr   r6, [r3, #SIO_FIFO_ST_OFFSET]       @ 1cy
-   ands  r7, r6                              @ 1cy
-   beq   .Lskipsend                          @ 1cy --> 6cy
-   str   r0, [r3, #SIO_FIFO_WR_OFFSET]       @ 2cy
-                                             @ --> 7cy
-
-.Lnofifoonread:
-
-
-.Lhandsoff:
-
-
-@ try 1: high to low
-   cmp   r1, #4                              @ 1cy
-   bcc   .L1handsoff                         @ 1cy --> 3cy
-   cmp   r1, r10 @ 0xD000                    @ 1cy
-   bcc   .L1ram                              @ 1cy --> 5cy
-   cmp   r1, r11 @ 0xDF00                    @ 1cy
-   beq   .L1bank                             @ 1cy --> 7cy
-   bcc   .L1handsoff                         @ 1cy --> 8cy
-   cmp   r1, r12 @ 0xE000                    @ 1cy
-   bcc   .L1intio                            @ 1cy --> 10cy
-.L1ram:
-
-.L1rom:
-
-.L1handsoff:
-
-.L1bank:
-
-
-@ try 2: high to low
-   cmp   r1, r12 @ 0xE000                    @ 1cy
-   bcs   .L2rom                              @ 1cy --> 3cy
-   cmp   r1, r11 @ 0xDF00                    @ 1cy
-   beq   .L2bank                             @ 1cy --> 5cy
-   bcs   .L2intio                            @ 1cy --> 6cy
-   cmp   r1, r10 @ 0xD000                    @ 1cy
-   bcs   .L2handsoff                         @ 1cy --> 8cy
-   cmp   r1, #4                              @ 1cy
-   bcc   .L2handsoff                         @ 1cy --> 10cy
-.L2ram:
-   ldr   r7, =ram
-   
-.L2rom:
-   ldr   r7, =romptr
-
-.L2handsoff:
-
-.L2bank:
-
-
-@ -------------------------------------------------------------------------
-@ Set bank
-@ -------------------------------------------------------------------------
-@ assumption: r0 contains GPIO data
-@ using r6, r7
-
-   lsrs  r7, r0, #16                         @ 1cy
-   uxtb  r7, r7                              @ 1cy
-   @ align index to 32bit addressing
-   lsls  r6, r7, #2                          @ 1cy
-   ldr   r7, =bankptrs                       @ 2cy
-   ldr   r7, [r7, r6]                        @ 2cy
-   ldr   r6, =romptr                         @ 2cy
-   str   r7, [r6]                            @ 2cy
-                                             @ --> 11cy
-
-
-@ -------------------------------------------------------------------------
-@ Get from RAM/ROM to data bus
-@ -------------------------------------------------------------------------
-@ assumption: r1 contains address bus
-@ assumption: r3 contains SIO_BASE
-@ assumption: r7 contains memory pointer (RAM/ROM)
-@ using r6
-
-   movs  r6, #0xFF                           @ 1cy
-   lsls  r6, r6, #16                         @ 1cy
-   @ r6 = 0x00FF0000
-   @ set data direction to output
-   str   r6, [r3, #SIO_GPIO_OUT_SET_OFFSET]  @ 1cy
-   ldrb  r6, [r1, r7]                        @ 1cy
-   lsls  r6, r6, #16                         @ 1cy
-   @ write data
-   str   r6, [r3, #SIO_GPIO_OUT_OFFSET]      @ 1cy
-
-
-@ -------------------------------------------------------------------------
-@ Send GPIO state via FIFO
-@ -------------------------------------------------------------------------
-@ assumption: r0 contains GPIO data
-@ assumption: r3 contains SIO_BASE
-
-   ldr   r7, =SIO_FIFO_ST_RDY_BITS           @ 2cy
-   ldr   r6, [r3, #SIO_FIFO_ST_OFFSET]       @ 1cy
-   ands  r7, r6                              @ 1cy
-   beq   .Lskipsend                          @ 1cy --> 6cy
-   str   r0, [r3, #SIO_FIFO_WR_OFFSET]       @ 2cy
-                                             @ --> 7cy
-.Lskipsend:
-
-
-
-@ =========================================================================
-@ Conceptional stuff
-@ =========================================================================
-
-
-.Lhighclock_6502:
-   ldr   r6, =0x02000000                     @ 2cy
-   str   r6, [r3, #SIO_GPIO_OUT_CLR_OFFSET]  @ 1cy
-
-   @ get correct bank pointer
-   ldr   r4, =romptr                         @ 2cy
-   lsls  r6, r0, #7  @now r/w is at negative @ 1cy
-   bpl   .Lforceram  @write always to RAM    @ 1/2cy
-   @ check for
-   cmp   r4, r12     @$E000                  @ 1cy
-   bcs   .Lnoram                             @ 1/2cy
-.Lforceram:
-   ldr   r4, =ramptr                         @ 2cy
-.Lnoram:
-   @now r4 point to correct position in SRAM
-
-.Lcheck:
-   @ check address
-   @ r1: 
-   uxth  r1, r0                              @ 1cy
-   lsrs  r2, r0, #16                         @ 1cy
-   uxtb  r2, r2                              @ 1cy
-
-   @ check for zero page I/O (VGA)
-   cmp   r1, #0x0004                         @ 1cy
-   bcc   .Lhandsoff                          @ 1/2cy --> 6cy
-   cmp   r1, r10 @ 0xD000                    @ 1cy
-   bcc   .Lram                               @ 1/2cy --> 8cy
-   cmp   r1, r11 @ 0xDF00                    @ 1cy
-   beq   .Lsetbank                           @ 1/2cy --> 10cy
-   bcc   .Lhandsoff                          @ 1/2cy --> 11cy
-   cmp   r1, r12 @ 0xE000                    @ 1cy
-   bcc   .Lintio                             @ 1/2cy --> 13cy
-.Lramrom:
-
-.Lram:
-
-.Lmem:
-
-
-.Lsetbank:
-   @ set bank offset for romptr
-   @
-   @ assumption: r2 contains 8bit data bus
-   @ using r6, r3
-   @ 9 cycles
-   lsls  r6, r2, #2           @ 1 cycle
-   ldr   r3, =bankptrs        @ 2 cycles
-   ldr   r3, [r3, r6]         @ 2 cycles
-   ldr   r6, =romptr          @ 2 cycles
-   str   r3, [r6]             @ 2 cycles
-
-.Lramrom2:
-   @ assumption: r1 contains 16bit address bus
-   @ assumption: r7 contains SIO
-   @ assumption: r12 contains constant 0xE000
-   @ 11 cycles
-   cmp   r1, r12  @ #0xE000   @ 1cy
-   bcs   read_rom             @ 1/2cy
-   ldr   r6, =ram             @ 2cy
-   b     read_all             @ 2cy
-read_rom:
-   nop                        @ 1cy
-   ldr   r6, =romptr          @ 2cy
-read_all:
-   ldrb  r7, [r6, r1]         @ 2cy
-   lsls  r7, r0, #16          @ 1cy
-   str   r7, [r3, #SIO_GPIO_OUT_OFFSET] @ 2cy
-
-
-
-.Lsleep6:
-   nop
-.Lsleep5:
-   bx    lr
+@ --> 3cy
+.Lno_multicore_fifo:
+   delay 4                                   @ 4cy
+   b     .Lmulticore_fifo_done               @ 2cy --> 9cy
