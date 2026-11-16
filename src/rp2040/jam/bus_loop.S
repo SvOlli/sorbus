@@ -165,7 +165,7 @@ bus_run_asm:
 
    @ mask 65C02 R/W
    ands  r7, r0                              @ 1cy
-   beq   .L_65c02_reading                           @ 1cy --> 12cy
+   beq   .L_65c02_reading                    @ 1cy --> 12cy
                                              @ --> 11cy
 
 @ =========================================================================
@@ -225,7 +225,7 @@ bus_run_asm:
    @ coming in from cmp #0xDF00
    bcc   .L_write_l_df00                     @ 1cy --> 18cy
    delay 3                                   @ 3cy
-   adds  r6, FIFO_TRIGGER_BOUNDRY_WRITE      @ 1cy
+   adds  r6, #FIFO_TRIGGER_BOUNDRY_WRITE     @ 1cy
    cmp   r1, r6   @ #0xDF78                  @ 1cy
    bcc   .L_write_mark_fifo                  @ 1cy --> 24cy
    b     .L_write_to_ram                     @ 2cy --> 25cy

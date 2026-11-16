@@ -9,11 +9,11 @@ digraph D {
 
    rankdir = TB;
 
-   INIT              [ shape=rectangle label="R3=SIO_BANK\nR4=65C02 CLK\nR10=0xD000\nR11=0xDF00\nR12=0xE000" ]
+   INIT              [ shape=rectangle label="constants:\nR3=SIO_BANK\nR4=65C02 CLK\nR10=0xD000\nR11=0xDF00\nR12=0xE000" ]
    LOOPSTART         [ shape=rectangle label="entry point" ]
    SELECT_RAM        [ label="+5\nset mem to RAM\nset romptr" ]
    REG_5MEM          [ shape=rectangle label="R5=mem\nR9=romptr" ]
-   REG_0GPIO         [ shape=rectangle label="R0=GPIO\nR1=address\nR2=data\nR6=0xDF00\nR7=65C02 R/!W" ]
+   REG_0GPIO         [ shape=rectangle label="R0=GPIO\nR1=address\nR2=data\nR6=0xDF00\nR7=65C02 R/!W mask" ]
 
    IS_READ_WRITE     [ shape=diamond label="+2\ncheck read/write" ]
 
@@ -38,22 +38,22 @@ digraph D {
    BANKSWITCH        [ label="+9\nbankswitch\nuse of R6" ]
    FIFO_FOR_WRITE    [ label="+1\nmark fifo trigger\nR6=0" ]
    FIFO_FOR_READ     [ label="+1\nmark fifo trigger\nR6=0" ]
-   WRITE_RAM         [ label="+3\nwrite ram" ]
-   SELECT_ROM        [ label="+3\nset mem to ROM" ]
+   WRITE_RAM         [ label="+1\nwrite ram" ]
+   SELECT_ROM        [ label="+1\nset mem to ROM" ]
    PUT_DATA_ON_BUS   [ label="+8\nread memory\nput data on bus\nR0 updated\n@ <= 30" ]
 
    TRIGGER_FIFO      [ label="+7\nwrite multicore fifo" ]
-   NO_FIFO_TRIGGER   [ label="+6\ndelay" ]
+   NO_FIFO_TRIGGER   [ label="+4\ndelay" ]
 
    COUNTER_LOG       [ label="+14\ncounter + log" ]
-   NO_LOG            [ label="+21\ndelay" ]
+   NO_LOG            [ label="+19\ndelay" ]
 
-   DELAY_R_0004      [ label="+9\ndelay" ]
-   DELAY_R_D000      [ label="+10\ndelay" ]
-   DELAY_W_D000      [ label="+11\ndelay" ]
-   DELAY_W_DF00      [ label="+10\ndelay" ]
+   DELAY_R_0004      [ label="+7\ndelay" ]
+   DELAY_R_D000      [ label="+8\ndelay" ]
+   DELAY_W_D000      [ label="+9\ndelay" ]
+   DELAY_W_DF00      [ label="+8\ndelay" ]
    DELAY_W__DF00     [ label="+3\ndelay" ]
-   DELAY_W_DF40      [ label="+2\ndelay" ]
+   DELAY_W_DF40      [ label="unconditional\nbranch" ]
    DELAY_CLK_LOW     [ label="+4\ndelay (+3)\nprepare RDY mask" ]
    DELAY_FINAL       [ label="+2\nloop" ]
 
@@ -70,18 +70,18 @@ digraph D {
    IS_READ_WRITE -> IS_WRITE_D000 [ label="+0\nwrite" ]
 
    IS_WRITE_D000 -> DELAY_W_D000 [ label="+1\n<\$D000" ]
-   DELAY_W_D000 -> WRITE_RAM
+   DELAY_W_D000 -> WRITE_RAM [ label="+2" ]
    IS_WRITE_D000 -> IS_WRITE_DF00 [ label="+0\n>=\$D000" ]
 
    IS_WRITE_DF00 -> DELAY_W_DF00 [ label="+3\n<\$DF00" ]
-   DELAY_W_DF00 -> DELAY_CLK_LOW
+   DELAY_W_DF00 -> DELAY_CLK_LOW [ label="+2" ]
    IS_WRITE_DF00 -> BANKSWITCH [ label="+0\n=\$DF00" ]
    IS_WRITE_DF00 -> DELAY_W__DF00 [ label="+2\n>\$DF00" ]
    DELAY_W__DF00 -> IS_WRITE_DF40
 
    IS_WRITE_DF40 -> FIFO_FOR_WRITE [ label="+1\n<\$DF40" ]
    IS_WRITE_DF40 -> DELAY_W_DF40 [ label="+0\n>=\$DF40" ]
-   DELAY_W_DF40 -> WRITE_RAM
+   DELAY_W_DF40 -> WRITE_RAM [ label="+2" ]
 
    IS_READ_DF00 -> IS_READ_D000 [ label="+1\n<\$DF00" ]
    IS_READ_DF00 -> IS_READ_E000 [ label="+0\n>=\$DF00" ]
@@ -94,19 +94,19 @@ digraph D {
 
    IS_READ_D000 -> IS_READ_0004 [ label="+0\n<\$D000" ]
    IS_READ_D000 -> DELAY_R_D000 [ label="+1\n>=\$D000" ]
-   DELAY_R_D000 -> DELAY_CLK_LOW
+   DELAY_R_D000 -> DELAY_CLK_LOW [ label="+2" ]
 
    IS_READ_0004 -> PUT_DATA_ON_BUS [ label="+1\n>=\$0004" ]
    IS_READ_0004 -> DELAY_R_0004 [ label="+0\n<\$0004" ]
-   DELAY_R_0004 -> DELAY_CLK_LOW
+   DELAY_R_0004 -> DELAY_CLK_LOW [ label="+2" ]
 
    BANKSWITCH -> FIFO_FOR_WRITE
    FIFO_FOR_WRITE -> WRITE_RAM
 
-   WRITE_RAM -> DELAY_CLK_LOW
+   WRITE_RAM -> DELAY_CLK_LOW [ label="+2" ]
    FIFO_FOR_READ -> PUT_DATA_ON_BUS
 
-   SELECT_ROM -> PUT_DATA_ON_BUS
+   SELECT_ROM -> PUT_DATA_ON_BUS [ label="+2" ]
    PUT_DATA_ON_BUS -> DELAY_CLK_LOW
 
    DELAY_CLK_LOW -> CLK_LOW
@@ -116,19 +116,19 @@ digraph D {
    IS_RDY -> NO_LOG [ label="+1\nRDY=0" ]
 
    COUNTER_LOG -> DELAY_FINAL
-   NO_LOG -> DELAY_FINAL
+   NO_LOG -> DELAY_FINAL [ label="+2" ]
 
-   IS_FIFO_TRIGGER -> TRIGGER_FIFO [ label="+0\nr6 == 0" ]
-   IS_FIFO_TRIGGER -> NO_FIFO_TRIGGER [ label="+1\nr6 != 0" ]
+   IS_FIFO_TRIGGER -> TRIGGER_FIFO [ label="+0\nr6 = 0" ]
+   IS_FIFO_TRIGGER -> NO_FIFO_TRIGGER [ label="+1\nr6 ≠ 0" ]
 
    TRIGGER_FIFO -> COUNTER_LOG
-   NO_FIFO_TRIGGER -> COUNTER_LOG
+   NO_FIFO_TRIGGER -> COUNTER_LOG [ label="+2" ]
 
    DELAY_FINAL -> SELECT_RAM
 
    { rank=same; SELECT_RAM; REG_5MEM; LOOPSTART; INIT; }
    { rank=same; GET_BUS_STATE; REG_0GPIO; }
-   { rank=same; PUT_DATA_ON_BUS; DELAY_R_D000; DELAY_R_0004; }
+   { rank=same; PUT_DATA_ON_BUS; DELAY_R_D000; DELAY_R_0004; DELAY_W_DF00; }
    { rank=same; DELAY_W__DF00; BANKSWITCH; }
    { rank=same; DELAY_W_D000; DELAY_W_DF00; FIFO_FOR_WRITE; }
    { rank=same; IS_READ_DF00; IS_WRITE_D000; }
