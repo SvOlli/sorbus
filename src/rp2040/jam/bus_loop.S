@@ -28,7 +28,7 @@
 #define FIFO_TRIGGER_BOUNDRY_WRITE  0x78
 
 @ =========================================================================
-@ Notes that will help with implementation
+@ notes that will help with implementation
 @ =========================================================================
 @ - at 133MHz, each RP2040 clock cycle takes 7.518796992 ns
 @ - ideally 32 cycles in each clock high and low state will result in a
@@ -36,7 +36,7 @@
 @ =========================================================================
 
 @ =========================================================================
-@ Set up
+@ assembler set up
 @ =========================================================================
 .syntax unified
 .cpu cortex-m0plus
@@ -49,7 +49,7 @@
 .type bus_run_asm, %function
 
 @ =========================================================================
-@ Macro Definitions
+@ macro Definitions
 @ =========================================================================
 .macro delay count
     .rept \count
@@ -58,7 +58,7 @@
 .endm
 
 @ =========================================================================
-@ External C variables
+@ external C variables
 @ =========================================================================
 .extern bankptrs
 .extern buslog_states
@@ -68,7 +68,7 @@
 .extern romptr
 
 @ =========================================================================
-@ Register usage
+@ register usage
 @ =========================================================================
 
 @  r0: 65c02 cpu bus as read by GPIOs
@@ -89,13 +89,13 @@
 @ r15/pc:
 
 @ =========================================================================
-@ Assembly code section
+@ assembly code section
 @ =========================================================================
 
 .thumb_func
 bus_run_asm:
 @ -------------------------------------------------------------------------
-@ Setup
+@ entry: setup the loop
 @ -------------------------------------------------------------------------
 
    bl    multicore_lockout_victim_init
@@ -117,17 +117,223 @@ bus_run_asm:
    @ from here on r4 is always 65C02 CLK
    ldr   r4, =BUS_CONFIG_mask_clock
 
+   b     .L_loop_entry
+
+
+@ =========================================================================
+@ less critical parts: write
+@ =========================================================================
+
+@ -------------------------------------------------------------------------
+@ testing addresses
+@ -------------------------------------------------------------------------
+@ --> 16cy
+.L_no_bank:
+   @ coming in from cmp #0xDF00
+   bcc   .L_write_l_df00                     @ 1cy --> 18cy
+   delay 3                                   @ 3cy
+   adds  r6, #FIFO_TRIGGER_BOUNDRY_WRITE     @ 1cy
+   cmp   r1, r6   @ #0xDF78                  @ 1cy
+   bcc   .L_write_mark_fifo                  @ 1cy --> 24cy
+   b     .L_write_to_ram                     @ 2cy --> 25cy
+
+@ -------------------------------------------------------------------------
+@ write is in $D000-$DEFF: do nothing
+@ -------------------------------------------------------------------------
+@ --> 18cy
+.L_write_l_df00:
+   delay 8                                   @ 8cy
+   b     .L_end_of_high_at_28cy              @ 2cy --> 28cy
+
+@ -------------------------------------------------------------------------
+@ write is in $0000-$CFFF: write to ram after respecting timing
+@ -------------------------------------------------------------------------
+@ --> 14cy
+.L_write_l_d000:
+   delay 9                                   @ 9cy
+   b     .L_write_to_ram                     @ 2cy --> 25cy
+
+
+@ =========================================================================
+@ less critical parts: read
+@ =========================================================================
+
+@ -------------------------------------------------------------------------
+@ check if read is within external I/O ranges
+@ -------------------------------------------------------------------------
+@ --> 15cy
+.L_read_l_df00:
+   cmp   r1, r10  @ #0xD000                  @ 1cy
+   bcs   .L_read_g_d000                      @ 1cy --> 18cy
+   cmp   r1, #0x0004                         @ 1cy
+   bcs   .L_dataoutput                       @ 1cy --> 20cy
+                                             @ --> 19cy
+   b     .L_read_l_0004                      @ 2cy --> 21cy
+
+@ --> 18cy
+.L_read_g_d000:
+   delay 3
+@ --> 21cy
+.L_read_l_0004:
+   delay 5
+   b     .L_end_of_high_at_28cy
+
+@ -------------------------------------------------------------------------
+@ switch memory pointer to ROM bank pointer
+@ -------------------------------------------------------------------------
+@ --> 17cy
+.L_read_g_e000:
+   mov   r5, r9                              @ 1cy
+   b     .L_dataoutput                       @ --> 20cy
+
+@ =========================================================================
+@ less critical parts: post process
+@ =========================================================================
+@ --> 2cy
+.L_no_rdy:
+   delay 20                                  @ 20cy
+   b     .L_end_of_low_at_24cy               @ 2cy --> 24cy
+
+@ --> 4cy
+.L_no_multicore_fifo:
+   delay 4                                   @ 4cy
+   b     .L_multicore_fifo_done              @ 2cy --> 10cy
+
+@ -------------------------------------------------------------------------
+@ handling FIFO overflow
+@ since the is a loop waiting for a place in the fifo, counting cycles does
+@ make sense here - also bit 31 is set as an indication
+@ -------------------------------------------------------------------------
+@ assumption: r0 contains GPIO data
+@ assumption: r3 contains SIO_BASE
+@ using: r5 for error marked bus data
+@ using: r6
+@ using: r7
+.L_multicore_overflow:
+   lsls  r5, r4, #6
+   orrs  r5, r0
+   lsrs  r7, r4, #24
+.L_multicore_wait:
+   ldr   r6, [r3, #SIO_FIFO_ST_OFFSET]
+   ands  r7, r6
+   bne   .L_multicore_wait
+   str   r5, [r3, #SIO_FIFO_WR_OFFSET]
+   b     .L_multicore_fifo_done
+
+@ -------------------------------------------------------------------------
+@ loops from bottom to here
+@ -------------------------------------------------------------------------
+@ --> 30cy
+.L_main_loop:
+
+   @ prepare RDY mask for clock high phase
+   lsls  r7, r4, #1                          @ 1cy
+   ands  r7, r0                              @ 1cy
+                                             @ --> 32cy
+
+@ -------------------------------------------------------------------------
+@ end of clock low phase
+@ -------------------------------------------------------------------------
+
+   @ r4 = 65C02 CLK, r3 = SIO_BASE
+   str   r4, [r3, #SIO_GPIO_OUT_CLR_OFFSET]  @ 1cy
+
+@ =========================================================================
+@ high clock phase starts here
+@ =========================================================================
+@ r6 should be 0 if GPIOs should go into FIFO, not 0 otherwise
+
+   @ first: check, if RDY is set
+   @ if not, nothing needs to be done here...
+
+   @ CLK is pin 25 (0x02000000), RDY is pin 26 (0x04000000)
+#if BUS_CONFIG_mask_rdy != (BUS_CONFIG_mask_clock << 1)
+#error BUS_CONFIG_mask_rdy/BUS_CONFIG_mask_clock are not as expected
+#endif
+   @ these two are run before the clock goes low
+   @ there were two cycles, there would have been wasted otherwise...
+   @lsls  r7, r4, #1
+   @ands  r7, r0
+   beq   .L_no_rdy                           @ 1cy --> 2cy
+
+   @ second: check if something needs to be send to other core
+   cmp   r6, #0                              @ 1cy
+   bne   .L_no_multicore_fifo                @ 1cy --> 4cy
+
+@ -------------------------------------------------------------------------
+@ Send GPIO state via FIFO
+@ -------------------------------------------------------------------------
+@ assumption: r0 contains GPIO data
+@ assumption: r3 contains SIO_BASE
+@ using: r6
+@ using: r7
+@ --> 3cy
+
+   @ldr   r7, =SIO_FIFO_ST_RDY_BITS
+   @ we need to speed up the instruction above
+   @ since SIO_FIFO_ST_RDY_BITS = 0x00000002
+   @ r4 = 0x02000000
+   @ sanity check below
+#if SIO_FIFO_ST_RDY_BITS != (BUS_CONFIG_mask_clock >> 24)
+#error SIO_FIFO_ST_RDY_BITS/BUS_CONFIG_mask_clock are not as expected
+#endif
+   lsrs  r7, r4, #24                         @ 1cy
+   ldr   r6, [r3, #SIO_FIFO_ST_OFFSET]       @ 2cy
+   ands  r7, r6                              @ 1cy
+   @ timing error here
+   @ in case of a full fifo, 65c02 cycle will take extra RP2040 cycles
+   @ as this should not happen (but could), this must be accepted
+   beq   .L_multicore_overflow               @ 1cy --> 8cy
+   str   r0, [r3, #SIO_FIFO_WR_OFFSET]       @ 2cy
+
+@ -------------------------------------------------------------------------
+@ Cycle counter and logging
+@ -------------------------------------------------------------------------
+@ assumption: r0 contains bus data
+@ assumption: r4 contains clock mask
+@ assumption: r8 contains cycle counter
+@ using: r5
+@ using: r7
+@ --> 10cy
+.L_multicore_fifo_done:
+
+   movs  r7, #1                              @ 1cy
+   @ high register form
+   add   r8, r7                              @ 1cy
+   mov   r7, r8                              @ 1cy
+   @ store cycle counter for C
+   ldr   r5, =cycle_counter                  @ 2cy
+   str   r7, [r5]                            @ 2cy
+   @ move bits up to discard bits and get them down again
+   @ --> and #0x00000FFF
+   lsls  r7, r7, #20                         @ 1cy
+   lsrs  r7, r7, #20                         @ 1cy
+   @ align index to 32bit addressing
+   lsls  r7, r7, #2                          @ 1cy
+   ldr   r5, =buslog_states                  @ 2cy
+   str   r0, [r5, r7]                        @ 2cy
+                                             @ --> 24cy
+
+@ -------------------------------------------------------------------------
+@ here are the remaining cycles to spare
+@ -------------------------------------------------------------------------
+@ --> 24cy
+.L_end_of_low_at_24cy:
+   delay 3                                   @ 3cy
+                                             @ --> 27cy
+
 @ -------------------------------------------------------------------------
 @ this is where the branch back to start of loop is going
 @ -------------------------------------------------------------------------
 @ --> 27cy
-.L_main_loop:
+.L_loop_entry:
    @ r9 = romptr
    ldr   r5, =romptr                         @ 2cy
    mov   r9, r5                              @ 1cy
 
    @ r5 = memptr -> RAM
    ldr   r5, =ram                            @ 2cy
+                                             @ --> 32cy
 
 @ -------------------------------------------------------------------------
 @ end of clock low phase
@@ -207,7 +413,7 @@ bus_run_asm:
                                              @ --> 25cy
 
 @ -------------------------------------------------------------------------
-@ Write data to RAM
+@ write data to RAM
 @ -------------------------------------------------------------------------
 @ assumption: r1 contains address bus
 @ assumption: r2 contains data
@@ -217,67 +423,10 @@ bus_run_asm:
    strb  r2, [r5, r1]                        @ 1cy
    b     .L_end_of_high_at_28cy              @ 2cy --> 28cy
 
-@ -------------------------------------------------------------------------
-@ testing addresses >
-@ -------------------------------------------------------------------------
-@ --> 16cy
-.L_no_bank:
-   @ coming in from cmp #0xDF00
-   bcc   .L_write_l_df00                     @ 1cy --> 18cy
-   delay 3                                   @ 3cy
-   adds  r6, #FIFO_TRIGGER_BOUNDRY_WRITE     @ 1cy
-   cmp   r1, r6   @ #0xDF78                  @ 1cy
-   bcc   .L_write_mark_fifo                  @ 1cy --> 24cy
-   b     .L_write_to_ram                     @ 2cy --> 25cy
-
-@ -------------------------------------------------------------------------
-@ write is in $D000-$DEFF: do nothing
-@ -------------------------------------------------------------------------
-@ --> 18cy
-.L_write_l_df00:
-   delay 8                                   @ 8cy
-   b     .L_end_of_high_at_28cy              @ 2cy --> 28cy
-
-@ -------------------------------------------------------------------------
-@ write is in $0000-$CFFF: write to ram after respecting timing
-@ -------------------------------------------------------------------------
-@ --> 14cy
-.L_write_l_d000:
-   delay 9                                   @ 9cy
-   b     .L_write_to_ram                     @ 2cy --> 25cy
-
 
 @ =========================================================================
 @ handling memory read cases
 @ =========================================================================
-
-@ -------------------------------------------------------------------------
-@ check if read is within external I/O ranges
-@ -------------------------------------------------------------------------
-@ --> 15cy
-.L_read_l_df00:
-   cmp   r1, r10  @ #0xD000                  @ 1cy
-   bcs   .L_read_g_d000                      @ 1cy --> 18cy
-   cmp   r1, #0x0004                         @ 1cy
-   bcs   .L_dataoutput                       @ 1cy --> 20cy
-                                             @ --> 19cy
-   b     .L_read_l_0004                      @ 2cy --> 21cy
-
-@ --> 18cy
-.L_read_g_d000:
-   delay 3
-@ --> 21cy
-.L_read_l_0004:
-   delay 5
-   b     .L_end_of_high_at_28cy
-
-@ -------------------------------------------------------------------------
-@ switch memory pointer to ROM bank pointer
-@ -------------------------------------------------------------------------
-@ --> 17cy
-.L_read_g_e000:
-   mov   r5, r9                              @ 1cy
-   b     .L_dataoutput                       @ --> 20cy
 
 @ -------------------------------------------------------------------------
 @ read memory critical path
@@ -340,122 +489,4 @@ bus_run_asm:
 
 @ --> 28cy
 .L_end_of_high_at_28cy:
-   @ just pad the remaining 4 cycles
-   delay 3                                   @ 3cy
-
-   @ prepare RDY mask for clock high phase
-   lsls  r7, r4, #1                          @ 1cy
-
-@ -------------------------------------------------------------------------
-@ end of clock low phase
-@ -------------------------------------------------------------------------
-
-   @ r4 = 65C02 CLK, r3 = SIO_BASE
-   str   r4, [r3, #SIO_GPIO_OUT_CLR_OFFSET]  @ 1cy
-
-@ =========================================================================
-@ high clock phase starts here
-@ =========================================================================
-@ r6 should be 0 if GPIOs should go into FIFO, not 0 otherwise
-
-   @ first: check, if RDY is set
-   @ if not, nothing needs to be done here...
-
-   @ CLK is pin 26 (0x02000000), RDY is pin 27 (0x04000000)
-#if BUS_CONFIG_mask_rdy != (BUS_CONFIG_mask_clock << 1)
-#error BUS_CONFIG_mask_rdy/BUS_CONFIG_mask_clock are not as expected
-#endif
-   @lsls  r7, r4, #1
-   ands  r7, r0                              @ 1cy
-   beq   .L_no_rdy                           @ 1cy --> 3cy
-
-   @ second: check if something needs to be send to other core
-   cmp   r6, #0                              @ 1cy
-   bne   .L_no_multicore_fifo                @ 1cy --> 5cy
-
-@ -------------------------------------------------------------------------
-@ Send GPIO state via FIFO
-@ -------------------------------------------------------------------------
-@ assumption: r0 contains GPIO data
-@ assumption: r3 contains SIO_BASE
-@ using: r6
-@ using: r7
-@ --> 4cy
-
-   @ldr   r7, =SIO_FIFO_ST_RDY_BITS
-   @ we need to speed up the instruction above
-   @ since SIO_FIFO_ST_RDY_BITS = 0x00000002
-   @ r4 = 0x02000000
-   @ sanity check below
-#if SIO_FIFO_ST_RDY_BITS != (BUS_CONFIG_mask_clock >> 24)
-#error SIO_FIFO_ST_RDY_BITS/BUS_CONFIG_mask_clock are not as expected
-#endif
-   lsrs  r7, r4, #24                         @ 1cy
-   ldr   r6, [r3, #SIO_FIFO_ST_OFFSET]       @ 2cy
-   ands  r7, r6                              @ 1cy
-   @ timing error here
-   @ in case of a full fifo, 65c02 cycle will take extra RP2040 cycles
-   @ as this should not happen (but could), this must be accepted
-   beq   .L_multicore_overflow               @ 1cy --> 9cy
-   str   r0, [r3, #SIO_FIFO_WR_OFFSET]       @ 2cy
-
-@ -------------------------------------------------------------------------
-@ Cycle counter and logging
-@ -------------------------------------------------------------------------
-@ assumption: r0 contains bus data
-@ assumption: r4 contains clock mask
-@ assumption: r8 contains cycle counter
-@ using: r5
-@ using: r7
-@ --> 11cy
-.L_multicore_fifo_done:
-
-   movs  r7, #1                              @ 1cy
-   @ high register form
-   add   r8, r7                              @ 1cy
-   mov   r7, r8                              @ 1cy
-   @ store cycle counter for C
-   ldr   r5, =cycle_counter                  @ 2cy
-   str   r7, [r5]                            @ 2cy
-   @ move bits up to discard bits and get them down again
-   @ --> and #0x00000FFF
-   lsls  r7, r7, #20                         @ 1cy
-   lsrs  r7, r7, #20                         @ 1cy
-   @ align index to 32bit addressing
-   lsls  r7, r7, #2                          @ 1cy
-   ldr   r5, =buslog_states                  @ 2cy
-   str   r0, [r5, r7]                        @ 2cy
-                                             @ --> 25cy
-
-   b     .L_main_loop                        @ 2cy --> 27cy
-
-@ --> 3cy
-.L_no_rdy:
-   delay 22                                  @ 22cy
-   b     .L_main_loop                        @ 2cy --> 27cy
-
-@ --> 5cy
-.L_no_multicore_fifo:
-   delay 4                                   @ 4cy
-   b     .L_multicore_fifo_done              @ 2cy --> 11cy
-
-@ -------------------------------------------------------------------------
-@ handling FIFO overflow
-@ since the is a loop waiting for a place in the fifo, counting cycles does
-@ make sense here - also bit 31 is set as an indication
-@ -------------------------------------------------------------------------
-@ assumption: r0 contains GPIO data
-@ assumption: r3 contains SIO_BASE
-@ using: r5 for error marked bus data
-@ using: r6
-@ using: r7
-.L_multicore_overflow:
-   lsls  r5, r4, #6
-   orrs  r5, r0
-   lsrs  r7, r4, #24
-.L_multicore_wait:
-   ldr   r6, [r3, #SIO_FIFO_ST_OFFSET]
-   ands  r7, r6
-   bne   .L_multicore_wait
-   str   r5, [r3, #SIO_FIFO_WR_OFFSET]
-   b     .L_multicore_fifo_done
+   b     .L_main_loop
